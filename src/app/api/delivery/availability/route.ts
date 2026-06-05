@@ -29,13 +29,14 @@ export async function GET(request: NextRequest) {
         const url = new URL(request.url);
         const merchantId = url.searchParams.get("merchantId");
 
-        // Leer radio configurable desde MoovyConfig (default 50km).
-        // Coincide con assignment-engine para que la pre-validación tenga el
-        // mismo criterio que la búsqueda real post-pago.
+        // Leer radio configurable desde MoovyConfig.
+        // fix/asignacion-y-logistica (2026-06-05): default bajado 50km -> 15km para
+        // coincidir con assignment-engine (Ushuaia ~15km). Sigue editable desde
+        // /ops/configuracion-logistica (key driver_search_radius_meters).
         const radiusConfig = await prisma.moovyConfig.findUnique({
             where: { key: "driver_search_radius_meters" },
         });
-        const radiusMeters = radiusConfig ? parseInt(radiusConfig.value, 10) : 50_000;
+        const radiusMeters = radiusConfig ? parseInt(radiusConfig.value, 10) : 15_000;
 
         let availableDrivers = 0;
 

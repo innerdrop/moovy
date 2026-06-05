@@ -49,13 +49,18 @@ export async function PATCH(request: Request) {
         });
 
         // Update driver specific fields
-        const { vehicleType, vehicleModel, vehiclePlate } = body;
+        // fix/asignacion-y-logistica (2026-06-05): hasThermalBag / hasColdStorage --
+        // equipamiento de frio declarado por el driver. Habilitan ofertas HOT/FRESH
+        // en el assignment-engine. Se aceptan solo si vienen como boolean explicito.
+        const { vehicleType, vehicleModel, vehiclePlate, hasThermalBag, hasColdStorage } = body;
         const updatedDriver = await prisma.driver.update({
             where: { userId },
             data: {
                 ...(vehicleType && { vehicleType }),
                 ...(vehicleModel && { vehicleModel }),
                 ...(vehiclePlate && { vehiclePlate }),
+                ...(typeof hasThermalBag === "boolean" && { hasThermalBag }),
+                ...(typeof hasColdStorage === "boolean" && { hasColdStorage }),
             }
         });
 

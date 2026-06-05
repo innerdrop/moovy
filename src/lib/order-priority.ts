@@ -42,7 +42,9 @@ export interface PrioritizedOrder {
   };
 }
 
-// ─── Constantes (defaults, override vía loadOrderPriorityConfig) ─────────────
+// ─── Constantes (fuente de verdad del runtime) ──────────────────────────────
+// fix/asignacion-y-logistica (2026-06-05): la config order_priority_config era
+// fantasma (nunca se leia); se elimino. Estos consts son la unica fuente real.
 
 /** Peso máximo que puede sumar el tiempo de espera */
 const MAX_WAIT_PRIORITY = 60;

@@ -3,14 +3,14 @@
 /**
  * OPS Logistics Configuration Panel — v2
  *
- * 7 secciones completas con botones de info en cada campo:
+ * fix/asignacion-y-logistica (2026-06-05): se removieron los tabs Velocidades de
+ * Vehículo, Cola de Prioridad y Calculador de ETA — eran config fantasma / código
+ * muerto (el runtime usa consts, no esas keys). Quedan 5 secciones:
  *   1. Configuración Global (MoovyConfig keys)
  *   2. Categorías de Paquete (PackageCategory)
  *   3. Tipos de Envío (ShipmentType)
- *   4. Velocidades de Vehículo
- *   5. Cola de Prioridad (Order Priority)
- *   6. Calculador de ETA
- *   7. Dashboard SLA en Vivo
+ *   4. Dashboard SLA en Vivo
+ *   5. Tarifas de Envío (DeliveryRate + Shipping Defaults)
  *
  * Cada campo tiene un botón (i) que abre un tooltip con explicación detallada.
  */
@@ -32,14 +32,13 @@ import {
   FileText,
   ShieldAlert,
   Box,
-  Gauge,
-  Timer,
   Clock,
   Info,
   X,
   BarChart3,
   AlertTriangle,
-  Zap,
+  // fix/asignacion-y-logistica (2026-06-05): Gauge/Timer/Zap se usaban solo en los
+  // tabs Vehículos/ETA/Prioridad eliminados — imports removidos.
 } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
@@ -77,24 +76,8 @@ interface ShipmentTypeConfig {
   requiresCarefulHandle: boolean;
 }
 
-interface VehicleSpeedConfig {
-  [key: string]: number;
-}
-
-interface PriorityQueueConfig {
-  maxWaitPriority: number;
-  waitPriorityPerMinute: number;
-  retryPriorityPerAttempt: number;
-  scheduledPenalty: number;
-}
-
-interface ETACalcConfig {
-  defaultDriverWaitTimeMin: number;
-  pickupTimeMin: number;
-  bufferPercent: number;
-  rangeMinus: number;
-  rangePlus: number;
-}
+// fix/asignacion-y-logistica (2026-06-05): removidas VehicleSpeedConfig,
+// PriorityQueueConfig y ETACalcConfig (tabs/config eliminados).
 
 interface ShippingDefaultsConfig {
   [key: string]: { basePriceArs: number; pricePerKmArs: number };
@@ -154,6 +137,8 @@ const GLOBAL_CONFIG_FIELDS = [
   { key: "min_order_amount_ars", label: "Monto mínimo pedido", unit: "ARS", min: 0, max: 999999 },
   { key: "max_assignment_attempts", label: "Intentos máx. asignación", unit: "", min: 1, max: 20 },
   { key: "assignment_rating_radius_meters", label: "Radio rating asignación", unit: "m", min: 100, max: 50000 },
+  // fix/asignacion-y-logistica (2026-06-05): radio de búsqueda de drivers, editable.
+  { key: "driver_search_radius_meters", label: "Radio búsqueda repartidor", unit: "m", min: 1000, max: 50000 },
   { key: "scheduled_notify_before_minutes", label: "Notificar antes (prog.)", unit: "min", min: 1, max: 120 },
   { key: "scheduled_cancel_if_no_confirm_minutes", label: "Cancelar sin confirmación", unit: "min", min: 1, max: 120 },
 ];
@@ -168,6 +153,8 @@ const GLOBAL_CONFIG_INFO: Record<string, string> = {
     "Cantidad máxima de repartidores a los que se les ofrece el pedido antes de marcarlo como sin repartidor. Cada intento espera el driver_response_timeout antes de pasar al siguiente.",
   assignment_rating_radius_meters:
     "Radio (en metros) dentro del cual se priorizan repartidores por rating. Fuera de este radio, se priorizan por cercanía. Un radio de 3000m busca primero los mejores repartidores dentro de 3km.",
+  driver_search_radius_meters:
+    "Radio máximo (en metros) para buscar repartidores disponibles alrededor del comercio. Repartidores fuera de este radio no reciben la oferta. Para Ushuaia se recomienda 15000m (15km), que cubre toda la ciudad.",
   scheduled_notify_before_minutes:
     "Cuántos minutos antes de la hora programada se notifica al repartidor asignado para que se prepare. Valor estándar: 15-30 min.",
   scheduled_cancel_if_no_confirm_minutes:
@@ -453,22 +440,10 @@ export default function ConfigLogisticaPage() {
   const [loadingShipment, setLoadingShipment] = useState(true);
   const [savingShipment, setSavingShipment] = useState(false);
 
-  // ── Section 4: Vehicle Speeds
-  const [vehicleSpeeds, setVehicleSpeeds] = useState<VehicleSpeedConfig>({});
-  const [loadingSpeeds, setLoadingSpeeds] = useState(true);
-  const [savingSpeeds, setSavingSpeeds] = useState(false);
+  // fix/asignacion-y-logistica (2026-06-05): removido el estado de Vehicle Speeds,
+  // Priority Queue y ETA Calculator (tabs/config eliminados por ser fantasma/muertos).
 
-  // ── Section 5: Priority Queue
-  const [priorityConfig, setPriorityConfig] = useState<PriorityQueueConfig | null>(null);
-  const [loadingPriority, setLoadingPriority] = useState(true);
-  const [savingPriority, setSavingPriority] = useState(false);
-
-  // ── Section 6: ETA Calculator
-  const [etaConfig, setETAConfig] = useState<ETACalcConfig | null>(null);
-  const [loadingETA, setLoadingETA] = useState(true);
-  const [savingETA, setSavingETA] = useState(false);
-
-  // ── Section 7: SLA Dashboard
+  // ── Section: SLA Dashboard
   const [slaData, setSlaData] = useState<SLADashboardData | null>(null);
   const [loadingSLA, setLoadingSLA] = useState(true);
 
@@ -487,14 +462,13 @@ export default function ConfigLogisticaPage() {
   // ─── Load all data ────────────────────────────────────────────────────────
   useEffect(() => {
     async function loadAll() {
+      // fix/asignacion-y-logistica (2026-06-05): removidos los fetch de
+      // vehicle-speeds, priority-queue y eta-calculator (configs eliminadas).
       const results = await Promise.allSettled([
         fetch("/api/ops/config/global").then((r) => r.ok ? r.json() : null),
         fetch("/api/ops/config/categories").then((r) => r.ok ? r.json() : null),
         fetch("/api/ops/config/rates").then((r) => r.ok ? r.json() : null),
         fetch("/api/ops/config/shipment-types").then((r) => r.ok ? r.json() : null),
-        fetch("/api/ops/config/vehicle-speeds").then((r) => r.ok ? r.json() : null),
-        fetch("/api/ops/config/priority-queue").then((r) => r.ok ? r.json() : null),
-        fetch("/api/ops/config/eta-calculator").then((r) => r.ok ? r.json() : null),
         fetch("/api/ops/config/shipping-defaults").then((r) => r.ok ? r.json() : null),
         fetch("/api/ops/logistics/sla-dashboard").then((r) => r.ok ? r.json() : null),
       ]);
@@ -527,33 +501,15 @@ export default function ConfigLogisticaPage() {
       }
       setLoadingShipment(false);
 
-      // 5. Vehicle speeds
+      // 5. Shipping defaults
       if (results[4].status === "fulfilled" && results[4].value) {
-        setVehicleSpeeds(results[4].value.config || {});
-      }
-      setLoadingSpeeds(false);
-
-      // 6. Priority
-      if (results[5].status === "fulfilled" && results[5].value) {
-        setPriorityConfig(results[5].value.config || null);
-      }
-      setLoadingPriority(false);
-
-      // 7. ETA
-      if (results[6].status === "fulfilled" && results[6].value) {
-        setETAConfig(results[6].value.config || null);
-      }
-      setLoadingETA(false);
-
-      // 8. Shipping defaults
-      if (results[7].status === "fulfilled" && results[7].value) {
-        setShippingDefaults(results[7].value.config || {});
+        setShippingDefaults(results[4].value.config || {});
       }
       setLoadingShippingDef(false);
 
-      // 9. SLA Dashboard
-      if (results[8].status === "fulfilled" && results[8].value) {
-        setSlaData(results[8].value);
+      // 6. SLA Dashboard
+      if (results[5].status === "fulfilled" && results[5].value) {
+        setSlaData(results[5].value);
       }
       setLoadingSLA(false);
     }
@@ -561,8 +517,9 @@ export default function ConfigLogisticaPage() {
   }, []);
 
   // ─── Refresh SLA (auto-refresh every 30s when on that tab) ─────────────
+  // fix/asignacion-y-logistica: SLA pasó de tab 6 a tab 3 tras la limpieza.
   useEffect(() => {
-    if (activeTab !== 6) return;
+    if (activeTab !== 3) return;
     const interval = setInterval(async () => {
       try {
         const res = await fetch("/api/ops/logistics/sla-dashboard");
@@ -678,76 +635,8 @@ export default function ConfigLogisticaPage() {
     }
   }
 
-  // ─── Save: Vehicle Speeds ─────────────────────────────────────────────
-  async function saveVehicleSpeeds() {
-    const ok = await confirm({ title: "Guardar velocidades", message: "¿Confirmar cambios en velocidades de vehículo?", confirmLabel: "Guardar", variant: "warning" });
-    if (!ok) return;
-    setSavingSpeeds(true);
-    try {
-      const res = await fetch("/api/ops/config/vehicle-speeds", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(vehicleSpeeds),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error");
-      }
-      showToast("Velocidades guardadas", "success");
-    } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : "Error al guardar velocidades", "error");
-    } finally {
-      setSavingSpeeds(false);
-    }
-  }
-
-  // ─── Save: Priority Queue ─────────────────────────────────────────────
-  async function savePriorityConfig() {
-    if (!priorityConfig) return;
-    const ok = await confirm({ title: "Guardar prioridad", message: "¿Confirmar cambios en cola de prioridad?", confirmLabel: "Guardar", variant: "warning" });
-    if (!ok) return;
-    setSavingPriority(true);
-    try {
-      const res = await fetch("/api/ops/config/priority-queue", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(priorityConfig),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error");
-      }
-      showToast("Configuración de prioridad guardada", "success");
-    } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : "Error al guardar prioridad", "error");
-    } finally {
-      setSavingPriority(false);
-    }
-  }
-
-  // ─── Save: ETA Calculator ─────────────────────────────────────────────
-  async function saveETAConfig() {
-    if (!etaConfig) return;
-    const ok = await confirm({ title: "Guardar ETA", message: "¿Confirmar cambios en configuración de ETA?", confirmLabel: "Guardar", variant: "warning" });
-    if (!ok) return;
-    setSavingETA(true);
-    try {
-      const res = await fetch("/api/ops/config/eta-calculator", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(etaConfig),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error || "Error");
-      }
-      showToast("Configuración de ETA guardada", "success");
-    } catch (e: unknown) {
-      showToast(e instanceof Error ? e.message : "Error al guardar ETA", "error");
-    } finally {
-      setSavingETA(false);
-    }
-  }
+  // fix/asignacion-y-logistica (2026-06-05): removidos saveVehicleSpeeds,
+  // savePriorityConfig y saveETAConfig (configs eliminadas — eran fantasma/muertas).
 
   // ─── Save: Shipping Defaults ──────────────────────────────────────────
   async function saveShippingDefaults() {
@@ -797,7 +686,7 @@ export default function ConfigLogisticaPage() {
   }
 
   // ─── Loading state ────────────────────────────────────────────────────
-  const anyLoading = loadingConfigs || loadingCategories || loadingRates || loadingShipment || loadingSpeeds || loadingPriority || loadingETA;
+  const anyLoading = loadingConfigs || loadingCategories || loadingRates || loadingShipment;
   if (anyLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -807,13 +696,14 @@ export default function ConfigLogisticaPage() {
   }
 
   // ─── Tab definitions ──────────────────────────────────────────────────
+  // fix/asignacion-y-logistica (2026-06-05): removidos los tabs "Vehículos"
+  // (vehicle_speeds_config), "Prioridad" (order_priority_config) y "ETA"
+  // (eta_calculator_config) — eran config fantasma / código muerto. Los índices
+  // de los tabs restantes se recompactaron (SLA en Vivo y Tarifas bajan de 6/7 a 3/4).
   const TABS = [
     "Global",
     "Paquetes",
     "Tipos de Envío",
-    "Vehículos",
-    "Prioridad",
-    "ETA",
     "SLA en Vivo",
     "Tarifas",
   ];
@@ -1099,163 +989,11 @@ export default function ConfigLogisticaPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          TAB 3 — Velocidades de Vehículo
+          TAB 3 — Dashboard SLA en Vivo
+          (fix/asignacion-y-logistica: era el tab 6; subió a 3 tras remover
+          Vehículos/Prioridad/ETA)
       ═══════════════════════════════════════════════════════════════════ */}
       {activeTab === 3 && (
-        <SectionCard
-          icon={Gauge}
-          iconColor="bg-green-50 text-green-600"
-          title="Velocidades de Vehículo"
-          subtitle="Velocidad promedio urbana por tipo"
-          accentColor="bg-green-500/5"
-          saving={savingSpeeds}
-          onSave={saveVehicleSpeeds}
-        >
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-5">
-            {VEHICLE_OPTIONS.map((v) => (
-              <div key={v} className="p-5 bg-slate-50 rounded-2xl border border-slate-100 text-center">
-                <div className="text-3xl mb-2">{VEHICLE_LABELS[v].split(" ")[0]}</div>
-                <h3 className="text-sm font-black text-gray-900 mb-3">{VEHICLE_LABELS[v].split(" ").slice(1).join(" ")}</h3>
-                <div className="flex items-center justify-center mb-1">
-                  <label className="text-[9px] font-black text-slate-400 uppercase tracking-widest">km/h</label>
-                  <InfoButton infoKey="vehicleSpeed" />
-                </div>
-                <input
-                  type="number"
-                  min={1}
-                  max={200}
-                  value={vehicleSpeeds[v] ?? 0}
-                  onChange={(e) => setVehicleSpeeds((prev) => ({ ...prev, [v]: Number(e.target.value) }))}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3 py-3 text-2xl font-black text-center text-gray-900 focus:ring-2 focus:ring-green-500 focus:outline-none"
-                />
-              </div>
-            ))}
-          </div>
-        </SectionCard>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          TAB 4 — Cola de Prioridad
-      ═══════════════════════════════════════════════════════════════════ */}
-      {activeTab === 4 && priorityConfig && (
-        <SectionCard
-          icon={Zap}
-          iconColor="bg-purple-50 text-purple-600"
-          title="Cola de Prioridad"
-          subtitle="Cómo se ordenan los pedidos para asignación"
-          accentColor="bg-purple-500/5"
-          saving={savingPriority}
-          onSave={savePriorityConfig}
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-            {[
-              { field: "maxWaitPriority", infoKey: "priority_maxWaitPriority", label: "Máx. puntos por espera", min: 0, max: 1000 },
-              { field: "waitPriorityPerMinute", infoKey: "priority_waitPriorityPerMinute", label: "Puntos/minuto espera", min: 0, max: 100 },
-              { field: "retryPriorityPerAttempt", infoKey: "priority_retryPriorityPerAttempt", label: "Puntos/reintento fallido", min: 0, max: 200 },
-              { field: "scheduledPenalty", infoKey: "priority_scheduledPenalty", label: "Penalidad programados", min: -500, max: 0 },
-            ].map(({ field, infoKey, label, min, max }) => (
-              <div key={field} className="p-5 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="flex items-center mb-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
-                  <InfoButton infoKey={infoKey} />
-                </div>
-                <input
-                  type="number"
-                  min={min}
-                  max={max}
-                  value={(priorityConfig as unknown as Record<string, number>)[field]}
-                  onChange={(e) => setPriorityConfig((prev) => prev ? { ...prev, [field]: Number(e.target.value) } : prev)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-lg font-black text-gray-900 focus:ring-2 focus:ring-purple-500 focus:outline-none"
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* Priority simulation */}
-          <div className="mt-6 p-5 bg-purple-50/50 rounded-2xl border border-purple-100">
-            <h4 className="text-xs font-black text-purple-600 uppercase tracking-widest mb-3">Simulación de prioridad</h4>
-            <div className="text-xs text-slate-600 space-y-1">
-              <p>Pedido <span className="font-black text-red-500">HOT</span> recién creado: <span className="font-black">{100 + 0 + 0} pts</span> (tipo=100 + espera=0 + reintentos=0)</p>
-              <p>Pedido <span className="font-black text-red-500">HOT</span> esperando 10 min: <span className="font-black">{100 + Math.min(10 * priorityConfig.waitPriorityPerMinute, priorityConfig.maxWaitPriority)} pts</span></p>
-              <p>Pedido <span className="font-black text-slate-500">STANDARD</span> esperando 10 min, rechazado 2 veces: <span className="font-black">{0 + Math.min(10 * priorityConfig.waitPriorityPerMinute, priorityConfig.maxWaitPriority) + 2 * priorityConfig.retryPriorityPerAttempt} pts</span></p>
-              <p>Pedido <span className="font-black text-blue-500">Programado</span> (falta 1h): <span className="font-black">{0 + 0 + 0 + priorityConfig.scheduledPenalty} pts</span></p>
-            </div>
-          </div>
-        </SectionCard>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          TAB 5 — Calculador de ETA
-      ═══════════════════════════════════════════════════════════════════ */}
-      {activeTab === 5 && etaConfig && (
-        <SectionCard
-          icon={Timer}
-          iconColor="bg-teal-50 text-teal-600"
-          title="Calculador de ETA"
-          subtitle="Parámetros del tiempo estimado de entrega"
-          accentColor="bg-teal-500/5"
-          saving={savingETA}
-          onSave={saveETAConfig}
-        >
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {[
-              { field: "defaultDriverWaitTimeMin", infoKey: "eta_defaultDriverWaitTimeMin", label: "Espera driver (min)", min: 0, max: 60, step: 1 },
-              { field: "pickupTimeMin", infoKey: "eta_pickupTimeMin", label: "Tiempo retiro (min)", min: 0, max: 60, step: 1 },
-              { field: "bufferPercent", infoKey: "eta_bufferPercent", label: "Buffer (%)", min: 0, max: 1, step: 0.05 },
-              { field: "rangeMinus", infoKey: "eta_rangeMinus", label: "Rango inferior (min)", min: 0, max: 60, step: 1 },
-              { field: "rangePlus", infoKey: "eta_rangePlus", label: "Rango superior (min)", min: 0, max: 60, step: 1 },
-            ].map(({ field, infoKey, label, min, max, step }) => (
-              <div key={field} className="p-4 bg-slate-50 rounded-2xl border border-slate-100">
-                <div className="flex items-center mb-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</label>
-                  <InfoButton infoKey={infoKey} />
-                </div>
-                <input
-                  type="number"
-                  min={min}
-                  max={max}
-                  step={step}
-                  value={(etaConfig as unknown as Record<string, number>)[field]}
-                  onChange={(e) => setETAConfig((prev) => prev ? { ...prev, [field]: Number(e.target.value) } : prev)}
-                  className="w-full bg-white border border-slate-200 rounded-xl px-4 py-3 text-lg font-black text-gray-900 focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                />
-              </div>
-            ))}
-          </div>
-
-          {/* ETA simulation */}
-          <div className="mt-6 p-5 bg-teal-50/50 rounded-2xl border border-teal-100">
-            <h4 className="text-xs font-black text-teal-600 uppercase tracking-widest mb-3">Simulación de ETA</h4>
-            {(() => {
-              const speed = vehicleSpeeds["MOTO"] || 25;
-              const travelD2M = Math.ceil((2 / speed) * 60);
-              const travelM2C = Math.ceil((3 / speed) * 60);
-              const travel = travelD2M + travelM2C;
-              const buffer = Math.ceil(travel * etaConfig.bufferPercent);
-              const total = 15 + etaConfig.defaultDriverWaitTimeMin + travelD2M + etaConfig.pickupTimeMin + travelM2C + buffer;
-              return (
-                <div className="text-xs text-slate-600 space-y-1">
-                  <p className="font-bold text-slate-800 mb-2">Escenario: Prep 15min, MOTO, 2km al comercio, 3km al destino, sin driver</p>
-                  <p>Preparación: <span className="font-black">15 min</span></p>
-                  <p>Espera driver: <span className="font-black">{etaConfig.defaultDriverWaitTimeMin} min</span></p>
-                  <p>Driver → comercio (2km): <span className="font-black">{travelD2M} min</span></p>
-                  <p>Retiro: <span className="font-black">{etaConfig.pickupTimeMin} min</span></p>
-                  <p>Comercio → destino (3km): <span className="font-black">{travelM2C} min</span></p>
-                  <p>Buffer ({Math.round(etaConfig.bufferPercent * 100)}%): <span className="font-black">{buffer} min</span></p>
-                  <p className="text-base font-black text-teal-700 mt-2 pt-2 border-t border-teal-200">
-                    ETA: {Math.max(total - etaConfig.rangeMinus, 1)}-{total + etaConfig.rangePlus} min (estimado: {total} min)
-                  </p>
-                </div>
-              );
-            })()}
-          </div>
-        </SectionCard>
-      )}
-
-      {/* ═══════════════════════════════════════════════════════════════════
-          TAB 6 — Dashboard SLA en Vivo
-      ═══════════════════════════════════════════════════════════════════ */}
-      {activeTab === 6 && (
         <SectionCard
           icon={BarChart3}
           iconColor="bg-rose-50 text-rose-600"
@@ -1372,9 +1110,10 @@ export default function ConfigLogisticaPage() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════════════
-          TAB 7 — Tarifas de Envío (DeliveryRate + Shipping Defaults)
+          TAB 4 — Tarifas de Envío (DeliveryRate + Shipping Defaults)
+          (fix/asignacion-y-logistica: era el tab 7; bajó a 4)
       ═══════════════════════════════════════════════════════════════════ */}
-      {activeTab === 7 && (
+      {activeTab === 4 && (
         <>
           {/* Delivery Rates from DB */}
           <SectionCard

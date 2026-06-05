@@ -186,6 +186,10 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
         vehicleType: "MOTO",
         vehicleModel: "",
         vehiclePlate: "",
+        // fix/asignacion-y-logistica (2026-06-05): equipamiento de frio declarado.
+        // Habilita ofertas HOT (bolsa termica) y FRESH (cadena de frio).
+        hasThermalBag: false,
+        hasColdStorage: false,
     });
 
     const [driverId, setDriverId] = useState<string | null>(null);
@@ -228,6 +232,9 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                 vehicleType: data.vehicleType || "MOTO",
                 vehicleModel: data.vehicleModel || "",
                 vehiclePlate: data.vehiclePlate || data.licensePlate || "",
+                // fix/asignacion-y-logistica: hidratar equipamiento de frio.
+                hasThermalBag: Boolean(data.hasThermalBag),
+                hasColdStorage: Boolean(data.hasColdStorage),
             });
             setDriverId(data.id || null);
             setDriverStats({
@@ -645,6 +652,66 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                                             ? `Patente: ${formData.vehiclePlate}`
                                             : "Tipo de vehículo"}
                                     </p>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* fix/asignacion-y-logistica (2026-06-05): equipamiento de frio.
+                            Declarar la bolsa termica habilita ofertas de comida caliente
+                            (HOT); la conservadora de frio habilita perecederos (FRESH).
+                            En modo lectura mostramos chips; en edicion, toggles. */}
+                        <div className="pt-4 mt-1 border-t dark:border-white/10 space-y-3">
+                            <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
+                                Equipamiento
+                            </p>
+                            {editMode ? (
+                                <>
+                                    <label className="flex items-center justify-between gap-3 cursor-pointer">
+                                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                                            🔥 Bolsa termica
+                                            <span className="block text-xs text-gray-400">Para recibir pedidos de comida caliente</span>
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.hasThermalBag}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, hasThermalBag: e.target.checked })
+                                            }
+                                            className="w-5 h-5 accent-green-600 flex-shrink-0"
+                                        />
+                                    </label>
+                                    <label className="flex items-center justify-between gap-3 cursor-pointer">
+                                        <span className="text-sm text-gray-700 dark:text-gray-200">
+                                            ❄️ Conservadora de frio
+                                            <span className="block text-xs text-gray-400">Para recibir pedidos refrigerados / perecederos</span>
+                                        </span>
+                                        <input
+                                            type="checkbox"
+                                            checked={formData.hasColdStorage}
+                                            onChange={(e) =>
+                                                setFormData({ ...formData, hasColdStorage: e.target.checked })
+                                            }
+                                            className="w-5 h-5 accent-green-600 flex-shrink-0"
+                                        />
+                                    </label>
+                                </>
+                            ) : (
+                                <div className="flex flex-wrap gap-2">
+                                    {formData.hasThermalBag && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-orange-50 text-orange-700 dark:bg-orange-500/10 dark:text-orange-300">
+                                            🔥 Bolsa termica
+                                        </span>
+                                    )}
+                                    {formData.hasColdStorage && (
+                                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300">
+                                            ❄️ Conservadora de frio
+                                        </span>
+                                    )}
+                                    {!formData.hasThermalBag && !formData.hasColdStorage && (
+                                        <span className="text-xs text-gray-400 dark:text-gray-500">
+                                            Sin equipamiento de frio declarado
+                                        </span>
+                                    )}
                                 </div>
                             )}
                         </div>

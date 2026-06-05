@@ -13,58 +13,26 @@
 
 import { prisma } from "./prisma";
 import { SHIPMENT_TYPES, type ShipmentTypeCode, type ShipmentTypeDefinition } from "./shipment-types";
-import { VEHICLE_SPEEDS, type VehicleTypeEnum } from "./vehicle-type-mapping";
 import { DEFAULT_DELIVERY_RATES } from "./shipping-cost-calculator";
 
 // ─── MoovyConfig Keys ───────────────────────────────────────────────────────────
-
+//
+// fix/asignacion-y-logistica (2026-06-05): removidas las keys VEHICLE_SPEEDS,
+// ORDER_PRIORITY y ETA_CALCULATOR. Eran configs fantasma / código muerto:
+//   - vehicle_speeds_config: el runtime usa el const VEHICLE_SPEEDS, nunca esta key.
+//   - order_priority_config: el runtime usa los defaults const de order-priority.ts.
+//   - eta_calculator_config: el calculador calculateFullETA nunca corría en runtime.
+// Sus loaders/savers/types/tabs se eliminaron junto con esta limpieza.
 export const CONFIG_KEYS = {
   SHIPMENT_TYPES: "shipment_types_config",
-  VEHICLE_SPEEDS: "vehicle_speeds_config",
-  ORDER_PRIORITY: "order_priority_config",
-  ETA_CALCULATOR: "eta_calculator_config",
   SHIPPING_DEFAULTS: "shipping_cost_defaults",
 } as const;
 
 // ─── Types ──────────────────────────────────────────────────────────────────────
 
-export interface OrderPriorityConfig {
-  maxWaitPriority: number;
-  waitPriorityPerMinute: number;
-  retryPriorityPerAttempt: number;
-  scheduledPenalty: number;
-}
-
-export interface ETACalculatorConfig {
-  defaultDriverWaitTimeMin: number;
-  pickupTimeMin: number;
-  bufferPercent: number;
-  rangeMinus: number;
-  rangePlus: number;
-}
-
-export type VehicleSpeedsConfig = Record<VehicleTypeEnum, number>;
-
 export type ShippingDefaultsConfig = Record<string, { basePriceArs: number; pricePerKmArs: number }>;
 
 export type ShipmentTypesConfig = Record<ShipmentTypeCode, ShipmentTypeDefinition>;
-
-// ─── Defaults (fallbacks) ───────────────────────────────────────────────────────
-
-export const DEFAULT_ORDER_PRIORITY_CONFIG: OrderPriorityConfig = {
-  maxWaitPriority: 60,
-  waitPriorityPerMinute: 2,
-  retryPriorityPerAttempt: 15,
-  scheduledPenalty: -50,
-};
-
-export const DEFAULT_ETA_CONFIG: ETACalculatorConfig = {
-  defaultDriverWaitTimeMin: 5,
-  pickupTimeMin: 3,
-  bufferPercent: 0.15,
-  rangeMinus: 5,
-  rangePlus: 10,
-};
 
 // ─── Generic reader ─────────────────────────────────────────────────────────────
 
@@ -119,27 +87,6 @@ export async function loadShipmentTypesConfig(): Promise<ShipmentTypesConfig> {
 }
 
 /**
- * Carga las velocidades de vehículos desde MoovyConfig.
- */
-export async function loadVehicleSpeedsConfig(): Promise<VehicleSpeedsConfig> {
-  return readConfigJSON(CONFIG_KEYS.VEHICLE_SPEEDS, { ...VEHICLE_SPEEDS });
-}
-
-/**
- * Carga la configuración de prioridad de cola desde MoovyConfig.
- */
-export async function loadOrderPriorityConfig(): Promise<OrderPriorityConfig> {
-  return readConfigJSON(CONFIG_KEYS.ORDER_PRIORITY, { ...DEFAULT_ORDER_PRIORITY_CONFIG });
-}
-
-/**
- * Carga la configuración del calculador de ETA desde MoovyConfig.
- */
-export async function loadETACalculatorConfig(): Promise<ETACalculatorConfig> {
-  return readConfigJSON(CONFIG_KEYS.ETA_CALCULATOR, { ...DEFAULT_ETA_CONFIG });
-}
-
-/**
  * Carga las tarifas de envío por defecto desde MoovyConfig.
  */
 export async function loadShippingDefaultsConfig(): Promise<ShippingDefaultsConfig> {
@@ -150,18 +97,6 @@ export async function loadShippingDefaultsConfig(): Promise<ShippingDefaultsConf
 
 export async function saveShipmentTypesConfig(config: ShipmentTypesConfig): Promise<void> {
   await writeConfigJSON(CONFIG_KEYS.SHIPMENT_TYPES, config);
-}
-
-export async function saveVehicleSpeedsConfig(config: VehicleSpeedsConfig): Promise<void> {
-  await writeConfigJSON(CONFIG_KEYS.VEHICLE_SPEEDS, config);
-}
-
-export async function saveOrderPriorityConfig(config: OrderPriorityConfig): Promise<void> {
-  await writeConfigJSON(CONFIG_KEYS.ORDER_PRIORITY, config);
-}
-
-export async function saveETACalculatorConfig(config: ETACalculatorConfig): Promise<void> {
-  await writeConfigJSON(CONFIG_KEYS.ETA_CALCULATOR, config);
 }
 
 export async function saveShippingDefaultsConfig(config: ShippingDefaultsConfig): Promise<void> {

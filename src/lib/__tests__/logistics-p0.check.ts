@@ -13,7 +13,8 @@ import { getShipmentType, autoDetectShipmentType, getCompatibleVehicles, isVehic
 // calculateDriverEarnings se ELIMINARON (motor único de envío en delivery.ts).
 // Los tests de esos módulos se removieron de este archivo.
 import { calculateOrderPriority, prioritizeOrders, isOrderExceedingSLA } from "../order-priority";
-import { calculateFullETA, calculatePreCheckoutETA } from "../eta-calculator";
+// fix/asignacion-y-logistica (2026-06-05): eta-calculator eliminado (código muerto).
+// Las pruebas de ETA de este check fueron removidas junto con el módulo.
 
 let passed = 0;
 let failed = 0;
@@ -201,80 +202,9 @@ const slaStd = isOrderExceedingSLA({
 assert(slaStd.exceeding === false, "STANDARD de 60min NO excede SLA de 480min");
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// 5. ETA Calculator
+// 5. ETA Calculator — ELIMINADO (fix/asignacion-y-logistica): el módulo
+//    eta-calculator era código muerto y se retiró. No hay pruebas que correr.
 // ═══════════════════════════════════════════════════════════════════════════════
-
-section("ETA Calculator — Cálculo completo");
-
-const etaHot = calculateFullETA({
-  distanceDriverToMerchantKm: 1.5,
-  distanceMerchantToCustomerKm: 3.0,
-  vehicleType: "MOTO",
-  merchantPrepTimeMin: 15,
-  shipmentTypeCode: "HOT",
-  hasDriverAssigned: true,
-});
-assert(etaHot.totalMinutes > 0, `ETA HOT calculado: ${etaHot.totalMinutes} min`);
-assert(etaHot.slaMinutes === 45, "SLA HOT: 45 min");
-assert(etaHot.displayLabel.includes("min"), `Display label: "${etaHot.displayLabel}"`);
-assert(etaHot.breakdown.prepTime === 15, "Prep time: 15 min");
-assert(etaHot.breakdown.driverWaitTime === 0, "Sin espera de driver (ya asignado)");
-
-section("ETA Calculator — Sin driver asignado");
-
-const etaNoDriver = calculateFullETA({
-  distanceDriverToMerchantKm: 0,
-  distanceMerchantToCustomerKm: 3.0,
-  vehicleType: "MOTO",
-  merchantPrepTimeMin: 15,
-  shipmentTypeCode: "STANDARD",
-  hasDriverAssigned: false,
-});
-assert(etaNoDriver.breakdown.driverWaitTime === 5, "Driver wait: 5 min promedio");
-assert(etaNoDriver.breakdown.driverToMerchant === 0, "Driver to merchant: 0 (no asignado)");
-
-section("ETA Calculator — SLA excedido");
-
-const etaFarHot = calculateFullETA({
-  distanceDriverToMerchantKm: 10,
-  distanceMerchantToCustomerKm: 15,
-  vehicleType: "BIKE",
-  merchantPrepTimeMin: 20,
-  shipmentTypeCode: "HOT",
-  hasDriverAssigned: true,
-});
-assert(etaFarHot.exceedsSLA === true, `HOT lejano (${etaFarHot.totalMinutes}min) excede SLA de 45min`);
-assert(etaFarHot.slaWarning !== undefined, "Warning presente cuando excede SLA");
-
-section("ETA Calculator — Pre-checkout");
-
-const etaPreCheckout = calculatePreCheckoutETA({
-  distanceMerchantToCustomerKm: 3.0,
-  merchantPrepTimeMin: 15,
-  shipmentTypeCode: "HOT",
-});
-assert(etaPreCheckout.breakdown.driverWaitTime === 5, "Pre-checkout: incluye wait time");
-assert(etaPreCheckout.totalMinutes > 0, `Pre-checkout ETA: ${etaPreCheckout.totalMinutes} min`);
-
-section("ETA Calculator — Normalización de vehicleType");
-
-const etaBici = calculateFullETA({
-  distanceDriverToMerchantKm: 2,
-  distanceMerchantToCustomerKm: 3,
-  vehicleType: "bicicleta",
-  merchantPrepTimeMin: 10,
-  shipmentTypeCode: "STANDARD",
-  hasDriverAssigned: true,
-});
-const etaBike = calculateFullETA({
-  distanceDriverToMerchantKm: 2,
-  distanceMerchantToCustomerKm: 3,
-  vehicleType: "BIKE",
-  merchantPrepTimeMin: 10,
-  shipmentTypeCode: "STANDARD",
-  hasDriverAssigned: true,
-});
-assert(etaBici.totalMinutes === etaBike.totalMinutes, `"bicicleta" y "BIKE" dan mismo ETA: ${etaBici.totalMinutes}min`);
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // Resultado

@@ -570,6 +570,8 @@ model SubOrder {
   // ISSUE-013 — push "tu repartidor esta cerca" por SubOrder (multi-vendor: cada SubOrder tiene su driver)
   nearDestinationNotified Boolean @default(false)
   deliveryAttempts      DeliveryAttempt[]
+  // fix/asignacion-y-logistica (2026-06-05): trail de asignacion por SubOrder.
+  assignmentLogs        AssignmentLog[]
   // ─── State machine paralela merchant + driver ────────────────────────────
   // Rama: fix/state-machine-paralela-merchant-driver
   //
@@ -917,6 +919,14 @@ model Driver {
   bankCbu                String?
   bankAlias              String?
   bankAccountUpdatedAt   DateTime?
+  // fix/asignacion-y-logistica (2026-06-05): equipamiento declarado por el driver.
+  // Cablea el filtro de frio de SHIPMENT_TYPES (driverMeetsEquipmentRequirements):
+  //   - hasThermalBag -> habilita envios HOT (comida caliente, requiresThermalBag)
+  //   - hasColdStorage -> habilita envios FRESH (perecedero/refrigerado, requiresColdChain)
+  // Default false: un driver nuevo NO recibe ofertas de frio hasta declararlo en su
+  // perfil. findNextEligibleDriver filtra por estos flags cuando el shipmentType lo pide.
+  hasThermalBag          Boolean                   @default(false)
+  hasColdStorage         Boolean                   @default(false)
   user               User                      @relation(fields: [userId], references: [id], onDelete: Cascade)
   orders              Order[]
   subOrders           SubOrder[]
@@ -1753,6 +1763,12 @@ model CronRunLog {
 model AssignmentLog {
   id            String                @id @default(cuid())
   orderId       String
+  // fix/asignacion-y-logistica (2026-06-05): trail de asignacion multi-vendor.
+  // Nullable porque el flujo single-vendor (Order) sigue logueando solo orderId.
+  // En multi-vendor, cada SubOrder tiene su propio driver/PIN/ciclo, asi que el
+  // log apunta al SubOrder especifico (subOrderId set) ademas del orderId padre
+  // -- asi se puede reconstruir que driver se ofrecio a que sub-orden.
+  subOrderId    String?
   driverId      String
   attemptNumber Int                   @default(1)
   notifiedAt    DateTime              @default(now())
@@ -1765,10 +1781,12 @@ model AssignmentLog {
   // del motivo + comentario libre opcional concatenado para audit AAIP.
   cancelReason  String?
 
-  order  Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  driver Driver @relation(fields: [driverId], references: [id], onDelete: Cascade)
+  order    Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  subOrder SubOrder? @relation(fields: [subOrderId], references: [id], onDelete: Cascade)
+  driver   Driver    @relation(fields: [driverId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
+  @@index([subOrderId])
   @@index([driverId])
   @@index([notifiedAt])
 }

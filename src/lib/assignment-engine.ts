@@ -12,7 +12,7 @@ import { calculateDistance, estimateTravelTime } from "./geo";
 import { sendNewOfferNotification, sendPushToUser } from "./push";
 import { notifyBuyer, notifyMerchantOrderUnassignable } from "./notifications";
 import { normalizeVehicleType } from "./vehicle-type-mapping";
-import { getCompatibleVehicles, getShipmentType, autoDetectShipmentType, type ShipmentTypeCode } from "./shipment-types";
+import { getCompatibleVehicles, getShipmentType, autoDetectShipmentType, driverMeetsEquipmentRequirements, type ShipmentTypeCode } from "./shipment-types";
 import { prioritizeOrders, type OrderForPriority } from "./order-priority";
 import { deliveryLogger } from "./logger";
 import { sendDriverAssignedEmail } from "./email-legal-ux";
@@ -224,13 +224,31 @@ export async function findNextEligibleDriver(
     merchantLat: number,
     merchantLng: number,
     requiredVehicles: string[],
-    excludeDriverIds: string[]
+    excludeDriverIds: string[],
+    // fix/asignacion-y-logistica (2026-06-05): tipo de envio para filtrar por
+    // equipamiento de frio. Si el shipmentType requiere bolsa termica (HOT) o
+    // cadena de frio (FRESH), solo se ofertan drivers con el flag correspondiente
+    // en hasThermalBag / hasColdStorage. Opcional para no romper callers viejos:
+    // sin el, no se aplica filtro de equipamiento (comportamiento STANDARD).
+    shipmentTypeCode?: ShipmentTypeCode | string
 ): Promise<DriverWithDistance | null> {
     const ratingRadiusStr = await getConfig("assignment_rating_radius_meters", "300");
     const ratingRadius = parseInt(ratingRadiusStr, 10) || 300;
 
-    const searchRadiusStr = await getConfig("driver_search_radius_meters").catch(() => "50000");
-    const searchRadius = parseInt(searchRadiusStr, 10) || 50000;
+    // fix/asignacion-y-logistica (2026-06-05): default bajado 50km -> 15km (Ushuaia
+    // tiene ~15km de extremo a extremo; 50km traia drivers irrealmente lejanos).
+    // Sigue siendo editable desde /ops/configuracion-logistica (MoovyConfig key
+    // driver_search_radius_meters) -- el default solo aplica si la key no existe.
+    const searchRadiusStr = await getConfig("driver_search_radius_meters").catch(() => "15000");
+    const searchRadius = parseInt(searchRadiusStr, 10) || 15000;
+
+    // fix/asignacion-y-logistica: derivar que equipamiento de frio exige el envio.
+    // Reactiva driverMeetsEquipmentRequirements (antes codigo muerto). En la query
+    // PostGIS aplicamos los flags como AND directos (mas eficiente que traer todos
+    // y filtrar en JS); en el fallback Haversine usamos el helper.
+    const shipment = getShipmentType(shipmentTypeCode);
+    const requireThermalBag = shipment.requiresThermalBag;
+    const requireColdStorage = shipment.requiresColdChain;
 
     // Ensure excludeDriverIds is never empty for SQL ANY() — use a dummy value
     const excludeIds = excludeDriverIds.length > 0 ? excludeDriverIds : ["none"];
@@ -272,6 +290,11 @@ export async function findNextEligibleDriver(
                 AND d.ubicacion IS NOT NULL
                 AND d."vehicleType" = ANY(${allVehicleVariants})
                 AND NOT (d.id = ANY(${excludeIds}))
+                -- fix/asignacion-y-logistica: filtro de equipamiento de frio.
+                -- Si el envio NO requiere el equipo (${requireThermalBag}=false),
+                -- el OR deja pasar a todos. Si lo requiere, solo drivers con el flag.
+                AND (${requireThermalBag} = false OR d."hasThermalBag" = true)
+                AND (${requireColdStorage} = false OR d."hasColdStorage" = true)
                 AND ST_DWithin(
                     d.ubicacion,
                     ST_SetSRID(ST_MakePoint(${merchantLng}, ${merchantLat}), 4326),
@@ -319,12 +342,25 @@ export async function findNextEligibleDriver(
                 longitude: { not: null },
                 vehicleType: { in: allVehicleVariants },
                 id: { notIn: excludeDriverIds },
+                // fix/asignacion-y-logistica: mismo filtro de equipamiento de frio que
+                // la query PostGIS, expresado como condiciones Prisma. Si el envio no
+                // requiere el equipo, NO agregamos la condicion (todos pasan).
+                ...(requireThermalBag ? { hasThermalBag: true } : {}),
+                ...(requireColdStorage ? { hasColdStorage: true } : {}),
             },
         });
 
         const ratingRadiusKm = ratingRadius / 1000;
 
         const withDistance = drivers
+            // Defensa en profundidad: re-validamos con el helper canonico (antes
+            // muerto) por si el where Prisma quedara desincronizado del SHIPMENT_TYPE.
+            .filter((driver) =>
+                driverMeetsEquipmentRequirements(shipment.code, {
+                    hasThermalBag: driver.hasThermalBag,
+                    hasColdStorage: driver.hasColdStorage,
+                })
+            )
             .map((driver) => ({
                 id: driver.id,
                 userId: driver.userId,
@@ -422,11 +458,14 @@ export async function startAssignmentCycle(
         });
 
         // Find next eligible driver
+        // fix/asignacion-y-logistica: pasamos shipmentTypeCode para filtrar por
+        // equipamiento de frio (HOT->bolsa termica, FRESH->cadena de frio).
         const driver = await findNextEligibleDriver(
             order.merchant.latitude,
             order.merchant.longitude,
             orderCategory.allowedVehicles,
-            []
+            [],
+            orderCategory.shipmentTypeCode
         );
 
         if (!driver) {
@@ -712,7 +751,9 @@ export async function startSubOrderAssignmentCycle(
             merchantLat,
             merchantLng,
             vehiclesToUse,
-            attemptedIds
+            attemptedIds,
+            // fix/asignacion-y-logistica: equipamiento de frio para la SubOrder.
+            subOrderCategory.shipmentTypeCode
         );
 
         if (!driver) {
@@ -756,6 +797,38 @@ export async function startSubOrderAssignmentCycle(
                 },
             });
         }
+
+        // --- fix/asignacion-y-logistica: trail de asignacion multi-vendor ----------
+        // Antes el ciclo de SubOrder no dejaba AssignmentLog (solo el flujo
+        // single-vendor lo hacia), asi que multi-vendor era una caja negra para
+        // trazabilidad. Logueamos la OFERTA (notifiedAt set, respondedAt null =
+        // oferta pendiente de respuesta) con subOrderId + orderId del padre.
+        // Fire-and-forget: si falla el log NO rompe la asignacion (la trazabilidad
+        // no es critica para que el pedido avance). Creamos un log por cada SubOrder
+        // ofertada (la original + las batcheadas) para reflejar el fan-out real.
+        //
+        // NOTA (follow-up): el accept/reject/timeout especifico de SubOrders NO
+        // actualiza este log a ACCEPTED/REJECTED/TIMEOUT todavia -- no existe un
+        // endpoint dedicado de accept/reject de SubOrder (el accept multi-vendor
+        // pasa por otro camino). Queda como mejora: hoy el trail registra la oferta,
+        // no el desenlace. Ver reporte de la rama.
+        const offeredSubOrderIds = [subOrderId, ...batchedSubOrderIds];
+        Promise.all(
+            offeredSubOrderIds.map((soId) =>
+                prisma.assignmentLog.create({
+                    data: {
+                        orderId: subOrder.order.id,
+                        subOrderId: soId,
+                        driverId: driver.id,
+                        attemptNumber: subOrder.assignmentAttempts + 1,
+                        notifiedAt: new Date(),
+                        distanceKm: Math.round(driver.distance * 100) / 100,
+                    },
+                })
+            )
+        ).catch((err) =>
+            deliveryLogger.error({ error: err, subOrderId }, "AssignmentLog (SubOrder offer) error")
+        );
 
         // Calculate delivery details for the offer
         const distanceToMerchant = driver.distance;
@@ -984,7 +1057,9 @@ export async function processExpiredAssignments(): Promise<number> {
             assignment.order.merchant.latitude,
             assignment.order.merchant.longitude,
             orderCategory.allowedVehicles,
-            excludeDriverIds
+            excludeDriverIds,
+            // fix/asignacion-y-logistica: mantener filtro de frio en el cascade.
+            orderCategory.shipmentTypeCode
         );
 
         if (!nextDriver) {
@@ -1079,6 +1154,52 @@ export async function driverAcceptOrder(
     orderId: string
 ): Promise<{ success: boolean; error?: string }> {
     try {
+        // --- fix/asignacion-y-logistica: re-validacion de equipamiento al aceptar ---
+        // La oferta automatica ya filtra por equipamiento (findNextEligibleDriver),
+        // pero re-validamos en el accept como defensa: un driver podria haber apagado
+        // un flag entre la oferta y el accept, o el accept podria llegar por un camino
+        // alternativo. Si el envio requiere frio y el driver no lo tiene, rechazamos.
+        const [acceptOrder, acceptDriver] = await Promise.all([
+            prisma.order.findUnique({
+                where: { id: orderId },
+                select: {
+                    merchant: { select: { category: true } },
+                    items: { select: { quantity: true, name: true, packageCategoryName: true } },
+                },
+            }),
+            prisma.driver.findUnique({
+                where: { id: driverId },
+                select: { hasThermalBag: true, hasColdStorage: true },
+            }),
+        ]);
+
+        if (acceptOrder && acceptDriver) {
+            const acceptCategory = await calculateOrderCategory(
+                acceptOrder.items.map((item) => ({
+                    packageCategory: item.packageCategoryName || null,
+                    quantity: item.quantity,
+                    name: item.name || undefined,
+                })),
+                { merchantCategoryName: acceptOrder.merchant?.category ?? undefined }
+            );
+
+            if (
+                !driverMeetsEquipmentRequirements(acceptCategory.shipmentTypeCode, {
+                    hasThermalBag: acceptDriver.hasThermalBag,
+                    hasColdStorage: acceptDriver.hasColdStorage,
+                })
+            ) {
+                deliveryLogger.warn(
+                    { driverId, orderId, shipmentType: acceptCategory.shipmentTypeCode },
+                    "Accept bloqueado: driver sin equipamiento de frio requerido"
+                );
+                return {
+                    success: false,
+                    error: "Este pedido requiere equipamiento de frio que no tenes declarado en tu perfil.",
+                };
+            }
+        }
+
         const result = await prisma.$transaction(
             async (tx) => {
                 const order = await tx.order.findUnique({
@@ -1344,7 +1465,9 @@ export async function driverRejectOrder(
             pending.order.merchant.latitude,
             pending.order.merchant.longitude,
             orderCategory.allowedVehicles,
-            excludeDriverIds
+            excludeDriverIds,
+            // fix/asignacion-y-logistica: filtro de frio en el reject-cascade.
+            orderCategory.shipmentTypeCode
         );
 
         if (!nextDriver) {

@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-05 (rama `fix/asignacion-y-logistica`)
+
+fix(asignacion): equipamiento de frio cableado + radio de busqueda + trail multi-vendor + limpieza de codigo muerto. (1) Driver.hasThermalBag/hasColdStorage + UI en el perfil del repartidor + filtro real en la asignacion: pedidos HOT/FRESH solo se ofrecen a repartidores con el equipo (reactiva driverMeetsEquipmentRequirements que estaba muerto). (2) Radio de busqueda de drivers 50km->15km, editable desde el panel de logistica. (3) AssignmentLog.subOrderId: los SubOrders multi-vendor registran su oferta de asignacion (desenlace accept/reject deferido, flaggeado). (4) Eliminado codigo muerto: rutas claim/pending (queda solo asignacion automatica), calculateFullETA + config eta-calculator, config vehicle-speeds y order-priority fantasmas (se mantienen los const VEHICLE_SPEEDS y prioritizeOrders que si se usan). Schema: Driver.hasThermalBag/hasColdStorage, AssignmentLog.subOrderId (requiere prisma db push + generate + re-seed). Panel logistica de 8 a 5 tabs.
+
+**Archivos:** prisma/schema.prisma, src/app/api/admin/drivers/[id]/reject/route.ts.clean, src/app/api/delivery/availability/route.ts, src/app/api/driver/orders/[id]/claim/route.ts, src/app/api/driver/orders/pending/route.ts, src/app/api/driver/profile/route.ts, src/app/api/ops/config/eta-calculator/route.ts, src/app/api/ops/config/priority-queue/route.ts (+9 mas)
+
 ## 2026-06-04 (rama `fix/biblia-motor-envio-y-comisiones`)
 
 fix(biblia): motor de envio unico config-driven (modelo B: costo_km = combustible x consumo_por_vehiculo x mantenimiento) + surge (multiplicador de demanda manual, espejo del clima) + comisiones (repartidor y merchant default) leidas de la Biblia. Preview = cobro (misma funcion computeDeliveryFee en checkout y creacion de pedido). Borrado el motor por-categoria muerto (calculateShippingCost/DEFAULT_DELIVERY_RATES), validateDeliveryFee y calculateDeliveryFeeWithConfig. Rescata los campos combustible/consumo/mantenimiento de la Biblia que eran fantasmas. Schema: DeliveryRate.consumptionPerKm + StoreSettings.demandMultipliersJson/activeDemandCondition (requiere prisma db push + re-seed de DeliveryRate). Al lanzamiento los numeros dan identicos a los canonicos de CLAUDE.md.

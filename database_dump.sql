@@ -221,7 +221,8 @@ CREATE TABLE public."AssignmentLog" (
     "respondedAt" timestamp(3) without time zone,
     outcome public."AssignmentOutcomeEnum" DEFAULT 'ACCEPTED'::public."AssignmentOutcomeEnum" NOT NULL,
     "distanceKm" double precision,
-    "cancelReason" text
+    "cancelReason" text,
+    "subOrderId" text
 );
 
 
@@ -609,7 +610,9 @@ CREATE TABLE public."Driver" (
     "cancelledByUserAt" timestamp(3) without time zone,
     "cancelledByUserReason" text,
     "pausedByUserAt" timestamp(3) without time zone,
-    "pausedByUserReason" text
+    "pausedByUserReason" text,
+    "hasColdStorage" boolean DEFAULT false NOT NULL,
+    "hasThermalBag" boolean DEFAULT false NOT NULL
 );
 
 
@@ -2025,7 +2028,7 @@ COPY public."AdminNote" (id, "userId", "adminId", content, pinned, "createdAt", 
 -- Data for Name: AssignmentLog; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."AssignmentLog" (id, "orderId", "driverId", "attemptNumber", "notifiedAt", "respondedAt", outcome, "distanceKm", "cancelReason") FROM stdin;
+COPY public."AssignmentLog" (id, "orderId", "driverId", "attemptNumber", "notifiedAt", "respondedAt", outcome, "distanceKm", "cancelReason", "subOrderId") FROM stdin;
 \.
 
 
@@ -2215,7 +2218,7 @@ zone_1778019117199_6b2b2x	USHUAIA	#ef4444	1	0	0103000020E61000000100000008000000
 -- Data for Name: Driver; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel", "vehicleYear", "vehicleColor", "licensePlate", cuit, "licenciaUrl", "seguroUrl", "vtvUrl", "dniFrenteUrl", "dniDorsoUrl", "acceptedTermsAt", "isActive", "isOnline", "totalDeliveries", rating, "createdAt", "updatedAt", "availabilityStatus", "lastLocationAt", latitude, longitude, "approvalStatus", "approvedAt", "rejectionReason", ubicacion, "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "fraudScore", "lastFraudCheckAt", "acceptedPrivacyAt", "cedulaVerdeApprovedAt", "cedulaVerdeExpiresAt", "cedulaVerdeNotifiedStage", "cedulaVerdeRejectionReason", "cedulaVerdeStatus", "cedulaVerdeUrl", "constanciaCuitApprovedAt", "constanciaCuitRejectionReason", "constanciaCuitStatus", "constanciaCuitUrl", "cuitApprovedAt", "cuitRejectionReason", "cuitStatus", "dniDorsoApprovedAt", "dniDorsoRejectionReason", "dniDorsoStatus", "dniFrenteApprovedAt", "dniFrenteRejectionReason", "dniFrenteStatus", "licenciaApprovedAt", "licenciaExpiresAt", "licenciaNotifiedStage", "licenciaRejectionReason", "licenciaStatus", "seguroApprovedAt", "seguroExpiresAt", "seguroNotifiedStage", "seguroRejectionReason", "seguroStatus", "vtvApprovedAt", "vtvExpiresAt", "vtvNotifiedStage", "vtvRejectionReason", "vtvStatus", "cedulaVerdeApprovalNote", "cedulaVerdeApprovalSource", "constanciaCuitApprovalNote", "constanciaCuitApprovalSource", "cuitApprovalNote", "cuitApprovalSource", "dniDorsoApprovalNote", "dniDorsoApprovalSource", "dniFrenteApprovalNote", "dniFrenteApprovalSource", "licenciaApprovalNote", "licenciaApprovalSource", "seguroApprovalNote", "seguroApprovalSource", "vtvApprovalNote", "vtvApprovalSource", "bankAccountUpdatedAt", "bankAlias", "bankCbu", "applicationStatus", "cancelledByUserAt", "cancelledByUserReason", "pausedByUserAt", "pausedByUserReason") FROM stdin;
+COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel", "vehicleYear", "vehicleColor", "licensePlate", cuit, "licenciaUrl", "seguroUrl", "vtvUrl", "dniFrenteUrl", "dniDorsoUrl", "acceptedTermsAt", "isActive", "isOnline", "totalDeliveries", rating, "createdAt", "updatedAt", "availabilityStatus", "lastLocationAt", latitude, longitude, "approvalStatus", "approvedAt", "rejectionReason", ubicacion, "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "fraudScore", "lastFraudCheckAt", "acceptedPrivacyAt", "cedulaVerdeApprovedAt", "cedulaVerdeExpiresAt", "cedulaVerdeNotifiedStage", "cedulaVerdeRejectionReason", "cedulaVerdeStatus", "cedulaVerdeUrl", "constanciaCuitApprovedAt", "constanciaCuitRejectionReason", "constanciaCuitStatus", "constanciaCuitUrl", "cuitApprovedAt", "cuitRejectionReason", "cuitStatus", "dniDorsoApprovedAt", "dniDorsoRejectionReason", "dniDorsoStatus", "dniFrenteApprovedAt", "dniFrenteRejectionReason", "dniFrenteStatus", "licenciaApprovedAt", "licenciaExpiresAt", "licenciaNotifiedStage", "licenciaRejectionReason", "licenciaStatus", "seguroApprovedAt", "seguroExpiresAt", "seguroNotifiedStage", "seguroRejectionReason", "seguroStatus", "vtvApprovedAt", "vtvExpiresAt", "vtvNotifiedStage", "vtvRejectionReason", "vtvStatus", "cedulaVerdeApprovalNote", "cedulaVerdeApprovalSource", "constanciaCuitApprovalNote", "constanciaCuitApprovalSource", "cuitApprovalNote", "cuitApprovalSource", "dniDorsoApprovalNote", "dniDorsoApprovalSource", "dniFrenteApprovalNote", "dniFrenteApprovalSource", "licenciaApprovalNote", "licenciaApprovalSource", "seguroApprovalNote", "seguroApprovalSource", "vtvApprovalNote", "vtvApprovalSource", "bankAccountUpdatedAt", "bankAlias", "bankCbu", "applicationStatus", "cancelledByUserAt", "cancelledByUserReason", "pausedByUserAt", "pausedByUserReason", "hasColdStorage", "hasThermalBag") FROM stdin;
 \.
 
 
@@ -3593,6 +3596,13 @@ CREATE INDEX "AssignmentLog_orderId_idx" ON public."AssignmentLog" USING btree (
 
 
 --
+-- Name: AssignmentLog_subOrderId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "AssignmentLog_subOrderId_idx" ON public."AssignmentLog" USING btree ("subOrderId");
+
+
+--
 -- Name: AuditLog_createdAt_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -4898,6 +4908,14 @@ ALTER TABLE ONLY public."AssignmentLog"
 
 ALTER TABLE ONLY public."AssignmentLog"
     ADD CONSTRAINT "AssignmentLog_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES public."Order"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: AssignmentLog AssignmentLog_subOrderId_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."AssignmentLog"
+    ADD CONSTRAINT "AssignmentLog_subOrderId_fkey" FOREIGN KEY ("subOrderId") REFERENCES public."SubOrder"(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 
 --
