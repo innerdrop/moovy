@@ -15,6 +15,8 @@
  */
 
 import { PrismaClient } from "@prisma/client";
+import { readFileSync, readdirSync, statSync } from "fs";
+import { join } from "path";
 
 const prisma = new PrismaClient();
 
@@ -394,6 +396,84 @@ async function testNoDuplicateMoovyKeys() {
   }
 }
 
+// ─── Test 10: Guardrail anti-fantasma — campos editables conectados al runtime ─
+// Rama chore/biblia-limpieza-y-guardrail: detecta "config fantasma" — campos que se
+// editan en el panel pero ningún código de runtime lee. Si un campo crítico de la
+// Biblia no aparece en src/lib o src/app/api (fuera del propio ops-config y los
+// paneles), está desconectado y este test FALLA. Así nunca más editás algo que el
+// sistema ignora sin que el deploy lo detecte.
+
+/** Junta el contenido de todos los .ts/.tsx de un dir (recursivo), excluyendo paths. */
+function collectSources(dir: string, exclude: string[]): string {
+  let out = "";
+  let names: string[];
+  try {
+    names = readdirSync(dir); // string[] — evita el tipo Dirent<Buffer> de la config strict
+  } catch {
+    return "";
+  }
+  for (const name of names) {
+    const full = join(dir, name);
+    const norm = full.replace(/\\/g, "/");
+    if (exclude.some((e) => norm.includes(e))) continue;
+    let isDir = false;
+    try {
+      isDir = statSync(full).isDirectory();
+    } catch {
+      continue;
+    }
+    if (isDir) {
+      if (name === "node_modules" || name === ".next") continue;
+      out += collectSources(full, exclude);
+    } else if (/\.(ts|tsx)$/.test(name)) {
+      try {
+        out += readFileSync(full, "utf8");
+      } catch {
+        /* ignore unreadable */
+      }
+    }
+  }
+  return out;
+}
+
+async function testConfigConnectivity() {
+  try {
+    // Excluimos: la definición de la config (ops-config.ts), los endpoints que la
+    // ESCRIBEN (api/ops), y los paneles de UI. Solo nos interesa si el RUNTIME la lee.
+    const exclude = ["lib/ops-config.ts", "app/api/ops/", "app/ops/"];
+    const runtime =
+      collectSources("src/lib", exclude) + collectSources("src/app/api", exclude);
+
+    // Campos editables que DEBEN estar conectados (los que fueron fantasmas y ya
+    // conectamos en las Ramas 1-2). Si alguno deja de leerse, este test lo atrapa.
+    const guarded = [
+      "fuelPricePerLiter",
+      "maintenanceFactor",
+      "operationalCostPercent",
+      "riderCommissionPercent",
+      "defaultMerchantCommission",
+      "defaultSellerCommission",
+      "freeDeliveryMinimum",
+      "activeDemandCondition",
+    ];
+
+    const ghosts = guarded.filter((f) => !runtime.includes(f));
+    if (ghosts.length > 0) {
+      fail(
+        "Anti-fantasma (config conectada)",
+        `Campos editables que el runtime NO lee (fantasmas): ${ghosts.join(", ")}.\n  Conectalos al runtime o sacá el campo del panel — no puede haber config que mienta.`
+      );
+      return;
+    }
+    pass(
+      "Anti-fantasma (config conectada)",
+      `${guarded.length} campos críticos verificados conectados al runtime`
+    );
+  } catch (e) {
+    fail("Anti-fantasma (config conectada)", (e as Error).message);
+  }
+}
+
 // ─── Run all tests ──────────────────────────────────────────────────────────
 
 async function main() {
@@ -411,6 +491,7 @@ async function main() {
   await testAuditLog();
   await testFinancialFormula();
   await testNoDuplicateMoovyKeys();
+  await testConfigConnectivity();
 
   // Print results
   console.log("\n── Resultados ─────────────────────────────────────────────\n");

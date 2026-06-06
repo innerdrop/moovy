@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-06 (rama `chore/biblia-limpieza-y-guardrail`)
+
+chore(ops): guardrail anti-fantasma en validate-ops-config (test 10). Recorre el runtime (src/lib + src/app/api, excluyendo ops-config y los paneles) y falla si un campo editable critico de la Biblia (combustible, mantenimiento, operativo, comision repartidor, comision merchant/seller default, envio gratis, demanda/surge) no esta leido por ningun codigo de runtime. Asi el deploy detecta config fantasma antes de produccion. La limpieza de fantasmas restante (efectivo fuera del checkout, entrega programada dormida, reviewBonus, tarifa base huerfana) queda para una rama siguiente.
+
+**Archivos:** scripts/validate-ops-config.ts
+
 ## 2026-06-05 (rama `fix/asignacion-y-logistica`)
 
 fix(asignacion): equipamiento de frio cableado + radio de busqueda + trail multi-vendor + limpieza de codigo muerto. (1) Driver.hasThermalBag/hasColdStorage + UI en el perfil del repartidor + filtro real en la asignacion: pedidos HOT/FRESH solo se ofrecen a repartidores con el equipo (reactiva driverMeetsEquipmentRequirements que estaba muerto). (2) Radio de busqueda de drivers 50km->15km, editable desde el panel de logistica. (3) AssignmentLog.subOrderId: los SubOrders multi-vendor registran su oferta de asignacion (desenlace accept/reject deferido, flaggeado). (4) Eliminado codigo muerto: rutas claim/pending (queda solo asignacion automatica), calculateFullETA + config eta-calculator, config vehicle-speeds y order-priority fantasmas (se mantienen los const VEHICLE_SPEEDS y prioritizeOrders que si se usan). Schema: Driver.hasThermalBag/hasColdStorage, AssignmentLog.subOrderId (requiere prisma db push + generate + re-seed). Panel logistica de 8 a 5 tabs.
