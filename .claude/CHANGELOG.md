@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-06 (rama `chore/biblia-limpieza-fantasmas`)
+
+chore(biblia): limpieza de config fantasma. (1) Efectivo fuera del checkout (electronico-only) + seccion Protocolo de Efectivo fuera de la Biblia + ops-config (cashProtocol). (2) Entrega programada: seccion fuera de la Biblia; el codigo se preserva dormido tras el flag buyer.scheduled-delivery. (3) MOOVER: reviewBonus eliminado del panel/config/points + tierWindowDays CONECTADO en getUserLevel (la columna ya existia, sin cambio de schema). (4) Tarifa base (baseDeliveryFee) huerfana fuera de la Biblia (la columna queda, el motor de envio usa el minimo por vehiculo de DeliveryRate). Sin cambios de schema. Residuales dormidos no-bloqueantes: rama cash en orders/route.ts (inalcanzable) y reviewBonus en moover/page.
+
+**Archivos:** src/app/(store)/checkout/page.tsx, src/app/api/admin/ops-config/route.ts, src/app/api/admin/points-config/route.ts, src/app/api/admin/points/config/route.ts, src/app/ops/(protected)/config-biblia/BibliaConfigClient.tsx, src/lib/ops-config.ts, src/lib/points.ts
+
 ## 2026-06-06 (rama `chore/biblia-limpieza-y-guardrail`)
 
 chore(ops): guardrail anti-fantasma en validate-ops-config (test 10). Recorre el runtime (src/lib + src/app/api, excluyendo ops-config y los paneles) y falla si un campo editable critico de la Biblia (combustible, mantenimiento, operativo, comision repartidor, comision merchant/seller default, envio gratis, demanda/surge) no esta leido por ningun codigo de runtime. Asi el deploy detecta config fantasma antes de produccion. La limpieza de fantasmas restante (efectivo fuera del checkout, entrega programada dormida, reviewBonus, tarifa base huerfana) queda para una rama siguiente.

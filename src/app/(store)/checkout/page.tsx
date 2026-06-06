@@ -86,24 +86,16 @@ export default function CheckoutPage() {
     // disponibles para el pre-banner del checkout. 0 → rojo, 1 → amarillo, 2+ → ok.
     const [availableDrivers, setAvailableDrivers] = useState<number>(2); // default optimista mientras carga
     const [estimatedWaitMinutes, setEstimatedWaitMinutes] = useState<number | null>(null);
-    // feat/feature-flags-ops (2026-05-13): si buyer.cash-payment esta OFF,
-    // ocultamos la opcion efectivo y forzamos mercadopago como default.
-    // Si buyer.scheduled-delivery esta OFF, ocultamos la opcion de "programado"
-    // y forzamos IMMEDIATE.
-    const { flags: featureFlags } = useFeatureFlags(["buyer.cash-payment", "buyer.scheduled-delivery"]);
-    const allowCashPayment = featureFlags["buyer.cash-payment"];
+    // chore/biblia-limpieza-fantasmas (2026-06-06): decisión CEO — Moovy lanza
+    // SOLO con pago electrónico (MercadoPago: tarjeta/débito/transferencia/wallet).
+    // El efectivo queda fuera por completo, así que ya no leemos buyer.cash-payment
+    // ni exponemos la opción "cash". Conservamos buyer.scheduled-delivery (OFF) para
+    // gatear la entrega programada (dormida, se preserva el código para el futuro).
+    const { flags: featureFlags } = useFeatureFlags(["buyer.scheduled-delivery"]);
     const allowScheduledDelivery = featureFlags["buyer.scheduled-delivery"];
 
-    const [paymentMethod, setPaymentMethod] = useState<"cash" | "mercadopago">("cash");
-
-    // Si el flag cambia mientras el user esta en el checkout y tenia "cash"
-    // seleccionado, lo movemos a mercadopago automaticamente para evitar que
-    // submita con un metodo inactivo.
-    useEffect(() => {
-        if (!allowCashPayment && paymentMethod === "cash") {
-            setPaymentMethod("mercadopago");
-        }
-    }, [allowCashPayment, paymentMethod]);
+    // Pago electrónico únicamente. paymentMethod queda fijo en "mercadopago".
+    const [paymentMethod, setPaymentMethod] = useState<"mercadopago">("mercadopago");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [deliveryType, setDeliveryType] = useState<"IMMEDIATE" | "SCHEDULED">("IMMEDIATE");
     const [scheduledSlotStart, setScheduledSlotStart] = useState<string | undefined>();
@@ -1215,25 +1207,8 @@ export default function CheckoutPage() {
                                     </div>
 
                                     <div className="space-y-3 lg:space-y-4">
-                                        {/* feat/feature-flags-ops: efectivo solo si flag ON */}
-                                        {allowCashPayment && (
-                                            <label className={`flex items-center p-4 lg:p-5 border-2 rounded-lg lg:rounded-xl cursor-pointer transition ${paymentMethod === "cash" ? "border-moovy bg-moovy-light" : "border-gray-200"
-                                                }`}>
-                                                <input
-                                                    type="radio"
-                                                    name="payment"
-                                                    value="cash"
-                                                    checked={paymentMethod === "cash"}
-                                                    onChange={() => setPaymentMethod("cash")}
-                                                    className="sr-only"
-                                                />
-                                                <div className="flex-1">
-                                                    <span className="font-semibold lg:text-lg">💵 Efectivo</span>
-                                                    <p className="text-sm lg:text-base text-gray-600">Pagás al recibir el pedido</p>
-                                                </div>
-                                            </label>
-                                        )}
-
+                                        {/* chore/biblia-limpieza-fantasmas: efectivo fuera (electrónico-only).
+                                            Solo queda MercadoPago, que cubre tarjeta/débito/transferencia/wallet. */}
                                         <label className={`flex items-center p-4 lg:p-5 border-2 rounded-lg lg:rounded-xl cursor-pointer transition ${paymentMethod === "mercadopago" ? "border-moovy bg-moovy-light" : "border-gray-200"
                                             }`}>
                                             <input
@@ -1355,8 +1330,9 @@ export default function CheckoutPage() {
                                                 <CreditCard className="w-5 h-5 text-moovy flex-shrink-0 mt-0.5" />
                                                 <div className="min-w-0">
                                                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Método de pago</p>
+                                                    {/* chore/biblia-limpieza-fantasmas: pago electrónico-only */}
                                                     <p className="text-sm lg:text-base text-navy font-medium">
-                                                        {paymentMethod === "cash" ? "💵 Efectivo al recibir" : "💳 Mercado Pago"}
+                                                        💳 Mercado Pago
                                                     </p>
                                                 </div>
                                             </div>

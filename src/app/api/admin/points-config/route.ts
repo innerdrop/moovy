@@ -42,7 +42,7 @@ export async function PUT(request: Request) {
             maxDiscountPercent: Number(data.maxDiscountPercent),
             signupBonus: Number(data.signupBonus),
             referralBonus: Number(data.referralBonus),
-            reviewBonus: Number(data.reviewBonus),
+            // chore/biblia-limpieza-fantasmas: reviewBonus removido (feature dormido)
         };
 
         const updated = await updatePointsConfig(cleanData);

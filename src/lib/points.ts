@@ -14,7 +14,9 @@ interface PointsConfig {
     signupBonus: number;
     referralBonus: number;
     refereeBonus: number;
-    reviewBonus: number;
+    // chore/biblia-limpieza-fantasmas (2026-06-06): `reviewBonus` removido — feature
+    // de reseñas dormido, nunca se otorgaba. La columna sigue en la DB (no se toca
+    // el schema), solo dejamos de exponerla/usarla.
     minPurchaseForBonus: number;      // Min 1st purchase to activate bonuses
     minReferralPurchase: number;      // Min purchase for referral to count
 }
@@ -29,7 +31,7 @@ const defaultConfig: PointsConfig = {
     signupBonus: 1000,                // 1,000 points signup (boost month: doubled)
     referralBonus: 1000,              // 1,000 points for referring (after referral's 1st DELIVERED order)
     refereeBonus: 500,                // 500 points bonus for being referred
-    reviewBonus: 25,                  // 25 points per review
+    // chore/biblia-limpieza-fantasmas: reviewBonus removido (feature dormido)
     minPurchaseForBonus: 5000,        // $5,000 min 1st purchase to activate
     minReferralPurchase: 8000,        // $8,000 min for referral to count
 };
@@ -63,7 +65,19 @@ export async function getUserLevel(userId: string): Promise<{
     nextLevel: UserLevel | null;
     ordersToNextLevel: number;
 }> {
-    const windowDays = 90;
+    // chore/biblia-limpieza-fantasmas (2026-06-06): la ventana de niveles ahora
+    // se lee de PointsConfig.tierWindowDays (columna ya existente en el schema,
+    // default 90). Antes estaba hardcodeada en 90. No hay cambio de schema.
+    let windowDays = 90;
+    try {
+        const cfg = await prisma.pointsConfig.findUnique({
+            where: { id: "points_config" },
+            select: { tierWindowDays: true },
+        });
+        windowDays = cfg?.tierWindowDays ?? 90;
+    } catch (cfgError) {
+        console.error("[Points] Error loading tierWindowDays, using 90:", cfgError);
+    }
     const windowStart = new Date();
     windowStart.setDate(windowStart.getDate() - windowDays);
 
@@ -181,7 +195,7 @@ export async function getPointsConfig(): Promise<PointsConfig> {
             signupBonus: config.signupBonus,
             referralBonus: config.referralBonus,
             refereeBonus: (config as any).refereeBonus ?? defaultConfig.refereeBonus,
-            reviewBonus: config.reviewBonus,
+            // chore/biblia-limpieza-fantasmas: reviewBonus ya no se expone
             minPurchaseForBonus: (config as any).minPurchaseForBonus ?? defaultConfig.minPurchaseForBonus,
             minReferralPurchase: (config as any).minReferralPurchase ?? defaultConfig.minReferralPurchase,
         };
@@ -675,7 +689,7 @@ export async function updatePointsConfig(newConfig: Partial<PointsConfig>): Prom
             signupBonus: config.signupBonus,
             referralBonus: config.referralBonus,
             refereeBonus: (config as any).refereeBonus ?? defaultConfig.refereeBonus,
-            reviewBonus: config.reviewBonus,
+            // chore/biblia-limpieza-fantasmas: reviewBonus ya no se expone
             minPurchaseForBonus: (config as any).minPurchaseForBonus ?? defaultConfig.minPurchaseForBonus,
             minReferralPurchase: (config as any).minReferralPurchase ?? defaultConfig.minReferralPurchase,
         };

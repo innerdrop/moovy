@@ -8,7 +8,7 @@ import {
   updateDeliveryConfig,
   updateCommissionConfig,
   updatePointsConfig,
-  updateCashProtocolConfig,
+  // chore/biblia-limpieza-fantasmas: updateCashProtocolConfig removido (electrónico-only)
   updateScheduledDeliveryConfig,
   updateTimeoutConfig,
   logConfigChange,
@@ -87,15 +87,8 @@ export async function PUT(request: Request) {
     switch (section) {
       case "delivery": {
         // Validate ranges
-        if (
-          data.baseDeliveryFee !== undefined &&
-          (data.baseDeliveryFee < 0 || data.baseDeliveryFee > 10000)
-        ) {
-          return NextResponse.json(
-            { error: "Tarifa base debe estar entre $0 y $10.000" },
-            { status: 400 }
-          );
-        }
+        // chore/biblia-limpieza-fantasmas: validación de baseDeliveryFee removida
+        // (campo fuera del panel; el mínimo real es por vehículo en DeliveryRate).
         if (
           data.fuelPricePerLiter !== undefined &&
           (data.fuelPricePerLiter < 100 || data.fuelPricePerLiter > 5000)
@@ -254,55 +247,8 @@ export async function PUT(request: Request) {
         break;
       }
 
-      case "cashProtocol": {
-        if (
-          data.cashMpOnlyDeliveries !== undefined &&
-          (data.cashMpOnlyDeliveries < 0 || data.cashMpOnlyDeliveries > 100)
-        ) {
-          return NextResponse.json(
-            { error: "Entregas solo MP debe estar entre 0 y 100" },
-            { status: 400 }
-          );
-        }
-        if (
-          data.cashLimitL1 !== undefined &&
-          (data.cashLimitL1 < 1000 || data.cashLimitL1 > 100000)
-        ) {
-          return NextResponse.json(
-            { error: "Límite cash L1 debe estar entre $1.000 y $100.000" },
-            { status: 400 }
-          );
-        }
-        if (
-          data.cashLimitL2 !== undefined &&
-          (data.cashLimitL2 < 1000 || data.cashLimitL2 > 200000)
-        ) {
-          return NextResponse.json(
-            { error: "Límite cash L2 debe estar entre $1.000 y $200.000" },
-            { status: 400 }
-          );
-        }
-        if (
-          data.cashLimitL3 !== undefined &&
-          (data.cashLimitL3 < 1000 || data.cashLimitL3 > 500000)
-        ) {
-          return NextResponse.json(
-            { error: "Límite cash L3 debe estar entre $1.000 y $500.000" },
-            { status: 400 }
-          );
-        }
-
-        await updateCashProtocolConfig(data);
-        await logConfigChange(
-          adminId,
-          adminEmail,
-          "STORE_SETTINGS",
-          "cashProtocol",
-          currentConfig.cashProtocol,
-          data
-        );
-        break;
-      }
+      // chore/biblia-limpieza-fantasmas (2026-06-06): case "cashProtocol" removido.
+      // Moovy es electrónico-only; el panel ya no expone el protocolo de efectivo.
 
       case "scheduledDelivery": {
         if (

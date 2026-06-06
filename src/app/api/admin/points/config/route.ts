@@ -51,7 +51,7 @@ export async function POST(request: Request) {
             maxDiscountPercent: Number(body.maxDiscountPercent),
             signupBonus: Number(body.signupBonus),
             referralBonus: Number(body.referralBonus),
-            reviewBonus: Number(body.reviewBonus),
+            // chore/biblia-limpieza-fantasmas: reviewBonus removido (feature dormido)
         };
 
         const updatedConfig = await updatePointsConfig(cleanData);

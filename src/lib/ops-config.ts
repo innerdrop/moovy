@@ -6,7 +6,10 @@ import { prisma } from "./prisma";
 
 // Types for the full configuration
 export interface DeliveryConfig {
-  baseDeliveryFee: number;
+  // chore/biblia-limpieza-fantasmas (2026-06-06): baseDeliveryFee removido del
+  // panel/simulador. El mínimo real es por vehículo (DeliveryRate.minVehicleFee,
+  // Rama 1). La columna StoreSettings.baseDeliveryFee sigue como fallback del motor
+  // (src/lib/delivery.ts) — no se toca schema, solo se deja de exponer en el panel.
   fuelPricePerLiter: number;
   fuelConsumptionPerKm: number;
   maintenanceFactor: number;
@@ -37,19 +40,18 @@ export interface PointsMooverConfig {
   signupBonus: number;
   referralBonus: number;
   refereeBonus: number;
-  reviewBonus: number;
+  // chore/biblia-limpieza-fantasmas (2026-06-06): reviewBonus removido (feature
+  // de reseñas dormido). La columna sigue en la DB; solo dejamos de exponerla.
   minPurchaseForBonus: number;
   minReferralPurchase: number;
   tierWindowDays: number;
   tierConfigJson: string | null;
 }
 
-export interface CashProtocolConfig {
-  cashMpOnlyDeliveries: number;
-  cashLimitL1: number;
-  cashLimitL2: number;
-  cashLimitL3: number;
-}
+// chore/biblia-limpieza-fantasmas (2026-06-06): CashProtocolConfig removido.
+// Moovy lanza electrónico-only (sin efectivo), así que el protocolo de efectivo
+// del repartidor (cashMpOnlyDeliveries / cashLimitL1-L3) ya no se expone ni se
+// edita desde el panel. Las columnas siguen en StoreSettings (no se toca schema).
 
 export interface ScheduledDeliveryConfig {
   maxOrdersPerSlot: number;
@@ -104,7 +106,7 @@ export interface FullOpsConfig {
   delivery: DeliveryConfig;
   commissions: CommissionConfig;
   points: PointsMooverConfig;
-  cashProtocol: CashProtocolConfig;
+  // chore/biblia-limpieza-fantasmas: cashProtocol removido (electrónico-only)
   scheduledDelivery: ScheduledDeliveryConfig;
   timeouts: TimeoutConfig;
   advertising: AdvertisingConfig;
@@ -144,7 +146,7 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
 
   return {
     delivery: {
-      baseDeliveryFee: settings?.baseDeliveryFee ?? 500,
+      // chore/biblia-limpieza-fantasmas: baseDeliveryFee ya no se expone al panel
       fuelPricePerLiter: settings?.fuelPricePerLiter ?? 1200,
       fuelConsumptionPerKm: settings?.fuelConsumptionPerKm ?? 0.06,
       maintenanceFactor: settings?.maintenanceFactor ?? 1.35,
@@ -182,18 +184,13 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
       signupBonus: pointsConfig?.signupBonus ?? 1000,
       referralBonus: pointsConfig?.referralBonus ?? 1000,
       refereeBonus: (pointsConfig as any)?.refereeBonus ?? 500,
-      reviewBonus: pointsConfig?.reviewBonus ?? 25,
+      // chore/biblia-limpieza-fantasmas: reviewBonus ya no se expone al panel
       minPurchaseForBonus: (pointsConfig as any)?.minPurchaseForBonus ?? 5000,
       minReferralPurchase: (pointsConfig as any)?.minReferralPurchase ?? 8000,
       tierWindowDays: (pointsConfig as any)?.tierWindowDays ?? 90,
       tierConfigJson: (pointsConfig as any)?.tierConfigJson ?? null,
     },
-    cashProtocol: {
-      cashMpOnlyDeliveries: (settings as any)?.cashMpOnlyDeliveries ?? 10,
-      cashLimitL1: (settings as any)?.cashLimitL1 ?? 15000,
-      cashLimitL2: (settings as any)?.cashLimitL2 ?? 25000,
-      cashLimitL3: (settings as any)?.cashLimitL3 ?? 40000,
-    },
+    // chore/biblia-limpieza-fantasmas: bloque cashProtocol removido (electrónico-only)
     scheduledDelivery: {
       maxOrdersPerSlot: (settings as any)?.maxOrdersPerSlot ?? 15,
       slotDurationMinutes: (settings as any)?.slotDurationMinutes ?? 120,
@@ -249,8 +246,7 @@ export async function updateDeliveryConfig(
 ): Promise<void> {
   const updateData: any = {};
 
-  if (data.baseDeliveryFee !== undefined)
-    updateData.baseDeliveryFee = data.baseDeliveryFee;
+  // chore/biblia-limpieza-fantasmas: baseDeliveryFee ya no se edita desde el panel
   if (data.fuelPricePerLiter !== undefined)
     updateData.fuelPricePerLiter = data.fuelPricePerLiter;
   if (data.fuelConsumptionPerKm !== undefined)
@@ -343,7 +339,7 @@ export async function updatePointsConfig(
   if (data.referralBonus !== undefined)
     updateData.referralBonus = data.referralBonus;
   if (data.refereeBonus !== undefined) updateData.refereeBonus = data.refereeBonus;
-  if (data.reviewBonus !== undefined) updateData.reviewBonus = data.reviewBonus;
+  // chore/biblia-limpieza-fantasmas: reviewBonus ya no se edita desde el panel
   if (data.minPurchaseForBonus !== undefined)
     updateData.minPurchaseForBonus = data.minPurchaseForBonus;
   if (data.minReferralPurchase !== undefined)
@@ -360,26 +356,9 @@ export async function updatePointsConfig(
   });
 }
 
-/**
- * Update cash protocol config
- */
-export async function updateCashProtocolConfig(
-  data: Partial<CashProtocolConfig>,
-): Promise<void> {
-  const updateData: any = {};
-
-  if (data.cashMpOnlyDeliveries !== undefined)
-    updateData.cashMpOnlyDeliveries = data.cashMpOnlyDeliveries;
-  if (data.cashLimitL1 !== undefined) updateData.cashLimitL1 = data.cashLimitL1;
-  if (data.cashLimitL2 !== undefined) updateData.cashLimitL2 = data.cashLimitL2;
-  if (data.cashLimitL3 !== undefined) updateData.cashLimitL3 = data.cashLimitL3;
-
-  await prisma.storeSettings.upsert({
-    where: { id: "settings" },
-    update: updateData,
-    create: { id: "settings", ...updateData },
-  });
-}
+// chore/biblia-limpieza-fantasmas (2026-06-06): updateCashProtocolConfig removido.
+// Moovy es electrónico-only; el protocolo de efectivo del repartidor ya no se
+// edita. Las columnas StoreSettings.cash* siguen existiendo (no se toca schema).
 
 /**
  * Update scheduled delivery config

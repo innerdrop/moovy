@@ -2,8 +2,8 @@
 
 import { useState, useCallback } from "react";
 import {
-  Truck, DollarSign, Gift, Banknote, Clock, Calendar,
-  Shield, ChevronDown, ChevronUp, Save, AlertTriangle,
+  Truck, DollarSign, Gift, Clock,
+  ChevronDown, ChevronUp, Save, AlertTriangle,
   Info, Calculator, Snowflake, CloudRain, Sun, Zap, Megaphone,
   // Rama fix/biblia-motor-envio-y-comisiones: iconos del selector de SURGE/demanda.
   TrendingUp, Flame, Activity,
@@ -18,7 +18,9 @@ interface Props {
   initialConfig: FullOpsConfig;
 }
 
-type SectionKey = "delivery" | "commissions" | "points" | "cashProtocol" | "scheduledDelivery" | "timeouts" | "advertising";
+// chore/biblia-limpieza-fantasmas (2026-06-06): se removieron las secciones
+// "cashProtocol" (electrónico-only) y "scheduledDelivery" (feature dormido) del panel.
+type SectionKey = "delivery" | "commissions" | "points" | "timeouts" | "advertising";
 
 // ─── Toast ──────────────────────────────────────────────────────────────────────
 
@@ -251,7 +253,9 @@ function DeliverySimulator({ config }: { config: FullOpsConfig["delivery"] }) {
   // Rama fix/biblia-motor-envio-y-comisiones: SURGE / demanda en el simulador.
   const demandMult = config.demandMultipliers[config.activeDemandCondition] ?? 1.0;
   const costPerKm = config.fuelPricePerLiter * config.fuelConsumptionPerKm * 2;
-  const basePlusDist = config.baseDeliveryFee + (costPerKm * simDist);
+  // chore/biblia-limpieza-fantasmas: baseDeliveryFee removido del simulador. El
+  // mínimo real es por vehículo (DeliveryRate.minVehicleFee), no una tarifa base fija.
+  const basePlusDist = costPerKm * simDist;
   const withMaint = basePlusDist * config.maintenanceFactor;
   const withMults = withMaint * zoneMult * climateMult * demandMult;
   const opCost = simSubtotal * (config.operationalCostPercent / 100);
@@ -318,7 +322,7 @@ function DeliverySimulator({ config }: { config: FullOpsConfig["delivery"] }) {
         </div>
       </div>
       <p className="text-[10px] text-slate-400 mt-2 text-center">
-        Base ${Math.round(config.baseDeliveryFee)} + Dist ${Math.round(costPerKm * simDist)} × Mant {config.maintenanceFactor} × Zona {zoneMult} × Clima {climateMult} × Demanda {demandMult} + Op ${Math.round(opCost)}
+        Dist ${Math.round(costPerKm * simDist)} × Mant {config.maintenanceFactor} × Zona {zoneMult} × Clima {climateMult} × Demanda {demandMult} + Op ${Math.round(opCost)}
       </p>
     </div>
   );
@@ -395,10 +399,9 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
         saving={saving === "delivery"}
         onSave={() => saveSection("delivery")}
       >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <NumInput label="Tarifa base" name="baseDeliveryFee" value={config.delivery.baseDeliveryFee}
-            onChange={(n, v) => updateField("delivery", n, v)} min={0} max={10000} unit="ARS"
-            info="Monto fijo mínimo que se cobra por delivery, antes de agregar distancia." />
+        {/* chore/biblia-limpieza-fantasmas: input "Tarifa base" removido. El mínimo
+            real del envío es por vehículo (DeliveryRate.minVehicleFee, Rama 1). */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <NumInput label="Precio combustible" name="fuelPricePerLiter" value={config.delivery.fuelPricePerLiter}
             onChange={(n, v) => updateField("delivery", n, v)} min={100} max={5000} unit="ARS/L"
             info="Precio actual del litro de nafta en Ushuaia." />
@@ -584,13 +587,13 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
             <div className="bg-white rounded-lg p-2 text-center">
               <p className="text-[10px] font-bold text-slate-400">Fee delivery est.</p>
               <p className="font-black text-red-600">
-                ${Math.ceil((config.delivery.baseDeliveryFee + config.delivery.fuelPricePerLiter * config.delivery.fuelConsumptionPerKm * 2 * 3) * config.delivery.maintenanceFactor + 10000 * config.delivery.operationalCostPercent / 100).toLocaleString("es-AR")}
+                ${Math.ceil((config.delivery.fuelPricePerLiter * config.delivery.fuelConsumptionPerKm * 2 * 3) * config.delivery.maintenanceFactor + 10000 * config.delivery.operationalCostPercent / 100).toLocaleString("es-AR")}
               </p>
             </div>
             <div className="bg-white rounded-lg p-2 text-center">
               <p className="text-[10px] font-bold text-slate-400">Ingreso Moovy total</p>
               <p className="font-black text-violet-600">
-                ${Math.round(10000 * config.commissions.defaultMerchantCommission / 100 + Math.ceil((config.delivery.baseDeliveryFee + config.delivery.fuelPricePerLiter * config.delivery.fuelConsumptionPerKm * 2 * 3) * config.delivery.maintenanceFactor + 10000 * config.delivery.operationalCostPercent / 100) * (1 - config.commissions.riderCommissionPercent / 100)).toLocaleString("es-AR")}
+                ${Math.round(10000 * config.commissions.defaultMerchantCommission / 100 + Math.ceil((config.delivery.fuelPricePerLiter * config.delivery.fuelConsumptionPerKm * 2 * 3) * config.delivery.maintenanceFactor + 10000 * config.delivery.operationalCostPercent / 100) * (1 - config.commissions.riderCommissionPercent / 100)).toLocaleString("es-AR")}
               </p>
             </div>
           </div>
@@ -644,9 +647,7 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
           <NumInput label="Bono referido" name="refereeBonus" value={config.points.refereeBonus}
             onChange={(n, v) => updateField("points", n, v)} min={0} max={10000} unit="pts"
             info="Puntos extra para el usuario referido." />
-          <NumInput label="Bono reseña" name="reviewBonus" value={config.points.reviewBonus}
-            onChange={(n, v) => updateField("points", n, v)} min={0} max={1000} unit="pts"
-            info="Puntos que gana el comprador al dejar una reseña." />
+          {/* chore/biblia-limpieza-fantasmas: input "Bono reseña" removido (feature dormido) */}
         </div>
 
         <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Activación de bonos</h3>
@@ -688,79 +689,10 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
         </div>
       </Section>
 
-      {/* ═══ CASH PROTOCOL ═══ */}
-      <Section
-        title="Protocolo de Efectivo"
-        subtitle="Confianza progresiva, límites, seguridad"
-        icon={Banknote}
-        color="amber"
-        sectionKey="cashProtocol"
-        expanded={expanded === "cashProtocol"}
-        onToggle={() => toggle("cashProtocol")}
-        dirty={dirty.has("cashProtocol")}
-        saving={saving === "cashProtocol"}
-        onSave={() => saveSection("cashProtocol")}
-      >
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-2">
-          <p className="text-xs text-amber-700 font-semibold flex items-center gap-2">
-            <Shield className="w-4 h-4" />
-            Los primeros pedidos del repartidor son solo MercadoPago. Después se desbloquea efectivo con límites progresivos.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <NumInput label="Entregas solo MP antes de efectivo" name="cashMpOnlyDeliveries" value={config.cashProtocol.cashMpOnlyDeliveries}
-            onChange={(n, v) => updateField("cashProtocol", n, v)} min={0} max={100} unit="entregas"
-            info="Cantidad de entregas que el repartidor debe completar con MercadoPago antes de poder recibir pedidos en efectivo." />
-          <NumInput label="Límite nivel 1 (nuevos)" name="cashLimitL1" value={config.cashProtocol.cashLimitL1}
-            onChange={(n, v) => updateField("cashProtocol", n, v)} min={0} max={200000} unit="ARS"
-            info="Máximo efectivo acumulable para repartidores nuevos (primeras 50 entregas)." />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <NumInput label="Límite nivel 2 (regulares)" name="cashLimitL2" value={config.cashProtocol.cashLimitL2}
-            onChange={(n, v) => updateField("cashProtocol", n, v)} min={0} max={200000} unit="ARS"
-            info="Máximo efectivo para repartidores regulares (50-200 entregas)." />
-          <NumInput label="Límite nivel 3 (veteranos)" name="cashLimitL3" value={config.cashProtocol.cashLimitL3}
-            onChange={(n, v) => updateField("cashProtocol", n, v)} min={0} max={200000} unit="ARS"
-            info="Máximo efectivo para repartidores veteranos (200+ entregas)." />
-        </div>
-      </Section>
-
-      {/* ═══ SCHEDULED DELIVERY ═══ */}
-      <Section
-        title="Delivery Programado"
-        subtitle="Slots, capacidad, horarios"
-        icon={Calendar}
-        color="blue"
-        sectionKey="scheduledDelivery"
-        expanded={expanded === "scheduledDelivery"}
-        onToggle={() => toggle("scheduledDelivery")}
-        dirty={dirty.has("scheduledDelivery")}
-        saving={saving === "scheduledDelivery"}
-        onSave={() => saveSection("scheduledDelivery")}
-      >
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <NumInput label="Máx pedidos por slot" name="maxOrdersPerSlot" value={config.scheduledDelivery.maxOrdersPerSlot}
-            onChange={(n, v) => updateField("scheduledDelivery", n, v)} min={1} max={100} unit="pedidos"
-            info="Cantidad máxima de pedidos programados que se aceptan en cada franja horaria." />
-          <NumInput label="Duración del slot" name="slotDurationMinutes" value={config.scheduledDelivery.slotDurationMinutes}
-            onChange={(n, v) => updateField("scheduledDelivery", n, v)} min={30} max={360} unit="min"
-            info="Duración de cada franja horaria en minutos. 120 = slots de 2 horas." />
-          <NumInput label="Anticipación mínima" name="minAnticipationHours" value={config.scheduledDelivery.minAnticipationHours}
-            onChange={(n, v) => updateField("scheduledDelivery", n, v)} min={0.5} max={24} step={0.5} unit="horas"
-            info="Mínimo de horas de anticipación para programar un delivery." />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <NumInput label="Anticipación máxima" name="maxAnticipationHours" value={config.scheduledDelivery.maxAnticipationHours}
-            onChange={(n, v) => updateField("scheduledDelivery", n, v)} min={12} max={168} step={1} unit="horas"
-            info="Máximo de horas en el futuro que se puede programar." />
-          <StrInput label="Horario apertura" name="operatingHoursStart" value={config.scheduledDelivery.operatingHoursStart}
-            onChange={(n, v) => updateField("scheduledDelivery", n, v)}
-            info="Hora de inicio de operaciones (formato HH:MM)." />
-          <StrInput label="Horario cierre" name="operatingHoursEnd" value={config.scheduledDelivery.operatingHoursEnd}
-            onChange={(n, v) => updateField("scheduledDelivery", n, v)}
-            info="Hora de cierre de operaciones (formato HH:MM)." />
-        </div>
-      </Section>
+      {/* chore/biblia-limpieza-fantasmas (2026-06-06): secciones "Protocolo de Efectivo"
+          (Moovy es electrónico-only) y "Delivery Programado" (feature dormido, gateado
+          por el flag buyer.scheduled-delivery OFF) removidas del panel. La config de
+          scheduledDelivery sigue en DB/API para reactivarla en el futuro. */}
 
       {/* ═══ TIMEOUTS ═══ */}
       <Section
