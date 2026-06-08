@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-08 (rama `chore/fix-sentry-deprecation-y-build-check`)
+
+chore(build): eliminar warning deprecado de Sentry + arreglar falso 'build fallo' en tsc-strict.ps1. (1) next.config.ts: se quita automaticVercelMonitors:false del withSentryConfig — esta deprecado, no aplica con Turbopack y no estamos en Vercel; pasarlo (aunque sea false) emitia un DEPRECATION WARNING por stderr en cada build. (2) scripts/tsc-strict.ps1 paso 2: el build corria bajo ErrorActionPreference='Stop', entonces el warning de Sentry por stderr ('2>&1') se convertia en error terminante, caia al catch y marcaba buildExitCode=1 (falso fallo) aunque el build saliera bien. Se localiza ErrorActionPreference='Continue' solo alrededor del build (con finally que restaura el valor previo); ahora el exit code real de npm es el unico que decide. Robusto a cualquier warning por stderr a futuro. devmain.ps1 ya estaba OK (usa Continue + chequea LASTEXITCODE). Solo build/tooling, no toca runtime ni schema.
+
+**Archivos:** next.config.ts, scripts/tsc-strict.ps1
+
 ## 2026-06-08 (rama `chore/validate-role-flows-export-check`)
 
 chore(scripts): corregir match de string en validate-role-flows. El test 'roles.ts canonical exports' buscaba 'export async function computeUserAccess' pero la funcion ahora se exporta memoizada con cache() ('export const computeUserAccess = cache(...)') — refactor READ-ONLY de mismo comportamiento. Falso positivo: los 9 tests que ejecutan computeUserAccess contra la DB pasaban. Se actualiza el required string a 'export const computeUserAccess'. Solo test, no toca runtime.

@@ -42,12 +42,21 @@ Write-Host "      (esto puede tardar ~20s)"
 # Capturamos el log a un archivo temporal para poder mostrarlo si falla.
 $buildLogFile = Join-Path $env:TEMP ("moovy-build-" + [guid]::NewGuid().ToString() + ".log")
 $buildExitCode = 0
+# Un warning por stderr (ej: deprecations de Sentry) NO debe marcar falso fallo.
+# Con ErrorActionPreference='Stop' (seteado arriba), '2>&1' convierte la primera
+# linea de stderr en error terminante y caia al catch con buildExitCode=1 aunque
+# el build saliera bien. Localizamos 'Continue' solo alrededor del build: el exit
+# code real de npm es el unico que decide exito/fallo.
+$prevEAP = $ErrorActionPreference
+$ErrorActionPreference = "Continue"
 try {
     $env:NEXT_TELEMETRY_DISABLED = "1"
     npm run build 2>&1 | Out-File -FilePath $buildLogFile -Encoding utf8
     $buildExitCode = $LASTEXITCODE
 } catch {
     $buildExitCode = 1
+} finally {
+    $ErrorActionPreference = $prevEAP
 }
 
 if ($buildExitCode -ne 0) {

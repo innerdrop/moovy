@@ -235,8 +235,5 @@ export default sentryEnabled
 
       // Disable telemetría del propio plugin de Sentry
       telemetry: false,
-
-      // Auto-instrument server actions y route handlers para tracing
-      automaticVercelMonitors: false, // No estamos en Vercel
     })
   : nextConfig;
