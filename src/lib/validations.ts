@@ -19,6 +19,8 @@ export const AddressDataSchema = z.object({
     number: z.string().min(1, "Número requerido"),
     floor: z.string().optional(),
     city: z.string().optional(),
+    // Rama fix/delivery-geocoding-cobertura: provincia real capturada del autocomplete.
+    province: z.string().optional(),
     latitude: z.number().optional(),
     longitude: z.number().optional(),
 });

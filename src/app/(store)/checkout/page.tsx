@@ -66,6 +66,9 @@ export default function CheckoutPage() {
         number: "",
         floor: "",
         city: "",
+        // Rama fix/delivery-geocoding-cobertura: provincia REAL capturada del
+        // autocomplete (antes ni se guardaba). Sirve para desambiguar el geocoding.
+        province: "",
         notes: "",
         latitude: undefined as number | undefined,
         longitude: undefined as number | undefined,
@@ -297,6 +300,7 @@ export default function CheckoutPage() {
             number: addr.number,
             floor: addr.apartment || "",
             city: addr.city,
+            province: addr.province || "",
             notes: "",
             latitude: addr.latitude || undefined,
             longitude: addr.longitude || undefined,
@@ -312,7 +316,9 @@ export default function CheckoutPage() {
             street: "",
             number: "",
             floor: "",
-            city: "Ushuaia",
+            // Rama fix/delivery-geocoding-cobertura: sin hardcodeo "Ushuaia".
+            city: "",
+            province: "",
             notes: "",
             latitude: undefined,
             longitude: undefined,
@@ -439,7 +445,10 @@ export default function CheckoutPage() {
                 address: {
                     street: address.street,
                     number: address.number,
-                    city: address.city || "Ushuaia",
+                    // Rama fix/delivery-geocoding-cobertura: NO forzamos "Ushuaia".
+                    // Mandamos lo capturado; el server geocodifica sin sesgo de ciudad.
+                    city: address.city || undefined,
+                    province: address.province || undefined,
                     latitude: address.latitude,
                     longitude: address.longitude,
                 },
@@ -452,7 +461,11 @@ export default function CheckoutPage() {
         // ISSUE-032: Zona excluida → el endpoint devuelve 422 con `error: "zone_excluded"`
         // + `zone: { name, reason }` + `isWithinRange: false`. Mapeamos a nuestro shape
         // con `zoneExcluded` seteado para que la UI muestre el card rojo.
-        if (!calcResponse.ok && data?.error === "zone_excluded" && data?.zone) {
+        // Rama fix/delivery-geocoding-cobertura: además de zona excluida, el endpoint
+        // puede devolver 422 con `error: "out_of_coverage"` cuando la dirección cae
+        // fuera de TODAS las zonas de cobertura (ej: otra ciudad). Mapeamos ambos al
+        // card rojo `zoneExcluded` para reusar la misma UX clara de "no llegamos ahí".
+        if (!calcResponse.ok && (data?.error === "zone_excluded" || data?.error === "out_of_coverage") && data?.zone) {
             return {
                 distanceKm: 0,
                 totalCost: 0,
@@ -578,6 +591,7 @@ export default function CheckoutPage() {
                             number: address.number,
                             floor: address.floor,
                             city: address.city,
+                            province: address.province,
                             latitude: address.latitude,
                             longitude: address.longitude,
                             isDefault: savedAddresses.length === 0
@@ -640,6 +654,7 @@ export default function CheckoutPage() {
                             number: address.number,
                             floor: address.floor,
                             city: address.city,
+                            province: address.province,
                             latitude: address.latitude,
                             longitude: address.longitude,
                         }
@@ -672,6 +687,11 @@ export default function CheckoutPage() {
                     setHasDrivers(false);
                     if (!isPickup) setDeliveryType("SCHEDULED");
                     throw new Error(errorData.message || "No hay repartidores disponibles. Programá tu pedido o elegí retiro en local.");
+                }
+                // Rama fix/delivery-geocoding-cobertura: fuera de zona de cobertura
+                // (otra ciudad / fuera de los polígonos). Mostramos el mensaje claro.
+                if (response.status === 422 && (errorData.error === "out_of_coverage" || errorData.error === "zone_excluded")) {
+                    throw new Error(errorData.message || "Moovy todavía no llega a esa dirección.");
                 }
                 throw new Error(errorData.error || "Error al crear el pedido");
             }
@@ -950,11 +970,14 @@ export default function CheckoutPage() {
 
                                                         <AddressAutocomplete
                                                             value={address.street && address.number ? `${address.street} ${address.number}` : address.street}
-                                                            onChange={(val, lat, lng, street, num) => {
+                                                            onChange={(val, lat, lng, street, num, city, province) => {
                                                                 setAddress({
                                                                     ...address,
                                                                     street: street || val,
                                                                     number: num || "",
+                                                                    // Rama fix/delivery-geocoding-cobertura: ciudad/provincia REALES.
+                                                                    city: city || "",
+                                                                    province: province || "",
                                                                     latitude: lat,
                                                                     longitude: lng,
                                                                 });

@@ -3,6 +3,11 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+// Rama fix/delivery-geocoding-cobertura: geocoding server-side. Las coords y la
+// ciudad/provincia REALES se resuelven en el servidor, NUNCA se confía en el
+// texto crudo del cliente (que quedaba con lat/lng null si el user tipeaba sin
+// elegir una sugerencia → envío sin distancia y sin gate de cobertura).
+import { geocodeAddress, buildAddressQuery } from "@/lib/geocoding";
 
 export const dynamic = "force-dynamic";
 
@@ -131,6 +136,37 @@ export async function POST(request: Request) {
             );
         }
 
+        // ── Geocoding server-side (rama fix/delivery-geocoding-cobertura) ──────
+        // Resolvemos coords + ciudad/provincia REALES en el servidor. Si el cliente
+        // ya mandó coords (eligió una sugerencia del autocomplete), las respetamos;
+        // pero si faltan (tipeó a mano), geocodificamos el texto para no guardar una
+        // dirección sin lat/lng (que después rompe el cálculo de envío y el gate de
+        // cobertura). La ciudad/provincia se toman del geocoding cuando no vinieron,
+        // SIN forzar "Ushuaia": un domicilio en Río Grande queda como Río Grande.
+        let resolvedLat: number | null = data.latitude ?? null;
+        let resolvedLng: number | null = data.longitude ?? null;
+        let resolvedCity: string | null = (data.city && data.city.length > 0) ? data.city : null;
+        let resolvedProvince: string | null = (data.province && data.province.length > 0) ? data.province : null;
+
+        if (resolvedLat === null || resolvedLng === null || !resolvedCity) {
+            const geo = await geocodeAddress(
+                buildAddressQuery({
+                    street: normalizedStreet,
+                    number: normalizedNumber,
+                    city: resolvedCity,
+                    province: resolvedProvince,
+                })
+            );
+            if (geo) {
+                if (resolvedLat === null || resolvedLng === null) {
+                    resolvedLat = geo.lat;
+                    resolvedLng = geo.lng;
+                }
+                if (!resolvedCity && geo.city) resolvedCity = geo.city;
+                if (!resolvedProvince && geo.province) resolvedProvince = geo.province;
+            }
+        }
+
         // Use transaction if setting default
         const result = await prisma.$transaction(async (tx) => {
             if (data.isDefault) {
@@ -149,11 +185,13 @@ export async function POST(request: Request) {
                     number: normalizedNumber,
                     apartment: normalizedApartment,
                     neighborhood: (data.neighborhood && data.neighborhood.length > 0) ? data.neighborhood : null,
-                    city: (data.city && data.city.length > 0) ? data.city : "Ushuaia",
-                    province: (data.province && data.province.length > 0) ? data.province : "Tierra del Fuego",
+                    // Ciudad/provincia REALES del geocoding. Default histórico solo si
+                    // no se pudo resolver nada (mejor algo que null para mostrar en UI).
+                    city: resolvedCity || "Ushuaia",
+                    province: resolvedProvince || "Tierra del Fuego",
                     zipCode: (data.zipCode && data.zipCode.length > 0) ? data.zipCode : null,
-                    latitude: data.latitude ?? null,
-                    longitude: data.longitude ?? null,
+                    latitude: resolvedLat,
+                    longitude: resolvedLng,
                     isDefault: data.isDefault || false
                 }
             });

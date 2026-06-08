@@ -242,3 +242,58 @@ export async function getZoneSnapshotForLocation(
 export async function getAllActiveZones(): Promise<DeliveryZoneViewModel[]> {
     return await getCachedZones();
 }
+
+// ─── GATE DE COBERTURA (rama fix/delivery-geocoding-cobertura) ───────────────
+//
+// MODELO DEL CEO: las "Zonas de Delivery" (polígonos DeliveryZone) definen la
+// COBERTURA. Estar DENTRO de un polígono = cubierto. Estar FUERA de TODOS =
+// fuera de cobertura → el pedido se rechaza.
+//
+// DIFERENCIA CLAVE con getZoneForLocation: esa función aplica el patrón
+// "capa base" (si no matchea ningún polígono, cae a la zona de displayOrder
+// más bajo) — útil para PRICING (multiplicador), pero INSERVIBLE para
+// cobertura porque nunca devuelve "afuera". Por eso este gate hace
+// point-in-polygon ESTRICTO, sin fallback a capa base.
+//
+// FOOTGUN / FALLBACK SEGURO: si NO hay NINGUNA zona activa configurada
+// (count === 0), devuelve "NO_ZONES" en vez de bloquear todo. El caller cae
+// al comportamiento legacy (radio del merchant) para no romper producción
+// antes de que el founder pinte las zonas en /ops/zonas-delivery.
+
+export type CoverageStatus = "COVERED" | "OUT_OF_COVERAGE" | "NO_ZONES";
+
+export interface CoverageResult {
+    status: CoverageStatus;
+    /** La zona que cubre el punto (solo cuando status === "COVERED"). */
+    zone: DeliveryZoneViewModel | null;
+}
+
+/**
+ * Resuelve si una coordenada está dentro de la cobertura de Moovy.
+ *
+ *   - NO_ZONES         → no hay zonas configuradas (fallback seguro: el caller
+ *                        usa el radio del merchant y loguea warning).
+ *   - COVERED          → el punto cae dentro de al menos un polígono activo.
+ *   - OUT_OF_COVERAGE  → hay zonas configuradas pero el punto no cae en ninguna.
+ *
+ * Determinístico: si overlapea varias zonas, gana la de mayor displayOrder
+ * (las zonas vienen ordenadas DESC en el cache).
+ */
+export async function getCoverageStatus(lat: number, lng: number): Promise<CoverageResult> {
+    if (!isFinite(lat) || !isFinite(lng)) {
+        return { status: "OUT_OF_COVERAGE", zone: null };
+    }
+
+    const zones = await getCachedZones();
+    if (zones.length === 0) {
+        return { status: "NO_ZONES", zone: null };
+    }
+
+    for (const zone of zones) {
+        if (pointInPolygon(lng, lat, zone.polygon)) {
+            return { status: "COVERED", zone };
+        }
+    }
+
+    return { status: "OUT_OF_COVERAGE", zone: null };
+}

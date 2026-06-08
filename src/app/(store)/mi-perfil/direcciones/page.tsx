@@ -14,12 +14,17 @@ export default function DireccionesPage() {
     const [submitting, setSubmitting] = useState(false);
 
     // New address state
+    // Rama fix/delivery-geocoding-cobertura: ya NO hardcodeamos "Ushuaia". La
+    // ciudad/provincia se capturan del autocomplete y, si faltan, el servidor
+    // las completa geocodificando. Así una dirección de otra ciudad no se
+    // disfraza de Ushuaia.
     const [newAddress, setNewAddress] = useState({
         label: "Mi Casa",
         street: "",
         number: "",
         floor: "",
-        city: "Ushuaia",
+        city: "",
+        province: "",
         latitude: null as number | null,
         longitude: null as number | null,
     });
@@ -67,7 +72,8 @@ export default function DireccionesPage() {
                     street: "",
                     number: "",
                     floor: "",
-                    city: "Ushuaia",
+                    city: "",
+                    province: "",
                     latitude: null,
                     longitude: null,
                 });
@@ -189,11 +195,15 @@ export default function DireccionesPage() {
                                 <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Dirección</label>
                                 <AddressAutocomplete
                                     value={newAddress.street && newAddress.number ? `${newAddress.street} ${newAddress.number}` : newAddress.street}
-                                    onChange={(val, lat, lng, street, num) => {
+                                    onChange={(val, lat, lng, street, num, city, province) => {
                                         setNewAddress({
                                             ...newAddress,
                                             street: street || val,
                                             number: num || "",
+                                            // Rama fix/delivery-geocoding-cobertura: guardamos la
+                                            // ciudad/provincia REALES capturadas (si vinieron).
+                                            city: city || "",
+                                            province: province || "",
                                             latitude: lat || null,
                                             longitude: lng || null,
                                         });

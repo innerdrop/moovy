@@ -3,6 +3,10 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+// Rama fix/delivery-geocoding-cobertura: geocoding server-side al editar una
+// dirección. Si cambia la calle/número y no vinieron coords, re-geocodificamos
+// para no dejar lat/lng obsoletas o nulas (que rompen el envío y la cobertura).
+import { geocodeAddress, buildAddressQuery } from "@/lib/geocoding";
 
 export const dynamic = "force-dynamic";
 
@@ -108,6 +112,40 @@ export async function PATCH(
             return NextResponse.json({ error: "Dirección no encontrada" }, { status: 404 });
         }
 
+        // ── Geocoding server-side (rama fix/delivery-geocoding-cobertura) ──────
+        // Detectamos si cambió la parte geográfica (calle o número). Si cambió y
+        // el cliente NO mandó coords nuevas, re-geocodificamos para mantener
+        // lat/lng/ciudad consistentes con el texto. Si mandó coords (eligió una
+        // sugerencia), las respetamos. NO forzamos "Ushuaia".
+        let resolvedLat: number | null | undefined = data.latitude ?? undefined;
+        let resolvedLng: number | null | undefined = data.longitude ?? undefined;
+        let resolvedCity: string | null | undefined = (data.city && data.city.length > 0) ? data.city : undefined;
+        let resolvedProvince: string | null | undefined = (data.province && data.province.length > 0) ? data.province : undefined;
+
+        const mergedStreet = (data.street && data.street.length > 0) ? data.street : existing.street;
+        const mergedNumber = (data.number && data.number.length > 0) ? data.number : existing.number;
+        const geoChanged =
+            (data.street !== undefined && data.street !== existing.street) ||
+            (data.number !== undefined && data.number !== existing.number);
+        const coordsProvided = data.latitude != null && data.longitude != null;
+
+        if (geoChanged && !coordsProvided) {
+            const geo = await geocodeAddress(
+                buildAddressQuery({
+                    street: mergedStreet,
+                    number: mergedNumber,
+                    city: resolvedCity ?? existing.city,
+                    province: resolvedProvince ?? existing.province,
+                })
+            );
+            if (geo) {
+                resolvedLat = geo.lat;
+                resolvedLng = geo.lng;
+                if (resolvedCity === undefined && geo.city) resolvedCity = geo.city;
+                if (resolvedProvince === undefined && geo.province) resolvedProvince = geo.province;
+            }
+        }
+
         const result = await prisma.$transaction(async (tx) => {
             if (data.isDefault) {
                 // Disable other defaults
@@ -126,11 +164,13 @@ export async function PATCH(
                     number: data.number ?? undefined,
                     apartment: data.apartment ?? undefined,
                     neighborhood: data.neighborhood ?? undefined,
-                    city: data.city ?? undefined,
-                    province: data.province ?? undefined,
+                    // Ciudad/provincia REALES: las del geocoding tienen prioridad sobre
+                    // el texto crudo; undefined deja el valor existente intacto.
+                    city: resolvedCity ?? undefined,
+                    province: resolvedProvince ?? undefined,
                     zipCode: data.zipCode ?? undefined,
-                    latitude: data.latitude ?? undefined,
-                    longitude: data.longitude ?? undefined,
+                    latitude: resolvedLat ?? undefined,
+                    longitude: resolvedLng ?? undefined,
                     isDefault: data.isDefault ?? undefined,
                 }
             });

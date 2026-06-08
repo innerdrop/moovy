@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-08 (rama `fix/delivery-geocoding-cobertura`)
+
+fix(delivery): geocoding server-side + gate de cobertura por zonas + cobro blindado. (1) Nuevo src/lib/geocoding.ts: geocodifica al guardar la direccion (POST/PATCH addresses) y persiste lat/lng + ciudad/provincia reales, sin forzar Ushuaia. (2) AddressAutocomplete captura locality/provincia reales; quitado el sesgo duro ", Ushuaia, Tierra del Fuego" y el hardcodeo city:"Ushuaia". (3) getCoverageStatus en delivery-zones.ts: el destino debe caer dentro de una DeliveryZone (point-in-polygon estricto); fuera = rechazo "fuera de cobertura". Fallback seguro: si no hay zonas activas, no bloquea (cae al radio del comercio). (4) POST /api/orders recalcula la distancia server-side desde coords reales (fee + radio + Order.distanceKm) en vez de confiar en el navegador. Tests en scripts/test-delivery-coverage.ts. Sin cambios de schema (Address ya tenia city/province). Arregla: el envio no variaba con la distancia y pedidos de otra ciudad no se rechazaban. Requiere pintar zonas en /ops/zonas-delivery para activar el gate.
+
+**Archivos:** scripts/test-delivery-coverage.ts, src/app/(store)/checkout/page.tsx, src/app/(store)/mi-perfil/direcciones/page.tsx, src/app/api/delivery/calculate/route.ts, src/app/api/orders/route.ts, src/app/api/profile/addresses/[id]/route.ts, src/app/api/profile/addresses/route.ts, src/components/forms/AddressAutocomplete.tsx (+3 mas)
+
 ## 2026-06-06 (rama `chore/biblia-limpieza-fantasmas`)
 
 chore(biblia): limpieza de config fantasma. (1) Efectivo fuera del checkout (electronico-only) + seccion Protocolo de Efectivo fuera de la Biblia + ops-config (cashProtocol). (2) Entrega programada: seccion fuera de la Biblia; el codigo se preserva dormido tras el flag buyer.scheduled-delivery. (3) MOOVER: reviewBonus eliminado del panel/config/points + tierWindowDays CONECTADO en getUserLevel (la columna ya existia, sin cambio de schema). (4) Tarifa base (baseDeliveryFee) huerfana fuera de la Biblia (la columna queda, el motor de envio usa el minimo por vehiculo de DeliveryRate). Sin cambios de schema. Residuales dormidos no-bloqueantes: rama cash en orders/route.ts (inalcanzable) y reviewBonus en moover/page.

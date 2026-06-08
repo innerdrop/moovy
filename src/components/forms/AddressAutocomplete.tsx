@@ -6,7 +6,18 @@ import { MapPin, Loader2, X, Search } from "lucide-react";
 
 interface AddressAutocompleteProps {
     value: string;
-    onChange: (address: string, lat?: number, lng?: number, street?: string, number?: string) => void;
+    // Rama fix/delivery-geocoding-cobertura: agregamos `city` y `province` al
+    // callback (opcionales, al final → backward-compatible con callers que los
+    // ignoran). Permite capturar la ciudad REAL elegida y NO asumir "Ushuaia".
+    onChange: (
+        address: string,
+        lat?: number,
+        lng?: number,
+        street?: string,
+        number?: string,
+        city?: string,
+        province?: string,
+    ) => void;
     placeholder?: string;
     className?: string;
     restrictToArgentina?: boolean;
@@ -190,7 +201,12 @@ export function AddressAutocomplete({
 
         setLoading(true);
         try {
-            const suffix = ", Ushuaia, Tierra del Fuego, Argentina";
+            // Rama fix/delivery-geocoding-cobertura: QUITAMOS el append duro
+            // ", Ushuaia, Tierra del Fuego" que forzaba todo a Ushuaia (y hacía que
+            // una dirección de Río Grande resolviera dentro de Ushuaia). Solo
+            // acotamos a Argentina. El `bounds` queda como BIAS (mejora sugerencias
+            // locales) pero NO restringe los resultados a la ciudad.
+            const suffix = ", Argentina";
             const result = await geocoderRef.current.geocode({
                 address: query + suffix,
                 region: "ar",
@@ -250,10 +266,17 @@ export function AddressAutocomplete({
 
                 let streetNumber = "";
                 let route = "";
+                // Rama fix/delivery-geocoding-cobertura: capturar ciudad (locality)
+                // y provincia (administrative_area_level_1) REALES de la sugerencia.
+                let locality = "";
+                let province = "";
 
                 for (const c of components) {
                     if (c.types.includes("street_number")) streetNumber = c.longText || "";
                     if (c.types.includes("route")) route = c.longText || "";
+                    if (c.types.includes("locality")) locality = c.longText || "";
+                    if (c.types.includes("administrative_area_level_2") && !locality) locality = c.longText || "";
+                    if (c.types.includes("administrative_area_level_1")) province = c.longText || "";
                 }
 
                 const cleanAddress = route
@@ -261,7 +284,7 @@ export function AddressAutocomplete({
                     : suggestion.mainText || suggestion.description;
 
                 setInputValue(cleanAddress);
-                onChange(cleanAddress, lat, lng, route || cleanAddress, streetNumber);
+                onChange(cleanAddress, lat, lng, route || cleanAddress, streetNumber, locality || undefined, province || undefined);
 
                 // Refresh session token after a selection (billing best practice)
                 sessionTokenRef.current = new google.maps.places.AutocompleteSessionToken();
@@ -284,13 +307,19 @@ export function AddressAutocomplete({
                     const components = place.address_components || [];
                     const streetNumber = components.find((c) => c.types.includes("street_number"))?.long_name || "";
                     const route = components.find((c) => c.types.includes("route"))?.long_name || "";
+                    // Rama fix/delivery-geocoding-cobertura: ciudad/provincia REALES.
+                    const locality =
+                        components.find((c) => c.types.includes("locality"))?.long_name ||
+                        components.find((c) => c.types.includes("administrative_area_level_2"))?.long_name ||
+                        "";
+                    const province = components.find((c) => c.types.includes("administrative_area_level_1"))?.long_name || "";
 
                     const cleanAddress = route
                         ? streetNumber ? `${route} ${streetNumber}` : route
                         : suggestion.description;
 
                     setInputValue(cleanAddress);
-                    onChange(cleanAddress, lat, lng, route || cleanAddress, streetNumber);
+                    onChange(cleanAddress, lat, lng, route || cleanAddress, streetNumber, locality || undefined, province || undefined);
                     return;
                 }
             } catch { /* fall through */ }

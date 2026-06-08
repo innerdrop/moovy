@@ -21,8 +21,12 @@ import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/use
 import { generatePinPair } from "@/lib/pin";
 import { getEffectiveCommission, getEffectiveCommissionWithSource } from "@/lib/merchant-loyalty";
 import { buildSubOrderFinancialSnapshot } from "@/lib/orders/order-totals";
-import { getZoneSnapshotForLocation } from "@/lib/delivery-zones";
+import { getZoneSnapshotForLocation, getCoverageStatus } from "@/lib/delivery-zones";
 import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
+// Rama fix/delivery-geocoding-cobertura: COBRO BLINDADO. La distancia se
+// recalcula server-side desde las coords REALES del destino (geocodificadas si
+// faltan) + las del comercio. NUNCA se confía en el distanceKm del navegador.
+import { geocodeAddress, buildAddressQuery, getRoadDistanceKm } from "@/lib/geocoding";
 // Rama fix/asignacion-match-vehiculo: el tamaño del producto debe fluir al pedido
 // (OrderItem.packageCategoryName) y al cálculo de envío. calculateOrderCategory
 // deriva la categoría agregada del pedido; getSizeFromWeight es el fallback por peso.
@@ -263,6 +267,139 @@ export async function POST(request: Request) {
             0
         );
 
+        // ─── DESTINO REAL + COBERTURA + DISTANCIA SERVER-SIDE ─────────────────────
+        // Rama fix/delivery-geocoding-cobertura (COBRO BLINDADO):
+        //   1. Resolver las coords REALES del destino (de addressData, del addressId
+        //      guardado, o geocodificando el texto). Si no se puede ubicar → rechazar.
+        //   2. Gate de cobertura: afuera de toda DeliveryZone → rechazar. Si no hay
+        //      zonas configuradas (NO_ZONES) → fallback seguro al radio del merchant.
+        //   3. La distancia para el fee y el radio se RECALCULA server-side por
+        //      comercio (merchant.coords → dest.coords), nunca con el distanceKm del
+        //      navegador (manipulable). resolveVendorDistanceKm memoiza por merchant.
+        let destLat: number | null = null;
+        let destLng: number | null = null;
+        let resolvedDestCity: string | null = null;
+        let resolvedDestProvince: string | null = null;
+        // Distancia server-side del comercio principal (single-vendor): alimenta el
+        // fee, el chequeo de radio y el snapshot persistido en Order.distanceKm.
+        let effectiveDistanceKm: number | null = null;
+
+        if (!isPickup) {
+            // 1a. Coords directas del cliente (eligió sugerencia del autocomplete).
+            if (addressData?.latitude != null && addressData?.longitude != null) {
+                destLat = addressData.latitude;
+                destLng = addressData.longitude;
+            } else if (addressId) {
+                // 1b. Dirección guardada: usar sus coords; si faltan, geocodificar el
+                //     texto y PERSISTIR las coords reales (autocura direcciones viejas).
+                const savedAddr = await prisma.address.findUnique({
+                    where: { id: addressId },
+                    select: { latitude: true, longitude: true, street: true, number: true, city: true, province: true },
+                });
+                if (savedAddr?.latitude != null && savedAddr?.longitude != null) {
+                    destLat = savedAddr.latitude;
+                    destLng = savedAddr.longitude;
+                } else if (savedAddr) {
+                    const geo = await geocodeAddress(
+                        buildAddressQuery({ street: savedAddr.street, number: savedAddr.number, city: savedAddr.city, province: savedAddr.province })
+                    );
+                    if (geo) {
+                        destLat = geo.lat;
+                        destLng = geo.lng;
+                        resolvedDestCity = geo.city;
+                        resolvedDestProvince = geo.province;
+                        await prisma.address.update({
+                            where: { id: addressId },
+                            data: {
+                                latitude: geo.lat,
+                                longitude: geo.lng,
+                                ...(geo.city ? { city: geo.city } : {}),
+                                ...(geo.province ? { province: geo.province } : {}),
+                            },
+                        }).catch((e) => orderLogger.warn({ addressId, error: e }, "No se pudo persistir geocoding de address guardada"));
+                    }
+                }
+            }
+            // 1c. addressData sin coords (user tipeó a mano): geocodificar el texto.
+            if ((destLat === null || destLng === null) && addressData) {
+                const geo = await geocodeAddress(
+                    buildAddressQuery({ street: addressData.street, number: addressData.number, city: addressData.city, province: (addressData as { province?: string }).province })
+                );
+                if (geo) {
+                    destLat = geo.lat;
+                    destLng = geo.lng;
+                    resolvedDestCity = geo.city;
+                    resolvedDestProvince = geo.province;
+                }
+            }
+
+            if (destLat === null || destLng === null) {
+                orderLogger.warn({ userId: session.user.id, addressId, hasAddressData: !!addressData }, "No se pudo resolver destino para delivery");
+                return NextResponse.json(
+                    { error: "No pudimos ubicar tu dirección de entrega. Verificá la dirección e intentá de nuevo." },
+                    { status: 400 }
+                );
+            }
+
+            // 2. Gate de cobertura por zonas.
+            const coverage = await getCoverageStatus(destLat, destLng);
+            if (coverage.status === "OUT_OF_COVERAGE") {
+                orderLogger.info({ destLat, destLng, userId: session.user.id }, "Order rechazado: fuera de zona de cobertura");
+                return NextResponse.json(
+                    {
+                        error: "out_of_coverage",
+                        message: "Moovy todavía no llega a esa dirección (fuera de zona de cobertura). Probá con otra dirección o elegí retiro en local.",
+                    },
+                    { status: 422 }
+                );
+            }
+            if (coverage.status === "NO_ZONES") {
+                orderLogger.warn({ destLat, destLng }, "Sin zonas de cobertura configuradas — fallback a radio del merchant (pintá las zonas en /ops/zonas-delivery)");
+            }
+        }
+
+        // Memoización de distancia server-side por comercio. Sellers (marketplace)
+        // no tienen coords en el schema → caen al fallback del cliente con warning.
+        const serverDistanceCache = new Map<string, number>();
+        const resolveVendorDistanceKm = async (
+            vendorMerchantId: string | undefined | null,
+            clientFallbackKm: number
+        ): Promise<number> => {
+            // Capturamos en consts locales para que TS estreche el tipo dentro del closure.
+            const dLat = destLat;
+            const dLng = destLng;
+            if (isPickup || dLat === null || dLng === null) return clientFallbackKm;
+            if (!vendorMerchantId) {
+                // Seller sin coords: no podemos recalcular → usamos el cliente (con warning).
+                if (clientFallbackKm > 0) orderLogger.warn({ clientFallbackKm }, "Vendor sin merchantId/coords — distancia del cliente como fallback (marketplace)");
+                return clientFallbackKm;
+            }
+            const cached = serverDistanceCache.get(vendorMerchantId);
+            if (cached !== undefined) return cached;
+            const m = await prisma.merchant.findUnique({
+                where: { id: vendorMerchantId },
+                select: { latitude: true, longitude: true },
+            });
+            const valid =
+                !!m && m.latitude != null && m.longitude != null &&
+                m.latitude !== 0 && m.longitude !== 0 &&
+                m.latitude < -20 && m.latitude > -60 &&
+                m.longitude < -50 && m.longitude > -80;
+            if (!valid) {
+                orderLogger.warn({ vendorMerchantId }, "Merchant sin coords válidas — distancia del cliente como fallback");
+                serverDistanceCache.set(vendorMerchantId, clientFallbackKm);
+                return clientFallbackKm;
+            }
+            const road = await getRoadDistanceKm(m!.latitude as number, m!.longitude as number, dLat, dLng);
+            const serverKm = road.distanceKm;
+            serverDistanceCache.set(vendorMerchantId, serverKm);
+            orderLogger.info(
+                { vendorMerchantId, serverKm: parseFloat(serverKm.toFixed(2)), clientKm: clientFallbackKm, isRealRoadDistance: road.isRealRoadDistance },
+                "Distancia recalculada server-side (cobro blindado)"
+            );
+            return serverKm;
+        };
+
         // ─── DELIVERY FEE — MOTOR ÚNICO (Rama fix/biblia-motor-envio-y-comisiones) ──
         // SIEMPRE recalcular server-side con computeDeliveryFee (el MISMO motor que
         // el preview /api/delivery/calculate). NUNCA confiar en el frontend.
@@ -314,7 +451,9 @@ export async function POST(request: Request) {
             if (isMultiVendor && groups && groups.length > 1) {
                 for (const group of groups) {
                     const groupKey = group.merchantId || group.sellerId || "unknown";
-                    const groupDistKm = group.distanceKm || 0;
+                    // Cobro blindado: distancia server-side (merchant.coords → dest).
+                    // Sellers sin coords caen al distanceKm del cliente (fallback).
+                    const groupDistKm = await resolveVendorDistanceKm(group.merchantId, group.distanceKm || 0);
                     const groupClientFee = group.deliveryFee || 0;
                     const groupSubtotal = group.items.reduce(
                         (sum: number, gi: { price: number; quantity: number }) => sum + gi.price * gi.quantity, 0
@@ -403,8 +542,14 @@ export async function POST(request: Request) {
                 );
             } else {
                 // --- Single-vendor ---
-                // SIEMPRE calcular server-side si tenemos distancia
-                if (distanceKm && distanceKm > 0) {
+                // Cobro blindado (rama fix/delivery-geocoding-cobertura): la distancia
+                // se RECALCULA server-side desde las coords reales del comercio y el
+                // destino. Si el merchant no tiene coords válidas, cae al distanceKm
+                // del cliente (con warning). Ya NO dependemos de que el navegador mande
+                // una distancia > 0: con coords reales la calculamos siempre.
+                const singleServerKm = await resolveVendorDistanceKm(merchantId, distanceKm || 0);
+                effectiveDistanceKm = singleServerKm;
+                if (singleServerKm && singleServerKm > 0) {
                     try {
                         // Categoría REAL del pedido → costo_km + mínimo (vehículo).
                         const orderCategory = await calculateOrderCategory(
@@ -415,7 +560,7 @@ export async function POST(request: Request) {
                             }))
                         );
                         const serverFee = await computeDeliveryFee({
-                            distanceKm,
+                            distanceKm: singleServerKm,
                             packageCategory: orderCategory.category,
                             orderSubtotal: subtotal,
                             isPickup: false,
@@ -429,14 +574,14 @@ export async function POST(request: Request) {
                             // Operativo del pedido (single-vendor también lo registra para el snapshot).
                             validatedGroupFees.set(merchantId || "single", {
                                 deliveryFee: serverFee.totalCost,
-                                distanceKm,
+                                distanceKm: singleServerKm,
                                 operationalCost: serverFee.operationalCost,
                             });
 
                             // Log si el frontend mandó un fee distinto (posible manipulación)
                             if (deliveryFee && deliveryFee > 0 && Math.abs(deliveryFee - serverFee.totalCost) > serverFee.totalCost * 0.25) {
                                 orderLogger.warn(
-                                    { clientFee: deliveryFee, serverFee: serverFee.totalCost, distanceKm, diff: Math.abs(deliveryFee - serverFee.totalCost) },
+                                    { clientFee: deliveryFee, serverFee: serverFee.totalCost, distanceKm: singleServerKm, diff: Math.abs(deliveryFee - serverFee.totalCost) },
                                     "FRAUD ALERT: Client delivery fee differs >25% from server calculation. Using server fee."
                                 );
                             }
@@ -453,11 +598,11 @@ export async function POST(request: Request) {
                         );
                     }
                 } else {
-                    // ISSUE-008: Sin distancia = no se puede calcular, rechazar
-                    // NUNCA aceptar fee del cliente como fallback (vector de fraude)
+                    // Sin distancia server-side (ni coords del comercio ni del cliente):
+                    // no se puede calcular el envío → rechazar (nunca aceptar fee del cliente).
                     orderLogger.error(
-                        { clientFee: deliveryFee },
-                        "No distanceKm available, cannot calculate delivery fee server-side"
+                        { clientFee: deliveryFee, merchantId },
+                        "No se pudo determinar la distancia server-side (merchant sin coords y cliente sin distancia)"
                     );
                     return NextResponse.json(
                         { error: "No pudimos calcular el envío. Volvé a seleccionar tu dirección e intentá de nuevo." },
@@ -497,7 +642,11 @@ export async function POST(request: Request) {
         let finalAddressId = addressId;
 
         if (!addressId && addressData) {
-            // Create new address for this user
+            // Create new address for this user.
+            // Rama fix/delivery-geocoding-cobertura: persistimos las coords REALES
+            // (geocodificadas si el cliente no las mandó) y la ciudad/provincia REALES,
+            // NO las crudas del cliente ni "Ushuaia" hardcodeado. Así la dirección
+            // queda con la verdad geográfica para tracking, asignación y auditoría.
             const newAddress = await prisma.address.create({
                 data: {
                     userId: session.user.id,
@@ -506,10 +655,10 @@ export async function POST(request: Request) {
                     number: addressData.number,
                     apartment: addressData.floor || null,
                     neighborhood: null,
-                    city: addressData.city || "Ushuaia",
-                    province: "Tierra del Fuego",
-                    latitude: addressData.latitude || null,
-                    longitude: addressData.longitude || null,
+                    city: resolvedDestCity || addressData.city || "Ushuaia",
+                    province: resolvedDestProvince || "Tierra del Fuego",
+                    latitude: destLat ?? addressData.latitude ?? null,
+                    longitude: destLng ?? addressData.longitude ?? null,
                     isDefault: false,
                 },
             });
@@ -536,16 +685,8 @@ export async function POST(request: Request) {
             zoneDriverBonus: 0,
         };
         if (!isPickup) {
-            let destLat: number | null = addressData?.latitude ?? null;
-            let destLng: number | null = addressData?.longitude ?? null;
-            if ((destLat === null || destLng === null) && addressId) {
-                const existingAddr = await prisma.address.findUnique({
-                    where: { id: addressId },
-                    select: { latitude: true, longitude: true },
-                });
-                destLat = existingAddr?.latitude ?? null;
-                destLng = existingAddr?.longitude ?? null;
-            }
+            // Rama fix/delivery-geocoding-cobertura: reusamos destLat/destLng YA
+            // resueltos arriba (geocodificados si hacía falta). No re-resolvemos.
             if (destLat !== null && destLng !== null) {
                 // 1. Zona excluida (sigue como estaba)
                 const zones = parseExcludedZones(opsSettings.excludedZonesJson);
@@ -699,8 +840,12 @@ export async function POST(request: Request) {
             }
 
             // AUDIT FIX 2.1: Validate delivery radius
-            if (!isPickup && merchant.deliveryRadiusKm && distanceKm) {
-                if (distanceKm > merchant.deliveryRadiusKm) {
+            // Rama fix/delivery-geocoding-cobertura: el radio se valida contra la
+            // distancia SERVER-SIDE (no la del cliente). effectiveDistanceKm ya la
+            // tiene en single-vendor; si no, la resolvemos (memoizada) para merchantId.
+            if (!isPickup && merchant.deliveryRadiusKm) {
+                const radiusDistanceKm = effectiveDistanceKm ?? await resolveVendorDistanceKm(merchantId, distanceKm || 0);
+                if (radiusDistanceKm && radiusDistanceKm > merchant.deliveryRadiusKm) {
                     return NextResponse.json(
                         { error: `Tu dirección está fuera del radio de entrega de ${merchant.businessName || "este comercio"} (máx ${merchant.deliveryRadiusKm}km)` },
                         { status: 400 }
@@ -909,7 +1054,9 @@ export async function POST(request: Request) {
                     discount: validDiscount,
                     total: isPickup ? Math.max(0, subtotal - validDiscount) : finalTotal,
                     isPickup: isPickup || false,
-                    distanceKm: isPickup ? null : (distanceKm || null),
+                    // Rama fix/delivery-geocoding-cobertura: persistimos la distancia
+                    // SERVER-SIDE (snapshot real), no la del navegador.
+                    distanceKm: isPickup ? null : (effectiveDistanceKm ?? distanceKm ?? null),
                     deliveryNotes: deliveryNotes || null,
                     customerNotes: customerNotes || null,
                     moovyCommission,

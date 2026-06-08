@@ -6,7 +6,10 @@ import { calculateDistance, computeDeliveryFee } from "@/lib/delivery";
 import { calculateOrderCategory } from "@/lib/assignment-engine";
 import { getSizeFromWeight } from "@/lib/product-weight";
 import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
-import { getZoneSnapshotForLocation } from "@/lib/delivery-zones";
+import { getZoneSnapshotForLocation, getCoverageStatus } from "@/lib/delivery-zones";
+// Rama fix/delivery-geocoding-cobertura: geocoding server-side centralizado
+// (sin forzar "Ushuaia"), compartido con el cobro en /api/orders.
+import { geocodeAddress, buildAddressQuery } from "@/lib/geocoding";
 import { deliveryLogger } from "@/lib/logger";
 
 const DeliveryCalcSchema = z.object({
@@ -16,6 +19,8 @@ const DeliveryCalcSchema = z.object({
         street: z.string(),
         number: z.string().optional(),
         city: z.string().optional(),
+        // Rama fix/delivery-geocoding-cobertura: provincia para desambiguar el geocoding.
+        province: z.string().optional(),
         latitude: z.number().optional(),
         longitude: z.number().optional(),
     }).optional(),
@@ -54,20 +59,22 @@ export async function POST(request: Request) {
         let lng = destinationLng || address?.longitude;
 
         // If address text is provided but coordinates are missing, do geocoding
+        // Rama fix/delivery-geocoding-cobertura: usamos el helper centralizado que
+        // NO fuerza "Ushuaia". Geocodifica con la ciudad/provincia capturadas (si
+        // vinieron) o solo ", Argentina" — así una dirección de otra ciudad resuelve
+        // a su ubicación REAL y el gate de cobertura (más abajo) puede rechazarla.
         if (address && (!lat || !lng)) {
-            const cityName = address.city || "Ushuaia";
-            const fullAddress = address.number
-                ? `${address.street} ${address.number}, ${cityName}, Argentina`
-                : `${address.street}, ${cityName}, Argentina`;
-            const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-            const geocodeUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${apiKey}`;
-
-            const geoResponse = await fetch(geocodeUrl);
-            const geoData = await geoResponse.json();
-
-            if (geoData.status === "OK" && geoData.results.length > 0) {
-                lat = geoData.results[0].geometry.location.lat;
-                lng = geoData.results[0].geometry.location.lng;
+            const geo = await geocodeAddress(
+                buildAddressQuery({
+                    street: address.street,
+                    number: address.number,
+                    city: address.city,
+                    province: address.province,
+                })
+            );
+            if (geo) {
+                lat = geo.lat;
+                lng = geo.lng;
             } else {
                 return NextResponse.json({
                     distanceKm: 0,
@@ -113,6 +120,38 @@ export async function POST(request: Request) {
                     message: `No realizamos envíos a ${matchedZone.name}: ${matchedZone.reason}. Probá con otra dirección o elegí retiro en local.`,
                 },
                 { status: 422 }
+            );
+        }
+
+        // === GATE DE COBERTURA POR ZONAS (rama fix/delivery-geocoding-cobertura) ===
+        // Modelo del CEO: estar dentro de una DeliveryZone (polígono) = cubierto.
+        // Afuera de TODAS = fuera de cobertura → rechazar (ej: Río Grande, ~200km).
+        // FALLBACK SEGURO: si NO hay zonas configuradas (NO_ZONES), NO bloqueamos —
+        // caemos al comportamiento legacy (radio del merchant / maxDistance) y
+        // logueamos warning. Así no rompemos producción antes de pintar las zonas.
+        const coverage = await getCoverageStatus(lat, lng);
+        if (coverage.status === "OUT_OF_COVERAGE") {
+            deliveryLogger.info(
+                { lat, lng, merchantId },
+                "Preview rechazado: destino fuera de zona de cobertura"
+            );
+            return NextResponse.json(
+                {
+                    error: "out_of_coverage",
+                    zone: { name: "Fuera de cobertura", reason: "Todavía no llegamos a esa dirección" },
+                    distanceKm: 0,
+                    totalCost: 0,
+                    isWithinRange: false,
+                    isFreeDelivery: false,
+                    message: "Moovy todavía no llega a esa dirección (fuera de zona de cobertura). Probá con otra dirección o elegí retiro en local.",
+                },
+                { status: 422 }
+            );
+        }
+        if (coverage.status === "NO_ZONES") {
+            deliveryLogger.warn(
+                { lat, lng, merchantId },
+                "Sin zonas de cobertura configuradas — fallback a radio del merchant (pintá las zonas en /ops/zonas-delivery)"
             );
         }
 
