@@ -79,7 +79,7 @@ function testRolesModuleExports() {
     }
     const content = readFileSync(rolesPath, "utf-8");
     const required = [
-        "export async function computeUserAccess",
+        "export const computeUserAccess", // memoizado con cache() — READ-ONLY, mismo comportamiento
         "export async function requireMerchantAccess",
         "export async function requireDriverAccess",
         "export async function requireSellerAccess",

@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-08 (rama `chore/validate-role-flows-export-check`)
+
+chore(scripts): corregir match de string en validate-role-flows. El test 'roles.ts canonical exports' buscaba 'export async function computeUserAccess' pero la funcion ahora se exporta memoizada con cache() ('export const computeUserAccess = cache(...)') — refactor READ-ONLY de mismo comportamiento. Falso positivo: los 9 tests que ejecutan computeUserAccess contra la DB pasaban. Se actualiza el required string a 'export const computeUserAccess'. Solo test, no toca runtime.
+
+**Archivos:** scripts/validate-role-flows.ts
+
 ## 2026-06-08 (rama `feat/dashboard-unit-economics`)
 
 feat(unit-economics): dashboard de margen por pedido + break-even en /ops. Nueva pagina admin /ops/unit-economics (solo ADMIN, bajo Finanzas en el sidebar) que muestra el margen de contribucion real leyendo los snapshots inmutables congelados de cada pedido entregado — NUNCA recalcula cobros (regla FINANZAS, cierres AFIP). (1) Logica pura testeable en src/lib/finance/unit-economics.ts: computeOrderEconomics + aggregateEconomics. ingreso_moovy = comisiones + (deliveryFee - driverPayout); costo_mp = mpFee% x total; margen = ingreso - mp - descuento. Agrega comision/driver a nivel SubOrder y descuento/MP a nivel Order (sin doble conteo; single y multi-vendor). (2) API GET/PATCH en /api/ops/unit-economics: GET agrega por periodo (7/30/90/all); PATCH edita 2 parametros de REPORTE en MoovyConfig (unit_economics_fixed_monthly_cost=440000, unit_economics_mp_fee_percent=3.81) — solo reporting/break-even, NO afectan ningun cobro. Sin hardcodeo (regla #10), fallback conservador si faltan (regla #15). (3) UI con 4 estados, KPIs (margen total/por pedido, ingreso, costo MP, payout/viaje), indicadores (envio % subtotal, pedidos margen negativo, envio>40%), break-even editable con progreso del mes, tabla por pedido y export CSV. (4) Test de simulacion financiera scripts/test-unit-economics.ts (22 asserts: numeros a mano, multivendor, margen negativo, fallback sin snapshot, vacio, totales = suma de partes, break-even). Sin cambios de schema (MoovyConfig ya existe; keys via upsert). Deploy NO requiere schema-mode para esta rama.
