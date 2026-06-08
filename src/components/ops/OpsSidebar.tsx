@@ -43,6 +43,7 @@ import {
     Wallet,
     ClipboardCheck,
     ToggleRight,
+    Calculator,
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -118,6 +119,7 @@ const navSections: NavSection[] = [
         title: "Finanzas",
         items: [
             { href: "/ops/config-biblia", icon: BookOpen, label: "Biblia Financiera" },
+            { href: "/ops/unit-economics", icon: Calculator, label: "Unit Economics" },
             { href: "/ops/revenue", icon: TrendingUp, label: "Revenue" },
             { href: "/ops/comisiones", icon: DollarSign, label: "Comisiones" },
             { href: "/ops/lealtad-comercios", icon: Gift, label: "Lealtad" },
