@@ -27,7 +27,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { logoutAndClearCart } from "@/lib/logout";
 import {
     User,
     Store,
@@ -180,7 +181,7 @@ export default function UserAvatarMenu({
 
     const handleSignOut = () => {
         setOpen(false);
-        signOut({ callbackUrl: "/" });
+        logoutAndClearCart("/");
     };
 
     return (

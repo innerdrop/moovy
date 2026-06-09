@@ -1,6 +1,6 @@
 "use client";
 
-import { signOut } from "next-auth/react";
+import { logoutAndClearCart } from "@/lib/logout";
 import { useRouter } from "next/navigation";
 import { LogOut, ArrowLeft } from "lucide-react";
 import Image from "next/image";
@@ -12,7 +12,7 @@ export default function LogoutPage() {
 
     const handleSignOut = async () => {
         setLoading(true);
-        await signOut({ callbackUrl: "/" });
+        await logoutAndClearCart("/");
     };
 
     return (

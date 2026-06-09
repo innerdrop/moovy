@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-09 (rama `fix/buyer-cuenta`)
+
+fix(buyer): carrito al cerrar sesion + codigo de referido + editar direcciones. (1) s2-2a-05: el carrito (Zustand persist, key Moovy-cart) sobrevivia al logout y reaparecia. Nuevo helper src/lib/logout.ts (logoutAndClearCart) que limpia el carrito antes de signOut; conectado en todos los logout del comprador (UserAvatarMenu, /logout, mi-perfil boton + delete-account). (2) s2-2a-00 referido: (a) register/route.ts ahora devuelve error claro 'ese codigo no existe' cuando el formato es valido pero el codigo no existe (antes lo ignoraba en silencio; el riesgo de enumeracion es bajo, los codigos son para compartir). (b) registro/page.tsx: el prefijo MOV- queda FIJO (span no editable) y el usuario solo escribe los 4 caracteres siguientes (handler filtra charset + 4 max). (3) s2-2a-07 direcciones: el PATCH /api/profile/addresses/[id] ya existia; faltaba UI. Se reescribe la pagina para reusar el mismo form en modo alta o edicion (boton lapiz por direccion, editingId state, POST o PATCH). Bonus: se unifica el campo a 'apartment' (el form mandaba 'floor' pero POST y PATCH usan 'apartment' -> el piso se perdia silenciosamente). Sin cambios de schema.
+
+**Archivos:** src/app/(store)/mi-perfil/direcciones/page.tsx, src/app/(store)/mi-perfil/page.tsx, src/app/(store)/registro/page.tsx, src/app/api/auth/register/route.ts, src/app/logout/page.tsx, src/components/layout/UserAvatarMenu.tsx, src/lib/logout.ts
+
 ## 2026-06-09 (rama `fix/comercio-editar-producto-e-instagram`)
 
 fix(comercio): boton Guardar al editar producto (s4-4a-07) + mostrar redes sociales del comercio en su perfil publico (s4-4b-06). (1) EditProductForm: el banner flotante con "Guardar" solo aparecia cuando isDirty, pero isDirty no trackeaba precio, stock ni categoria (eran inputs no controlados con defaultValue) -> editar precio/stock no mostraba como guardar. Se pasan price/stock/categoryId a estado controlado (value+onChange), se agregan a la comparacion isDirty, al snapshot initialState y a handleDiscard. Ahora cualquier edicion muestra el boton y Descartar resetea bien. (2) store/[slug]/page.tsx: el instagramUrl/facebookUrl/whatsappNumber del comercio se guardaban pero la pagina publica no los renderizaba. Se agrega una seccion de redes (solo las cargadas) con helper socialHref que acepta URL completa, @handle o solo usuario para no dejar links rotos. WhatsApp arma wa.me con los digitos. Sin cambios de schema (la query ya trae los campos via include).

@@ -160,11 +160,19 @@ export async function POST(request: NextRequest) {
 
             if (referrerInfo) {
                 referrerId = referrerInfo.id;
-                // Referral code validated successfully
             } else {
-                // Formato válido pero no existe en la DB — silently ignore para
-                // no exponer enumeración (alguien podría brute-forcear el espacio
-                // de 32^4 = ~1M códigos válidos buscando "hits").
+                // Fix s2-2a-00: antes se ignoraba en silencio un codigo con formato
+                // valido pero inexistente. El founder prioriza que el usuario sepa que
+                // se equivoco (no quedarse "sin referido" sin enterarse). El riesgo de
+                // enumeracion es bajo: los codigos de referido son para COMPARTIR, no
+                // son secretos. Devolvemos error claro y editable.
+                return NextResponse.json(
+                    {
+                        error:
+                            "Ese código de referido no existe. Verificá los 4 caracteres después de MOV-, o dejá el campo vacío si no tenés código.",
+                    },
+                    { status: 400 },
+                );
             }
         }
 

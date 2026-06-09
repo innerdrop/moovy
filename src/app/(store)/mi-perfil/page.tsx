@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
+import { logoutAndClearCart } from "@/lib/logout";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
@@ -210,7 +211,7 @@ export default function ProfilePage() {
             const res = await fetch("/api/profile/delete", { method: "POST" });
             if (res.ok) {
                 toast.success("Tu cuenta ha sido eliminada");
-                signOut({ callbackUrl: "/" });
+                logoutAndClearCart("/");
             } else {
                 const data = await res.json();
                 toast.error(data.error || "Error al eliminar la cuenta");
@@ -637,7 +638,7 @@ export default function ProfilePage() {
 
                 {/* Logout Button */}
                 <button
-                    onClick={() => signOut({ callbackUrl: "/" })}
+                    onClick={() => logoutAndClearCart("/")}
                     className="w-full bg-white border border-red-100 text-red-600 font-medium py-3 rounded-xl shadow-sm flex items-center justify-center gap-2 hover:bg-red-50 transition"
                 >
                     <LogOut className="w-4 h-4" />

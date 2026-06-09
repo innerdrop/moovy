@@ -64,6 +64,18 @@ function RegistrationForm() {
     const referralCodeValid = isValidReferralCode(referralCode);
     const referralCodeShowError = !referralCodeEmpty && !referralCodeValid;
 
+    // Fix s2-2a-00: el prefijo "MOV-" queda FIJO; el usuario solo escribe los 4
+    // caracteres siguientes. referralCode sigue siendo el codigo COMPLETO (o ""
+    // si no hay). Editamos/mostramos solo el sufijo.
+    const referralSuffix = referralCode.replace(/^MOV-/, "");
+    const handleReferralSuffixChange = (raw: string) => {
+        const cleaned = raw
+            .toUpperCase()
+            .replace(/[^ABCDEFGHJKLMNPQRSTUVWXYZ23456789]/g, "")
+            .slice(0, 4);
+        setReferralCode(cleaned ? `MOV-${cleaned}` : "");
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
@@ -341,13 +353,16 @@ function RegistrationForm() {
                                 <span className="text-xs font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">Opcional</span>
                             </label>
                             <div className="relative">
+                                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono font-bold tracking-wider text-gray-500 pointer-events-none select-none">
+                                    MOV-
+                                </span>
                                 <input
                                     type="text"
-                                    value={referralCode}
-                                    onChange={(e) => setReferralCode(formatReferralCode(e.target.value))}
-                                    placeholder="Ej: MOV-AB23"
-                                    maxLength={8}
-                                    className={`input uppercase font-mono tracking-wider text-center pr-10 ${
+                                    value={referralSuffix}
+                                    onChange={(e) => handleReferralSuffixChange(e.target.value)}
+                                    placeholder="AB23"
+                                    maxLength={4}
+                                    className={`input uppercase font-mono tracking-wider pl-14 pr-10 ${
                                         referralCodeShowError
                                             ? "border-red-300 focus:border-red-500 focus:ring-red-200 bg-red-50/30"
                                             : referralCodeValid
@@ -366,7 +381,7 @@ function RegistrationForm() {
                             </div>
                             {referralCodeShowError ? (
                                 <p className="text-xs text-red-600 mt-2 text-center font-medium">
-                                    Completá el código: 8 caracteres con formato MOV-XXXX
+                                    Completá los 4 caracteres después de MOV-
                                 </p>
                             ) : referralCodeValid ? (
                                 <p className="text-xs text-green-700 mt-2 text-center font-medium">
@@ -374,7 +389,7 @@ function RegistrationForm() {
                                 </p>
                             ) : (
                                 <p className="text-xs text-blue-600 mt-2 text-center font-medium">
-                                    8 caracteres, formato MOV-XXXX. ¡Sumás puntos si te invita un amigo! 🎁
+                                    Escribí los 4 caracteres después de MOV-. ¡Sumás puntos si te invita un amigo! 🎁
                                 </p>
                             )}
                         </div>

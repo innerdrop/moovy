@@ -2,32 +2,39 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, MapPin, Loader2, Plus, Trash2, Home, Briefcase, Map as MapIcon, CheckCircle } from "lucide-react";
+import { ArrowLeft, MapPin, Loader2, Plus, Trash2, Pencil, Home, Briefcase, Map as MapIcon, CheckCircle } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import { toast } from "@/store/toast";
 import { confirm } from "@/store/confirm";
+
+// Estado vacío del form. Campo `apartment` (no "floor"): tanto el POST como el
+// PATCH del backend usan `apartment` — antes el form mandaba "floor" y el piso
+// se perdía silenciosamente. Fix incluido en s2-2a-07.
+const EMPTY_ADDRESS = {
+    label: "Mi Casa",
+    street: "",
+    number: "",
+    apartment: "",
+    city: "",
+    province: "",
+    latitude: null as number | null,
+    longitude: null as number | null,
+};
 
 export default function DireccionesPage() {
     const [addresses, setAddresses] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [isAdding, setIsAdding] = useState(false);
+    // Fix s2-2a-07: id de la dirección en edición (null = no estamos editando).
+    const [editingId, setEditingId] = useState<string | null>(null);
     const [submitting, setSubmitting] = useState(false);
 
-    // New address state
     // Rama fix/delivery-geocoding-cobertura: ya NO hardcodeamos "Ushuaia". La
     // ciudad/provincia se capturan del autocomplete y, si faltan, el servidor
-    // las completa geocodificando. Así una dirección de otra ciudad no se
-    // disfraza de Ushuaia.
-    const [newAddress, setNewAddress] = useState({
-        label: "Mi Casa",
-        street: "",
-        number: "",
-        floor: "",
-        city: "",
-        province: "",
-        latitude: null as number | null,
-        longitude: null as number | null,
-    });
+    // las completa geocodificando. El mismo form sirve para alta y edición.
+    const [formAddress, setFormAddress] = useState({ ...EMPTY_ADDRESS });
+
+    const showForm = isAdding || editingId !== null;
 
     useEffect(() => {
         fetchAddresses();
@@ -48,49 +55,71 @@ export default function DireccionesPage() {
         }
     };
 
-    const handleAddAddress = async (e: React.FormEvent) => {
+    const closeForm = () => {
+        setIsAdding(false);
+        setEditingId(null);
+        setFormAddress({ ...EMPTY_ADDRESS });
+    };
+
+    const startAdd = () => {
+        setEditingId(null);
+        setFormAddress({ ...EMPTY_ADDRESS });
+        setIsAdding(true);
+    };
+
+    // Fix s2-2a-07: abre el mismo form precargado para EDITAR una dirección.
+    const startEdit = (addr: any) => {
+        setIsAdding(false);
+        setFormAddress({
+            label: addr.label || "Mi Casa",
+            street: addr.street || "",
+            number: addr.number || "",
+            apartment: addr.apartment || "",
+            city: addr.city || "",
+            province: addr.province || "",
+            latitude: addr.latitude ?? null,
+            longitude: addr.longitude ?? null,
+        });
+        setEditingId(addr.id);
+    };
+
+    const handleSubmitAddress = async (e: React.FormEvent) => {
         e.preventDefault();
         if (submitting) return; // Defensa extra contra doble submit
-        if (!newAddress.street) return;
+        if (!formAddress.street) return;
 
         setSubmitting(true);
         try {
-            const res = await fetch("/api/profile/addresses", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    ...newAddress,
-                    isDefault: addresses.length === 0
-                }),
-            });
+            const isEdit = editingId !== null;
+            const res = await fetch(
+                isEdit ? `/api/profile/addresses/${editingId}` : "/api/profile/addresses",
+                {
+                    method: isEdit ? "PATCH" : "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(
+                        isEdit
+                            ? { ...formAddress }
+                            : { ...formAddress, isDefault: addresses.length === 0 }
+                    ),
+                }
+            );
 
             if (res.ok) {
-                toast.success("Dirección guardada");
-                setIsAdding(false);
-                setNewAddress({
-                    label: "Mi Casa",
-                    street: "",
-                    number: "",
-                    floor: "",
-                    city: "",
-                    province: "",
-                    latitude: null,
-                    longitude: null,
-                });
+                toast.success(isEdit ? "Dirección actualizada" : "Dirección guardada");
+                closeForm();
                 fetchAddresses();
             } else if (res.status === 409) {
                 // Dedup server-side: ya existe una dirección con misma etiqueta + lugar
                 const data = await res.json();
                 toast.error(data.error || "Esa dirección ya está guardada");
-                // Cerrar el form — la dirección ya está en la lista, no hay nada que hacer
-                setIsAdding(false);
+                closeForm();
                 fetchAddresses();
             } else {
                 const data = await res.json().catch(() => ({}));
                 toast.error(data.error || "No se pudo guardar la dirección");
             }
         } catch (error) {
-            console.error("Error adding address", error);
+            console.error("Error saving address", error);
             toast.error("Error de conexión. Intentá de nuevo.");
         } finally {
             setSubmitting(false);
@@ -154,9 +183,9 @@ export default function DireccionesPage() {
                         </Link>
                         <h1 className="font-bold text-lg text-gray-900">Mis Direcciones</h1>
                     </div>
-                    {addresses.length > 0 && !isAdding && (
+                    {addresses.length > 0 && !showForm && (
                         <button
-                            onClick={() => setIsAdding(true)}
+                            onClick={startAdd}
                             className="bg-red-50 text-moovy p-2 rounded-full hover:bg-red-100 transition"
                         >
                             <Plus className="w-5 h-5" />
@@ -166,25 +195,25 @@ export default function DireccionesPage() {
             </div>
 
             <div className="max-w-md mx-auto lg:max-w-2xl px-4 lg:px-6 xl:px-8 py-6 lg:py-8">
-                {isAdding ? (
+                {showForm ? (
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 animate-fadeIn">
                         <div className="flex items-center justify-between mb-6">
-                            <h2 className="font-bold text-gray-900">Nueva Dirección</h2>
+                            <h2 className="font-bold text-gray-900">{editingId ? "Editar Dirección" : "Nueva Dirección"}</h2>
                             <button
-                                onClick={() => setIsAdding(false)}
+                                onClick={closeForm}
                                 className="text-sm text-gray-500 hover:text-gray-700"
                             >
                                 Cancelar
                             </button>
                         </div>
 
-                        <form onSubmit={handleAddAddress} className="space-y-4">
+                        <form onSubmit={handleSubmitAddress} className="space-y-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Etiqueta</label>
                                 <input
                                     type="text"
-                                    value={newAddress.label}
-                                    onChange={(e) => setNewAddress({ ...newAddress, label: e.target.value })}
+                                    value={formAddress.label}
+                                    onChange={(e) => setFormAddress({ ...formAddress, label: e.target.value })}
                                     placeholder="Ej: Casa, Trabajo, Novia..."
                                     className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-moovy transition"
                                     required
@@ -194,10 +223,10 @@ export default function DireccionesPage() {
                             <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Dirección</label>
                                 <AddressAutocomplete
-                                    value={newAddress.street && newAddress.number ? `${newAddress.street} ${newAddress.number}` : newAddress.street}
+                                    value={formAddress.street && formAddress.number ? `${formAddress.street} ${formAddress.number}` : formAddress.street}
                                     onChange={(val, lat, lng, street, num, city, province) => {
-                                        setNewAddress({
-                                            ...newAddress,
+                                        setFormAddress({
+                                            ...formAddress,
                                             street: street || val,
                                             number: num || "",
                                             // Rama fix/delivery-geocoding-cobertura: guardamos la
@@ -217,8 +246,8 @@ export default function DireccionesPage() {
                                     <label className="block text-xs font-bold text-gray-400 uppercase mb-1 ml-1">Piso/Depto</label>
                                     <input
                                         type="text"
-                                        value={newAddress.floor}
-                                        onChange={(e) => setNewAddress({ ...newAddress, floor: e.target.value })}
+                                        value={formAddress.apartment}
+                                        onChange={(e) => setFormAddress({ ...formAddress, apartment: e.target.value })}
                                         placeholder="Opcional"
                                         className="w-full px-4 py-3 bg-gray-50 border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-moovy transition"
                                     />
@@ -227,11 +256,11 @@ export default function DireccionesPage() {
 
                             <button
                                 type="submit"
-                                disabled={submitting || !newAddress.street}
+                                disabled={submitting || !formAddress.street}
                                 className="w-full bg-moovy text-white font-bold py-4 rounded-xl shadow-lg shadow-red-100 hover:scale-[1.02] active:scale-[0.98] transition disabled:opacity-50 disabled:hover:scale-100 flex items-center justify-center gap-2 mt-4"
                             >
                                 {submitting ? <Loader2 className="w-5 h-5 animate-spin" /> : <MapPin className="w-5 h-5" />}
-                                Guardar Dirección
+                                {editingId ? "Guardar Cambios" : "Guardar Dirección"}
                             </button>
                         </form>
                     </div>
@@ -252,7 +281,7 @@ export default function DireccionesPage() {
                                     Guarda tu direccion para recibir pedidos mas rapido.
                                 </p>
                                 <button
-                                    onClick={() => setIsAdding(true)}
+                                    onClick={startAdd}
                                     className="bg-moovy text-white font-bold px-8 py-4 rounded-2xl shadow-lg shadow-red-100 hover:scale-105 transition active:scale-95"
                                 >
                                     Agregar Dirección
@@ -265,38 +294,47 @@ export default function DireccionesPage() {
                                         key={addr.id}
                                         className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between group"
                                     >
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-600 group-hover:bg-red-50 group-hover:text-moovy transition">
+                                        <div className="flex items-center gap-4 min-w-0">
+                                            <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center text-gray-600 group-hover:bg-red-50 group-hover:text-moovy transition flex-shrink-0">
                                                 {getLabelIcon(addr.label)}
                                             </div>
-                                            <div>
+                                            <div className="min-w-0">
                                                 <div className="flex items-center gap-2">
-                                                    <h3 className="font-bold text-gray-900">{addr.label}</h3>
+                                                    <h3 className="font-bold text-gray-900 truncate">{addr.label}</h3>
                                                     {addr.isDefault && (
-                                                        <span className="flex items-center gap-0.5 text-[9px] font-bold bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full uppercase tracking-tighter">
+                                                        <span className="flex items-center gap-0.5 text-[9px] font-bold bg-green-100 text-green-600 px-1.5 py-0.5 rounded-full uppercase tracking-tighter flex-shrink-0">
                                                             <CheckCircle className="w-2 h-2" /> Principal
                                                         </span>
                                                     )}
                                                 </div>
-                                                <p className="text-sm text-gray-500">
+                                                <p className="text-sm text-gray-500 truncate">
                                                     {addr.street} {addr.number}
                                                     {addr.apartment && `, ${addr.apartment}`}
                                                 </p>
                                             </div>
                                         </div>
 
-                                        <button
-                                            onClick={() => handleDelete(addr)}
-                                            className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition"
-                                            aria-label={`Eliminar ${addr.label}`}
-                                        >
-                                            <Trash2 className="w-5 h-5" />
-                                        </button>
+                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                            <button
+                                                onClick={() => startEdit(addr)}
+                                                className="p-2 text-gray-300 hover:text-moovy hover:bg-red-50 rounded-full transition"
+                                                aria-label={`Editar ${addr.label}`}
+                                            >
+                                                <Pencil className="w-5 h-5" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleDelete(addr)}
+                                                className="p-2 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition"
+                                                aria-label={`Eliminar ${addr.label}`}
+                                            >
+                                                <Trash2 className="w-5 h-5" />
+                                            </button>
+                                        </div>
                                     </div>
                                 ))}
 
                                 <button
-                                    onClick={() => setIsAdding(true)}
+                                    onClick={startAdd}
                                     className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-medium hover:border-moovy hover:text-moovy hover:bg-red-50/30 transition flex items-center justify-center gap-2 mt-4"
                                 >
                                     <Plus className="w-5 h-5" />
