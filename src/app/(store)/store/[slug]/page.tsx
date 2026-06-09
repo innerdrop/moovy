@@ -7,13 +7,23 @@ import MerchantScheduleWidget from "@/components/store/MerchantScheduleWidget";
 import EmptyState from "@/components/ui/EmptyState";
 import ReviewsSection from "@/components/store/ReviewsSection";
 import { checkMerchantSchedule } from "@/lib/merchant-schedule";
-import { MapPin, Clock, Star, Info, ChevronLeft, BadgeCheck, ShoppingBag } from "lucide-react";
+import { MapPin, Clock, Star, Info, ChevronLeft, BadgeCheck, ShoppingBag, Instagram, Facebook, MessageCircle } from "lucide-react";
 
 // ISSUE-049: umbral para mostrar lista plana sin filtro de categorías.
 // Si el comercio tiene < 5 productos, el filtro por categorías genera
 // ruido visual ("Otros (2)") en vez de ayudar a explorar. Debajo de este
 // umbral mostramos todo junto en una sola grilla limpia.
 const FLAT_LIST_THRESHOLD = 5;
+
+// Fix s4-4b-06: arma el href de una red social aceptando una URL completa,
+// un @handle o solo el usuario. Asi el link del perfil del comercio nunca
+// queda roto sin importar como lo cargo el comercio.
+function socialHref(value: string, domain: string): string {
+    const v = value.trim().replace(/^@/, "");
+    if (/^https?:\/\//i.test(v)) return v;
+    if (v.toLowerCase().includes(domain)) return `https://${v.replace(/^\/+/, "")}`;
+    return `https://${domain}/${v}`;
+}
 
 async function getMerchant(slug: string) {
     const merchant = await prisma.merchant.findUnique({
@@ -158,6 +168,46 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                             </div>
                         )}
                     </div>
+
+                    {/* Redes sociales del comercio (fix s4-4b-06): se muestran solo
+                        las que el comercio cargo en su perfil. */}
+                    {(merchant.instagramUrl || merchant.facebookUrl || merchant.whatsappNumber) && (
+                        <div className="flex flex-wrap items-center gap-3 pb-3">
+                            {merchant.instagramUrl && (
+                                <a
+                                    href={socialHref(merchant.instagramUrl, "instagram.com")}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[#e60012] transition"
+                                >
+                                    <Instagram className="w-4 h-4" />
+                                    <span>Instagram</span>
+                                </a>
+                            )}
+                            {merchant.facebookUrl && (
+                                <a
+                                    href={socialHref(merchant.facebookUrl, "facebook.com")}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[#e60012] transition"
+                                >
+                                    <Facebook className="w-4 h-4" />
+                                    <span>Facebook</span>
+                                </a>
+                            )}
+                            {merchant.whatsappNumber && (
+                                <a
+                                    href={`https://wa.me/${merchant.whatsappNumber.replace(/[^0-9]/g, "")}`}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-green-600 transition"
+                                >
+                                    <MessageCircle className="w-4 h-4" />
+                                    <span>WhatsApp</span>
+                                </a>
+                            )}
+                        </div>
+                    )}
 
                     {/* Horarios de atención — widget expandible con estado real */}
                     <div className="pb-4">

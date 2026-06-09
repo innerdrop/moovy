@@ -43,6 +43,12 @@ export default function EditProductForm({ product, categories }: EditProductForm
     const [packageCategoryId, setPackageCategoryId] = useState<string>(product.packageCategoryId || "");
     const [name, setName] = useState<string>(product.name);
     const [description, setDescription] = useState<string>(product.description);
+    // Fix s4-4a-07: price/stock/category pasan a estado controlado para que
+    // isDirty los detecte y el banner "Guardar" aparezca al editarlos (antes
+    // eran defaultValue no trackeados -> el comercio no veia como guardar).
+    const [price, setPrice] = useState<string>(String(product.price));
+    const [stock, setStock] = useState<string>(String(product.stock));
+    const [categoryId, setCategoryId] = useState<string>(product.categoryId);
     // Tamaño: si el producto ya tenía weightGrams cargado, derivar la categoría
     const [productSize, setProductSize] = useState<ProductSize | null>(
         product.weightGrams != null ? getSizeFromWeight(product.weightGrams) : null
@@ -60,6 +66,9 @@ export default function EditProductForm({ product, categories }: EditProductForm
     const initialState = useRef({
         name: product.name,
         description: product.description,
+        price: String(product.price),
+        stock: String(product.stock),
+        categoryId: product.categoryId,
         weightGrams: product.weightGrams != null ? String(product.weightGrams) : "",
         volumeMl: product.volumeMl != null ? String(product.volumeMl) : "",
         packageCategoryId: product.packageCategoryId || "",
@@ -69,6 +78,9 @@ export default function EditProductForm({ product, categories }: EditProductForm
     const isDirty =
         name !== initialState.current.name ||
         description !== initialState.current.description ||
+        price !== initialState.current.price ||
+        stock !== initialState.current.stock ||
+        categoryId !== initialState.current.categoryId ||
         weightGrams !== initialState.current.weightGrams ||
         volumeMl !== initialState.current.volumeMl ||
         packageCategoryId !== initialState.current.packageCategoryId ||
@@ -78,6 +90,9 @@ export default function EditProductForm({ product, categories }: EditProductForm
     const handleDiscard = () => {
         setName(initialState.current.name);
         setDescription(initialState.current.description);
+        setPrice(initialState.current.price);
+        setStock(initialState.current.stock);
+        setCategoryId(initialState.current.categoryId);
         setWeightGrams(initialState.current.weightGrams);
         setVolumeMl(initialState.current.volumeMl);
         setPackageCategoryId(initialState.current.packageCategoryId);
@@ -261,7 +276,8 @@ export default function EditProductForm({ product, categories }: EditProductForm
                                 name="categoryId"
                                 className="input"
                                 disabled={isLoading || categories.length === 0}
-                                defaultValue={product.categoryId}
+                                value={categoryId}
+                                onChange={(e) => setCategoryId(e.target.value)}
                             >
                                 <option value="" disabled>Seleccionar categoría...</option>
                                 {categories.map((cat) => (
@@ -285,7 +301,8 @@ export default function EditProductForm({ product, categories }: EditProductForm
                                         min="0"
                                         step="0.01"
                                         required
-                                        defaultValue={product.price}
+                                        value={price}
+                                        onChange={(e) => setPrice(e.target.value)}
                                         placeholder="0.00"
                                         className="input !pl-10"
                                         disabled={isLoading}
@@ -301,7 +318,8 @@ export default function EditProductForm({ product, categories }: EditProductForm
                                     type="number"
                                     min="0"
                                     required
-                                    defaultValue={product.stock}
+                                    value={stock}
+                                    onChange={(e) => setStock(e.target.value)}
                                     placeholder="Ej. 100"
                                     className="input"
                                     disabled={isLoading}

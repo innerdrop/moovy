@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-09 (rama `fix/comercio-editar-producto-e-instagram`)
+
+fix(comercio): boton Guardar al editar producto (s4-4a-07) + mostrar redes sociales del comercio en su perfil publico (s4-4b-06). (1) EditProductForm: el banner flotante con "Guardar" solo aparecia cuando isDirty, pero isDirty no trackeaba precio, stock ni categoria (eran inputs no controlados con defaultValue) -> editar precio/stock no mostraba como guardar. Se pasan price/stock/categoryId a estado controlado (value+onChange), se agregan a la comparacion isDirty, al snapshot initialState y a handleDiscard. Ahora cualquier edicion muestra el boton y Descartar resetea bien. (2) store/[slug]/page.tsx: el instagramUrl/facebookUrl/whatsappNumber del comercio se guardaban pero la pagina publica no los renderizaba. Se agrega una seccion de redes (solo las cargadas) con helper socialHref que acepta URL completa, @handle o solo usuario para no dejar links rotos. WhatsApp arma wa.me con los digitos. Sin cambios de schema (la query ya trae los campos via include).
+
+**Archivos:** src/app/(store)/store/[slug]/page.tsx, src/components/comercios/EditProductForm.tsx
+
 ## 2026-06-08 (rama `fix/auth-validate-reset-token-hash`)
 
 fix(auth): recuperar contrasena daba siempre 'Enlace invalido' (s2-2a-04). validate-reset-token/route.ts buscaba User.resetToken con el token PLANO de la URL, pero forgot-password lo guarda HASHEADO (sha256, ISSUE-027) -> nunca matcheaba -> la pagina /restablecer-contrasena mostraba 'Enlace invalido' antes de dejar setear la clave. Fix: hashear el token entrante con sha256 antes del findFirst, igual que ya hacia /reset-password. Mismo arreglo repara el flujo de invitacion de admin/users/create (manda el mismo link y guarda el hash, estaba roto identico). Verificado: todas las queries a resetToken (forgot/validate/reset/admin-create) usan el hash; ningun caller compara el token plano. Un solo archivo, sin cambios de schema.
