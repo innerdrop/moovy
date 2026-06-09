@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-08 (rama `fix/auth-validate-reset-token-hash`)
+
+fix(auth): recuperar contrasena daba siempre 'Enlace invalido' (s2-2a-04). validate-reset-token/route.ts buscaba User.resetToken con el token PLANO de la URL, pero forgot-password lo guarda HASHEADO (sha256, ISSUE-027) -> nunca matcheaba -> la pagina /restablecer-contrasena mostraba 'Enlace invalido' antes de dejar setear la clave. Fix: hashear el token entrante con sha256 antes del findFirst, igual que ya hacia /reset-password. Mismo arreglo repara el flujo de invitacion de admin/users/create (manda el mismo link y guarda el hash, estaba roto identico). Verificado: todas las queries a resetToken (forgot/validate/reset/admin-create) usan el hash; ningun caller compara el token plano. Un solo archivo, sin cambios de schema.
+
+**Archivos:** src/app/api/auth/validate-reset-token/route.ts
+
 ## 2026-06-08 (rama `feat/candado-lanzamiento-preview`)
 
 feat(launch): candado de lanzamiento por entorno (fail-closed) + cortina Proximamente; saca el modo mantenimiento de OPS. (1) proxy.ts: nuevo candado en el middleware. Solo en produccion, solo paginas (las /api quedan fuera por el matcher, asi webhooks de MP y crons siguen vivos). Falla CERRADO: el sitio esta oculto salvo que LAUNCH_GATE=open en el entorno del VPS — un deploy NO puede exponerlo por accidente. Bypass con ?preview=PREVIEW_TOKEN que deja cookie httpOnly 30d (dominio .somosmoovy.com, cubre subdominios). (2) Nueva pagina /proximamente (branded, sin nav, noindex) a la que el middleware hace rewrite cuando esta cerrado. (3) Saca el modo mantenimiento de OPS: removida la tarjeta de Mantenimiento en ops/configuracion/page.tsx y los campos en ConfigForm.tsx; removidos los redirects client-side a /mantenimiento en (store)/layout.tsx (tiendaMaintenance) y landing/page.tsx (isMaintenanceMode), junto con la logica vieja de preview por cookie client-side. (4) Scripts abrir-tienda.ps1 / cerrar-tienda.ps1: SSH al VPS, setean LAUNCH_GATE y pm2 reload --update-env; garantizan que PREVIEW_TOKEN exista para no quedar afuera. NO toca DB ni usuarios. Campos isMaintenanceMode/tiendaMaintenance/maintenanceMessage quedan en schema/api como legacy inerte (nadie los lee ya para gating). Variables nuevas en VPS .env: LAUNCH_GATE, PREVIEW_TOKEN.

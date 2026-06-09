@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import crypto from "crypto";
 
 export async function GET(request: NextRequest) {
     try {
@@ -13,9 +14,19 @@ export async function GET(request: NextRequest) {
             );
         }
 
+        // ISSUE-027: el token viaja plano por email pero en la DB se guarda
+        // hasheado (sha256). Hay que hashear el token entrante ANTES de buscar,
+        // igual que hace /reset-password. (Bug s2-2a-04: este endpoint comparaba
+        // el token plano contra el hash guardado -> nunca matcheaba -> siempre
+        // "Enlace invalido".)
+        const tokenHash = crypto
+            .createHash("sha256")
+            .update(token)
+            .digest("hex");
+
         const user = await prisma.user.findFirst({
             where: {
-                resetToken: token,
+                resetToken: tokenHash,
                 resetTokenExpiry: {
                     gt: new Date(),
                 },
