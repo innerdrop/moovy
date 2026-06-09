@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-09 (rama `fix/vendedor-eliminar-listing`)
+
+feat(vendedor): eliminar publicacion del marketplace (s4-4c-03) — soft delete. Antes el vendedor solo podia OCULTAR (toggle isActive); no tenia como eliminar. (1) Nuevo endpoint POST /api/seller/listings/[id]/delete: valida dueño (sellerId) y que no sea una subasta ACTIVA con ofertas; hace SOFT delete (deletedAt + deletedBy + deletedReason='Seller-initiated') ademas de isActive=false. Soft (no hard) por audit AFIP y para no dejar OrderItems huerfanos. Mismo mecanismo que la moderacion de OPS. (2) GET /api/seller/listings filtra deletedAt:null (desaparece del panel del vendedor). El marketplace publico filtra por isActive:true, asi que con isActive=false queda oculto igual. (3) UI /vendedor/listings: boton de tacho con confirmacion (store/confirm) + toast, saca la card de la lista al eliminar. Sin cambios de schema (los campos de soft delete ya existian). Nota: s5-5a-00 (compra del propio comercio) ya estaba bloqueado por el check anti-self-purchase ISSUE-003.
+
+**Archivos:** src/app/api/seller/listings/[id]/delete/route.ts, src/app/api/seller/listings/route.ts, src/app/vendedor/(protected)/listings/page.tsx
+
 ## 2026-06-09 (rama `fix/buyer-cuenta`)
 
 fix(buyer): carrito al cerrar sesion + codigo de referido + editar direcciones. (1) s2-2a-05: el carrito (Zustand persist, key Moovy-cart) sobrevivia al logout y reaparecia. Nuevo helper src/lib/logout.ts (logoutAndClearCart) que limpia el carrito antes de signOut; conectado en todos los logout del comprador (UserAvatarMenu, /logout, mi-perfil boton + delete-account). (2) s2-2a-00 referido: (a) register/route.ts ahora devuelve error claro 'ese codigo no existe' cuando el formato es valido pero el codigo no existe (antes lo ignoraba en silencio; el riesgo de enumeracion es bajo, los codigos son para compartir). (b) registro/page.tsx: el prefijo MOV- queda FIJO (span no editable) y el usuario solo escribe los 4 caracteres siguientes (handler filtra charset + 4 max). (3) s2-2a-07 direcciones: el PATCH /api/profile/addresses/[id] ya existia; faltaba UI. Se reescribe la pagina para reusar el mismo form en modo alta o edicion (boton lapiz por direccion, editingId state, POST o PATCH). Bonus: se unifica el campo a 'apartment' (el form mandaba 'floor' pero POST y PATCH usan 'apartment' -> el piso se perdia silenciosamente). Sin cambios de schema.

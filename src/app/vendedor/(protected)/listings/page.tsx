@@ -9,12 +9,15 @@ import {
     Eye,
     EyeOff,
     Edit,
+    Trash2,
     AlertCircle,
     Star,
     Gavel,
     Clock,
     Users,
 } from "lucide-react";
+import { confirm } from "@/store/confirm";
+import { toast } from "@/store/toast";
 
 interface Listing {
     id: string;
@@ -116,6 +119,36 @@ export default function VendedorListingsPage() {
             console.error("Error toggling listing:", error);
         } finally {
             setTogglingId(null);
+        }
+    }
+
+    // s4-4c-03: eliminar (soft delete) una publicacion propia del vendedor.
+    const [deletingId, setDeletingId] = useState<string | null>(null);
+
+    async function handleDelete(listing: Listing) {
+        const ok = await confirm({
+            title: `Eliminar "${listing.title}"`,
+            message: "Esta publicación se va a eliminar de tu tienda y del marketplace. No se puede deshacer.",
+            confirmLabel: "Eliminar",
+            cancelLabel: "Cancelar",
+            variant: "danger",
+        });
+        if (!ok) return;
+        setDeletingId(listing.id);
+        try {
+            const res = await fetch(`/api/seller/listings/${listing.id}/delete`, { method: "POST" });
+            if (res.ok) {
+                setListings((prev) => prev.filter((l) => l.id !== listing.id));
+                toast.success("Publicación eliminada");
+            } else {
+                const data = await res.json().catch(() => ({}));
+                toast.error(data.error || "No se pudo eliminar la publicación");
+            }
+        } catch (error) {
+            console.error("Error deleting listing:", error);
+            toast.error("Error de conexión");
+        } finally {
+            setDeletingId(null);
         }
     }
 
@@ -313,6 +346,20 @@ export default function VendedorListingsPage() {
                                                     <EyeOff className="w-4 h-4" />
                                                 ) : (
                                                     <Eye className="w-4 h-4" />
+                                                )}
+                                            </button>
+                                        )}
+                                        {(!isAuction || listing.auctionStatus !== "ACTIVE") && (
+                                            <button
+                                                onClick={() => handleDelete(listing)}
+                                                disabled={deletingId === listing.id}
+                                                className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                                                aria-label={`Eliminar ${listing.title}`}
+                                            >
+                                                {deletingId === listing.id ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <Trash2 className="w-4 h-4" />
                                                 )}
                                             </button>
                                         )}

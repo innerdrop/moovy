@@ -2897,8 +2897,8 @@ cmpoh5mvw001e5izcyrgkd0ts	buyer1@somosmoovy.com	$2b$10$jYTBPvs74dqSBpTUNYOiE.0.Y
 cmpoh719b001m5izc10mntdbv	getinnerdrop@gmail.com	$2b$10$Y/KRt7jaMTT7rvkWqk92Auz3VOcBQ7d5e4Jg2w7XZGm6pTnNFM0cC	Juan Perez	Juan	Perez	\N	USER	\N	\N	0	0	f	cmpoh719b001n5izcol2u7htw	\N	2026-05-27 19:47:18.431	2026-05-27 19:48:09.061	\N	\N	76824853e87089af56d3347441903041c4867fdc5ea806b2e0cd93af16cc65d2	2026-05-28 19:47:18.284	2026-05-27 19:48:09.059	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
 cmpohhrhn001z5izc9v3rk0e9	bimsads@gmail.com	$2b$10$DiC1m.tCZs8jl/z7XQuF6ebC7QCIntTAlFsuf7izDZhtQ6oUYIUGy	Juan Perez	Juan	Perez	+54 29011234567	USER	\N	\N	0	1000	f	MOV-Z4RL	cmpmpj1yp00025izc1cmefuzm	2026-05-27 19:55:38.986	2026-05-27 20:54:36.48	2026-05-27 19:55:38.984	2026-05-27 19:55:38.984	\N	\N	\N	\N	f	\N	\N	\N	2026-05-27 19:55:42.638	t	\N	\N	t	2026-05-27 19:55:38.984	\N	2.0	1.2	\N	0	\N
 cmpolj36c00305izc7gc617lp	facundotdf@gmail.com	$2b$12$PJfSJKI84teea.YzWbh8euyJIStohd70rtdUwHAyOQTcBQvzbGteq	Facu	\N	\N	\N	USER	\N	\N	0	0	f	cmpolj36c00315izciap0wmx1	\N	2026-05-27 21:48:39.251	2026-05-28 13:12:49.452	\N	\N	\N	\N	2026-05-28 13:12:49.411	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmpmpj1yp00025izc1cmefuzm	maugrod@gmail.com	$2b$10$hYH2q0XYbGOGz5h5b9s9.eiKK3lzWN5QAtVTkpAXJItsh.fEcO3my	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	USER	\N	\N	0	1000	f	MOV-2WVN	\N	2026-05-26 14:05:03.788	2026-05-28 13:14:48.706	2026-05-26 14:05:03.779	2026-05-26 14:05:03.779	\N	\N	\N	\N	f	\N	\N	\N	2026-05-26 14:05:10.706	t	\N	\N	t	2026-05-26 14:05:03.779	\N	2.0	1.2	\N	0	\N
 cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	$2b$12$JsnYaQTYra8HYzOzFwhCH.owWDtAyP5Rj3EEA2NEZxo7ddSrpJy2K	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	ADMIN	\N	\N	0	0	f	MOV-54Z4	\N	2026-04-11 23:58:37.179	2026-06-08 20:16:52.255	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
+cmpmpj1yp00025izc1cmefuzm	maugrod@gmail.com	$2b$10$hYH2q0XYbGOGz5h5b9s9.eiKK3lzWN5QAtVTkpAXJItsh.fEcO3my	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	USER	\N	\N	0	1000	f	MOV-2WVN	\N	2026-05-26 14:05:03.788	2026-06-09 03:57:45.59	2026-05-26 14:05:03.779	2026-05-26 14:05:03.779	\N	\N	\N	\N	f	\N	\N	\N	2026-05-26 14:05:10.706	t	\N	\N	t	2026-05-26 14:05:03.779	\N	2.0	1.2	\N	0	\N
 \.
 
 
@@ -2922,6 +2922,7 @@ cmpollvef003c5izceu3gr0s5	cmpolj36c00305izc7gc617lp	LOGIN	User	cmpolj36c00305izc
 cmppijkuc0006a6dsc4m891a1	cmpolj36c00305izc7gc617lp	ADMIN_USER_DELETED	User	cmpolj36c00305izc7gc617lp	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"facundotdf@gmail.com","name":"Facu","roles":["USER"]}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36	2026-05-28 13:12:49.476
 cmppim4vm000aa6ds4btj1ked	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-05-28 13:14:48.754
 cmq5nja150001uewyvkc6rh21	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-06-08 20:16:52.36
+cmq63zzkz0001fm492ul98qo4	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-06-09 03:57:45.826
 \.
 
 

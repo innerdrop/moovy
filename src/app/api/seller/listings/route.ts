@@ -26,7 +26,8 @@ export async function GET() {
         }
 
         const listings = await prisma.listing.findMany({
-            where: { sellerId: seller.id },
+            // s4-4c-03: ocultar las que el vendedor elimino (soft delete).
+            where: { sellerId: seller.id, deletedAt: null },
             include: {
                 images: { orderBy: { order: "asc" } },
                 category: { select: { id: true, name: true, slug: true } },
