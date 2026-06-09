@@ -48,66 +48,10 @@ export default async function ConfigurationPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Left Column: Maintenance & Visibility */}
                 <div className="space-y-8">
-                    {/* Maintenance Mode Section */}
-                    <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 relative overflow-hidden group">
-                        <div className="absolute top-0 right-0 w-32 h-32 bg-orange-500/5 -mr-16 -mt-16 rounded-full group-hover:scale-110 transition-transform duration-500" />
-
-                        <div className="flex items-center gap-4 mb-8">
-                            <div className="w-12 h-12 rounded-2xl bg-orange-50 flex items-center justify-center">
-                                <span className="text-2xl">🚧</span>
-                            </div>
-                            <div>
-                                <h2 className="text-xl font-black text-gray-900 leading-none">Mantenimiento</h2>
-                                <p className="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Control de acceso global</p>
-                            </div>
-                        </div>
-
-                        <div className="space-y-6">
-                            {/* Toggle Landing */}
-                            <div className="flex items-center justify-between p-5 bg-orange-50/50 rounded-2xl border border-orange-100/50">
-                                <div className="max-w-[70%]">
-                                    <h3 className="font-extrabold text-gray-900 text-sm">Modo Landing</h3>
-                                    <p className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
-                                        Muestra "Volvemos Pronto" en la página principal.
-                                    </p>
-                                </div>
-                                <Switch
-                                    name="isMaintenanceMode"
-                                    defaultChecked={settings?.isMaintenanceMode ?? false}
-                                    activeColor="bg-orange-500"
-                                />
-                            </div>
-
-                            {/* Toggle Tienda */}
-                            <div className="flex items-center justify-between p-5 bg-red-50/50 rounded-2xl border border-red-100/50">
-                                <div className="max-w-[70%]">
-                                    <h3 className="font-extrabold text-red-700 text-sm">Modo Catálogo</h3>
-                                    <p className="text-[10px] text-slate-500 font-medium leading-tight mt-0.5">
-                                        Bloquea la navegación por productos y compras.
-                                    </p>
-                                </div>
-                                <Switch
-                                    name="tiendaMaintenance"
-                                    defaultChecked={settings?.tiendaMaintenance ?? false}
-                                    activeColor="bg-red-500"
-                                />
-                            </div>
-
-                            {/* Maintenance Message */}
-                            <div className="pt-2">
-                                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 pl-1">
-                                    Mensaje al usuario
-                                </label>
-                                <textarea
-                                    defaultValue={settings?.maintenanceMessage || ""}
-                                    className="w-full bg-slate-50 border border-gray-100 rounded-2xl p-4 text-sm font-medium text-gray-900 focus:ring-2 focus:ring-orange-500 focus:outline-none transition-all resize-none"
-                                    rows={2}
-                                    placeholder="¡Volvemos pronto! Estamos trabajando para mejorar tu experiencia."
-                                    name="maintenanceMessage"
-                                />
-                            </div>
-                        </div>
-                    </div>
+                    {/* Modo mantenimiento removido (rama feat/candado-lanzamiento-preview):
+                        la visibilidad del sitio ahora la controla el candado de lanzamiento
+                        por variable de entorno (LAUNCH_GATE) en proxy.ts. Se abre/cierra con
+                        los scripts abrir-tienda.ps1 / cerrar-tienda.ps1, no desde OPS. */}
 
                     {/* Visibility Section */}
                     <div className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 relative overflow-hidden group">

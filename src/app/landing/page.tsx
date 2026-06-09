@@ -319,12 +319,6 @@ export default function LandingPage() {
         fetch("/api/settings")
             .then(res => res.json())
             .then(data => {
-                // If maintenance mode is on and user is not admin, redirect
-                if (data.isMaintenanceMode && !isAdmin) {
-                    window.location.href = "/mantenimiento";
-                    return;
-                }
-
                 setSiteSettings({
                     showRepartidoresCard: data.showRepartidoresCard ?? true,
                     showComerciosCard: data.showComerciosCard ?? true,

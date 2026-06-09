@@ -14,7 +14,6 @@ import BuyerOnboardingTour from "@/components/onboarding/BuyerOnboardingTour";
 import PWAInstallPrompt from "@/components/onboarding/PWAInstallPrompt";
 import CookieBanner from "@/components/legal/CookieBanner";
 import DriverAvailableToast from "@/components/notifications/DriverAvailableToast";
-import { hasAnyRole } from "@/lib/auth-utils";
 import { useCartStore } from "@/store/cart";
 import PullToRefresh from "@/components/ui/PullToRefresh";
 // MobileOnlyGuard removed — desktop now has full responsive layout
@@ -38,13 +37,8 @@ export default function StoreLayout({
     // Mount — runs exactly once
     useEffect(() => {
         setMounted(true);
-
-        // Preview mode: ?preview=CLAVE_SECRETA setea cookie para bypass de mantenimiento
-        const PREVIEW_SECRET = process.env.NEXT_PUBLIC_PREVIEW_SECRET || "moovy2026preview";
-        const params = new URLSearchParams(window.location.search);
-        if (params.get("preview") === PREVIEW_SECRET) {
-            document.cookie = "moovy_preview=1; path=/; max-age=86400; SameSite=Lax";
-        }
+        // El candado de lanzamiento + preview ahora se maneja server-side en
+        // proxy.ts (rama feat/candado-lanzamiento-preview). Aca no hay logica de preview.
     }, []); // empty deps = runs once on mount, NOT on session change
 
     // Fetch settings + promo + maintenance check — runs once when session is resolved
@@ -54,18 +48,13 @@ export default function StoreLayout({
         if (status === "loading" || settingsFetched.current) return;
         settingsFetched.current = true;
 
-        const hasPreviewCookie = document.cookie.includes("moovy_preview=1");
-
         fetch("/api/settings")
             .then(res => res.json())
             .then(data => {
                 if (!data) return;
 
-                const isAdmin = hasAnyRole(session, ["ADMIN"]);
-                if (data.tiendaMaintenance && !isAdmin && !hasPreviewCookie) {
-                    window.location.href = "/mantenimiento";
-                    return;
-                }
+                // Modo mantenimiento (toggle de OPS) removido: la visibilidad del
+                // sitio ahora la controla el candado de lanzamiento en proxy.ts.
 
                 if (data.promoPopupEnabled) {
                     setPromoSettings({

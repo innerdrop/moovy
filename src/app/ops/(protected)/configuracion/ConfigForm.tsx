@@ -30,9 +30,9 @@ export default function ConfigForm({ children, initialSettings }: ConfigFormProp
         const formData = new FormData(formRef.current!);
 
         const settings: any = {
-            isMaintenanceMode: formData.get("isMaintenanceMode") === "on",
-            tiendaMaintenance: formData.get("tiendaMaintenance") === "on",
-            maintenanceMessage: formData.get("maintenanceMessage") || "",
+            // Modo mantenimiento removido (rama feat/candado-lanzamiento-preview):
+            // la visibilidad del sitio ahora la controla el candado de lanzamiento
+            // por variable de entorno (LAUNCH_GATE) en proxy.ts, no OPS.
             promoPopupEnabled: formData.get("promoPopupEnabled") === "on",
             promoPopupTitle: formData.get("promoPopupTitle") || "",
             promoPopupMessage: formData.get("promoPopupMessage") || "",

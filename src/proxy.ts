@@ -96,6 +96,50 @@ export default auth(async (request) => {
         return NextResponse.next();
     }
 
+    // ─── Candado de lanzamiento (cortina "Proximamente") ──────────────────────
+    // Rama: feat/candado-lanzamiento-preview
+    //
+    // El sitio esta CERRADO por defecto y solo se abre seteando LAUNCH_GATE=open
+    // en el entorno del servidor. Falla CERRADO: cualquier otro valor (o ausente)
+    // = cerrado. Un deploy NO puede exponer la pagina por accidente porque la
+    // variable vive en el entorno del VPS y persiste entre deploys.
+    //
+    // Solo aplica en produccion (en dev se ve todo, sin molestias). Solo gatea
+    // PAGINAS — las /api estan excluidas por el matcher, asi los webhooks de MP y
+    // los crons siguen funcionando con la cortina puesta.
+    //
+    // Bypass: visitar cualquier URL con ?preview=<PREVIEW_TOKEN> deja una cookie
+    // httpOnly por 30 dias; quien la tiene ve el sitio real. El resto ve /proximamente.
+    if (process.env.NODE_ENV === 'production' && process.env.LAUNCH_GATE !== 'open') {
+        const previewToken = process.env.PREVIEW_TOKEN || '';
+        const PREVIEW_COOKIE = 'moovy_preview';
+        const queryToken = request.nextUrl.searchParams.get('preview');
+
+        // 1. Llega con el token en la query -> set cookie y redirige limpio (sin ?preview)
+        if (previewToken && queryToken === previewToken) {
+            const clean = request.nextUrl.clone();
+            clean.searchParams.delete('preview');
+            const res = NextResponse.redirect(publicUrl(clean.pathname + clean.search, request));
+            res.cookies.set(PREVIEW_COOKIE, previewToken, {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'lax',
+                domain: '.somosmoovy.com', // cubre el dominio + subdominios (comercios./conductores./ops.)
+                path: '/',
+                maxAge: 60 * 60 * 24 * 30, // 30 dias
+            });
+            return res;
+        }
+
+        // 2. Ya tiene la cookie de preview valida -> pasa de largo
+        const hasPreview = previewToken && request.cookies.get(PREVIEW_COOKIE)?.value === previewToken;
+
+        // 3. Sin acceso: mostrar la cortina (rewrite interno, mantiene la URL, status 200)
+        if (!hasPreview && pathname !== '/proximamente') {
+            return NextResponse.rewrite(new URL('/proximamente', request.url));
+        }
+    }
+
     // Get session from Auth.js v5
     const session = request.auth;
     const userRole = session?.user?.role as string | undefined;
