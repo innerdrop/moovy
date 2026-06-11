@@ -25,6 +25,7 @@
 - **s4-4b-06** Instagram del comercio se muestra en su perfil público.
 - **s4-4c-03** Eliminar listing del vendedor (soft delete).
 - **s4-4c-01 / s4-4c-02** Vendedor listings UX (`fix/vendedor-listings-ux`): banner "cambios sin guardar" + confirmación al salir en EditListingForm; pausar/reactivar como botón con confirmación.
+- **s4-4a-01 / s4-4d-02 + obs nuevas** Comercio UX (`fix/comercio-ux-sugerir-y-categorias`): Sugerir funciona OK (cerrado sin código). Categorías home = curación OPS desde `/ops/categorias` (tarea OPERATIVA pre-launch, agregada a ISSUES). Form de producto: validación descripción min 10 client-side + asteriscos + contador + scroll-to-error + ruedita desactivada en numéricos (alta y edición).
 - Candado de lanzamiento + cortina "Próximamente" + scripts abrir/cerrar tienda (sacó mantenimiento de OPS).
 - Dashboard Unit Economics en `/ops/unit-economics`.
 - Fixes de build: warning de Sentry + falso "build fallo" en tsc-strict.ps1.
@@ -39,10 +40,9 @@
 
 ## Pendientes (secuencia de ramas)
 
-1. **Comercio UX:** s4-4a-01 (revisar botón "sugerir") + s4-4d-02 (aclarar cuándo aparecen las categorías en la home).
-3. **Driver:** s2-2c-04 (al conectarse, mensaje "completá tu documentación para que Moovy te valide", no solo "no podés conectarte").
-4. **OPS — Campana de notificaciones** (s3-3a-05): aviso in-app de change-requests/aprobaciones pendientes. Feature más grande (modelo + API + polling + UI).
-5. **Sección de Puntos** (s4-4e-06/03/05/07): repensar wording estilo Amex ("por cada $X ganás Y", ocultar cálculo), agregar acceso/botón, aclarar dónde se aplican. **REQUIERE dirección de diseño del founder** antes de implementar.
+1. **Driver:** s2-2c-04 (al conectarse, mensaje "completá tu documentación para que Moovy te valide", no solo "no podés conectarte").
+2. **OPS — Campana de notificaciones** (s3-3a-05): aviso in-app de change-requests/aprobaciones pendientes. Feature más grande (modelo + API + polling + UI).
+3. **Sección de Puntos** (s4-4e-06/03/05/07): repensar wording estilo Amex ("por cada $X ganás Y", ocultar cálculo), agregar acceso/botón, aclarar dónde se aplican. **REQUIERE dirección de diseño del founder** antes de implementar.
 
 ### Logo (s4-4b-02 / s4-4a-00) — estado del diagnóstico
 
@@ -69,10 +69,4 @@
 - **Re-seed de `DeliveryRate`** en el VPS después del deploy.
 - Después del primer deploy con el candado: correr **`cerrar-tienda.ps1`** una vez (setea `PREVIEW_TOKEN` + deja la cortina). El sitio queda privado por defecto (fail-closed).
 - Datos VPS: `root@31.97.14.156`, app en `/var/www/moovy`, DB `moovy_db` / user `postgres` / puerto `5436` (docker `moovy-db`).
-- Preview: `https://somosmoovy.com/?preview=moovy2026preview`
-
-## Pendientes estructurales mayores (post-fixes)
-
-- Test real de **split MP** con 3 cuentas distintas (Moovy app-owner ≠ comercio ≠ comprador) en prod.
-- **Pintar/confirmar zonas de cobertura** en `/ops/zonas-delivery` (hay 4; valida el rechazo de Río Grande).
-- **SEO** (post-funcionalidad): `aggregateRating` + `review` en el structured data de productos (estrellas en Google).
+- Preview: `https://somosmoovy.com/?preview=moo

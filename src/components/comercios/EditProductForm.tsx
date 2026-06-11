@@ -113,12 +113,30 @@ export default function EditProductForm({ product, categories }: EditProductForm
         setVolumeMl(String(meta.volumeMl));
     };
 
+    // fix/comercio-ux: el banner de error vive arriba del form — si el usuario
+    // esta abajo (mobile) no lo ve. Scroll al banner cada vez que seteamos error.
+    const showError = (msg: string) => {
+        setError(msg);
+        requestAnimationFrame(() => {
+            document.getElementById("banner-error-editar-producto")?.scrollIntoView({ behavior: "smooth", block: "center" });
+        });
+    };
+
     const handleSubmit = async (formData: FormData) => {
         setIsLoading(true);
         setError("");
 
         if (imageUrls.length === 0) {
-            setError("Debes subir al menos una imagen para el producto");
+            showError("Debes subir al menos una imagen para el producto");
+            setIsLoading(false);
+            return;
+        }
+
+        // El server (productSchema) exige descripcion min 10 — validamos aca
+        // para que el comercio vea el error al instante (la UI decia "Opcional",
+        // mentira detectada en QA pre-launch).
+        if (!description || description.trim().length < 10) {
+            showError("La descripción debe tener al menos 10 caracteres");
             setIsLoading(false);
             return;
         }
@@ -129,7 +147,7 @@ export default function EditProductForm({ product, categories }: EditProductForm
         const result = await updateProduct(product.id, formData);
 
         if (result?.error) {
-            setError(result.error);
+            showError(result.error);
             setIsLoading(false);
         }
     };
@@ -229,7 +247,7 @@ export default function EditProductForm({ product, categories }: EditProductForm
                 </div>
 
                 {error && (
-                    <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">
+                    <div id="banner-error-editar-producto" className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">
                         {error}
                     </div>
                 )}
@@ -303,6 +321,7 @@ export default function EditProductForm({ product, categories }: EditProductForm
                                         required
                                         value={price}
                                         onChange={(e) => setPrice(e.target.value)}
+                                        onWheel={(e) => e.currentTarget.blur()}
                                         placeholder="0.00"
                                         className="input !pl-10"
                                         disabled={isLoading}
@@ -320,6 +339,7 @@ export default function EditProductForm({ product, categories }: EditProductForm
                                     required
                                     value={stock}
                                     onChange={(e) => setStock(e.target.value)}
+                                    onWheel={(e) => e.currentTarget.blur()}
                                     placeholder="Ej. 100"
                                     className="input"
                                     disabled={isLoading}
@@ -328,8 +348,10 @@ export default function EditProductForm({ product, categories }: EditProductForm
                         </div>
 
                         <div>
+                            {/* fix/comercio-ux: decia "(Opcional)" pero el server la
+                                exige (min 10 chars). Asterisco + helper + contador. */}
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Descripción (Opcional)
+                                Descripción <span className="text-red-400">*</span>
                             </label>
                             <textarea
                                 name="description"
@@ -340,6 +362,12 @@ export default function EditProductForm({ product, categories }: EditProductForm
                                 className="input"
                                 disabled={isLoading}
                             />
+                            <div className="flex items-start justify-between gap-3 mt-1">
+                                <p className="text-[11px] text-gray-400">Mínimo 10 caracteres.</p>
+                                <p className={`text-[11px] font-bold whitespace-nowrap ${description.trim().length >= 10 ? "text-green-600" : "text-gray-400"}`}>
+                                    {description.trim().length >= 10 ? "✓ " : ""}{description.trim().length}/10
+                                </p>
+                            </div>
                         </div>
 
                         {/* Tamaño del producto — rama feat/peso-volumen-productos */}
@@ -397,6 +425,7 @@ export default function EditProductForm({ product, categories }: EditProductForm
                                                 placeholder="Ej. 1500"
                                                 className="input"
                                                 disabled={isLoading}
+                                                onWheel={(e) => e.currentTarget.blur()}
                                                 value={weightGrams}
                                                 onChange={(e) => setWeightGrams(e.target.value)}
                                             />
@@ -411,6 +440,7 @@ export default function EditProductForm({ product, categories }: EditProductForm
                                                 placeholder="Ej. 1500"
                                                 className="input"
                                                 disabled={isLoading}
+                                                onWheel={(e) => e.currentTarget.blur()}
                                                 value={volumeMl}
                                                 onChange={(e) => setVolumeMl(e.target.value)}
                                             />

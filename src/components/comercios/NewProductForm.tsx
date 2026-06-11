@@ -203,6 +203,27 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
         }
     };
 
+    // fix/comercio-ux (s4-4a obs): llevar al comercio al primer campo con error.
+    // Antes el error del server se mostraba en un banner arriba del fold y en
+    // mobile el comercio tocaba "Publicar" y "no pasaba nada" — tenia que
+    // scrollear hasta arriba para enterarse. Patron estandar (Stripe/MeLi):
+    // scroll + focus al primer campo invalido.
+    const scrollToFirstError = (errors: Record<string, string>) => {
+        const order = ["image", "name", "price", "stock", "description"];
+        const first = order.find((f) => errors[f]);
+        if (!first) return;
+        requestAnimationFrame(() => {
+            const el =
+                first === "image"
+                    ? document.getElementById("seccion-imagen-producto")
+                    : (document.querySelector(`[name="${first}"]`) as HTMLElement | null);
+            el?.scrollIntoView({ behavior: "smooth", block: "center" });
+            if (el && el.tagName !== "DIV") {
+                (el as HTMLInputElement).focus({ preventScroll: true });
+            }
+        });
+    };
+
     const validateForm = (): boolean => {
         const errors: Record<string, string> = {};
 
@@ -218,8 +239,15 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
         if (formValues.stock === "" || Number(formValues.stock) < 0) {
             errors.stock = "El stock no puede ser negativo";
         }
+        // El server (productSchema) exige descripcion min 10 chars — antes este
+        // check faltaba en el cliente y el error volvia del server a un banner
+        // invisible arriba del form (observacion QA pre-launch de Mauro).
+        if (!formValues.description || formValues.description.trim().length < 10) {
+            errors.description = "La descripción debe tener al menos 10 caracteres";
+        }
 
         setFieldErrors(errors);
+        if (Object.keys(errors).length > 0) scrollToFirstError(errors);
         return Object.keys(errors).length === 0;
     };
 
@@ -241,6 +269,10 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
         if (result?.error) {
             setError(result.error);
             setIsLoading(false);
+            // Error del server: llevarlo al banner para que no quede invisible
+            requestAnimationFrame(() => {
+                document.getElementById("banner-error-producto")?.scrollIntoView({ behavior: "smooth", block: "center" });
+            });
         }
     };
 
@@ -302,7 +334,7 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
             </div>
 
             {error && (
-                <div className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-sm font-semibold flex items-center gap-3">
+                <div id="banner-error-producto" className="p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl text-sm font-semibold flex items-center gap-3">
                     <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-sm">
                         <Ban className="w-4 h-4" />
                     </div>
@@ -432,9 +464,9 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
             <form action={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
                 {/* Left: Images */}
                 <div className="lg:col-span-1 space-y-4">
-                    <div className={`bg-white p-6 rounded-2xl border ${fieldErrors.image ? "border-red-300 ring-2 ring-red-200" : "border-gray-100"} shadow-sm space-y-4`}>
+                    <div id="seccion-imagen-producto" className={`bg-white p-6 rounded-2xl border ${fieldErrors.image ? "border-red-300 ring-2 ring-red-200" : "border-gray-100"} shadow-sm space-y-4`}>
                         <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Imagen principal</span>
+                            <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Imagen principal <span className="text-red-400">*</span></span>
                             {fieldErrors.image && <span className="text-xs font-semibold text-red-500">{fieldErrors.image}</span>}
                         </div>
 
@@ -555,6 +587,7 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                                     placeholder="0"
                                     className={`${fieldClass("price")} pl-9`}
                                     disabled={isLoading}
+                                    onWheel={(e) => e.currentTarget.blur()}
                                     value={formValues.price}
                                     onChange={(e) => { setFormValues({ ...formValues, price: e.target.value }); setFieldErrors(prev => { const { price, ...rest } = prev; return rest; }); }}
                                 />
@@ -575,6 +608,7 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                                 placeholder="10"
                                 className={fieldClass("stock")}
                                 disabled={isLoading}
+                                onWheel={(e) => e.currentTarget.blur()}
                                 value={formValues.stock}
                                 onChange={(e) => { setFormValues({ ...formValues, stock: e.target.value }); setFieldErrors(prev => { const { stock, ...rest } = prev; return rest; }); }}
                             />
@@ -583,10 +617,12 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                         </div>
                     </div>
 
-                    {/* Description */}
+                    {/* Description — obligatoria (productSchema exige min 10).
+                        Asterisco + helper + contador en vivo para que el comercio
+                        sepa el requisito ANTES de tocar Publicar. */}
                     <div>
                         <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">
-                            Descripción del Producto
+                            Descripción del Producto <span className="text-red-400">*</span>
                         </label>
                         <textarea
                             name="description"
@@ -595,8 +631,18 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                             className={`${fieldClass("description")} resize-none font-medium`}
                             disabled={isLoading}
                             value={formValues.description}
-                            onChange={(e) => setFormValues({ ...formValues, description: e.target.value })}
+                            onChange={(e) => { setFormValues({ ...formValues, description: e.target.value }); setFieldErrors(prev => { const { description, ...rest } = prev; return rest; }); }}
                         />
+                        <div className="flex items-start justify-between gap-3 mt-1 ml-1">
+                            {fieldErrors.description ? (
+                                <p className="text-xs text-red-500 font-semibold">{fieldErrors.description}</p>
+                            ) : (
+                                <p className="text-[10px] text-gray-400">Contale a tus clientes qué es, qué trae o cómo viene. Mínimo 10 caracteres.</p>
+                            )}
+                            <p className={`text-[10px] font-bold whitespace-nowrap ${formValues.description.trim().length >= 10 ? "text-green-600" : "text-gray-400"}`}>
+                                {formValues.description.trim().length >= 10 ? "✓ " : ""}{formValues.description.trim().length}/10
+                            </p>
+                        </div>
                     </div>
 
                     {/* Tamaño del producto — rama feat/peso-volumen-productos */}
@@ -654,6 +700,7 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                                             placeholder="Ej. 1500"
                                             className={fieldClass("weightGrams")}
                                             disabled={isLoading}
+                                            onWheel={(e) => e.currentTarget.blur()}
                                             value={formValues.weightGrams}
                                             onChange={(e) => setFormValues({ ...formValues, weightGrams: e.target.value })}
                                         />
@@ -668,6 +715,7 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                                             placeholder="Ej. 1500"
                                             className={fieldClass("volumeMl")}
                                             disabled={isLoading}
+                                            onWheel={(e) => e.currentTarget.blur()}
                                             value={formValues.volumeMl}
                                             onChange={(e) => setFormValues({ ...formValues, volumeMl: e.target.value })}
                                         />

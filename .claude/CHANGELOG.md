@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-11 (rama `fix/comercio-ux-sugerir-y-categorias`)
+
+fix(comercio): UX form de producto — validacion visible + obligatorios claros + sin scroll-fantasma (s4-4a-01, s4-4d-02 + observaciones QA 2026-06-10). CONTEXTO: s4-4a-01 (boton Sugerir) se verifico OK sin cambios; s4-4d-02 (categorias home) es tarea OPERATIVA: los slots se curan desde /ops/categorias y en prod no hay ninguno activo (anotado en ISSUES). CAMBIOS DE CODIGO (NewProductForm + EditProductForm): (1) La descripcion es obligatoria en el server (productSchema min 10 chars) pero el cliente no la validaba -> el error volvia del server a un banner arriba del fold, invisible en mobile. Ahora: validacion client-side con error inline en el campo, asterisco rojo en todos los obligatorios (imagen/nombre/precio/descripcion), helper "Minimo 10 caracteres" + contador en vivo (X/10 con check verde). En EditProductForm el label decia "(Opcional)" — mentira corregida. (2) Auto-scroll + focus al primer campo con error al tocar Publicar (patron Stripe/MeLi); errores del server tambien scrollean al banner (ids banner-error-producto / banner-error-editar-producto). (3) onWheel blur en los 8 inputs numericos (precio/stock/gramos/ml en alta y edicion): la ruedita del mouse cambiaba el precio silenciosamente al scrollear. Sin cambios de schema ni endpoints. PENDIENTE OPERATIVO: activar HomeCategorySlots desde /ops/categorias antes del launch; re-verificar 500 de /api/comercios/soporte/notificaciones post-deploy.
+
+**Archivos:** ISSUES.md, PROJECT_STATUS.md, docs/HANDOFF_PENDIENTES.md, src/components/comercios/EditProductForm.tsx, src/components/comercios/NewProductForm.tsx
+
 ## 2026-06-11 (rama `fix/vendedor-listings-ux`)
 
 fix(vendedor): UX listings — cambios sin guardar + pausar con confirmacion (s4-4c-01, s4-4c-02). (1) EditListingForm: snapshot inicial + isDirty, banner flotante "Tenes cambios sin guardar" con Guardar/Descartar (patron EditProductForm del comercio) y pop-up de confirmacion al salir via Volver/Cancelar con cambios pendientes (modal Moovy store/confirm, regla #24). Descartar restaura los valores originales incluida la imagen. (2) /vendedor/listings: el toggle de ojo ambiguo pasa a boton con texto Pausar/Reactivar; pausar pide confirmacion explicando que la publicacion deja de verse en el marketplace; reactivar no confirma. Toasts de exito/error en el toggle (antes fallaba en silencio). Sin cambios de schema ni endpoints.
