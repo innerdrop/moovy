@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-06-11 (rama `fix/vendedor-listings-ux`)
+
+fix(vendedor): UX listings — cambios sin guardar + pausar con confirmacion (s4-4c-01, s4-4c-02). (1) EditListingForm: snapshot inicial + isDirty, banner flotante "Tenes cambios sin guardar" con Guardar/Descartar (patron EditProductForm del comercio) y pop-up de confirmacion al salir via Volver/Cancelar con cambios pendientes (modal Moovy store/confirm, regla #24). Descartar restaura los valores originales incluida la imagen. (2) /vendedor/listings: el toggle de ojo ambiguo pasa a boton con texto Pausar/Reactivar; pausar pide confirmacion explicando que la publicacion deja de verse en el marketplace; reactivar no confirma. Toasts de exito/error en el toggle (antes fallaba en silencio). Sin cambios de schema ni endpoints.
+
+**Archivos:** ISSUES.md, PROJECT_STATUS.md, docs/HANDOFF_PENDIENTES.md, docs/PROMPT_INICIO_SESION.md, src/app/vendedor/(protected)/listings/page.tsx, src/components/seller/EditListingForm.tsx
+
 ## 2026-06-09 (rama `fix/vendedor-eliminar-listing`)
 
 feat(vendedor): eliminar publicacion del marketplace (s4-4c-03) — soft delete. Antes el vendedor solo podia OCULTAR (toggle isActive); no tenia como eliminar. (1) Nuevo endpoint POST /api/seller/listings/[id]/delete: valida dueño (sellerId) y que no sea una subasta ACTIVA con ofertas; hace SOFT delete (deletedAt + deletedBy + deletedReason='Seller-initiated') ademas de isActive=false. Soft (no hard) por audit AFIP y para no dejar OrderItems huerfanos. Mismo mecanismo que la moderacion de OPS. (2) GET /api/seller/listings filtra deletedAt:null (desaparece del panel del vendedor). El marketplace publico filtra por isActive:true, asi que con isActive=false queda oculto igual. (3) UI /vendedor/listings: boton de tacho con confirmacion (store/confirm) + toast, saca la card de la lista al eliminar. Sin cambios de schema (los campos de soft delete ya existian). Nota: s5-5a-00 (compra del propio comercio) ya estaba bloqueado por el check anti-self-purchase ISSUE-003.

@@ -15,11 +15,28 @@
 3. ⏳ Día antes del launch: correr en producción, confirmar admin OPS preservado, validar configs intactas, DB limpia
 **Esfuerzo**: 1-2 horas (ejecución supervisada).
 
+### DEPLOY del batch acumulado a producción
+**Estado**: 🔴 PENDIENTE — develop tiene ~25 ramas sin deployar (toda esta sesión + previo).
+**Qué falta**:
+1. `devmain.ps1` en **MODO SCHEMA** (las Ramas 1 y 2 de la Biblia tocaron `schema.prisma`) — **NO** usar `-NoDB`.
+2. **Re-seed de `DeliveryRate`** en el VPS después del deploy.
+3. Cleanup scripts post-deploy (idempotentes): `fix-orders-completed-to-delivered.ts` + `cleanup-deprecated-feature-flags.ts`.
+4. Correr **`cerrar-tienda.ps1`** una vez (setea `PREVIEW_TOKEN` + deja la cortina; el sitio queda privado fail-closed).
+**Nota**: el founder quiere primero resolver TODAS las observaciones del checklist y probarlas en develop/local, recién después deployar.
+
 ---
 
 ## 🟡 IMPORTANTES (no bloquean lanzamiento)
 
-_(ningún importante abierto al cierre del sprint del 2026-04-30)_
+### Observaciones del checklist pre-launch pendientes (sesión 2026-06-09)
+> Detalle vivo + secuencia de ramas en `docs/HANDOFF_PENDIENTES.md`.
+
+- **Logo del comercio (s4-4b-02)** — en proceso. DB prod: TEST/MOOVY image=null, ALNAAR con URL R2 (R2 funciona). updateMerchant en develop se ve correcto → probar logo LOCAL en develop; si falla, agregar log de `data.image`.
+- **Comercio UX (s4-4a-01, s4-4d-02)** — revisar botón "sugerir" + aclarar categorías en la home.
+- **Driver (s2-2c-04)** — mensaje claro al conectarse ("completá tu documentación").
+- **OPS — Campana de notificaciones (s3-3a-05)** — feature: aviso in-app de change-requests/aprobaciones.
+- **Sección de Puntos (s4-4e-06/03/05/07)** — repensar wording estilo Amex + accesos. Requiere dirección de diseño del founder.
+- **A re-probar** (sin contexto): s2-2a-11, s2-2b-01, s7-7a-02, s4-4c-04, s3-3c-01.
 
 
 ---
@@ -34,8 +51,36 @@ _(ningún importante abierto al cierre del sprint del 2026-04-30)_
 | PIN Fase 12 — Flow "no pude entregar" | Mejora | Medio (foto + GPS + espera validada) |
 | PIN Fase 13 — Cron drivers no-moviendo >10min | Mejora | Chico |
 | Tests automatizados (Vitest configurado, 0 escritos) | Calidad | Grande |
-| MP producción (credenciales reales) | Config | Chico |
-| Split payments real (`SubOrder.mpTransferId` no implementado) | Feature | Grande |
+| Split payments — test real con 3 cuentas MP distintas en prod | Verificación | Medio (implementado en Grupos B/C, falta probar) |
+| SEO: aggregateRating + review en structured data de productos | Mejora | Chico |
+
+> **MP producción**: ✅ credenciales de prod cargadas (2026-06). Ya no se usa sandbox; los pagos se prueban en prod.
+
+---
+
+## ✅ Resueltos esta sesión (2026-06-09)
+
+> Sesión larga: MP split en prod + Biblia conectada + candado de lanzamiento + ronda de QA del checklist. Compacto (detalle por rama en CHANGELOG cuando se actualice):
+
+| Tema | Rama(s) | Resumen |
+|---|---|---|
+| MP split en prod | `fix/mp-oauth-test-token` + Grupos B/C | OAuth `test_token` gateado, `marketplace_fee` = comisión + envío, refund/reconcile/redondeo con token del vendedor. Split confirmado con pago real. |
+| Asignación / vehículo | match tamaño→vehículo | Cadena tamaño→pedido→asignación + filtro de vehículo en el claim. |
+| Driver cancela pedido | post-aceptar/pre-retiro | Cancelación sin penalización de fraude (Opción A del founder). |
+| Biblia conectada (3 ramas) | motor-envío / asignación / guardrail | Motor de envío único fuel-based (preview=cobro), comisiones reales, equipamiento de frío, radio editable, guardrail anti-config-fantasma. |
+| Delivery cobertura | `fix/delivery-geocoding-cobertura` | Geocoding server-side (sin forzar Ushuaia) + gate point-in-polygon + cobro blindado + aviso "fuera de cobertura". |
+| Unit Economics | `feat/dashboard-unit-economics` | Dashboard read-only `/ops/unit-economics` + lib testeable (margen/break-even). |
+| Candado de lanzamiento | `feat/candado-lanzamiento-preview` | `LAUNCH_GATE` (env, fail-closed) + cortina `/proximamente` + `abrir`/`cerrar-tienda.ps1`. Saca el mantenimiento de OPS. |
+| Reset password (s2-2a-04) | `fix/auth-validate-reset-token-hash` | `validate-reset-token` comparaba token plano vs hash → "Enlace inválido" siempre. Arregla también el invite de admin. |
+| Cuenta buyer (s2-2a-05/00/07) | `fix/buyer-cuenta` | Carrito se vacía al logout (`src/lib/logout.ts`), código de referido valida existencia + prefijo `MOV-` fijo, editar direcciones (UI; unificado a `apartment`). |
+| Editar producto + Instagram (s4-4a-07, s4-4b-06) | `fix/comercio-editar-producto-e-instagram` | `isDirty` trackea precio/stock/categoría → aparece Guardar. Instagram/redes del comercio se muestran en `/store/[slug]`. |
+| Eliminar listing (s4-4c-03) | `fix/vendedor-eliminar-listing` | Soft delete del listing por el vendedor (tacho + confirmación). |
+| Vendedor listings UX (s4-4c-01, s4-4c-02) | `fix/vendedor-listings-ux` | Banner "cambios sin guardar" + pop-up al salir editando un listing (patrón EditProductForm); pausar/reactivar como botón con texto + confirmación al pausar (antes era el ojo ambiguo). |
+| Build / tooling | `chore/...` | Warning Sentry deprecado removido, falso "build fallo" en `tsc-strict.ps1` arreglado, match de string en `validate-role-flows.ts`. |
+
+**Ya estaban resueltos (stale en el checklist, NO requirieron trabajo)**: aviso "fuera de cobertura" (s4-4d-06), onboarding comercio mail+acceso inmediato (s2-2b-00), compra del propio comercio bloqueada (s5-5a-00, ISSUE-003), vendedor sin docs = correcto por diseño (s2-2d-02, s3-3b-04).
+
+**Decisiones canónicas tomadas** (pendiente migrar a CLAUDE.md): candado de lanzamiento por env, vendedor frictionless, unit economics dashboard. Ver `docs/HANDOFF_PENDIENTES.md`.
 
 ---
 

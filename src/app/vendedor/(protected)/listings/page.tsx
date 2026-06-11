@@ -6,8 +6,8 @@ import {
     Tag,
     Plus,
     Loader2,
-    Eye,
-    EyeOff,
+    Pause,
+    Play,
     Edit,
     Trash2,
     AlertCircle,
@@ -101,22 +101,40 @@ export default function VendedorListingsPage() {
         }
     }
 
-    async function toggleActive(id: string) {
-        setTogglingId(id);
+    // s4-4c-02: pausar deja de ser un icono de ojo ambiguo — ahora es un boton
+    // con texto ("Pausar"/"Reactivar") y pausar pide confirmacion explicando
+    // que pasa. Reactivar no confirma (accion positiva, sin riesgo).
+    async function toggleActive(listing: Listing) {
+        if (listing.isActive) {
+            const ok = await confirm({
+                title: `Pausar "${listing.title}"`,
+                message: "Tu publicación deja de verse en el marketplace y nadie va a poder comprarla. La podés reactivar cuando quieras desde acá.",
+                confirmLabel: "Pausar publicación",
+                cancelLabel: "Cancelar",
+                variant: "warning",
+            });
+            if (!ok) return;
+        }
+        setTogglingId(listing.id);
         try {
-            const res = await fetch(`/api/seller/listings/${id}`, {
+            const res = await fetch(`/api/seller/listings/${listing.id}`, {
                 method: "DELETE",
             });
             if (res.ok) {
                 const data = await res.json();
                 setListings((prev) =>
                     prev.map((l) =>
-                        l.id === id ? { ...l, isActive: data.isActive } : l
+                        l.id === listing.id ? { ...l, isActive: data.isActive } : l
                     )
                 );
+                toast.success(data.isActive ? "Publicación reactivada" : "Publicación pausada");
+            } else {
+                const data = await res.json().catch(() => ({}));
+                toast.error(data.error || "No se pudo actualizar la publicación");
             }
         } catch (error) {
             console.error("Error toggling listing:", error);
+            toast.error("Error de conexión");
         } finally {
             setTogglingId(null);
         }
@@ -331,21 +349,29 @@ export default function VendedorListingsPage() {
                                                 <Edit className="w-4 h-4" />
                                             </Link>
                                         )}
+                                        {/* s4-4c-02: boton con texto en vez del ojo ambiguo */}
                                         {(!isAuction || listing.auctionStatus !== "ACTIVE") && (
                                             <button
-                                                onClick={() => toggleActive(listing.id)}
+                                                onClick={() => toggleActive(listing)}
                                                 disabled={togglingId === listing.id}
-                                                className={`p-2 rounded-lg transition ${listing.isActive
-                                                        ? "text-gray-400 hover:text-orange-600 hover:bg-orange-50"
-                                                        : "text-gray-400 hover:text-green-600 hover:bg-green-50"
+                                                className={`px-2.5 py-1.5 rounded-lg transition text-xs font-bold flex items-center gap-1 ${listing.isActive
+                                                        ? "text-orange-600 bg-orange-50 hover:bg-orange-100"
+                                                        : "text-green-700 bg-green-50 hover:bg-green-100"
                                                     }`}
+                                                aria-label={listing.isActive ? `Pausar ${listing.title}` : `Reactivar ${listing.title}`}
                                             >
                                                 {togglingId === listing.id ? (
                                                     <Loader2 className="w-4 h-4 animate-spin" />
                                                 ) : listing.isActive ? (
-                                                    <EyeOff className="w-4 h-4" />
+                                                    <>
+                                                        <Pause className="w-3.5 h-3.5" />
+                                                        <span>Pausar</span>
+                                                    </>
                                                 ) : (
-                                                    <Eye className="w-4 h-4" />
+                                                    <>
+                                                        <Play className="w-3.5 h-3.5" />
+                                                        <span>Reactivar</span>
+                                                    </>
                                                 )}
                                             </button>
                                         )}

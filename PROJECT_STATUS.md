@@ -1,7 +1,8 @@
 # Moovy — Estado del proyecto
-Última actualización: 2026-04-30
+Última actualización: 2026-06-09
 
 > **Dashboard de una pantalla.** Para detalle de tareas → `ISSUES.md`. Para histórico de ramas → `.claude/CHANGELOG.md`.
+> Para el detalle vivo de pendientes del checklist pre-launch → `docs/HANDOFF_PENDIENTES.md`.
 
 ---
 
@@ -9,57 +10,62 @@
 
 | Categoría | Estado |
 |---|---|
-| Código pre-launch crítico | ✅ Cerrado |
-| Tests automatizados | 🔴 0 escritos (Vitest configurado) |
-| MP producción | 🔴 Solo credenciales TEST |
-| Data cleanup pre-launch | 🔴 ABIERTO (script listo, falta ejecución día launch) |
-| AAIP compliance (Ley 25.326) | ✅ ConsentLog + export ARCO + opt-in marketing + cookies |
-| Seguridad (PIN, fraud, refund, encrypt) | ✅ Cerrado |
-| Panel OPS operativo | ✅ Cerrado (emails editables, segmentos, broadcast, payouts, playbook, zonas, fraude, crons, auditoría) |
-| Performance mobile | ✅ Mobile-first, responsive 9 secciones OPS |
-| UI/UX | ✅ Checklist 25+ items cerrados |
+| MP producción | ✅ Credenciales de PROD cargadas (ya no se usa sandbox; pagos se prueban en prod) |
+| Split payments | 🟡 Implementado (Grupos B/C). Falta test real con 3 cuentas MP distintas en prod |
+| Motor de envío (Biblia) | ✅ Conectado: fórmula fuel-based + zona/clima/demanda, preview = cobro, sin config fantasma |
+| Cobertura por zonas | ✅ Gate point-in-polygon + aviso "fuera de cobertura". Falta confirmar zonas pintadas |
+| Candado de lanzamiento | ✅ `LAUNCH_GATE` (env, fail-closed) + cortina `/proximamente` + abrir/cerrar-tienda.ps1. Mantenimiento sacado de OPS |
+| Unit Economics | ✅ Dashboard read-only en `/ops/unit-economics` |
+| Data cleanup pre-launch | 🔴 ABIERTO (script listo, falta ejecución día launch — ISSUE-004) |
+| Deploy del batch acumulado | 🔴 PENDIENTE — develop tiene ~25 ramas sin deployar. Requiere devmain MODO SCHEMA + re-seed DeliveryRate |
+| Tests automatizados | 🟡 0 E2E (Vitest configurado); scripts validate-*.ts sí corren |
+| Seguridad (PIN, fraud, refund, encrypt, AAIP) | ✅ Cerrado |
+| Panel OPS operativo | ✅ Cerrado |
 
-**Veredicto**: listo para correr el checklist pre-lanzamiento end-to-end. El único bloqueante real es la ejecución del script de cleanup el día del launch.
-
----
-
-## Sprint actual (2026-04-30)
-
-**Foco**: optimización de contexto + checklist pre-lanzamiento + saneamiento de entorno local.
-
-**Ramas en curso / recién cerradas**:
-- ✅ `feat/avatar-dropdown-portales` — dropdown del header con accesos a portales
-- ✅ `fix/aprobacion-sin-foto-driver` — driver sin foto + hard delete pedidos colgados
-- ✅ `chore/optimize-claude-context` — sintetizar CLAUDE.md + CHANGELOG.md + ISSUES.md depurado + finish.ps1 con prompt
-- ✅ `fix/utf8-encoding-pipeline` — pipeline export usa docker cp (bytes raw UTF-8) en vez de PowerShell `>`. ISSUE-061 cerrado.
-- 🔄 `chore/verificar-nueva-ubicacion` — validar que el flow start.ps1 + finish.ps1 + auto-changelog + push + merge funciona desde `C:\dev\moovy` tras la mudanza del 2026-04-30. Repo movido desde `C:\Users\Mauro\Desktop\moovy` por bug de OneDrive truncando archivos silenciosamente.
-
-**Próxima decisión**: correr checklist pre-launch (Mauro en browser + Claude en scripts) o seguir con `feat/propinas-driver` post-launch.
+**Veredicto**: en plena ronda de QA del checklist pre-launch. Se están cerrando las observaciones de a una rama. Cuando esté todo resuelto y probado en develop/local → deploy en modo schema → re-test en prod detrás de la cortina.
 
 ---
 
-## Próximas tareas (orden por valor)
+## Sprint actual (2026-06-09)
 
-1. **Checklist pre-lanzamiento manual** — pagos / PIN doble / flujos críticos / seguridad / Ushuaia / infra (ver `docs/prompts-cowork/PROMPT_5_DIARIO_FINAL.md`)
-2. **Día del launch**: ejecutar `scripts/clean-db-pre-launch.ts --execute` con confirmación
-3. **Día del launch**: activar credenciales MP producción + verificar webhook URL
-4. **Post-launch (semanas 1-2)**: GitHub Actions con TS check + scripts validate-*.ts
-5. **Post-launch (semanas 2-4)**: 5-6 tests E2E con Playwright para flujos críticos
-6. **Post-launch (mes 1)**: `feat/propinas-driver`
-7. **Post-launch (cuando convenga)**: ISSUE-061 UTF-8 encoding fix
+**Foco**: resolver TODAS las observaciones del checklist QA pre-launch (296 items), probar en develop/local (menos pagos, que ya están en prod), y después deployar el batch acumulado.
+
+**Plan acordado con el founder**:
+1. Resolver todas las observaciones (rama por rama).
+2. Probar en develop/local (pagos NO — MP en prod, se prueban en prod).
+3. `devmain.ps1` en **modo schema** + re-seed `DeliveryRate` + `cerrar-tienda.ps1`.
+4. Re-test de lo nuevo en producción (detrás de la cortina).
+
+**Estado**: `fix/vendedor-listings-ux` cerrada (s4-4c-01 + s4-4c-02). Siguiente: comercio UX (s4-4a-01 + s4-4d-02). Ver secuencia en `docs/HANDOFF_PENDIENTES.md`.
+
+**Decisiones de negocio tomadas esta sesión**:
+- Vendedor marketplace = **frictionless** (sin docs ni aprobación).
+- Compra del propio comercio = **bloqueada** (ya estaba, ISSUE-003).
+- Candado de lanzamiento por entorno (reemplaza el modo mantenimiento de OPS).
+
+---
+
+## Próximas tareas (orden)
+
+1. **Cerrar las observaciones pendientes del checklist** (ver `docs/HANDOFF_PENDIENTES.md`): comercio UX → driver msg → campana OPS → sección de puntos → logo (probar local).
+2. **Deploy del batch** con `devmain.ps1` MODO SCHEMA (NO `-NoDB`) + re-seed `DeliveryRate` + cleanup scripts post-deploy + `cerrar-tienda.ps1`.
+3. **Test real de split MP** (3 cuentas distintas) en prod.
+4. **Pintar/confirmar zonas de cobertura** en `/ops/zonas-delivery`.
+5. **Día del launch**: `scripts/clean-db-pre-launch.ts --execute` + `abrir-tienda.ps1`.
+6. **Post-launch**: SEO (aggregateRating + review), tests E2E, `feat/propinas-driver`.
 
 ---
 
 ## Métricas
 
-- **Issues 🔴 abiertos**: 1 (ISSUE-004 — ejecución, no código)
-- **Issues 🟡 abiertos**: 0 (ISSUE-061 cerrado en `fix/utf8-encoding-pipeline`)
-- **TS errors en HEAD**: 0 nuevos (solo pre-existentes documentados en CLAUDE.md)
-- **Schemas pendientes de migrate**: ninguno
-- **Crons registrados con healthcheck**: ver `CRON_EXPECTATIONS` en `src/lib/cron-health.ts`
+- **Issues 🔴 abiertos**: 2 (ISSUE-004 cleanup data + deploy del batch acumulado pendiente)
+- **Ramas cerradas esta sesión**: ~13 (ver ISSUES.md "Resueltos 2026-06-09")
+- **Observaciones del checklist**: ~13 cerradas, 1 en proceso (logo), ~18 pendientes (varias son diseño/feature o a re-probar)
+- **TS errors en HEAD**: solo pre-existentes documentados (`.next/dev/types/*`)
+- **Schemas pendientes de push**: ninguno en local; el VPS necesita el push del batch (modo schema)
 
 ---
 
 ## Histórico
 
-Ver `.claude/CHANGELOG.md` (~22 entries con detalle por rama desde 2026-03 a hoy).
+Ver `.claude/CHANGELOG.md` (histórico con detalle por rama).
