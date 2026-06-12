@@ -32,7 +32,6 @@
 > Detalle vivo + secuencia de ramas en `docs/HANDOFF_PENDIENTES.md`.
 
 - **Logo del comercio (s4-4b-02)** — en proceso. DB prod: TEST/MOOVY image=null, ALNAAR con URL R2 (R2 funciona). updateMerchant en develop se ve correcto → probar logo LOCAL en develop; si falla, agregar log de `data.image`.
-- **Driver (s2-2c-04)** — mensaje claro al conectarse ("completá tu documentación").
 - **OPS — Campana de notificaciones (s3-3a-05)** — feature: aviso in-app de change-requests/aprobaciones.
 - **Sección de Puntos (s4-4e-06/03/05/07)** — repensar wording estilo Amex + accesos. Requiere dirección de diseño del founder.
 - **A re-probar** (sin contexto): s2-2a-11, s2-2b-01, s7-7a-02, s4-4c-04, s3-3c-01.
@@ -78,6 +77,7 @@
 | Eliminar listing (s4-4c-03) | `fix/vendedor-eliminar-listing` | Soft delete del listing por el vendedor (tacho + confirmación). |
 | Vendedor listings UX (s4-4c-01, s4-4c-02) | `fix/vendedor-listings-ux` | Banner "cambios sin guardar" + pop-up al salir editando un listing (patrón EditProductForm); pausar/reactivar como botón con texto + confirmación al pausar (antes era el ojo ambiguo). |
 | Comercio UX form producto (s4-4a-01, s4-4d-02 + obs nuevas) | `fix/comercio-ux-sugerir-y-categorias` | s4-4a-01: botón Sugerir funciona OK (sin código). s4-4d-02: categorías de la home = curación OPS en `/ops/categorias` (tarea operativa, sin código). Nuevo: validación client-side de descripción (min 10, antes solo fallaba en el server con banner invisible), asteriscos en obligatorios, helper + contador en descripción, auto-scroll al primer error, "(Opcional)" mentiroso corregido en edición, ruedita del mouse desactivada en inputs numéricos (8 inputs, alta+edición). |
+| Driver msg documentación (s2-2c-04) | `fix/driver-mensaje-documentacion` | Camino completo del driver pendiente: (1) en `/mi-perfil` la card "Quiero ser Repartidor" pendiente estaba DESHABILITADA (sin puerta al panel) → ahora navega a `/repartidor` con subtexto "entrá a cargar tu documentación". (2) Banner ámbar proactivo en el dashboard para pendientes ("Tu cuenta todavía no recibe pedidos") con CTA al perfil. (3) `toggle-status`: faltan docs → lista exacta (`MISSING_DOCS`) + lleva al perfil; docs completos → "en revisión, 24-48 hs" (`PENDING_REVIEW`). (4) Dashboard API expone `approvalStatus`. NOTA: el rebote a pendiente-aprobacion que vio Mauro es solo PROD (código viejo); en develop los pendientes entran al panel. |
 | Build / tooling | `chore/...` | Warning Sentry deprecado removido, falso "build fallo" en `tsc-strict.ps1` arreglado, match de string en `validate-role-flows.ts`. |
 
 **Ya estaban resueltos (stale en el checklist, NO requirieron trabajo)**: aviso "fuera de cobertura" (s4-4d-06), onboarding comercio mail+acceso inmediato (s2-2b-00), compra del propio comercio bloqueada (s5-5a-00, ISSUE-003), vendedor sin docs = correcto por diseño (s2-2d-02, s3-3b-04).

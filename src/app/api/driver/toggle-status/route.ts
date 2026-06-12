@@ -2,6 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 import { requireDriverApi } from "@/lib/driver-auth";
+import {
+    DRIVER_DOCUMENT_COLUMNS,
+    getRequiredDriverDocumentFields,
+} from "@/lib/driver-document-approval";
 
 const toggleStatusSchema = z.object({
     isOnline: z.boolean(),
@@ -36,8 +40,42 @@ export async function POST(request: Request) {
         }
 
         if (existingDriver.approvalStatus !== "APPROVED") {
+            // s2-2c-04: mensaje accionable en vez del genérico "no podés
+            // conectarte". Distinguimos DOS casos: (a) le faltan documentos
+            // (o tiene rechazados que debe re-subir) → le decimos CUÁLES y que
+            // los cargue desde su perfil; (b) docs completos esperando revisión
+            // → le decimos que el equipo de Moovy lo está validando.
+            const driverRow = existingDriver as unknown as Record<string, unknown>;
+            const required = getRequiredDriverDocumentFields(existingDriver.vehicleType);
+
+            const actionable = required.filter((field) => {
+                const cfg = DRIVER_DOCUMENT_COLUMNS[field];
+                const missing = !driverRow[cfg.valueColumn];
+                const rejected = driverRow[cfg.statusColumn] === "REJECTED";
+                return missing || rejected;
+            });
+
+            if (actionable.length > 0) {
+                const labels = actionable.map((f) => DRIVER_DOCUMENT_COLUMNS[f].label);
+                // Mensaje CORTO a propósito: la lista completa de docs no entra en
+                // un toast (QA 2026-06-11: quedaba ilegible). El detalle de qué
+                // falta vive en el perfil, que muestra cada doc con su estado.
+                // missingDocs queda en la response por si algún cliente lo quiere.
+                return NextResponse.json(
+                    {
+                        error: "Te falta cargar documentación para poder conectarte.",
+                        errorCode: "MISSING_DOCS",
+                        missingDocs: labels,
+                    },
+                    { status: 403 }
+                );
+            }
+
             return NextResponse.json(
-                { error: "Tu solicitud está pendiente de aprobación. No podés conectarte hasta ser aprobado." },
+                {
+                    error: "Tu documentación está completa y en revisión. El equipo de Moovy te avisa por email apenas estés aprobado (generalmente dentro de las 24-48 hs).",
+                    errorCode: "PENDING_REVIEW",
+                },
                 { status: 403 }
             );
         }

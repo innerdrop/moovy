@@ -86,6 +86,10 @@ export default function ProfilePage() {
                 if (!data) return;
                 if (data.approvalStatus === "APPROVED" || data.isActive) {
                     setDriverStatus("ACTIVE");
+                } else if (data.approvalStatus === "REJECTED") {
+                    // s2-2c-04: antes REJECTED caía en "PENDING_VERIFICATION" y el
+                    // user veía "Pendiente" para siempre. Ahora se distingue.
+                    setDriverStatus("REJECTED");
                 } else {
                     setDriverStatus("PENDING_VERIFICATION");
                 }
@@ -148,6 +152,8 @@ export default function ProfilePage() {
                     if (!data) return;
                     if (data.approvalStatus === "APPROVED" || data.isActive) {
                         setDriverStatus("ACTIVE");
+                    } else if (data.approvalStatus === "REJECTED") {
+                        setDriverStatus("REJECTED");
                     } else {
                         setDriverStatus("PENDING_VERIFICATION");
                     }
@@ -514,11 +520,20 @@ export default function ProfilePage() {
                             </Link>
                         )}
 
-                        {/* Driver - botón de activación (solo si no tiene el rol activo) */}
+                        {/* Driver - botón de activación (solo si no tiene el rol activo).
+                            s2-2c-04: si la solicitud está PENDIENTE, la card deja de ser
+                            un botón muerto — lleva al panel del repartidor, donde el
+                            driver carga su documentación (los pendientes SÍ entran al
+                            panel desde feat/registro-rediseno-core; solo no pueden
+                            conectarse). Antes el pendiente quedaba sin puerta de entrada. */}
                         {driverStatus !== "ACTIVE" && (
                             <button
-                                onClick={handleActivateDriver}
-                                disabled={driverStatus === "PENDING_VERIFICATION" || activatingRole !== null}
+                                onClick={
+                                    driverStatus === "PENDING_VERIFICATION" || driverStatus === "REJECTED"
+                                        ? () => { window.location.href = "/repartidor"; }
+                                        : handleActivateDriver
+                                }
+                                disabled={activatingRole !== null}
                                 className="flex items-center justify-between p-4 hover:bg-gray-50 transition group w-full text-left disabled:opacity-70"
                             >
                                 <div className="flex items-center gap-3">
@@ -527,13 +542,27 @@ export default function ProfilePage() {
                                     </div>
                                     <div>
                                         <span className="text-sm font-medium text-gray-900 block">Quiero ser Repartidor</span>
-                                        <span className="text-[10px] text-gray-400">Manejás tus tiempos, cobrás por cada viaje</span>
+                                        <span className="text-[10px] text-gray-400">
+                                            {driverStatus === "PENDING_VERIFICATION"
+                                                ? "Solicitud en revisión — entrá a cargar tu documentación"
+                                                : driverStatus === "REJECTED"
+                                                    ? "Tu solicitud no fue aprobada — tocá para ver detalles"
+                                                    : "Manejás tus tiempos, cobrás por cada viaje"}
+                                        </span>
                                     </div>
                                 </div>
                                 {activatingRole === "driver" ? (
                                     <div className="w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
                                 ) : driverStatus === "PENDING_VERIFICATION" ? (
-                                    <span className="text-xs bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded-full font-medium">Pendiente</span>
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="text-xs bg-yellow-50 text-yellow-600 px-2 py-0.5 rounded-full font-medium">Pendiente</span>
+                                        <ChevronRight className="w-4 h-4 text-gray-300" />
+                                    </span>
+                                ) : driverStatus === "REJECTED" ? (
+                                    <span className="flex items-center gap-1.5">
+                                        <span className="text-xs bg-red-50 text-red-500 px-2 py-0.5 rounded-full font-medium">No aprobada</span>
+                                        <ChevronRight className="w-4 h-4 text-gray-300" />
+                                    </span>
                                 ) : (
                                     <ChevronRight className="w-4 h-4 text-gray-300" />
                                 )}

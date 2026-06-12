@@ -25,6 +25,7 @@
 - **s4-4b-06** Instagram del comercio se muestra en su perfil público.
 - **s4-4c-03** Eliminar listing del vendedor (soft delete).
 - **s4-4c-01 / s4-4c-02** Vendedor listings UX (`fix/vendedor-listings-ux`): banner "cambios sin guardar" + confirmación al salir en EditListingForm; pausar/reactivar como botón con confirmación.
+- **s2-2c-04** Driver (`fix/driver-mensaje-documentacion`): al conectarse sin aprobación, mensaje accionable — faltan docs → lista cuáles + lo lleva al perfil; docs completos → "en revisión, te avisamos por email".
 - **s4-4a-01 / s4-4d-02 + obs nuevas** Comercio UX (`fix/comercio-ux-sugerir-y-categorias`): Sugerir funciona OK (cerrado sin código). Categorías home = curación OPS desde `/ops/categorias` (tarea OPERATIVA pre-launch, agregada a ISSUES). Form de producto: validación descripción min 10 client-side + asteriscos + contador + scroll-to-error + ruedita desactivada en numéricos (alta y edición).
 - Candado de lanzamiento + cortina "Próximamente" + scripts abrir/cerrar tienda (sacó mantenimiento de OPS).
 - Dashboard Unit Economics en `/ops/unit-economics`.
@@ -40,7 +41,7 @@
 
 ## Pendientes (secuencia de ramas)
 
-1. **Driver:** s2-2c-04 (al conectarse, mensaje "completá tu documentación para que Moovy te valide", no solo "no podés conectarte").
+1. **OPS — Notificación opcional al aprobar/rechazar** (pedido founder 2026-06-10, `.next-branch` lista): checkbox "Notificar al usuario por email" (default MARCADO) en los flujos de aprobar/rechazar de OPS para repartidores Y comercios. El audit log SIEMPRE registra el cambio + si se notificó. Permite correcciones de estado y QA sin spamear al usuario.
 2. **OPS — Campana de notificaciones** (s3-3a-05): aviso in-app de change-requests/aprobaciones pendientes. Feature más grande (modelo + API + polling + UI).
 3. **Sección de Puntos** (s4-4e-06/03/05/07): repensar wording estilo Amex ("por cada $X ganás Y", ocultar cálculo), agregar acceso/botón, aclarar dónde se aplican. **REQUIERE dirección de diseño del founder** antes de implementar.
 

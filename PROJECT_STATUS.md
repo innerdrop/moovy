@@ -36,7 +36,7 @@
 3. `devmain.ps1` en **modo schema** + re-seed `DeliveryRate` + `cerrar-tienda.ps1`.
 4. Re-test de lo nuevo en producción (detrás de la cortina).
 
-**Estado**: `fix/comercio-ux-sugerir-y-categorias` cerrada (s4-4a-01 sin código, s4-4d-02 = tarea operativa OPS, + UX form de producto). Siguiente: driver s2-2c-04. Ver secuencia en `docs/HANDOFF_PENDIENTES.md`.
+**Estado**: `fix/driver-mensaje-documentacion` cerrada (s2-2c-04). Siguiente: campana de notificaciones OPS (s3-3a-05, feature grande). Ver secuencia en `docs/HANDOFF_PENDIENTES.md`.
 
 **Decisiones de negocio tomadas esta sesión**:
 - Vendedor marketplace = **frictionless** (sin docs ni aprobación).
@@ -47,7 +47,7 @@
 
 ## Próximas tareas (orden)
 
-1. **Cerrar las observaciones pendientes del checklist** (ver `docs/HANDOFF_PENDIENTES.md`): driver msg → campana OPS → sección de puntos → logo (probar local).
+1. **Cerrar las observaciones pendientes del checklist** (ver `docs/HANDOFF_PENDIENTES.md`): campana OPS → sección de puntos (requiere dirección del founder) → logo (probar local).
 2. **Deploy del batch** con `devmain.ps1` MODO SCHEMA (NO `-NoDB`) + re-seed `DeliveryRate` + cleanup scripts post-deploy + `cerrar-tienda.ps1`.
 3. **Test real de split MP** (3 cuentas distintas) en prod.
 4. **Pintar/confirmar zonas de cobertura** en `/ops/zonas-delivery`.

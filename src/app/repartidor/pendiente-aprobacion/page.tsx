@@ -1,8 +1,60 @@
-import { Clock, Mail, ArrowLeft, ArrowRight, CheckCircle2, FileText, Shield } from "lucide-react";
+import { Clock, Mail, ArrowLeft, ArrowRight, CheckCircle2, FileText, Shield, XCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
-export default function PendienteAprobacionRepartidorPage() {
+// s2-2c-04 (fix/driver-mensaje-documentacion): la página ignoraba ?rejected=1.
+// Un driver RECHAZADO veía "Estamos revisando tu solicitud (24-48 hs)" para
+// siempre, y el botón "Cargar mi documentación" lo mandaba al panel que lo
+// rebotaba de vuelta acá (requireDriverAccess: rejected → esta página). Loop
+// infinito disfrazado de espera. Ahora rejected tiene su propia pantalla.
+export default async function PendienteAprobacionRepartidorPage({
+    searchParams,
+}: {
+    searchParams: Promise<{ rejected?: string }>;
+}) {
+    const { rejected } = await searchParams;
+
+    if (rejected === "1") {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-[#e60012] via-[#c7000f] to-[#a0000c] flex flex-col items-center justify-center p-6 relative overflow-hidden">
+                <div className="max-w-md w-full relative z-10">
+                    <div className="text-center mb-8">
+                        <Link href="/">
+                            <Image src="/logo-moovy-white.svg" alt="MOOVY" width={140} height={45} className="mx-auto" priority />
+                        </Link>
+                    </div>
+                    <div className="bg-white rounded-3xl shadow-2xl p-8 text-center">
+                        <div className="w-20 h-20 bg-red-50 rounded-full flex items-center justify-center mx-auto mb-5 ring-4 ring-red-100">
+                            <XCircle className="w-10 h-10 text-red-500" />
+                        </div>
+                        <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                            Tu solicitud no fue aprobada
+                        </h1>
+                        <p className="text-gray-500 mb-6 leading-relaxed text-sm">
+                            El equipo de Moovy revisó tu solicitud de repartidor y no pudo
+                            aprobarla en esta instancia. Si creés que hubo un error o querés
+                            saber qué te faltó, escribinos y te ayudamos a resolverlo.
+                        </p>
+                        <a
+                            href="mailto:soporte@somosmoovy.com?subject=Solicitud de repartidor rechazada"
+                            className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#cc000f] transition w-full mb-4 active:scale-95"
+                        >
+                            <Mail className="w-4 h-4" />
+                            Escribir a soporte
+                        </a>
+                        <Link
+                            href="/"
+                            className="inline-flex items-center gap-2 text-sm font-medium text-gray-400 hover:text-gray-600 transition"
+                        >
+                            <ArrowLeft className="w-4 h-4" />
+                            Volver al inicio
+                        </Link>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-[#e60012] via-[#c7000f] to-[#a0000c] flex flex-col items-center justify-center p-6 relative overflow-hidden">
             {/* Background decorative elements */}

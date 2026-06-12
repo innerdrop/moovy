@@ -311,6 +311,9 @@ export async function GET(request: Request) {
             // Lo exponemos acá (no en un endpoint nuevo) porque ya cargamos todo
             // el driver arriba y evitamos un round-trip extra.
             vehicleType: driver.vehicleType || null,
+            // s2-2c-04: el dashboard muestra banner "completá tu documentación"
+            // a los drivers pendientes (pueden entrar al panel pero no conectarse).
+            approvalStatus: driver.approvalStatus,
             stats: {
                 pedidosHoy: completedToday + enCamino,
                 enCamino: enCamino,

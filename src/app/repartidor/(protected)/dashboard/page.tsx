@@ -24,7 +24,8 @@ import {
     Star,
     TrendingUp,
     WifiOff,
-    AlertTriangle
+    AlertTriangle,
+    FileText
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useGeolocation } from "@/hooks/useGeolocation";
@@ -545,6 +546,8 @@ export default function RiderDashboard() {
         // ISSUE-051: vehículo del driver (MOTO / BIKE / CAR / TRUCK). Lo usa el
         // strip superior para mostrar el ícono y el label normalizado en español.
         vehicleType?: string | null;
+        // s2-2c-04: banner "completá tu documentación" para drivers pendientes.
+        approvalStatus?: string;
         stats: DashboardStats;
         pedidosActivos: Order[];
         pedidosPendientes: PendingOrderOffer[];
@@ -999,6 +1002,15 @@ export default function RiderDashboard() {
                 setIsOnline(data.isOnline);
                 await fetchDashboard(true);
                 toast.success("Estás conectado. Vas a recibir pedidos cercanos.");
+            } else if (data?.errorCode === "MISSING_DOCS") {
+                // s2-2c-04: le faltan documentos → mensaje corto (la lista completa
+                // no entra en un toast) y lo llevamos directo al perfil, donde cada
+                // documento muestra su estado y se carga.
+                toast.error("Te falta cargar tu documentación. Te llevamos a tu perfil para completarla.");
+                setActiveView("profile");
+            } else if (data?.errorCode === "PENDING_REVIEW") {
+                // Docs completos, esperando validación del equipo de Moovy.
+                toast.warning(data?.error || "Tu documentación está en revisión. Te avisamos por email al aprobarte.");
             } else {
                 // Show backend error message so the user knows WHY they couldn't connect
                 // (pending approval, suspended, deactivated, etc.)
@@ -1638,6 +1650,37 @@ export default function RiderDashboard() {
                                     </button>
                                 </div>
                             </div>
+
+                            {/* ── s2-2c-04: banner para drivers PENDIENTES ──
+                                Pueden entrar al panel (para cargar docs) pero no
+                                conectarse. Sin este banner el driver nuevo no sabía
+                                qué le faltaba hasta tocar "Conectarse". */}
+                            {dashboardData?.approvalStatus && dashboardData.approvalStatus !== "APPROVED" && (
+                                <div className="px-5 pb-2">
+                                    <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-200 dark:border-amber-500/20 rounded-2xl p-4">
+                                        <div className="flex items-start gap-3">
+                                            <div className="w-9 h-9 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                                                <FileText className="w-4.5 h-4.5 text-amber-600" />
+                                            </div>
+                                            <div className="flex-1 min-w-0">
+                                                <p className="text-sm font-bold text-amber-800 dark:text-amber-300">
+                                                    Tu cuenta todavía no recibe pedidos
+                                                </p>
+                                                <p className="text-xs text-amber-700/80 dark:text-amber-300/70 mt-0.5 leading-relaxed">
+                                                    Cargá tu documentación para que el equipo de Moovy pueda validarte. Te avisamos por email apenas estés aprobado.
+                                                </p>
+                                                <button
+                                                    onClick={() => setActiveView("profile")}
+                                                    className="mt-2.5 inline-flex items-center gap-1.5 px-3.5 py-2 bg-amber-500 text-white text-xs font-bold rounded-xl active:scale-95 transition"
+                                                >
+                                                    Cargar mi documentación
+                                                    <ArrowRight className="w-3.5 h-3.5" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* ── HERO: Connect/Disconnect Button ── */}
                             <div className="px-5 py-4">

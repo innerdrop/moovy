@@ -77,7 +77,12 @@ export default function ToastContainer() {
     return (
         <div className="fixed top-20 left-1/2 -translate-x-1/2 z-[9999] flex flex-col gap-2.5 items-center pointer-events-none">
             {toasts.map((t) => (
-                <div key={t.id} className="pointer-events-auto">
+                // fix/driver-mensaje-documentacion: el wrapper sin ancho hacía que
+                // el toast colapsara al ancho del contenido (mensajes largos se
+                // renderizaban como una columna finita de una palabra por línea).
+                // Ancho fijo responsive: 340px o el viewport menos margen, lo que
+                // sea menor.
+                <div key={t.id} className="pointer-events-auto w-[min(340px,calc(100vw-2rem))]">
                     <ToastItem id={t.id} type={t.type} message={t.message} />
                 </div>
             ))}
