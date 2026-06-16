@@ -30,6 +30,11 @@ export async function PUT(
 
         const { id } = await context.params;
 
+        // feat/ops-notificacion-opcional-aprobacion: notificar por email es opcional
+        // (checkbox en OPS). default = notificar (notify !== false), retrocompatible.
+        const body = await request.json().catch(() => ({}));
+        const notify = body?.notify !== false;
+
         const merchant = await prisma.merchant.findUnique({
             where: { id },
             select: {
@@ -58,12 +63,14 @@ export async function PUT(
         await approveMerchantTransition(id, {
             adminId: session.user.id,
             adminEmail: session.user.email ?? "unknown",
+            notified: notify,
         });
 
         // Send approval email (non-blocking). Usa la versión oficial del registry
         // (src/lib/email-p0.ts) para que lo que el admin edita en /ops/emails
-        // sea lo que realmente recibe el merchant.
-        if (merchant.owner?.email) {
+        // sea lo que realmente recibe el merchant. Solo si el admin dejó tildado
+        // "Notificar al usuario por email" (default).
+        if (notify && merchant.owner?.email) {
             sendMerchantApprovedEmail({
                 email: merchant.owner.email,
                 businessName: merchant.name,

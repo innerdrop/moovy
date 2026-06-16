@@ -743,6 +743,11 @@ export function hasRejectedProfile(access: UserAccess | null): boolean {
 type TransitionContext = {
     adminId: string;
     adminEmail: string;
+    // feat/ops-notificacion-opcional-aprobacion: el admin puede aprobar/rechazar
+    // SIN mandarle email al usuario (checkbox en OPS, default = notificar). El
+    // audit log SIEMPRE registra el cambio + si se notificó por email. undefined
+    // se trata como true por retrocompatibilidad con callers viejos.
+    notified?: boolean;
 };
 
 /**
@@ -800,6 +805,7 @@ export async function approveMerchantTransition(
                     merchantName: merchant.name,
                     merchantOwnerId: merchant.ownerId,
                     adminEmail: ctx.adminEmail,
+                    notified: ctx.notified !== false,
                 }),
             },
         });
@@ -844,6 +850,7 @@ export async function rejectMerchantTransition(
                     merchantOwnerId: merchant.ownerId,
                     adminEmail: ctx.adminEmail,
                     reason: reason.trim(),
+                    notified: ctx.notified !== false,
                 }),
             },
         });
@@ -899,6 +906,7 @@ export async function approveDriverTransition(
                 details: JSON.stringify({
                     driverUserId: driver.userId,
                     adminEmail: ctx.adminEmail,
+                    notified: ctx.notified !== false,
                 }),
             },
         });
@@ -940,6 +948,7 @@ export async function rejectDriverTransition(
                     driverUserId: driver.userId,
                     adminEmail: ctx.adminEmail,
                     reason: reason.trim(),
+                    notified: ctx.notified !== false,
                 }),
             },
         });

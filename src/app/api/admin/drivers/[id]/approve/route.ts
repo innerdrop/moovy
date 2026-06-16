@@ -34,6 +34,12 @@ export async function PUT(
 
         const { id } = await context.params;
 
+        // feat/ops-notificacion-opcional-aprobacion: el admin puede aprobar sin
+        // mandar email (checkbox en OPS). default = notificar (notify !== false),
+        // retrocompatible con callers que no mandan body.
+        const body = await request.json().catch(() => ({}));
+        const notify = body?.notify !== false;
+
         const driver = await prisma.driver.findUnique({
             where: { id },
             select: {
@@ -62,10 +68,13 @@ export async function PUT(
         await approveDriverTransition(id, {
             adminId: session.user.id,
             adminEmail: session.user.email ?? "unknown",
+            notified: notify,
         });
 
-        // Send approval email (non-blocking)
-        if (driver.user?.email) {
+        // Send approval email (non-blocking). Solo si el admin dejó tildado
+        // "Notificar al usuario por email" (default). El cambio de rol toma efecto
+        // igual via emitRoleUpdate más abajo.
+        if (notify && driver.user?.email) {
             sendDriverApprovalEmail(driver.user.email, driver.user.name || "Repartidor");
         }
 

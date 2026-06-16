@@ -372,6 +372,13 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     const [processing, setProcessing] = useState(false);
     const [activeTab, setActiveTab] = useState<"info" | "actions" | "activity">("info");
 
+    // feat/ops-notificacion-opcional-aprobacion: al aprobar/rechazar comercio o
+    // repartidor, el admin decide si se le manda email al usuario. Default = sí.
+    // Permite correcciones de estado y QA sin spamear. El audit log siempre
+    // registra el cambio + si se notificó (lo resuelve el backend).
+    const [notifyMerchant, setNotifyMerchant] = useState(true);
+    const [notifyDriver, setNotifyDriver] = useState(true);
+
     // Cerradas por default. El admin expande la que necesita consultar —
     // evita que al abrir la ficha se dispare un muro de información sin foco.
     const [expandedMerchant, setExpandedMerchant] = useState(false);
@@ -761,7 +768,12 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 ? `/api/admin/merchants/${roleData.id}/approve`
                 : `/api/admin/drivers/${roleData.id}/approve`;
 
-            const res = await fetch(endpoint, { method: "POST" });
+            const notify = roleType === "merchant" ? notifyMerchant : notifyDriver;
+            const res = await fetch(endpoint, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ notify }),
+            });
             const data = await res.json().catch(() => ({}));
 
             if (res.ok) {
@@ -811,10 +823,11 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 ? `/api/admin/merchants/${roleData.id}/reject`
                 : `/api/admin/drivers/${roleData.id}/reject`;
 
+            const notify = roleType === "merchant" ? notifyMerchant : notifyDriver;
             const res = await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ reason: reason.trim() }),
+                body: JSON.stringify({ reason: reason.trim(), notify }),
             });
             const data = await res.json().catch(() => ({}));
 
@@ -1117,6 +1130,16 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                         Motivo: {user.merchant.rejectionReason}
                                     </p>
                                 )}
+                                <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={notifyMerchant}
+                                        onChange={(e) => setNotifyMerchant(e.target.checked)}
+                                        disabled={processing}
+                                        className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                    />
+                                    Notificar al usuario por email
+                                </label>
                                 <div className="flex gap-2 flex-wrap">
                                     {user.merchant.approvalStatus !== "APPROVED" && (
                                         <button
@@ -1418,6 +1441,16 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                         Motivo: {user.driver.rejectionReason}
                                     </p>
                                 )}
+                                <label className="flex items-center gap-2 text-xs text-gray-600 cursor-pointer select-none">
+                                    <input
+                                        type="checkbox"
+                                        checked={notifyDriver}
+                                        onChange={(e) => setNotifyDriver(e.target.checked)}
+                                        disabled={processing}
+                                        className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                                    />
+                                    Notificar al usuario por email
+                                </label>
                                 <div className="flex gap-2 flex-wrap">
                                     {user.driver.approvalStatus !== "APPROVED" && (
                                         <button

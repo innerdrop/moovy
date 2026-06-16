@@ -33,6 +33,9 @@ export async function PUT(
         const reason: string = typeof body.reason === "string" && body.reason.trim().length > 0
             ? body.reason.trim()
             : "Sin motivo especificado";
+        // feat/ops-notificacion-opcional-aprobacion: notificar por email es opcional
+        // (checkbox en OPS). default = notificar. El audit log siempre registra.
+        const notify = body?.notify !== false;
 
         const merchant = await prisma.merchant.findUnique({
             where: { id },
@@ -52,10 +55,12 @@ export async function PUT(
         await rejectMerchantTransition(id, reason, {
             adminId: session.user.id,
             adminEmail: session.user.email ?? "unknown",
+            notified: notify,
         });
 
         // Send rejection email (non-blocking). Versión oficial del registry.
-        if (merchant.owner?.email) {
+        // Solo si el admin dejó tildado "Notificar al usuario por email" (default).
+        if (notify && merchant.owner?.email) {
             sendMerchantRejectedEmail({
                 email: merchant.owner.email,
                 businessName: merchant.name,

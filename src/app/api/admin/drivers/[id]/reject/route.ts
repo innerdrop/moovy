@@ -36,6 +36,9 @@ export async function PUT(
         const reason: string = typeof body.reason === "string" && body.reason.trim().length > 0
             ? body.reason.trim()
             : "Sin motivo especificado";
+        // feat/ops-notificacion-opcional-aprobacion: notificar por email es opcional
+        // (checkbox en OPS). default = notificar. El audit log siempre registra.
+        const notify = body?.notify !== false;
 
         const driver = await prisma.driver.findUnique({
             where: { id },
@@ -54,10 +57,12 @@ export async function PUT(
         await rejectDriverTransition(id, reason, {
             adminId: session.user.id,
             adminEmail: session.user.email ?? "unknown",
+            notified: notify,
         });
 
         // Send rejection email (non-blocking). Versión oficial del registry.
-        if (driver.user?.email) {
+        // Solo si el admin dejó tildado "Notificar al usuario por email" (default).
+        if (notify && driver.user?.email) {
             sendDriverRejectedEmail({
                 email: driver.user.email,
                 driverName: driver.user.name || "Repartidor",
