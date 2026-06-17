@@ -15,7 +15,13 @@
  * el panel /ops/feature-flags (porque ese panel lee toda la tabla, no le
  * importa si el código las consume).
  *
- * Este script borra esas dos filas. Idempotente.
+ * Actualización (chore/quitar-flag-efectivo, 2026-06-17): se suma una tercera
+ * key, `buyer.cash-payment`. El checkout pasó a ser electrónico-only el
+ * 2026-06-06 y ese flag quedó como interruptor "fantasma" que no cableaba nada.
+ * El código de efectivo queda dormido en orders/route.ts por si se reactiva en
+ * una Fase 2; sólo borramos la fila del flag para que no confunda en el panel.
+ *
+ * Este script borra esas filas. Idempotente.
  *
  * Uso:
  *   DRY RUN (default, solo cuenta):
@@ -41,6 +47,9 @@ const prisma = new PrismaClient();
 const DEPRECATED_KEYS = [
     "buyer.marketplace",
     "buyer.puntos-moover",
+    // chore/quitar-flag-efectivo (2026-06-17): el checkout es electronico-only,
+    // este flag habia quedado como interruptor "fantasma" sin cablear.
+    "buyer.cash-payment",
 ];
 
 function log(msg: string) {
@@ -151,7 +160,7 @@ async function main() {
                 details: JSON.stringify({
                     deletedCount: deleteRes.count,
                     keys: flags.map((f) => f.key),
-                    reason: "fix/restaurar-moover-y-marketplace-sin-flags — over-reach del sistema de flags",
+                    reason: "Limpieza de FeatureFlags huérfanos: over-reach marketplace/puntos (fix/restaurar-moover-y-marketplace-sin-flags) + flag de efectivo fantasma (chore/quitar-flag-efectivo)",
                     script: "scripts/cleanup-deprecated-feature-flags.ts",
                     executedAt: new Date().toISOString(),
                 }),

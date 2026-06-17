@@ -121,18 +121,16 @@ const SEED_FLAGS: SeedFlag[] = [
     // removidos en la rama fix/restaurar-moover-y-marketplace-sin-flags
     // (2026-05-17). Esas secciones son producto core y no deben ocultarse
     // desde OPS.
+    // NOTA: buyer.cash-payment fue removido en chore/quitar-flag-efectivo.
+    // El checkout es electronico-only (decision de lanzamiento 2026-06-06) y el
+    // flag habia quedado sin cablear (no hacia nada). El codigo de efectivo
+    // queda dormido en orders/route.ts para una eventual Fase 2. La fila que ya
+    // existe en la DB la borra scripts/cleanup-deprecated-feature-flags.ts.
     {
         key: "buyer.scheduled-delivery",
         label: "Pedidos programados",
         description:
             "Habilita la opcion de programar entregas a una franja horaria futura (ej: 'entregar entre 20:00 y 21:00'). Mientras este OFF, todos los pedidos son entrega inmediata.",
-        scope: "BUYER",
-    },
-    {
-        key: "buyer.cash-payment",
-        label: "Pago en efectivo",
-        description:
-            "Habilita el pago al driver con efectivo al recibir el pedido. Mientras este OFF, todos los pedidos se pagan online via MercadoPago.",
         scope: "BUYER",
     },
 ];

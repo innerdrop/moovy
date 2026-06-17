@@ -10,7 +10,7 @@
 //   espera resultados; 30s de delay es aceptable).
 //
 // CONVENCION DE KEYS:
-//   scope.feature  → ej: "merchant.publicidad", "buyer.cash-payment"
+//   scope.feature  → ej: "merchant.publicidad", "buyer.scheduled-delivery"
 //
 // IMPORTANTE:
 // - NUNCA renombrar una key una vez deployada. Si quisieras renombrar,
@@ -54,8 +54,12 @@ export const FEATURE_FLAGS = {
     // NOTA: BUYER_MARKETPLACE y BUYER_PUNTOS_MOOVER fueron removidos en la
     // rama fix/restaurar-moover-y-marketplace-sin-flags (2026-05-17).
     // Esas secciones son producto core y nunca deben ocultarse desde OPS.
+    // NOTA: BUYER_CASH_PAYMENT fue removido en chore/quitar-flag-efectivo.
+    // El checkout es electrónico-only (decisión de lanzamiento, 2026-06-06);
+    // el flag había quedado como interruptor "fantasma" que no hacía nada. El
+    // código de efectivo queda dormido en orders/route.ts por si se reactiva en
+    // una Fase 2 — ahí se vuelve a crear el flag bien cableado.
     BUYER_SCHEDULED_DELIVERY: "buyer.scheduled-delivery",
-    BUYER_CASH_PAYMENT: "buyer.cash-payment",
 } as const;
 
 export type FeatureFlagKey = (typeof FEATURE_FLAGS)[keyof typeof FEATURE_FLAGS];
