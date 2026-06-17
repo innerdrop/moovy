@@ -8,6 +8,7 @@
 // saluda con un muro de información al entrar al dashboard.
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import Link from "next/link";
 import {
     CheckCircle2,
@@ -56,6 +57,11 @@ export default function OnboardingChecklist() {
     const [error, setError] = useState<string | null>(null);
     const [dismissed, setDismissed] = useState(false);
     const [expanded, setExpanded] = useState(false);
+    // Re-pedimos el estado cuando cambian los roles de sesión (ej: tras la
+    // aprobación de OPS, que refresca el JWT por socket). Así el checklist se
+    // actualiza solo, sin recargar la página.
+    const { data: session } = useSession();
+    const roles = ((session?.user as { roles?: string[] })?.roles ?? []).join(",");
 
     useEffect(() => {
         const fetchStatus = async () => {
@@ -72,7 +78,8 @@ export default function OnboardingChecklist() {
             }
         };
         fetchStatus();
-    }, []);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [roles]);
 
     if (loading) return null;
     if (error || !status) return null;

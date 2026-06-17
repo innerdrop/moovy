@@ -1,26 +1,23 @@
 // API Route: Merchant Orders
 // Returns orders for the merchant's store(s)
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { userId, isAdmin } = authResult;
 
-        if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
-
-        // Get merchant(s) owned by this user
+        // Get merchant(s) owned by this user — soporta multi-comercio, por eso
+        // mantenemos el findMany por ownerId en vez de usar el merchant único del
+        // helper.
         const merchants = await prisma.merchant.findMany({
-            where: { ownerId: session.user.id },
+            where: { ownerId: userId },
             select: { id: true }
         });
 
@@ -28,7 +25,6 @@ export async function GET() {
 
         // If ADMIN, show all orders. If MERCHANT, filter by their stores.
         // Always exclude soft-deleted orders
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
         const where = isAdmin
             ? { deletedAt: null }
             : {

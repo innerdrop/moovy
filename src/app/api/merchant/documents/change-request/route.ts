@@ -15,8 +15,7 @@
  * Lista las solicitudes propias del merchant autenticado (histórico + pending).
  */
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
@@ -36,27 +35,10 @@ export async function POST(request: NextRequest) {
     if (limited) return limited;
 
     try {
-        const session = await auth();
-        if (
-            !session?.user?.id ||
-            !hasAnyRole(session, ["MERCHANT", "COMERCIO", "ADMIN"])
-        ) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
-            select: {
-                id: true,
-                name: true,
-                cuitStatus: true,
-                bankAccountStatus: true,
-                constanciaAfipStatus: true,
-                habilitacionMunicipalStatus: true,
-                registroSanitarioStatus: true,
-                owner: { select: { email: true, name: true } },
-            },
-        });
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant, userId } = authResult;
 
         if (!merchant) {
             return NextResponse.json(
@@ -64,6 +46,13 @@ export async function POST(request: NextRequest) {
                 { status: 404 }
             );
         }
+
+        // El helper devuelve los scalars del comercio (incluye los *Status). El
+        // dato del owner (email/nombre) para el aviso a OPS lo traemos aparte.
+        const owner = await prisma.user.findUnique({
+            where: { id: merchant.ownerId },
+            select: { email: true, name: true },
+        });
 
         let body: { documentField?: string; reason?: string } = {};
         try {
@@ -152,7 +141,7 @@ export async function POST(request: NextRequest) {
             action: "MERCHANT_CHANGE_REQUEST_CREATED",
             entityType: "Merchant",
             entityId: merchant.id,
-            userId: session.user.id,
+            userId,
             details: {
                 requestId: created.id,
                 documentField,
@@ -165,7 +154,7 @@ export async function POST(request: NextRequest) {
         // Notificar a OPS (non-blocking).
         sendAdminChangeRequestEmail(
             merchant.name,
-            merchant.owner?.email || null,
+            owner?.email || null,
             cols.label,
             reason,
             merchant.id
@@ -191,20 +180,12 @@ export async function POST(request: NextRequest) {
     }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
-        const session = await auth();
-        if (
-            !session?.user?.id ||
-            !hasAnyRole(session, ["MERCHANT", "COMERCIO", "ADMIN"])
-        ) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
-            select: { id: true, name: true },
-        });
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant } = authResult;
         if (!merchant) {
             return NextResponse.json(
                 { error: "Comercio no encontrado" },

@@ -1,7 +1,6 @@
 // Merchant Confirm Order — PENDING → PREPARING + start driver assignment
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 import { startAssignmentCycle, startSubOrderAssignmentCycle } from "@/lib/assignment-engine";
 import { notifyBuyer } from "@/lib/notifications";
@@ -25,25 +24,13 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        // El helper ya garantiza: o hay comercio propio, o es ADMIN.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant, userId, isAdmin } = authResult;
 
         const { id: orderId } = await params;
-
-        // Find merchant owned by this user
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
-            select: { id: true },
-        });
-
-        if (!merchant && !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });
-        }
 
         // Find order and verify ownership
         const order = await prisma.order.findUnique({
@@ -73,7 +60,7 @@ export async function POST(
         }
 
         // Verify merchant owns this order (skip for ADMIN)
-        if (!hasAnyRole(session, ["ADMIN"]) && order.merchantId !== merchant?.id) {
+        if (!isAdmin && order.merchantId !== merchant?.id) {
             return NextResponse.json({ error: "Pedido no pertenece a tu comercio" }, { status: 403 });
         }
 
@@ -197,7 +184,7 @@ export async function POST(
         // Log order confirmation activity (fire-and-forget)
         const { ipAddress, userAgent } = extractRequestInfo(_req);
         logUserActivity({
-            userId: session.user.id,
+            userId,
             action: ACTIVITY_ACTIONS.ORDER_CONFIRMED,
             entityType: "Order",
             entityId: orderId,

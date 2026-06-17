@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(request: Request) {
     try {
-        const session = await auth();
-        if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
-
-        const merchantId = (session?.user as any)?.merchantId;
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const merchantId = authResult.merchant?.id;
         const { searchParams } = new URL(request.url);
         const search = searchParams.get("search") || "";
         const scope = searchParams.get("scope") || "all"; // all | store | marketplace

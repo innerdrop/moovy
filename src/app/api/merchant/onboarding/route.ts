@@ -1,52 +1,18 @@
 // API Route: Get merchant onboarding status
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET() {
     try {
-        const session = await auth();
-
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
-
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
-            select: {
-                id: true,
-                name: true,
-                image: true,
-                scheduleJson: true,
-                approvalStatus: true,
-                cuit: true,
-                bankAccount: true,
-                constanciaAfipUrl: true,
-                habilitacionMunicipalUrl: true,
-                registroSanitarioUrl: true,
-                // Status de cada doc — el chequeo "está cumplido" usa esto, no si
-                // el campo URL/valor tiene contenido. Razón: cuando admin aprueba
-                // PHYSICAL desde OPS, el doc queda APPROVED sin URL en el sistema
-                // (porque lo recibió en papel/whatsapp/email). Sin este cambio el
-                // checklist seguía diciendo "Te falta X" aunque el admin ya lo había
-                // dado por bueno — bug detectado 2026-04-25.
-                cuitStatus: true,
-                bankAccountStatus: true,
-                constanciaAfipStatus: true,
-                habilitacionMunicipalStatus: true,
-                registroSanitarioStatus: true,
-                category: true,
-                address: true,
-                latitude: true,
-                mpUserId: true,
-                mpEmail: true,
-            },
-        });
+        // Auth contra DB (no contra el JWT cache): el comercio recién aprobado
+        // tiene el token stale por unos segundos. Ver src/lib/merchant-auth.ts.
+        // El doc se considera "cumplido" cuando su <doc>Status === "APPROVED",
+        // sin importar si fue DIGITAL (con URL) o PHYSICAL (admin aprobó en papel
+        // desde OPS) — bug detectado 2026-04-25.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant } = authResult;
 
         if (!merchant) {
             return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });

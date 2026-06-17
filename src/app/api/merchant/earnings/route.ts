@@ -1,32 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 
 export async function GET(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant: ownMerchant, isAdmin } = authResult;
 
         const { searchParams } = new URL(request.url);
         const merchantId = searchParams.get("merchantId");
-        const userId = (session.user as any).id;
 
-        // If merchantId is provided and user is ADMIN, use it. Otherwise use user's own merchant
-        let merchant;
-        if (merchantId && hasAnyRole(session, ["ADMIN"])) {
-            merchant = await prisma.merchant.findUnique({
+        // Si viene merchantId y el user es ADMIN, usa ese comercio. Si no, el propio.
+        const merchant = (merchantId && isAdmin)
+            ? await prisma.merchant.findUnique({
                 where: { id: merchantId },
                 select: { id: true, commissionRate: true },
-            });
-        } else {
-            merchant = await prisma.merchant.findFirst({
-                where: { ownerId: userId },
-                select: { id: true, commissionRate: true },
-            });
-        }
+            })
+            : ownMerchant;
 
         if (!merchant) {
             return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });

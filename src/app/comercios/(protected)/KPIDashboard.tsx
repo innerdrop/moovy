@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSession } from "next-auth/react";
 import { ShoppingCart, TrendingUp, Clock, Star } from "lucide-react";
 
 interface MerchantStats {
@@ -30,6 +31,11 @@ export default function KPIDashboard() {
   const [stats, setStats] = useState<MerchantStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Cuando OPS aprueba el comercio, el JWT se refresca (socket roles_updated ->
+  // session.update). Atamos el fetch a los roles para re-pedir los datos apenas
+  // aparece el rol COMERCIO, sin que el merchant tenga que recargar la página.
+  const { data: session } = useSession();
+  const roles = ((session?.user as { roles?: string[] })?.roles ?? []).join(",");
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -54,7 +60,8 @@ export default function KPIDashboard() {
     // Refresh stats every 5 minutes (no necesita ser más frecuente)
     const interval = setInterval(fetchStats, 300000);
     return () => clearInterval(interval);
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roles]);
 
   if (loading) {
     return <KPISkeleton />;

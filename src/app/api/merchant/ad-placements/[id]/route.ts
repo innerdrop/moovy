@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -12,9 +12,13 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autenticado" }, { status: 401 });
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        const authResult = await requireMerchantApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant } = authResult;
+
+        if (!merchant) {
+            return NextResponse.json({ error: "No sos comercio" }, { status: 403 });
         }
 
         const { id } = await params;
@@ -22,15 +26,6 @@ export async function PATCH(
 
         if (action !== "cancel") {
             return NextResponse.json({ error: "Acción no válida" }, { status: 400 });
-        }
-
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
-            select: { id: true },
-        });
-
-        if (!merchant) {
-            return NextResponse.json({ error: "No sos comercio" }, { status: 403 });
         }
 
         const placement = await prisma.adPlacement.findFirst({

@@ -8,8 +8,7 @@
 //   para limpiar el motivo de rechazo y dejarlo listo para re-revisión.
 // - CBU/Alias usa validateBankAccount (misma lib que el form de registro).
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { validateBankAccount } from "@/lib/bank-account";
@@ -35,22 +34,10 @@ export async function PATCH(request: NextRequest) {
     if (limited) return limited;
 
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "COMERCIO", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
-            select: {
-                id: true,
-                cuitStatus: true,
-                bankAccountStatus: true,
-                constanciaAfipStatus: true,
-                habilitacionMunicipalStatus: true,
-                registroSanitarioStatus: true,
-            },
-        });
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant, userId } = authResult;
 
         if (!merchant) {
             return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });
@@ -136,7 +123,7 @@ export async function PATCH(request: NextRequest) {
         // Esto permite a OPS ver en el feed "merchant re-subió X documento".
         for (const field of fieldsTouched) {
             try {
-                await resetDocumentToPending(merchant.id, field, session.user.id);
+                await resetDocumentToPending(merchant.id, field, userId);
             } catch (e) {
                 console.error("[UpdateDocs] resetDocumentToPending failed for", field, e);
             }

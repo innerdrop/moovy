@@ -1,7 +1,6 @@
 // Merchant Reject Order — Cancel with reason + notify buyer + refund if paid
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
 import { createRefund, resolveOrderVendorToken } from "@/lib/mercadopago";
@@ -25,13 +24,11 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        // El helper ya garantiza: o hay comercio propio, o es ADMIN.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant, userId, isAdmin } = authResult;
 
         const { id: orderId } = await params;
         const body = await req.json().catch(() => ({}));
@@ -43,16 +40,6 @@ export async function POST(
 
         if (reason.length > 500) {
             return NextResponse.json({ error: "Motivo demasiado largo (máx 500 caracteres)" }, { status: 400 });
-        }
-
-        // Find merchant owned by this user
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
-            select: { id: true },
-        });
-
-        if (!merchant && !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });
         }
 
         // Find order and verify ownership
@@ -74,7 +61,7 @@ export async function POST(
             return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
         }
 
-        if (!hasAnyRole(session, ["ADMIN"]) && order.merchantId !== merchant?.id) {
+        if (!isAdmin && order.merchantId !== merchant?.id) {
             return NextResponse.json({ error: "Pedido no pertenece a tu comercio" }, { status: 403 });
         }
 
@@ -195,7 +182,7 @@ export async function POST(
         // Log order rejection activity (fire-and-forget)
         const { ipAddress, userAgent } = extractRequestInfo(req);
         logUserActivity({
-            userId: session.user.id,
+            userId,
             action: ACTIVITY_ACTIONS.ORDER_REJECTED,
             entityType: "Order",
             entityId: orderId,

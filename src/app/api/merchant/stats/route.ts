@@ -1,7 +1,6 @@
 // API Route: Get merchant KPI stats
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 
 interface MerchantStats {
@@ -13,23 +12,14 @@ interface MerchantStats {
   weekRevenue: number;
 }
 
-export async function GET(): Promise<NextResponse<MerchantStats | { error: string }>> {
+export async function GET() {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
-
-    // Get merchant for this user
-    const merchant = await prisma.merchant.findFirst({
-      where: { ownerId: session.user.id },
-      select: { id: true, rating: true },
-    });
+    // Auth contra DB (no contra el JWT cache): el comercio recién aprobado tiene
+    // el token stale por unos segundos; requireMerchantApi consulta la tabla
+    // Merchant directamente. Ver src/lib/merchant-auth.ts.
+    const authResult = await requireMerchantApi({ allowAdmin: true });
+    if (authResult instanceof NextResponse) return authResult;
+    const { merchant } = authResult;
 
     if (!merchant) {
       return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });

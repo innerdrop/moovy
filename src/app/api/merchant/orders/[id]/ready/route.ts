@@ -6,8 +6,7 @@
 // el merchantStatus paralelo, independiente del flujo del driver. El comercio
 // puede marcar listo en cualquier momento mientras esté en PREPARING.
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 import { notifyDriver, notifyBuyer } from "@/lib/notifications";
 import { sendOrderReadyForPickupEmail } from "@/lib/email-legal-ux";
@@ -35,25 +34,13 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        // El helper ya garantiza: o hay comercio propio, o es ADMIN.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant, isAdmin } = authResult;
 
         const { id: orderId } = await params;
-
-        // Find merchant owned by this user
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
-            select: { id: true },
-        });
-
-        if (!merchant && !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });
-        }
 
         // Find order with driver info
         const order = await prisma.order.findUnique({
@@ -76,7 +63,7 @@ export async function POST(
             return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
         }
 
-        if (!hasAnyRole(session, ["ADMIN"]) && order.merchantId !== merchant?.id) {
+        if (!isAdmin && order.merchantId !== merchant?.id) {
             return NextResponse.json({ error: "Pedido no pertenece a tu comercio" }, { status: 403 });
         }
 

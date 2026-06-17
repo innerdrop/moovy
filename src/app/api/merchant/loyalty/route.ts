@@ -10,9 +10,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { getMerchantLoyaltyWidget } from "@/lib/merchant-loyalty";
 import logger from "@/lib/logger";
 
@@ -20,34 +18,19 @@ const loyaltyLogger = logger.child({ context: "merchant-loyalty-api" });
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+    const authResult = await requireMerchantApi({ allowAdmin: true });
+    if (authResult instanceof NextResponse) return authResult;
+    const { merchant: ownMerchant, isAdmin } = authResult;
 
     const { searchParams } = new URL(request.url);
     const merchantId = searchParams.get("merchantId");
-    const userId = (session.user as any).id;
 
-    let targetMerchantId: string | null = null;
-
-    if (merchantId && hasAnyRole(session, ["ADMIN"])) {
-      // Admin can specify any merchant
-      targetMerchantId = merchantId;
-    } else {
-      // User can only see their own merchant
-      const merchant = await prisma.merchant.findFirst({
-        where: { ownerId: userId },
-        select: { id: true },
-      });
-
-      if (!merchant) {
-        return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });
-      }
-
-      targetMerchantId = merchant.id;
-    }
+    // Admin puede especificar cualquier comercio por ?merchantId; el resto solo
+    // ve el propio.
+    const targetMerchantId: string | null = (merchantId && isAdmin)
+      ? merchantId
+      : (ownMerchant?.id ?? null);
 
     if (!targetMerchantId) {
       return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });

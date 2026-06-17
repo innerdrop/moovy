@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
@@ -58,19 +58,11 @@ const createSchema = z.object({
 });
 
 // GET — Merchant ve sus placements
-export async function GET(request: NextRequest) {
-    const session = await auth();
-    if (!session?.user) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    const userId = (session.user as any).id;
-
-    // Buscar merchant del usuario
-    const merchant = await prisma.merchant.findFirst({
-        where: { ownerId: userId },
-        select: { id: true },
-    });
+export async function GET() {
+    // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+    const authResult = await requireMerchantApi();
+    if (authResult instanceof NextResponse) return authResult;
+    const { merchant } = authResult;
 
     if (!merchant) {
         return NextResponse.json({ error: "No sos un comercio registrado" }, { status: 403 });
@@ -131,19 +123,13 @@ export async function GET(request: NextRequest) {
 
 // POST — Merchant solicita un espacio publicitario
 export async function POST(request: NextRequest) {
-    const session = await auth();
-    if (!session?.user) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+    const authResult = await requireMerchantApi();
+    if (authResult instanceof NextResponse) return authResult;
+    const { merchant } = authResult;
 
-    const userId = (session.user as any).id;
-
-    const merchant = await prisma.merchant.findFirst({
-        where: { ownerId: userId, approvalStatus: "APPROVED" },
-        select: { id: true, name: true, isPremium: true, premiumTier: true },
-    });
-
-    if (!merchant) {
+    // La publicidad requiere comercio APROBADO.
+    if (!merchant || merchant.approvalStatus !== "APPROVED") {
         return NextResponse.json(
             { error: "Tu comercio debe estar aprobado para solicitar publicidad" },
             { status: 403 }

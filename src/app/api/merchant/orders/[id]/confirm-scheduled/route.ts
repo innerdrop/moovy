@@ -6,8 +6,7 @@
 // (mismo criterio que el cron scheduled-notify y el endpoint del seller).
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
 import { startAssignmentCycle } from "@/lib/assignment-engine";
@@ -29,24 +28,13 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        // El helper ya garantiza: o hay comercio propio, o es ADMIN.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant, isAdmin } = authResult;
 
         const { id: orderId } = await params;
-
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
-            select: { id: true },
-        });
-
-        if (!merchant && !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });
-        }
 
         const order = await prisma.order.findUnique({
             where: { id: orderId },
@@ -68,7 +56,7 @@ export async function POST(
             return NextResponse.json({ error: "Pedido no encontrado" }, { status: 404 });
         }
 
-        if (!hasAnyRole(session, ["ADMIN"]) && order.merchantId !== merchant?.id) {
+        if (!isAdmin && order.merchantId !== merchant?.id) {
             return NextResponse.json({ error: "Pedido no pertenece a tu comercio" }, { status: 403 });
         }
 

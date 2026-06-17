@@ -1,36 +1,26 @@
 // API Route: Get current merchant info
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
-import { prisma } from "@/lib/prisma";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 
 export async function GET() {
     try {
-        const session = await auth();
-
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
-
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
-            select: {
-                id: true,
-                name: true,
-                slug: true,
-                isActive: true,
-            }
-        });
+        // Auth contra DB (no contra el JWT cache). Ver src/lib/merchant-auth.ts.
+        const authResult = await requireMerchantApi({ allowAdmin: true });
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant } = authResult;
 
         if (!merchant) {
             return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });
         }
 
-        return NextResponse.json(merchant);
+        // Respuesta curada (NO devolvemos el row completo: tiene campos cifrados
+        // CUIT/CBU/tokens MP — regla AAIP #23).
+        return NextResponse.json({
+            id: merchant.id,
+            name: merchant.name,
+            slug: merchant.slug,
+            isActive: merchant.isActive,
+        });
     } catch (error) {
         console.error("Error fetching merchant:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });
