@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { getDisabledDocumentFields } from "@/lib/merchant-document-approval";
 import logger from "@/lib/logger";
 
 /**
@@ -88,15 +89,24 @@ export async function GET(request: NextRequest) {
             }),
         ]);
 
+        // Documentos apagados desde OPS no se exigen: un comercio puede estar
+        // "en revisión" aunque no haya cargado un doc que dejamos de pedir.
+        // feat/docs-comercio-configurables-ops.
+        const disabledDocs = await getDisabledDocumentFields();
+        const cuitRequired = !disabledDocs.has("cuit");
+        const bankRequired = !disabledDocs.has("bankAccount");
+        const afipRequired = !disabledDocs.has("constanciaAfipUrl");
+        const habRequired = !disabledDocs.has("habilitacionMunicipalUrl");
+
         // Separar pendientes: sin docs (incompleto) vs con docs (en revisión)
         const pendingIncomplete: any[] = [];
         const pendingReady: any[] = [];
         for (const m of pending) {
             const hasAllDocs =
-                !!m.constanciaAfipUrl &&
-                !!m.habilitacionMunicipalUrl &&
-                !!m.cuit &&
-                !!m.bankAccount;
+                (!afipRequired || !!m.constanciaAfipUrl) &&
+                (!habRequired || !!m.habilitacionMunicipalUrl) &&
+                (!cuitRequired || !!m.cuit) &&
+                (!bankRequired || !!m.bankAccount);
             if (hasAllDocs) pendingReady.push(m);
             else pendingIncomplete.push(m);
         }

@@ -33,6 +33,20 @@ export const FEATURE_FLAGS = {
     MERCHANT_PAQUETES: "merchant.paquetes",
     MERCHANT_TRACKING_EN_VIVO: "merchant.tracking-en-vivo",
 
+    // Scope MERCHANT — documentación requerida (feat/docs-comercio-configurables-ops).
+    // Cada flag prende/apaga si ese documento se le pide al comercio. Permite
+    // lanzar pidiendo menos papeles y endurecer después sin redeploy.
+    // OJO: la semántica de estos flags es INVERSA al resto. Un doc se considera
+    // requerido a menos que su flag esté EXPLÍCITAMENTE en OFF (ver
+    // getDisabledDocumentFields en merchant-document-approval.ts). Si la fila no
+    // existe (seed no corrido) el doc sigue siendo requerido — fail-safe para
+    // compliance fiscal/legal.
+    MERCHANT_DOC_CUIT: "merchant.doc.cuit",
+    MERCHANT_DOC_BANK_ACCOUNT: "merchant.doc.bank-account",
+    MERCHANT_DOC_CONSTANCIA_AFIP: "merchant.doc.constancia-afip",
+    MERCHANT_DOC_HABILITACION_MUNICIPAL: "merchant.doc.habilitacion-municipal",
+    MERCHANT_DOC_REGISTRO_SANITARIO: "merchant.doc.registro-sanitario",
+
     // Scope SELLER — afecta el panel/menu del vendedor marketplace
     SELLER_PAQUETES: "seller.paquetes",
 

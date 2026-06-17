@@ -32,6 +32,13 @@ interface OnboardingStatus {
     hasRegistroSanitario: boolean;
     isFoodBusiness: boolean;
     docsComplete: boolean;
+    // Qué documentos se piden hoy (categoría + flags de OPS). El checklist sólo
+    // muestra los requeridos. feat/docs-comercio-configurables-ops.
+    cuitRequired: boolean;
+    bankAccountRequired: boolean;
+    constanciaAfipRequired: boolean;
+    habilitacionRequired: boolean;
+    registroSanitarioRequired: boolean;
     hasLogo: boolean;
     hasSchedule: boolean;
     hasProducts: boolean;
@@ -90,12 +97,22 @@ export default function OnboardingChecklist() {
     // disponible expandiendo desde otro lugar (futuro: link en config).
     if (status.approvalStatus !== "APPROVED" || status.canOpenStore || dismissed) return null;
 
+    // Sólo mostramos los documentos que se piden hoy (status.<doc>Required ya
+    // combina categoría + flags de OPS). Si OPS apaga un doc, no aparece acá.
     const steps: Step[] = [
-        { id: "cuit", label: "CUIT cargado", completed: status.hasCuit, href: "/comercios/configuracion", required: true, section: "docs" },
-        { id: "bank", label: "CBU o Alias bancario", completed: status.hasBankAccount, href: "/comercios/configuracion", required: true, section: "docs" },
-        { id: "afip", label: "Constancia AFIP", completed: status.hasConstanciaAfip, href: "/comercios/configuracion", required: true, section: "docs" },
-        { id: "habilitacion", label: "Habilitación Municipal", completed: status.hasHabilitacion, href: "/comercios/configuracion", required: true, section: "docs" },
-        ...(status.isFoodBusiness
+        ...(status.cuitRequired
+            ? [{ id: "cuit", label: "CUIT cargado", completed: status.hasCuit, href: "/comercios/configuracion", required: true, section: "docs" as const }]
+            : []),
+        ...(status.bankAccountRequired
+            ? [{ id: "bank", label: "CBU o Alias bancario", completed: status.hasBankAccount, href: "/comercios/configuracion", required: true, section: "docs" as const }]
+            : []),
+        ...(status.constanciaAfipRequired
+            ? [{ id: "afip", label: "Constancia AFIP", completed: status.hasConstanciaAfip, href: "/comercios/configuracion", required: true, section: "docs" as const }]
+            : []),
+        ...(status.habilitacionRequired
+            ? [{ id: "habilitacion", label: "Habilitación Municipal", completed: status.hasHabilitacion, href: "/comercios/configuracion", required: true, section: "docs" as const }]
+            : []),
+        ...(status.registroSanitarioRequired
             ? [{ id: "sanitario", label: "Registro Sanitario", completed: status.hasRegistroSanitario, href: "/comercios/configuracion", required: true, section: "docs" as const }]
             : []),
         // Logo: requerido para visibilidad pública (rama fix/aprobacion-sin-logo).

@@ -29,6 +29,11 @@ interface SeedFlag {
     label: string;
     description: string;
     scope: "MERCHANT" | "SELLER" | "BUYER" | "GLOBAL";
+    // Estado inicial al CREARSE la fila (no se aplica si la fila ya existe — ahí
+    // gana lo que el admin haya dejado). Default false. Los flags de documentación
+    // se siembran en true porque su semantica es "requerido salvo que este OFF":
+    // queremos que al crearse el doc siga pidiendose (= comportamiento actual).
+    defaultActive?: boolean;
 }
 
 const SEED_FLAGS: SeedFlag[] = [
@@ -53,6 +58,53 @@ const SEED_FLAGS: SeedFlag[] = [
         description:
             "Muestra al comercio el mapa con la ubicacion en tiempo real del repartidor que retiro su pedido. Si esta OFF, el comercio solo ve el estado de texto (DRIVER_ASSIGNED, PICKED_UP, etc.) sin mapa.",
         scope: "MERCHANT",
+    },
+
+    // ─── MERCHANT · Documentacion requerida ────────────────────────────────
+    // feat/docs-comercio-configurables-ops. Cada flag prende/apaga si se le pide
+    // ese documento al comercio. defaultActive: true => al crearse el doc sigue
+    // siendo requerido (no cambia nada hoy). El admin apaga lo que no quiera
+    // pedir al inicio. El Registro Sanitario, ademas del flag, solo aplica a
+    // rubros gastronomicos.
+    {
+        key: "merchant.doc.cuit",
+        label: "Documento: CUIT",
+        description:
+            "Si esta ON, se le pide el CUIT al comercio y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion.",
+        scope: "MERCHANT",
+        defaultActive: true,
+    },
+    {
+        key: "merchant.doc.bank-account",
+        label: "Documento: CBU/Alias bancario",
+        description:
+            "Si esta ON, se le pide el CBU o Alias bancario al comercio y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion.",
+        scope: "MERCHANT",
+        defaultActive: true,
+    },
+    {
+        key: "merchant.doc.constancia-afip",
+        label: "Documento: Constancia de Inscripcion AFIP",
+        description:
+            "Si esta ON, se le pide la Constancia de Inscripcion AFIP al comercio y es obligatoria para activarse. Si esta OFF, no se le pide ni bloquea la activacion.",
+        scope: "MERCHANT",
+        defaultActive: true,
+    },
+    {
+        key: "merchant.doc.habilitacion-municipal",
+        label: "Documento: Habilitacion Municipal",
+        description:
+            "Si esta ON, se le pide la Habilitacion Municipal al comercio y es obligatoria para activarse. Si esta OFF, no se le pide ni bloquea la activacion.",
+        scope: "MERCHANT",
+        defaultActive: true,
+    },
+    {
+        key: "merchant.doc.registro-sanitario",
+        label: "Documento: Registro Sanitario / Bromatologico",
+        description:
+            "Si esta ON, se le pide el Registro Sanitario a los comercios gastronomicos y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion. Solo aplica a rubros de comida.",
+        scope: "MERCHANT",
+        defaultActive: true,
     },
 
     // ─── SELLER ────────────────────────────────────────────────────────────
@@ -104,7 +156,7 @@ async function main() {
                     label: flag.label,
                     description: flag.description,
                     scope: flag.scope,
-                    isActive: false, // Default explicit: todo apagado al crearse
+                    isActive: flag.defaultActive ?? false, // default apagado salvo flags que piden lo contrario (docs)
                 },
             });
             created++;

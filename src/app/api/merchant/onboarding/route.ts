@@ -2,6 +2,10 @@
 import { NextResponse } from "next/server";
 import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
+import {
+    getRequiredDocumentFields,
+    isFoodCategory,
+} from "@/lib/merchant-document-approval";
 
 export async function GET() {
     try {
@@ -18,26 +22,37 @@ export async function GET() {
             return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });
         }
 
-        // Food businesses require sanitary registration
-        const FOOD_TYPES = ["Restaurante", "Pizzería", "Hamburguesería", "Parrilla", "Cafetería",
-            "Heladería", "Panadería/Pastelería", "Sushi", "Comida Saludable", "Rotisería", "Bebidas", "Vinoteca/Licorería"];
-        const isFoodBusiness = FOOD_TYPES.includes(merchant.category || "");
+        const isFoodBusiness = isFoodCategory(merchant.category);
+
+        // Documentos requeridos según categoría + flags de OPS
+        // (feat/docs-comercio-configurables-ops). Si OPS apaga un doc, deja de
+        // ser requerido y no bloquea ni aparece en el checklist.
+        const requiredDocs = await getRequiredDocumentFields(merchant.category);
+        const cuitRequired = requiredDocs.includes("cuit");
+        const bankAccountRequired = requiredDocs.includes("bankAccount");
+        const constanciaAfipRequired = requiredDocs.includes("constanciaAfipUrl");
+        const habilitacionRequired = requiredDocs.includes("habilitacionMunicipalUrl");
+        const registroSanitarioRequired = requiredDocs.includes("registroSanitarioUrl");
 
         // Get product count
         const productCount = await prisma.product.count({
             where: { merchantId: merchant.id, isActive: true },
         });
 
-        // Required documentation checks — un doc se considera "cumplido" cuando
-        // está APPROVED, sin importar si la aprobación fue DIGITAL (con URL en
-        // el sistema) o PHYSICAL (admin recibió el papel y aprobó manualmente).
-        // Antes chequeábamos `Boolean(merchant.cuit)` etc., lo que excluía las
-        // aprobaciones físicas y dejaba el checklist marcando "falta" indefinidamente.
-        const hasCuit = merchant.cuitStatus === "APPROVED";
-        const hasBankAccount = merchant.bankAccountStatus === "APPROVED";
-        const hasConstanciaAfip = merchant.constanciaAfipStatus === "APPROVED";
-        const hasHabilitacion = merchant.habilitacionMunicipalStatus === "APPROVED";
-        const hasRegistroSanitario = !isFoodBusiness || merchant.registroSanitarioStatus === "APPROVED";
+        // Un doc se considera "cumplido" cuando está APPROVED (sin importar si la
+        // aprobación fue DIGITAL con URL o PHYSICAL en papel desde OPS) O cuando
+        // NO es requerido (apagado desde OPS / no aplica al rubro).
+        const cuitApproved = merchant.cuitStatus === "APPROVED";
+        const bankApproved = merchant.bankAccountStatus === "APPROVED";
+        const afipApproved = merchant.constanciaAfipStatus === "APPROVED";
+        const habApproved = merchant.habilitacionMunicipalStatus === "APPROVED";
+        const sanitarioApproved = merchant.registroSanitarioStatus === "APPROVED";
+
+        const hasCuit = !cuitRequired || cuitApproved;
+        const hasBankAccount = !bankAccountRequired || bankApproved;
+        const hasConstanciaAfip = !constanciaAfipRequired || afipApproved;
+        const hasHabilitacion = !habilitacionRequired || habApproved;
+        const hasRegistroSanitario = !registroSanitarioRequired || sanitarioApproved;
 
         // Operational checks
         const hasLogo = Boolean(merchant.image);
@@ -46,7 +61,7 @@ export async function GET() {
         const hasAddress = Boolean(merchant.address && merchant.latitude);
         const hasMercadoPago = Boolean(merchant.mpUserId);
 
-        // All docs complete = can open store
+        // All docs complete = can open store (los no requeridos cuentan como OK)
         const docsComplete = hasCuit && hasBankAccount && hasConstanciaAfip && hasHabilitacion && hasRegistroSanitario;
         // All operational = fully ready. Logo es obligatorio (rama
         // fix/comercio-onboarding-completo) — el backend bloquea la aprobación
@@ -59,7 +74,7 @@ export async function GET() {
             merchantId: merchant.id,
             merchantName: merchant.name,
             approvalStatus: merchant.approvalStatus,
-            // Documentation
+            // Documentation — estado "cumplido" (incluye los no requeridos)
             hasCuit,
             hasBankAccount,
             hasConstanciaAfip,
@@ -67,6 +82,13 @@ export async function GET() {
             hasRegistroSanitario,
             isFoodBusiness,
             docsComplete,
+            // Qué documentos son requeridos hoy (categoría + flags OPS). El
+            // checklist usa esto para mostrar sólo los que se piden.
+            cuitRequired,
+            bankAccountRequired,
+            constanciaAfipRequired,
+            habilitacionRequired,
+            registroSanitarioRequired,
             // Operational
             hasLogo,
             hasSchedule,

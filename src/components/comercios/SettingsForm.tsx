@@ -59,9 +59,14 @@ interface SettingsFormProps {
         approvalStatus: string;
         category?: string | null;
     };
+    // Documentos que se le piden hoy al comercio (categoría + flags de OPS).
+    // Calculado en el server. Si OPS apaga un doc, no aparece en el formulario.
+    // Si no se pasa (undefined), se muestran todos (retrocompatible).
+    // feat/docs-comercio-configurables-ops.
+    requiredDocFields?: string[];
 }
 
-export default function SettingsForm({ merchant }: SettingsFormProps) {
+export default function SettingsForm({ merchant, requiredDocFields }: SettingsFormProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [isTogglingStore, setIsTogglingStore] = useState(false);
     const [isOpen, setIsOpen] = useState(merchant.isOpen);
@@ -263,7 +268,7 @@ export default function SettingsForm({ merchant }: SettingsFormProps) {
             </form>
 
             {/* Document Status & Upload */}
-            <DocumentsSection merchant={merchant} />
+            <DocumentsSection merchant={merchant} requiredDocFields={requiredDocFields} />
 
             {/* MercadoPago */}
             <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
@@ -347,7 +352,7 @@ interface DocItem {
     placeholder: string;
 }
 
-function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"] }) {
+function DocumentsSection({ merchant, requiredDocFields }: { merchant: SettingsFormProps["merchant"]; requiredDocFields?: string[] }) {
     const [uploading, setUploading] = useState<DocKey | null>(null);
     const [savingField, setSavingField] = useState<DocKey | null>(null);
     const [textDrafts, setTextDrafts] = useState<{ cuit: string; bankAccount: string }>({
@@ -603,9 +608,12 @@ function DocumentsSection({ merchant }: { merchant: SettingsFormProps["merchant"
                 </div>
             )}
 
-            {/* Lista unificada de docs (CUIT, CBU, URL docs) */}
+            {/* Lista unificada de docs (CUIT, CBU, URL docs). Sólo los requeridos
+                hoy: si OPS apagó un documento, no se le pide al comercio. */}
             <div className="space-y-3">
-                {docItems.map((doc) => (
+                {docItems
+                    .filter((doc) => !requiredDocFields || requiredDocFields.includes(doc.key))
+                    .map((doc) => (
                     <DocumentRow
                         key={doc.key}
                         doc={doc}

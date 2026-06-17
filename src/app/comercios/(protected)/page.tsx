@@ -12,15 +12,7 @@ import {
 } from "@/lib/merchant-loyalty";
 import KPIDashboard from "./KPIDashboard";
 import OnboardingChecklist from "./OnboardingChecklist";
-
-// ISSUE-038: categorías de comida que requieren registro sanitario.
-// Debe coincidir con /api/merchant/onboarding para que "canOpenStore"
-// se derive igual en el chip del dashboard.
-const FOOD_TYPES = [
-    "Restaurante", "Pizzería", "Hamburguesería", "Parrilla", "Cafetería",
-    "Heladería", "Panadería/Pastelería", "Sushi", "Comida Saludable",
-    "Rotisería", "Bebidas", "Vinoteca/Licorería",
-];
+import { getRequiredDocumentFields } from "@/lib/merchant-document-approval";
 
 export default async function ComerciosDashboardPage() {
     const session = await auth();
@@ -68,13 +60,17 @@ export default async function ComerciosDashboardPage() {
     // "Cerrada" si manualmente pausado o fuera de horario.
     // "Abierta" si todo OK + dentro de horario en timezone Ushuaia.
     // La misma lógica de requisitos vive en /api/merchant/onboarding.
-    const isFoodBusiness = FOOD_TYPES.includes(merchant.category || "");
-    const hasCuit = Boolean(merchant.cuit);
-    const hasBankAccount = Boolean(merchant.bankAccount);
-    const hasConstanciaAfip = Boolean(merchant.constanciaAfipUrl);
-    const hasHabilitacion = Boolean(merchant.habilitacionMunicipalUrl);
-    const hasRegistroSanitario = !isFoodBusiness || Boolean(merchant.registroSanitarioUrl);
-    const docsComplete = hasCuit && hasBankAccount && hasConstanciaAfip && hasHabilitacion && hasRegistroSanitario;
+    // feat/docs-comercio-configurables-ops: un doc cuenta para "completo" sólo si
+    // es requerido hoy (categoría + flags de OPS). Si OPS lo apagó, no bloquea.
+    const requiredDocs = await getRequiredDocumentFields(merchant.category);
+    const docOk = (field: string, present: boolean) =>
+        !(requiredDocs as string[]).includes(field) || present;
+    const docsComplete =
+        docOk("cuit", Boolean(merchant.cuit)) &&
+        docOk("bankAccount", Boolean(merchant.bankAccount)) &&
+        docOk("constanciaAfipUrl", Boolean(merchant.constanciaAfipUrl)) &&
+        docOk("habilitacionMunicipalUrl", Boolean(merchant.habilitacionMunicipalUrl)) &&
+        docOk("registroSanitarioUrl", Boolean(merchant.registroSanitarioUrl));
     const hasSchedule = Boolean(merchant.scheduleJson);
     const hasProducts = activeProducts >= 1;
     const hasAddress = Boolean(merchant.address && merchant.latitude);

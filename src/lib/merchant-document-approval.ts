@@ -137,11 +137,57 @@ export function isFoodCategory(category: string | null | undefined): boolean {
 }
 
 /**
- * Devuelve los documentos requeridos para un merchant según su categoría.
- * Registro sanitario sólo se cuenta para rubros alimenticios.
+ * Mapeo documento → key del feature flag que lo prende/apaga.
+ * feat/docs-comercio-configurables-ops: OPS puede dejar de pedir un documento
+ * apagando su flag desde /ops/feature-flags.
  */
-export function getRequiredDocumentFields(
-    category: string | null | undefined
+export const DOCUMENT_FLAG_KEYS: Record<MerchantDocumentField, string> = {
+    cuit: "merchant.doc.cuit",
+    bankAccount: "merchant.doc.bank-account",
+    constanciaAfipUrl: "merchant.doc.constancia-afip",
+    habilitacionMunicipalUrl: "merchant.doc.habilitacion-municipal",
+    registroSanitarioUrl: "merchant.doc.registro-sanitario",
+};
+
+/**
+ * Devuelve el set de documentos DESACTIVADOS desde OPS.
+ *
+ * Semántica fail-safe (INVERSA a isFeatureEnabled): un documento se considera
+ * desactivado SÓLO si existe una fila FeatureFlag con su key y `isActive=false`.
+ * Si la fila no existe (seed no corrido en ese entorno) o si la query falla,
+ * NO desactivamos nada → el doc sigue siendo requerido. Para documentación
+ * fiscal/legal preferimos pedir de más que de menos ante cualquier duda.
+ */
+export async function getDisabledDocumentFields(): Promise<Set<MerchantDocumentField>> {
+    const disabled = new Set<MerchantDocumentField>();
+    try {
+        const offRows = await prisma.featureFlag.findMany({
+            where: {
+                key: { in: Object.values(DOCUMENT_FLAG_KEYS) },
+                isActive: false,
+            },
+            select: { key: true },
+        });
+        const offKeys = new Set(offRows.map((r) => r.key));
+        for (const f of ALL_DOCUMENT_FIELDS) {
+            if (offKeys.has(DOCUMENT_FLAG_KEYS[f])) disabled.add(f);
+        }
+    } catch (err) {
+        console.error("[merchant-docs] error leyendo flags de documentos, se piden todos", err);
+        return new Set();
+    }
+    return disabled;
+}
+
+/**
+ * Versión SINCRÓNICA: documentos requeridos según categoría menos los
+ * desactivados (que el caller ya consultó con getDisabledDocumentFields).
+ * Útil dentro de transacciones, donde no queremos abrir otra query con el
+ * cliente global.
+ */
+export function getRequiredDocumentFieldsSync(
+    category: string | null | undefined,
+    disabled: Set<MerchantDocumentField> = new Set()
 ): MerchantDocumentField[] {
     const base = ALL_DOCUMENT_FIELDS.filter(
         (f) => DOCUMENT_COLUMNS[f].alwaysRequired
@@ -149,7 +195,19 @@ export function getRequiredDocumentFields(
     if (isFoodCategory(category)) {
         base.push("registroSanitarioUrl");
     }
-    return base;
+    return base.filter((f) => !disabled.has(f));
+}
+
+/**
+ * Devuelve los documentos requeridos para un merchant según su categoría y los
+ * flags de OPS. Registro sanitario sólo se cuenta para rubros alimenticios, y
+ * además cualquier doc puede apagarse desde OPS.
+ */
+export async function getRequiredDocumentFields(
+    category: string | null | undefined
+): Promise<MerchantDocumentField[]> {
+    const disabled = await getDisabledDocumentFields();
+    return getRequiredDocumentFieldsSync(category, disabled);
 }
 
 interface AdminContext {
@@ -184,6 +242,11 @@ export async function approveDocument(
     const source = ctx.source ?? "DIGITAL";
     const note = ctx.note ?? null;
 
+    // Documentos desactivados desde OPS — los leemos ANTES de la tx para no abrir
+    // una query con el cliente global dentro del $transaction (evita contención
+    // de conexiones). El set se usa para el chequeo de auto-activación.
+    const disabledDocs = await getDisabledDocumentFields();
+
     // El chequeo de auto-activación necesita leer TODOS los status columns
     // después del update; hacemos eso dentro de una tx serializable.
     const autoActivated = await prisma.$transaction(async (tx) => {
@@ -211,7 +274,8 @@ export async function approveDocument(
 
         // Chequeo de auto-activación: todos los requeridos en APPROVED y
         // merchant todavía PENDING (si ya está APPROVED no re-disparamos).
-        const required = getRequiredDocumentFields(updated.category);
+        // Los documentos apagados desde OPS no cuentan como requeridos.
+        const required = getRequiredDocumentFieldsSync(updated.category, disabledDocs);
         const allApproved = required.every((f) => {
             const statusCol = DOCUMENT_COLUMNS[f].statusColumn as keyof typeof updated;
             return updated[statusCol] === "APPROVED";
@@ -374,7 +438,7 @@ export async function getDocumentStatuses(merchantId: string): Promise<{
         registroSanitarioUrl: merchant.registroSanitarioStatus,
     };
 
-    const required = getRequiredDocumentFields(merchant.category);
+    const required = await getRequiredDocumentFields(merchant.category);
     const allRequiredApproved = required.every((f) => statuses[f] === "APPROVED");
 
     return { statuses, required, allRequiredApproved };

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AlertCircle, Settings } from "lucide-react";
 import SettingsForm from "@/components/comercios/SettingsForm";
 import { decryptMerchantData } from "@/lib/fiscal-crypto";
+import { getRequiredDocumentFields } from "@/lib/merchant-document-approval";
 
 export default async function ConfiguracionPage() {
     const session = await auth();
@@ -34,6 +35,10 @@ export default async function ConfiguracionPage() {
     // Los 5 campos de status son columnas String con default "PENDING". Prisma
     // las trae como string — las casteamos al union type del cliente.
     const m = merchant as any;
+
+    // Documentos que se le piden hoy (categoría + flags de OPS). El formulario
+    // sólo muestra estos. feat/docs-comercio-configurables-ops.
+    const requiredDocFields = await getRequiredDocumentFields(merchant.category);
 
     return (
         <div className="max-w-3xl mx-auto space-y-6">
@@ -84,6 +89,7 @@ export default async function ConfiguracionPage() {
                     approvalStatus: merchant.approvalStatus,
                     category: merchant.category,
                 }}
+                requiredDocFields={requiredDocFields}
             />
         </div>
     );
