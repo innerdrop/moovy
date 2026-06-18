@@ -9,6 +9,7 @@ import { useCartStore } from "@/store/cart";
 import { useRouter, usePathname } from "next/navigation";
 import UploadImage from "@/components/ui/UploadImage";
 import UserAvatarMenu from "@/components/layout/UserAvatarMenu";
+import PointsBalanceChip from "@/components/layout/PointsBalanceChip";
 
 interface AppHeaderProps {
     isLoggedIn?: boolean;
@@ -252,8 +253,9 @@ export default function AppHeader({
                         />
                     </Link>
 
-                    {/* Right: Orders + Cart */}
+                    {/* Right: Points + Orders + Cart */}
                     <div className="flex items-center gap-0.5">
+                        {isLoggedIn && <PointsBalanceChip />}
                         {isLoggedIn && (
                             <Link
                                 href="/mis-pedidos"
@@ -468,6 +470,7 @@ export default function AppHeader({
 
                     {/* Right */}
                     <div className="flex items-center gap-3 flex-shrink-0">
+                        {isLoggedIn && <PointsBalanceChip />}
                         {isLoggedIn && (
                             <Link
                                 href="/mis-pedidos"

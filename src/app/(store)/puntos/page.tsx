@@ -489,7 +489,10 @@ export default function PuntosPage() {
                                     Cada compra que recibís se convierte automáticamente en puntos.
                                 </p>
                                 <p className="text-base font-semibold text-gray-900 mt-3">
-                                    10 puntos por cada $1,000
+                                    Ganás puntos con cada compra
+                                </p>
+                                <p className="text-xs text-gray-400 mt-1">
+                                    10 puntos por cada $1.000
                                 </p>
                             </div>
 
@@ -976,6 +979,18 @@ export default function PuntosPage() {
                             Te faltan {((pointsConfig?.minPointsToRedeem ?? 500) - balance).toLocaleString("es-AR")} pts para empezar a canjear.
                         </p>
                     )}
+                    {/* Dónde aplican los puntos: las dos aclaraciones que más evitan
+                        confusión/reclamos, ahora visibles (antes solo en el desplegable). */}
+                    <div className="mt-3 pt-3 border-t border-amber-100 space-y-1.5">
+                        <p className="text-xs text-gray-500 flex items-start gap-1.5">
+                            <ShoppingBag className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
+                            Se calculan sobre tus productos, no sobre el costo de envío.
+                        </p>
+                        <p className="text-xs text-gray-500 flex items-start gap-1.5">
+                            <Check className="w-3.5 h-3.5 text-amber-500 mt-0.5 flex-shrink-0" />
+                            Se acreditan cuando recibís el pedido, no al pagar.
+                        </p>
+                    </div>
                 </div>
 
                 {/* Referral Code Section */}
@@ -1080,7 +1095,7 @@ export default function PuntosPage() {
                                 <div className="flex-1 text-left">
                                     <p className="font-medium text-gray-900">Comprando</p>
                                     <p className="text-gray-500 text-xs">
-                                        10 puntos por cada $1,000 de compra
+                                        Ganás puntos con cada compra
                                     </p>
                                 </div>
                                 {expandedItem === "compras" ? (
@@ -1092,13 +1107,12 @@ export default function PuntosPage() {
                             {expandedItem === "compras" && (
                                 <div className="ml-14 mr-2 mt-2 p-3 bg-red-50 rounded-lg text-sm text-gray-600">
                                     <p className="mb-2">
-                                        📦 Por cada compra que realices, acumulás puntos
-                                        automáticamente:
+                                        <strong className="text-gray-900">Cómo se calcula:</strong> ganás
+                                        10 puntos por cada $1.000 de compra.
                                     </p>
                                     <ul className="list-disc list-inside space-y-1 text-xs">
-                                        <li>Si gastás $10.000, sumás 100 puntos ($100 en descuentos)</li>
-                                        <li>Los puntos se acreditan al recibir tu pedido</li>
-                                        <li>Aplica para productos, no para envío</li>
+                                        <li>Por ejemplo, $10.000 = 100 puntos ($100 en descuentos)</li>
+                                        <li>Los puntos suben con tu nivel (hasta 20 puntos por $1.000 en BLACK)</li>
                                     </ul>
                                 </div>
                             )}

@@ -36,14 +36,15 @@
 3. `devmain.ps1` en **modo schema** + re-seed `DeliveryRate` + `cerrar-tienda.ps1`.
 4. Re-test de lo nuevo en producción (detrás de la cortina).
 
-**Cerrado esta sesión (2026-06-17)** — 5 ramas:
+**Cerrado esta sesión (2026-06-17 → 18)** — 6 ramas:
 1. `feat/ops-notificacion-opcional-aprobacion` — checkbox "Notificar al usuario por email" (default ON) al aprobar/rechazar comercio y driver desde OPS. El audit log siempre registra + ahora guarda `notified`. Permite correcciones/QA sin spamear.
 2. `fix/merchant-api-db-auth` — BUG del 403 post-aprobación: las APIs `/api/merchant/*` validaban contra el JWT cache (stale tras aprobar) → 403 aunque la DB dijera APPROVED. Nuevo helper `requireMerchantApi` (DB-based, espejo de `requireDriverApi`), 21 handlers migrados + refetch del dashboard al refrescar sesión. **Probado: la redirección post-aprobación carga sin 403.**
 3. `feat/docs-comercio-configurables-ops` — documentación del comercio configurable desde `/ops/feature-flags` (5 flags `merchant.doc.*`). Semántica fail-safe inversa: requerido salvo flag explícito en OFF. **Pendiente correr el seed** (`scripts/seed-feature-flags.ts`) en local + prod.
 4. `chore/quitar-flag-efectivo` — removido el flag fantasma `buyer.cash-payment` (checkout es electrónico-only; el flag no cableaba nada). Código de efectivo queda dormido para Fase 2. **Pendiente correr `cleanup-deprecated-feature-flags.ts --execute`** en local + prod.
 5. `feat/ops-campana-notificaciones` — campana de notificaciones en el header de OPS. Endpoint nuevo `/api/admin/notifications` que deriva 4 fuentes (aprobaciones pendientes, change-requests docs, reseñas en moderación, incidentes de PIN) sin tocar schema. Componente con polling 45s + localStorage de "vistos". **Pendiente verificación local**: `npx tsx scripts/verify-ops-notifications.ts` + click-through.
+6. `feat/puntos-wording-amex-y-acceso` — Sección de Puntos: wording estilo Amex (titular de valor + cálculo "10 por $1.000" movido a desplegable "Cómo se calcula"), chip de saldo en el header (`PointsBalanceChip`, solo logueados), y "dónde aplican" visible (productos no envío + se acreditan al recibir). Sin tocar lógica de earn/burn, sin schema. **Pendiente verificación local**: ver el chip con saldo + recorrer /puntos.
 
-**Siguiente**: Sección de Puntos (s4-4e, requiere dirección de diseño del founder) o probar el logo en local (s4-4b-02). Ver secuencia en `docs/HANDOFF_PENDIENTES.md`.
+**Siguiente**: probar el logo del comercio en local (s4-4b-02), o arrancar el deploy del batch (ya hay 6 ramas acumuladas + las previas). Ver `docs/HANDOFF_PENDIENTES.md`.
 
 **Pendiente de migrar a CLAUDE.md** (Mauro a mano, `.claude/` protegido): (a) `requireMerchantApi` como helper canónico de auth API del comercio (regla tipo #13/#28). (b) Semántica fail-safe **inversa** de los flags `merchant.doc.*` (requerido salvo OFF explícito). (c) El `notified` en el audit log de aprobaciones.
 

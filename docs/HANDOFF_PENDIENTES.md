@@ -5,7 +5,7 @@
 
 ## Dónde estamos (actualizado 2026-06-17)
 
-- Rama actual: **`feat/ops-campana-notificaciones`** (campana OPS implementada, pendiente verificación local del founder + `finish.ps1`). Última rama mergeada a develop: `chore/quitar-flag-efectivo`.
+- Rama actual: **`feat/puntos-wording-amex-y-acceso`** (Sección de Puntos implementada, pendiente verificación local + `finish.ps1`). Ya mergeadas a develop esta sesión: `chore/quitar-flag-efectivo` + las 4 ramas del 06-17 + `feat/ops-campana-notificaciones`.
 - **Verificación pendiente de la campana** antes de mergear: `npx tsx scripts/verify-ops-notifications.ts` (cuenta por fuente contra la DB) + abrir `/ops` y mirar la campana (badge, dropdown, deep-links, "Sin novedades" si está vacío).
 - **Pendiente operativo en local AHORA**: `npx tsx scripts/seed-feature-flags.ts` (crea los 5 flags `merchant.doc.*`) + `npx tsx scripts/cleanup-deprecated-feature-flags.ts --execute` (borra `buyer.cash-payment`).
 
@@ -57,7 +57,8 @@
 
 1. ✅ **OPS — Notificación opcional al aprobar/rechazar** — HECHO (rama `feat/ops-notificacion-opcional-aprobacion`, 2026-06-17).
 2. ✅ **OPS — Campana de notificaciones** (s3-3a-05) — HECHO (rama `feat/ops-campana-notificaciones`, 2026-06-17). Decisiones: todos los eventos | polling 45s | **derivar sin schema**. Endpoint `/api/admin/notifications` (4 fuentes derivadas, cada una con su try/catch) + `OpsNotificationBell` (badge + dropdown agrupado + localStorage de vistos). Pendiente verificación local + merge.
-3. **Sección de Puntos** (s4-4e-06/03/05/07) ← **PRÓXIMA**: repensar wording estilo Amex ("por cada $X ganás Y", ocultar cálculo), agregar acceso/botón, aclarar dónde se aplican. **REQUIERE dirección de diseño del founder** antes de implementar. (Alternativa si no hay dirección: probar el logo en local, s4-4b-02.)
+3. ✅ **Sección de Puntos** (s4-4e) — HECHO (rama `feat/puntos-wording-amex-y-acceso`, 2026-06-18). Decisiones del founder: wording Amex (ocultar cálculo) | acceso = chip de saldo en header | dónde aplican = productos-no-envío + se acreditan al recibir. Sin lógica de earn/burn, sin schema. Pendiente verificación local + merge. NOTA: la sección "Ejemplo" (cálculo paso a paso) de la landing anónima se dejó intacta — el founder puede pedir simplificarla.
+4. **Logo del comercio** (s4-4b-02) ← **PRÓXIMA** (o arrancar el deploy del batch): probar el logo en local; si guarda bien era prod viejo (lo arregla el deploy), si no, agregar log de `data.image` en `updateMerchant`.
 
 ### Logo (s4-4b-02 / s4-4a-00) — estado del diagnóstico
 
