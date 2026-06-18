@@ -31,7 +31,7 @@
 ### Observaciones del checklist pre-launch pendientes (sesión 2026-06-09)
 > Detalle vivo + secuencia de ramas en `docs/HANDOFF_PENDIENTES.md`.
 
-- **Logo del comercio (s4-4b-02)** — en proceso. DB prod: TEST/MOOVY image=null, ALNAAR con URL R2 (R2 funciona). updateMerchant en develop se ve correcto → probar logo LOCAL en develop; si falla, agregar log de `data.image`.
+- **Logo del comercio (s4-4b-02)** — ✅ CERRADO sin código. Probado en local/develop el 2026-06-18: el logo guarda perfecto. La falla en prod era data vieja (TEST/MOOVY con image=null); el deploy del batch lo deja igual que develop. No requiere cambios.
 - **A re-probar** (sin contexto): s2-2a-11, s2-2b-01, s7-7a-02, s4-4c-04, s3-3c-01.
 - **500 en `/api/comercios/soporte/notificaciones` (visto en PROD)** — detectado en consola durante QA 2026-06-10. Re-verificar post-deploy del batch; si persiste, abrir rama.
 - **Categorías de la home: tarea OPERATIVA** — no aparecen porque los slots (`HomeCategorySlot`) se curan desde `/ops/categorias` y en prod no hay ninguno activo. Configurar antes del launch (como las zonas).
