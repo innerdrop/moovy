@@ -1,5 +1,5 @@
 # Moovy — Estado del proyecto
-Última actualización: 2026-06-09
+Última actualización: 2026-06-17
 
 > **Dashboard de una pantalla.** Para detalle de tareas → `ISSUES.md`. Para histórico de ramas → `.claude/CHANGELOG.md`.
 > Para el detalle vivo de pendientes del checklist pre-launch → `docs/HANDOFF_PENDIENTES.md`.
@@ -26,9 +26,9 @@
 
 ---
 
-## Sprint actual (2026-06-09)
+## Sprint actual (2026-06-17)
 
-**Foco**: resolver TODAS las observaciones del checklist QA pre-launch (296 items), probar en develop/local (menos pagos, que ya están en prod), y después deployar el batch acumulado.
+**Foco**: resolver TODAS las observaciones del checklist QA pre-launch, probar en develop/local (menos pagos, que ya están en prod), y después deployar el batch acumulado.
 
 **Plan acordado con el founder**:
 1. Resolver todas las observaciones (rama por rama).
@@ -36,19 +36,24 @@
 3. `devmain.ps1` en **modo schema** + re-seed `DeliveryRate` + `cerrar-tienda.ps1`.
 4. Re-test de lo nuevo en producción (detrás de la cortina).
 
-**Estado**: `fix/driver-mensaje-documentacion` cerrada (s2-2c-04). Siguiente: campana de notificaciones OPS (s3-3a-05, feature grande). Ver secuencia en `docs/HANDOFF_PENDIENTES.md`.
+**Cerrado esta sesión (2026-06-17)** — 5 ramas:
+1. `feat/ops-notificacion-opcional-aprobacion` — checkbox "Notificar al usuario por email" (default ON) al aprobar/rechazar comercio y driver desde OPS. El audit log siempre registra + ahora guarda `notified`. Permite correcciones/QA sin spamear.
+2. `fix/merchant-api-db-auth` — BUG del 403 post-aprobación: las APIs `/api/merchant/*` validaban contra el JWT cache (stale tras aprobar) → 403 aunque la DB dijera APPROVED. Nuevo helper `requireMerchantApi` (DB-based, espejo de `requireDriverApi`), 21 handlers migrados + refetch del dashboard al refrescar sesión. **Probado: la redirección post-aprobación carga sin 403.**
+3. `feat/docs-comercio-configurables-ops` — documentación del comercio configurable desde `/ops/feature-flags` (5 flags `merchant.doc.*`). Semántica fail-safe inversa: requerido salvo flag explícito en OFF. **Pendiente correr el seed** (`scripts/seed-feature-flags.ts`) en local + prod.
+4. `chore/quitar-flag-efectivo` — removido el flag fantasma `buyer.cash-payment` (checkout es electrónico-only; el flag no cableaba nada). Código de efectivo queda dormido para Fase 2. **Pendiente correr `cleanup-deprecated-feature-flags.ts --execute`** en local + prod.
+5. `feat/ops-campana-notificaciones` — campana de notificaciones en el header de OPS. Endpoint nuevo `/api/admin/notifications` que deriva 4 fuentes (aprobaciones pendientes, change-requests docs, reseñas en moderación, incidentes de PIN) sin tocar schema. Componente con polling 45s + localStorage de "vistos". **Pendiente verificación local**: `npx tsx scripts/verify-ops-notifications.ts` + click-through.
 
-**Decisiones de negocio tomadas esta sesión**:
-- Vendedor marketplace = **frictionless** (sin docs ni aprobación).
-- Compra del propio comercio = **bloqueada** (ya estaba, ISSUE-003).
-- Candado de lanzamiento por entorno (reemplaza el modo mantenimiento de OPS).
+**Siguiente**: Sección de Puntos (s4-4e, requiere dirección de diseño del founder) o probar el logo en local (s4-4b-02). Ver secuencia en `docs/HANDOFF_PENDIENTES.md`.
+
+**Pendiente de migrar a CLAUDE.md** (Mauro a mano, `.claude/` protegido): (a) `requireMerchantApi` como helper canónico de auth API del comercio (regla tipo #13/#28). (b) Semántica fail-safe **inversa** de los flags `merchant.doc.*` (requerido salvo OFF explícito). (c) El `notified` en el audit log de aprobaciones.
 
 ---
 
 ## Próximas tareas (orden)
 
-1. **Cerrar las observaciones pendientes del checklist** (ver `docs/HANDOFF_PENDIENTES.md`): campana OPS → sección de puntos (requiere dirección del founder) → logo (probar local).
-2. **Deploy del batch** con `devmain.ps1` MODO SCHEMA (NO `-NoDB`) + re-seed `DeliveryRate` + cleanup scripts post-deploy + `cerrar-tienda.ps1`.
+1. **Correr en local ahora**: `npx tsx scripts/seed-feature-flags.ts` (crea los 5 flags `merchant.doc.*` en ON) + `npx tsx scripts/cleanup-deprecated-feature-flags.ts --execute` (borra la fila `buyer.cash-payment`).
+2. **Cerrar las observaciones pendientes del checklist** (ver `docs/HANDOFF_PENDIENTES.md`): campana OPS → sección de puntos (requiere dirección del founder) → logo (probar local).
+3. **Deploy del batch** con `devmain.ps1` MODO SCHEMA (NO `-NoDB`) + re-seed `DeliveryRate` + **post-deploy en prod**: `seed-feature-flags.ts` (flags docs) + cleanup scripts (`cleanup-deprecated-feature-flags.ts`, `fix-orders-completed-to-delivered.ts`) + `cerrar-tienda.ps1`.
 3. **Test real de split MP** (3 cuentas distintas) en prod.
 4. **Pintar/confirmar zonas de cobertura** en `/ops/zonas-delivery`.
 5. **Día del launch**: `scripts/clean-db-pre-launch.ts --execute` + `abrir-tienda.ps1`.
@@ -58,11 +63,11 @@
 
 ## Métricas
 
-- **Issues 🔴 abiertos**: 2 (ISSUE-004 cleanup data + deploy del batch acumulado pendiente)
-- **Ramas cerradas esta sesión**: ~13 (ver ISSUES.md "Resueltos 2026-06-09")
-- **Observaciones del checklist**: ~13 cerradas, 1 en proceso (logo), ~18 pendientes (varias son diseño/feature o a re-probar)
-- **TS errors en HEAD**: solo pre-existentes documentados (`.next/dev/types/*`)
-- **Schemas pendientes de push**: ninguno en local; el VPS necesita el push del batch (modo schema)
+- **Issues 🔴 abiertos**: 2 (ISSUE-004 cleanup data + deploy del batch acumulado pendiente — más grande aún: +4 ramas hoy)
+- **Ramas cerradas esta sesión (2026-06-17)**: 4 (ver ISSUES.md "Resueltos 2026-06-17")
+- **Scripts a correr en local**: `seed-feature-flags.ts` (flags docs) + `cleanup-deprecated-feature-flags.ts --execute` (borra flag efectivo)
+- **TS errors en HEAD**: solo pre-existentes documentados (`.next/dev/types/*`). Nota: el `tsc` del entorno Cowork corre lentísimo y no completa; la verificación autoritativa la hace `finish.ps1` (tsc-strict) — esta sesión cazó 2 errores reales ahí (firma de retorno en `stats`, scope de prop en `SettingsForm`), ya corregidos.
+- **Schemas pendientes de push**: ninguno nuevo (los flags usan el modelo `FeatureFlag` existente); el VPS sigue necesitando el push del batch (modo schema)
 
 ---
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
+import OpsNotificationBell from "./OpsNotificationBell";
 import {
     LayoutDashboard,
     Package,
@@ -223,7 +224,7 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                     <Image src="/logo-moovy-white.svg" alt="Moovy" width={280} height={90} className="h-6 w-auto" />
                     <span className="text-xs font-medium text-slate-400">Admin</span>
                 </Link>
-                <div className="w-10" /> {/* Spacer for balance */}
+                <OpsNotificationBell />
             </div>
 
             {/* Mobile Bottom Navigation */}
@@ -274,13 +275,21 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                     <Link href="/ops/dashboard" className="flex items-center gap-3" onClick={closeMobileMenu}>
                         <Image src="/logo-moovy-white.svg" alt="Moovy" width={280} height={90} className="h-7 w-auto" />
                     </Link>
-                    <button
-                        onClick={closeMobileMenu}
-                        className="lg:hidden p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
-                        aria-label="Cerrar menú"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                        {/* Campana solo en desktop: en mobile el bell vive en la barra superior.
+                            align="left" => el panel abre hacia la derecha (hacia el contenido),
+                            porque la campana está pegada al borde izquierdo de la pantalla. */}
+                        <div className="hidden lg:block">
+                            <OpsNotificationBell align="left" />
+                        </div>
+                        <button
+                            onClick={closeMobileMenu}
+                            className="lg:hidden p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition"
+                            aria-label="Cerrar menú"
+                        >
+                            <X className="w-5 h-5" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* User Info - Top */}

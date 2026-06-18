@@ -3,10 +3,24 @@
 > Punto de retome para la próxima sesión. Generado al pausar el trabajo del checklist pre-launch.
 > Leé este archivo al volver para reconstruir el contexto.
 
-## Dónde estamos
+## Dónde estamos (actualizado 2026-06-17)
 
-- Parados en **develop** (última rama cerrada y mergeada).
-- **`.next-branch` ya tiene `fix vendedor-listings-ux`** preparada → correr `.\scripts\start.ps1` para arrancarla cuando se retome.
+- Rama actual: **`feat/ops-campana-notificaciones`** (campana OPS implementada, pendiente verificación local del founder + `finish.ps1`). Última rama mergeada a develop: `chore/quitar-flag-efectivo`.
+- **Verificación pendiente de la campana** antes de mergear: `npx tsx scripts/verify-ops-notifications.ts` (cuenta por fuente contra la DB) + abrir `/ops` y mirar la campana (badge, dropdown, deep-links, "Sin novedades" si está vacío).
+- **Pendiente operativo en local AHORA**: `npx tsx scripts/seed-feature-flags.ts` (crea los 5 flags `merchant.doc.*`) + `npx tsx scripts/cleanup-deprecated-feature-flags.ts --execute` (borra `buyer.cash-payment`).
+
+### Resuelto 2026-06-17 (4 ramas, todas mergeadas a develop)
+
+1. `feat/ops-notificacion-opcional-aprobacion` — checkbox "Notificar al usuario por email" (default ON) al aprobar/rechazar comercio y driver. Audit log guarda `notified`.
+2. `fix/merchant-api-db-auth` — fix del **403 post-aprobación**: helper `requireMerchantApi` (DB-based), 21 handlers migrados. Probado OK (redirección carga sin 403).
+3. `feat/docs-comercio-configurables-ops` — docs del comercio configurables vía flags `merchant.doc.*` (fail-safe inverso: requerido salvo OFF explícito). Falta correr el seed.
+4. `chore/quitar-flag-efectivo` — removido el flag fantasma `buyer.cash-payment`. Falta correr el cleanup script.
+
+### A migrar a CLAUDE.md (a mano — `.claude/` protegido)
+- `requireMerchantApi` como helper canónico de auth API del comercio (DB > JWT cache).
+- Semántica **fail-safe inversa** de los flags `merchant.doc.*` (requerido salvo OFF explícito; si falta la fila se pide igual).
+- `notified` en el audit log de aprobaciones/rechazos.
+- Efectivo = electrónico-only para lanzamiento; código de efectivo dormido preservado para Fase 2.
 
 ## Plan acordado (founder)
 
@@ -41,9 +55,9 @@
 
 ## Pendientes (secuencia de ramas)
 
-1. **OPS — Notificación opcional al aprobar/rechazar** (pedido founder 2026-06-10, `.next-branch` lista): checkbox "Notificar al usuario por email" (default MARCADO) en los flujos de aprobar/rechazar de OPS para repartidores Y comercios. El audit log SIEMPRE registra el cambio + si se notificó. Permite correcciones de estado y QA sin spamear al usuario.
-2. **OPS — Campana de notificaciones** (s3-3a-05): aviso in-app de change-requests/aprobaciones pendientes. Feature más grande (modelo + API + polling + UI).
-3. **Sección de Puntos** (s4-4e-06/03/05/07): repensar wording estilo Amex ("por cada $X ganás Y", ocultar cálculo), agregar acceso/botón, aclarar dónde se aplican. **REQUIERE dirección de diseño del founder** antes de implementar.
+1. ✅ **OPS — Notificación opcional al aprobar/rechazar** — HECHO (rama `feat/ops-notificacion-opcional-aprobacion`, 2026-06-17).
+2. ✅ **OPS — Campana de notificaciones** (s3-3a-05) — HECHO (rama `feat/ops-campana-notificaciones`, 2026-06-17). Decisiones: todos los eventos | polling 45s | **derivar sin schema**. Endpoint `/api/admin/notifications` (4 fuentes derivadas, cada una con su try/catch) + `OpsNotificationBell` (badge + dropdown agrupado + localStorage de vistos). Pendiente verificación local + merge.
+3. **Sección de Puntos** (s4-4e-06/03/05/07) ← **PRÓXIMA**: repensar wording estilo Amex ("por cada $X ganás Y", ocultar cálculo), agregar acceso/botón, aclarar dónde se aplican. **REQUIERE dirección de diseño del founder** antes de implementar. (Alternativa si no hay dirección: probar el logo en local, s4-4b-02.)
 
 ### Logo (s4-4b-02 / s4-4a-00) — estado del diagnóstico
 

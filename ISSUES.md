@@ -1,5 +1,5 @@
 # Moovy — Issues
-Última actualización: 2026-05-17
+Última actualización: 2026-06-17
 
 > **Fuente única de tareas pendientes.** Para histórico completo de issues resueltos en sprints anteriores → `.claude/CHANGELOG.md`.
 
@@ -32,11 +32,13 @@
 > Detalle vivo + secuencia de ramas en `docs/HANDOFF_PENDIENTES.md`.
 
 - **Logo del comercio (s4-4b-02)** — en proceso. DB prod: TEST/MOOVY image=null, ALNAAR con URL R2 (R2 funciona). updateMerchant en develop se ve correcto → probar logo LOCAL en develop; si falla, agregar log de `data.image`.
-- **OPS — Campana de notificaciones (s3-3a-05)** — feature: aviso in-app de change-requests/aprobaciones.
 - **Sección de Puntos (s4-4e-06/03/05/07)** — repensar wording estilo Amex + accesos. Requiere dirección de diseño del founder.
 - **A re-probar** (sin contexto): s2-2a-11, s2-2b-01, s7-7a-02, s4-4c-04, s3-3c-01.
 - **500 en `/api/comercios/soporte/notificaciones` (visto en PROD)** — detectado en consola durante QA 2026-06-10. Re-verificar post-deploy del batch; si persiste, abrir rama.
 - **Categorías de la home: tarea OPERATIVA** — no aparecen porque los slots (`HomeCategorySlot`) se curan desde `/ops/categorias` y en prod no hay ninguno activo. Configurar antes del launch (como las zonas).
+- **Correr `seed-feature-flags.ts` (local + prod)** — crea los 5 flags `merchant.doc.*` (en ON). Sin esto, los flags no aparecen en `/ops/feature-flags` (pero por la semántica fail-safe, todos los docs se siguen pidiendo igual).
+- **Correr `cleanup-deprecated-feature-flags.ts --execute` (local + prod)** — borra la fila `buyer.cash-payment` para que no aparezca en el panel. Idempotente.
+- **Configurar qué docs pedir al inicio** — decisión del founder: en `/ops/feature-flags`, apagar los `merchant.doc.*` que NO se pidan en el lanzamiento (después de correr el seed).
 
 
 ---
@@ -55,6 +57,20 @@
 | SEO: aggregateRating + review en structured data de productos | Mejora | Chico |
 
 > **MP producción**: ✅ credenciales de prod cargadas (2026-06). Ya no se usa sandbox; los pagos se prueban en prod.
+
+---
+
+## ✅ Resueltos esta sesión (2026-06-17)
+
+| Tema | Rama | Resumen |
+|---|---|---|
+| OPS — Campana de notificaciones (s3-3a-05) | `feat/ops-campana-notificaciones` | Campana en el header del panel OPS (desktop + barra mobile) con badge de "nuevos" + dropdown agrupado con deep-links. Endpoint nuevo `GET /api/admin/notifications` (admin-only, 403 a no-admin) que **deriva** 4 fuentes sin tocar schema: (1) aprobaciones pendientes (Merchant+Driver approvalStatus=PENDING), (2) change-requests de docs abiertos (MerchantDocumentChangeRequest+DriverDocumentChangeRequest status=PENDING), (3) reseñas en moderación (Order con `*RatingModerationStatus`=PENDING), (4) incidentes de PIN (AuditLog `DRIVER_PIN_ISSUE_REPORTED`, ventana 48h). Cada fuente en su propio try/catch (una caída no rompe el resto); cap por fuente (25) + global (50). Componente `OpsNotificationBell` con polling 45s (pausa al ocultar pestaña), localStorage de IDs vistos para el "nuevo desde la última vez" (sin schema), estados loading/vacío/error. Deep-links verificados: `/ops/usuarios/[userId]`, `/ops/reviews-pendientes`, `/ops/pedidos/[orderId]`. Sin cambios de schema. **Pendiente verificación local del founder**: `npx tsx scripts/verify-ops-notifications.ts` + click-through en el panel. |
+| OPS notificación opcional al aprobar/rechazar | `feat/ops-notificacion-opcional-aprobacion` | Checkbox "Notificar al usuario por email" (default ON) en aprobar/rechazar comercio y driver de `/ops/usuarios/[id]`. Backend: `TransitionContext.notified` + los 4 endpoints leen `notify` (default true) y gatean el email. El audit log SIEMPRE registra el cambio + ahora `notified:true/false` (AAIP). Permite correcciones/QA sin spamear. Sin schema. |
+| BUG 403 post-aprobación del comercio | `fix/merchant-api-db-auth` | Las APIs `/api/merchant/*` autorizaban con `hasAnyRole(JWT)` — cache stale tras aprobar → 403 aunque la DB dijera APPROVED (el panel no cargaba stats/onboarding). Nuevo helper `requireMerchantApi({allowAdmin})` (DB-based, espejo de `requireDriverApi`); 19 archivos / 21 handlers migrados (incluye los que usaban `session.user.merchantId`). `/me` curado para no filtrar CUIT/CBU cifrados. KPIDashboard + OnboardingChecklist re-fetch al refrescar sesión. **Probado: redirección post-aprobación carga sin 403.** Sin schema. |
+| Documentación del comercio configurable | `feat/docs-comercio-configurables-ops` | 5 flags `merchant.doc.*` en `/ops/feature-flags` prenden/apagan qué docs se piden. Semántica **fail-safe inversa**: requerido salvo que el flag exista y esté en OFF (si falta la fila o falla la query, se pide igual — compliance). `getRequiredDocumentFields` ahora async + flag-aware; auto-activación, onboarding API, checklist, chip del dashboard, SettingsForm (configuración) y pipeline OPS respetan los flags. Registro Sanitario además sigue siendo food-only. Sin schema (usa `FeatureFlag`). **Pendiente: correr `seed-feature-flags.ts` en local+prod.** |
+| Flag fantasma de pago en efectivo | `chore/quitar-flag-efectivo` | El checkout es electrónico-only desde 2026-06-06; el flag `buyer.cash-payment` había quedado sin cablear (no hacía nada). Removida la constante `BUYER_CASH_PAYMENT` + entrada del seed; sumada la key al script `cleanup-deprecated-feature-flags.ts`. Código de efectivo dormido **preservado** (orders/route.ts + StoreSettings) para Fase 2. **Pendiente: correr `cleanup-deprecated-feature-flags.ts --execute` en local+prod.** |
+
+**Decisiones canónicas tomadas** (pendiente migrar a CLAUDE.md a mano): `requireMerchantApi` como helper canónico de auth API del comercio (DB > JWT, regla tipo #13/#28); semántica fail-safe **inversa** de los flags `merchant.doc.*`; `notified` en audit log de aprobaciones; efectivo = electrónico-only para lanzamiento (código dormido para Fase 2).
 
 ---
 
