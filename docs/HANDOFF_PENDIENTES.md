@@ -3,18 +3,26 @@
 > Punto de retome para la próxima sesión. Generado al pausar el trabajo del checklist pre-launch.
 > Leé este archivo al volver para reconstruir el contexto.
 
-## Dónde estamos (actualizado 2026-06-17)
+## Dónde estamos (actualizado 2026-06-18)
 
-- Rama actual: **`feat/puntos-wording-amex-y-acceso`** (Sección de Puntos implementada, pendiente verificación local + `finish.ps1`). Ya mergeadas a develop esta sesión: `chore/quitar-flag-efectivo` + las 4 ramas del 06-17 + `feat/ops-campana-notificaciones`.
-- **Verificación pendiente de la campana** antes de mergear: `npx tsx scripts/verify-ops-notifications.ts` (cuenta por fuente contra la DB) + abrir `/ops` y mirar la campana (badge, dropdown, deep-links, "Sin novedades" si está vacío).
-- **Pendiente operativo en local AHORA**: `npx tsx scripts/seed-feature-flags.ts` (crea los 5 flags `merchant.doc.*`) + `npx tsx scripts/cleanup-deprecated-feature-flags.ts --execute` (borra `buyer.cash-payment`).
+- **En `develop`. El batch YA ESTÁ DEPLOYADO a producción** (2026-06-18, 19 commits, modo schema). Las 6 ramas de la sesión + las previas están en prod.
+- **Sitio privado**: cortina `LAUNCH_GATE=closed` confirmada. Público ve "Próximamente". Entrás con `https://somosmoovy.com/?preview=moovy2026preview`.
+- **Crons andando** de nuevo (estaban en 401 hace ~14d por comillas en `CRON_SECRET`; ver `docs/RUNBOOK_CRONS.md`).
+- **Qué falta para lanzar** → checklist simple en `docs/CHECKLIST_PARA_LANZAR.md`.
+- **Docs nuevos sin commitear en develop**: `RUNBOOK_DEPLOY_2026-06-18.md`, `RUNBOOK_CRONS.md`, `CHECKLIST_PARA_LANZAR.md` (+ estos edits de estado). Commitear cuando se pueda (no van en rama, son docs).
 
-### Resuelto 2026-06-17 (4 ramas, todas mergeadas a develop)
+### Resuelto 2026-06-18 (operativo)
+- **Deploy del batch a prod** (devmain modo schema + scripts post-deploy + cortina). Smoke test OK.
+- **Crons arreglados** (comillas en `CRON_SECRET`). Pendiente: sumar `daily-revenue-summary` al crontab del VPS (`0 12 * * *`).
+- **Logo (s4-4b-02)** cerrado sin código (era data vieja de prod).
+- **`feat/ops-campana-notificaciones`** y **`feat/puntos-wording-amex-y-acceso`** cerradas y deployadas.
+
+### Resuelto 2026-06-17 (4 ramas, mergeadas a develop)
 
 1. `feat/ops-notificacion-opcional-aprobacion` — checkbox "Notificar al usuario por email" (default ON) al aprobar/rechazar comercio y driver. Audit log guarda `notified`.
 2. `fix/merchant-api-db-auth` — fix del **403 post-aprobación**: helper `requireMerchantApi` (DB-based), 21 handlers migrados. Probado OK (redirección carga sin 403).
-3. `feat/docs-comercio-configurables-ops` — docs del comercio configurables vía flags `merchant.doc.*` (fail-safe inverso: requerido salvo OFF explícito). Falta correr el seed.
-4. `chore/quitar-flag-efectivo` — removido el flag fantasma `buyer.cash-payment`. Falta correr el cleanup script.
+3. `feat/docs-comercio-configurables-ops` — docs del comercio configurables vía flags `merchant.doc.*` (fail-safe inverso: requerido salvo OFF explícito). Seed corrido en prod.
+4. `chore/quitar-flag-efectivo` — removido el flag fantasma `buyer.cash-payment`. Cleanup corrido en prod.
 
 ### A migrar a CLAUDE.md (a mano — `.claude/` protegido)
 - `requireMerchantApi` como helper canónico de auth API del comercio (DB > JWT cache).

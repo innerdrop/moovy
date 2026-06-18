@@ -1,5 +1,5 @@
 # Moovy — Issues
-Última actualización: 2026-06-17
+Última actualización: 2026-06-18
 
 > **Fuente única de tareas pendientes.** Para histórico completo de issues resueltos en sprints anteriores → `.claude/CHANGELOG.md`.
 
@@ -15,14 +15,7 @@
 3. ⏳ Día antes del launch: correr en producción, confirmar admin OPS preservado, validar configs intactas, DB limpia
 **Esfuerzo**: 1-2 horas (ejecución supervisada).
 
-### DEPLOY del batch acumulado a producción
-**Estado**: 🔴 PENDIENTE — develop tiene ~25 ramas sin deployar (toda esta sesión + previo).
-**Qué falta**:
-1. `devmain.ps1` en **MODO SCHEMA** (las Ramas 1 y 2 de la Biblia tocaron `schema.prisma`) — **NO** usar `-NoDB`.
-2. **Re-seed de `DeliveryRate`** en el VPS después del deploy.
-3. Cleanup scripts post-deploy (idempotentes): `fix-orders-completed-to-delivered.ts` + `cleanup-deprecated-feature-flags.ts`.
-4. Correr **`cerrar-tienda.ps1`** una vez (setea `PREVIEW_TOKEN` + deja la cortina; el sitio queda privado fail-closed).
-**Nota**: el founder quiere primero resolver TODAS las observaciones del checklist y probarlas en develop/local, recién después deployar.
+> **DEPLOY del batch** → ✅ HECHO 2026-06-18 (movido a "Resueltos esta sesión"). 19 commits a prod, modo schema, scripts post-deploy + cortina. Único 🔴 que queda es ISSUE-004 (cleanup del día del launch).
 
 ---
 
@@ -31,13 +24,15 @@
 ### Observaciones del checklist pre-launch pendientes (sesión 2026-06-09)
 > Detalle vivo + secuencia de ramas en `docs/HANDOFF_PENDIENTES.md`.
 
-- **Logo del comercio (s4-4b-02)** — ✅ CERRADO sin código. Probado en local/develop el 2026-06-18: el logo guarda perfecto. La falla en prod era data vieja (TEST/MOOVY con image=null); el deploy del batch lo deja igual que develop. No requiere cambios.
-- **A re-probar** (sin contexto): s2-2a-11, s2-2b-01, s7-7a-02, s4-4c-04, s3-3c-01.
-- **500 en `/api/comercios/soporte/notificaciones` (visto en PROD)** — detectado en consola durante QA 2026-06-10. Re-verificar post-deploy del batch; si persiste, abrir rama.
-- **Categorías de la home: tarea OPERATIVA** — no aparecen porque los slots (`HomeCategorySlot`) se curan desde `/ops/categorias` y en prod no hay ninguno activo. Configurar antes del launch (como las zonas).
-- **Correr `seed-feature-flags.ts` (local + prod)** — crea los 5 flags `merchant.doc.*` (en ON). Sin esto, los flags no aparecen en `/ops/feature-flags` (pero por la semántica fail-safe, todos los docs se siguen pidiendo igual).
-- **Correr `cleanup-deprecated-feature-flags.ts --execute` (local + prod)** — borra la fila `buyer.cash-payment` para que no aparezca en el panel. Idempotente.
-- **Configurar qué docs pedir al inicio** — decisión del founder: en `/ops/feature-flags`, apagar los `merchant.doc.*` que NO se pidan en el lanzamiento (después de correr el seed).
+> **Resumen rápido de lo que queda** → `docs/CHECKLIST_PARA_LANZAR.md`.
+
+- **Sumar `daily-revenue-summary` al crontab del VPS** — faltaba esa línea (server UTC → `0 12 * * *` = 9 AM ART). Línea exacta dada en chat / `docs/RUNBOOK_CRONS.md`.
+- **Cron "broadcast" en rojo** — re-verificar que se vaya solo en ~1h post-fix de crons; si persiste, mirar el endpoint `process-broadcasts`.
+- **Categorías de la home: tarea OPERATIVA** — configurar slots activos en `/ops/categorias` (en prod no hay ninguno).
+- **Zonas de cobertura** — pintar/confirmar en `/ops/zonas-delivery`.
+- **A re-probar** (sin bug conocido, solo verificar): s2-2a-11 (bonus bienvenida pendiente), s2-2b-01 (email "registro recibido" al comercio), s3-3c-01 (errores OPS en toast no genérico), s4-4c-04 (variantes de producto), s7-7a-02 (bloqueo de pedido fuera de zona).
+- **500 en `/api/comercios/soporte/notificaciones`** — re-verificar ahora que el batch está deployado; si persiste, abrir rama.
+- **Configurar qué docs pedir al inicio** — decisión del founder: en `/ops/feature-flags`, apagar los `merchant.doc.*` que NO se pidan en el lanzamiento (el seed ya corrió en prod, los 5 flags existen en ON).
 
 
 ---
@@ -59,7 +54,14 @@
 
 ---
 
-## ✅ Resueltos esta sesión (2026-06-17)
+## ✅ Resueltos esta sesión (2026-06-17 → 18)
+
+**Operativos (sin rama de código):**
+- **DEPLOY del batch a producción** (2026-06-18) — `devmain.ps1` modo schema, 19 commits, `db push` no-op ("already in sync"), build limpio + smoke test OK. Post-deploy: `seed-feature-flags.ts`, `cleanup-deprecated-feature-flags.ts --execute`, `fix-orders-completed-to-delivered.ts --execute`, y `cerrar-tienda.ps1` (cortina confirmada).
+- **Crons en 401 hace ~14 días** — el `CRON_SECRET` del `.env` del VPS tenía comillas; Next/dotenv las saca pero el crontab (`grep|cut`) las mandaba en el token → 401 en todos. Fix: quitar las comillas del `.env` (no requiere pm2 reload). Confirmado 200. Documentado en `docs/RUNBOOK_CRONS.md`. Pendiente: sumar `daily-revenue-summary` al crontab.
+- **Logo del comercio (s4-4b-02)** — probado en local: guarda OK. La falla era data vieja de prod; el deploy lo arregla. Cerrado sin código.
+
+**Ramas de código:**
 
 | Tema | Rama | Resumen |
 |---|---|---|
