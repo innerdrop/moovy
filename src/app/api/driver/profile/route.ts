@@ -64,7 +64,11 @@ export async function PATCH(request: Request) {
             }
         });
 
-        return NextResponse.json({ ...updatedUser, ...updatedDriver });
+        // SECURITY (fix/driver-profile-no-filtrar-campos-internos): NO devolver la
+        // fila completa del Driver (arrastraba fraudScore, GPS, bankCbu/bankAlias y
+        // notas internas OPS). El frontend (ProfileView.handleSave) solo mira res.ok
+        // y NO lee el body, asi que devolvemos un acuse minimo y seguro.
+        return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Error updating driver profile:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });
@@ -96,14 +100,74 @@ export async function GET() {
         }
 
         // Decifrar campos fiscales (CUIT) antes de devolverlos al frontend.
-        // El driver ve su propio dato, así que va plaintext. Sin esto el panel
+        // El driver ve su propio dato, asi que va plaintext. Sin esto el panel
         // mostraba el ciphertext hex (bug visual reportado 2026-04-25).
-        // El cifrado en DB se mantiene — defense in depth.
+        // El cifrado en DB se mantiene -- defense in depth.
         const decryptedDriver = decryptDriverData(driver);
 
+        // SECURITY (fix/driver-profile-no-filtrar-campos-internos): whitelist explicita.
+        // Antes se spreadeaba la fila completa, filtrando al browser campos internos:
+        // fraudScore/lastFraudCheckAt (anti-fraude), latitude/longitude/ubicacion (GPS),
+        // bankCbu/bankAlias (el form bancario usa su propio endpoint), y los
+        // *ApprovalSource/*ApprovalNote/*NotifiedStage (notas internas OPS / cron, AAIP).
+        // Solo devolvemos lo que ProfileView (portal repartidor) y mi-perfil consumen.
+        const d = decryptedDriver as Record<string, unknown>;
         return NextResponse.json({
-            ...decryptedDriver,
-            totalDeliveries: driver._count.orders
+            id: d.id,
+            // Vehiculo
+            vehicleType: d.vehicleType,
+            vehicleModel: d.vehicleModel,
+            vehiclePlate: d.vehiclePlate,
+            licensePlate: d.licensePlate,
+            hasThermalBag: d.hasThermalBag,
+            hasColdStorage: d.hasColdStorage,
+            // Perfil / estado (mi-perfil lee approvalStatus + isActive)
+            rating: d.rating,
+            createdAt: d.createdAt,
+            approvalStatus: d.approvalStatus,
+            isActive: d.isActive,
+            // CUIT (decifrado -- dato propio del driver) + estado del doc
+            cuit: d.cuit,
+            cuitStatus: d.cuitStatus,
+            cuitRejectionReason: d.cuitRejectionReason,
+            cuitApprovedAt: d.cuitApprovedAt,
+            // Documentos: url/value + Status + RejectionReason + ApprovedAt (+ ExpiresAt)
+            constanciaCuitUrl: d.constanciaCuitUrl,
+            constanciaCuitStatus: d.constanciaCuitStatus,
+            constanciaCuitRejectionReason: d.constanciaCuitRejectionReason,
+            constanciaCuitApprovedAt: d.constanciaCuitApprovedAt,
+            dniFrenteUrl: d.dniFrenteUrl,
+            dniFrenteStatus: d.dniFrenteStatus,
+            dniFrenteRejectionReason: d.dniFrenteRejectionReason,
+            dniFrenteApprovedAt: d.dniFrenteApprovedAt,
+            dniDorsoUrl: d.dniDorsoUrl,
+            dniDorsoStatus: d.dniDorsoStatus,
+            dniDorsoRejectionReason: d.dniDorsoRejectionReason,
+            dniDorsoApprovedAt: d.dniDorsoApprovedAt,
+            licenciaUrl: d.licenciaUrl,
+            licenciaStatus: d.licenciaStatus,
+            licenciaRejectionReason: d.licenciaRejectionReason,
+            licenciaApprovedAt: d.licenciaApprovedAt,
+            licenciaExpiresAt: d.licenciaExpiresAt,
+            seguroUrl: d.seguroUrl,
+            seguroStatus: d.seguroStatus,
+            seguroRejectionReason: d.seguroRejectionReason,
+            seguroApprovedAt: d.seguroApprovedAt,
+            seguroExpiresAt: d.seguroExpiresAt,
+            vtvUrl: d.vtvUrl,
+            vtvStatus: d.vtvStatus,
+            vtvRejectionReason: d.vtvRejectionReason,
+            vtvApprovedAt: d.vtvApprovedAt,
+            vtvExpiresAt: d.vtvExpiresAt,
+            cedulaVerdeUrl: d.cedulaVerdeUrl,
+            cedulaVerdeStatus: d.cedulaVerdeStatus,
+            cedulaVerdeRejectionReason: d.cedulaVerdeRejectionReason,
+            cedulaVerdeApprovedAt: d.cedulaVerdeApprovedAt,
+            cedulaVerdeExpiresAt: d.cedulaVerdeExpiresAt,
+            // Usuario (subobjeto ya seleccionado: id, name, email, phone, image)
+            user: d.user,
+            // Sintetico
+            totalDeliveries: driver._count.orders,
         });
     } catch (error) {
         console.error("Error fetching driver profile:", error);

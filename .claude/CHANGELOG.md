@@ -10,6 +10,14 @@
 
 ---
 
+## 2026-06-19 (rama `fix/driver-profile-no-filtrar-campos-internos`)
+
+fix(seguridad): driver/profile deja de filtrar campos internos al cliente
+
+El GET y el PATCH de /api/driver/profile devolvian la fila completa del Driver, exponiendo al browser fraudScore, GPS (lat/lng/ubicacion), bankCbu/bankAlias y notas internas de OPS (*ApprovalSource/*ApprovalNote/*NotifiedStage). Ahora ambos devuelven una whitelist explicita con solo lo que consumen ProfileView (portal repartidor) y /mi-perfil. Sin cambios de schema. Verificado campo por campo contra ambos consumidores.
+
+**Archivos:** .tsc_c2_check.json, docs/AUDITORIA_SEGURIDAD_2026-06-18.md, docs/prompts-cowork/PROMPT_7_AUDITORIAS_SENIOR.md, src/app/api/driver/profile/route.ts
+
 ## 2026-06-18 (rama `feat/puntos-wording-amex-y-acceso`)
 
 feat(puntos): seccion de Puntos estilo Amex + chip de saldo en header + claridad de donde aplican (s4-4e). WORDING AMEX: en /puntos el row "Comprando" y el paso "Compra" de la landing dejan de liderar con la formula y muestran valor ("Ganas puntos con cada compra"); el calculo "10 por $1.000" se mueve a un desplegable "Como se calcula" (y sigue disponible en el modal de niveles y en /terminos-moover). ACCESO: componente nuevo PointsBalanceChip montado en AppHeader (desktop + barra mobile), solo para logueados, linkea a /puntos, 1 solo fetch a /api/points sin polling, se auto-oculta si el saldo es 0 o si falla (no muestra chip vacio a usuarios nuevos). DONDE APLICAN: las dos aclaraciones que mas evitan reclamos (se calculan sobre productos y no sobre el envio; se acreditan al recibir el pedido, no al pagar) pasan del desplegable a estar VISIBLES en el bloque "Como funcionan tus puntos". NO se toca la logica de earn/burn ni el PointsWidget del checkout (el chip solo lee el balance). La seccion "Ejemplo" (calculo paso a paso) de la landing anonima queda intacta. Sin cambios de schema. Archivos: src/components/layout/PointsBalanceChip.tsx (nuevo), src/components/layout/AppHeader.tsx (montar el chip), src/app/(store)/puntos/page.tsx (wording + aclaraciones).
