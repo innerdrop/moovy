@@ -10,6 +10,23 @@
 
 ---
 
+## 2026-06-23 (rama `fix/quitar-bypass-fundador-paquetes`)
+
+fix(seguridad): quitar bypass de pago "FUNDADOR" en compra de paquetes
+
+merchant/packages/purchase aprobaba un paquete pago GRATIS si el body traia
+promoCode === "FUNDADOR" (string hardcodeado). Cualquier comercio autenticado podia
+mandarlo y llevarse el paquete + auto-import sin pagar -> perdida directa de revenue.
+Ahora la compra gratis solo procede cuando el precio es genuinamente $0 (calculado
+server-side desde los pricing tiers). Si se necesita regalar un paquete a un fundador,
+debe ser una accion de admin con audit log, no un codigo publico adivinable.
+
+Sin schema. Verificado: FUNDADOR no se usa en ningun otro lado del codebase.
+
+Archivos: src/app/api/merchant/packages/purchase/route.ts (1 condicion).
+
+**Archivos:** src/app/api/merchant/packages/purchase/route.ts
+
 ## 2026-06-22 (rama `fix/split-mp-reserva-y-operativo`)
 
 fix(pagos): reserva de comision MP en el split (arregla CPT01) + retiro operativo

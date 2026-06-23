@@ -112,8 +112,14 @@ export async function POST(request: Request) {
             categoryName = `${itemCount} productos seleccionados`;
         }
 
-        // Handle free purchases (promos, founders, etc.)
-        if (amount === 0 || promoCode === "FUNDADOR") {
+        // Compras gratis: SOLO cuando el precio es genuinamente $0 (calculado
+        // server-side desde los pricing tiers). Se removió el bypass por código
+        // mágico "FUNDADOR" (rama fix/quitar-bypass-fundador-paquetes): era un
+        // string hardcodeado que CUALQUIER comercio podía mandar en el body para
+        // llevarse un paquete pago gratis. Si se necesita regalar un paquete a un
+        // comercio fundador, debe ser una acción de admin con audit log, no un
+        // código público adivinable.
+        if (amount === 0) {
             const purchase = await prisma.packagePurchase.create({
                 data: {
                     merchantId,
