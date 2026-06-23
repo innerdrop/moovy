@@ -11,14 +11,12 @@
  *     orders (el admin puede cancelar el batch antes de confirmar el pago).
  *   - El monto merchant se toma de `Order.merchantPayout` (campo ya calculado
  *     al crear la orden con la comisión vigente).
- *   - El monto driver se aproxima como `Order.deliveryFee * DRIVER_SHARE`
- *     (0.70) — aproximación conservadora que contempla el 5% operativo del
- *     delivery fee visible + el 80% del costo real del viaje (ver Biblia v3).
- *
- * Esta aproximación del driver NO es exacta porque el schema no guarda el
- * `riderEarnings` real de cada orden. Es el mismo trade-off usado hoy para
- * mostrar "Mis ganancias" en el portal del driver — queda pendiente para una
- * iteración futura agregar `Order.driverPayout` al schema y hacerlo exacto.
+ *   - El monto driver lo calcula `computeDriverPayoutForOrder` (src/lib/finance/
+ *     driver-payout.ts): snapshot exacto `SubOrder.driverPayoutAmount` (incluye
+ *     bonus de zona) si existe; si no, `deliveryFee * riderCommissionPercent%`.
+ *     Es la MISMA función que usa el panel "Mis ganancias" del repartidor, así
+ *     que el repartidor cobra EXACTAMENTE lo que ve (rama fix/payout-repartidor-
+ *     consistente). Reemplaza la vieja aproximación fija de 0.70.
  *
  * Fuentes de verdad:
  *   - Orders DELIVERED (status = "DELIVERED", no soft-deleted)
@@ -28,11 +26,10 @@
  */
 
 import { prisma } from "@/lib/prisma";
-
-// Aproximación del share del driver sobre el deliveryFee visible.
-// 80% del costo real del viaje; el costo real es ~87.5% del visible
-// (resto es 5% operativo + buffer). 0.80 * 0.875 ≈ 0.70.
-export const DRIVER_SHARE = 0.70;
+// Rama fix/payout-repartidor-consistente: fuente ÚNICA de verdad del pago al
+// repartidor (la misma función la usa el panel "Mis ganancias"), para que el
+// repartidor cobre EXACTAMENTE lo que ve. Reemplaza la aproximación DRIVER_SHARE 0.70.
+import { computeDriverPayoutForOrder } from "@/lib/finance/driver-payout";
 
 export type RecipientType = "DRIVER" | "MERCHANT";
 
@@ -172,7 +169,8 @@ export async function getPendingMerchantPayouts(): Promise<PendingPayoutSummary[
 
 /**
  * Calcula saldos pendientes para drivers. Mismo patrón que merchants pero
- * sobre `driverId` y con la aproximación `deliveryFee * DRIVER_SHARE`.
+ * sobre `driverId`, usando `computeDriverPayoutForOrder` (la MISMA función que
+ * el panel "Mis ganancias") para que el repartidor cobre lo que ve.
  */
 export async function getPendingDriverPayouts(): Promise<PendingPayoutSummary[]> {
     const [paidIds, openIds] = await Promise.all([
@@ -180,6 +178,10 @@ export async function getPendingDriverPayouts(): Promise<PendingPayoutSummary[]>
         getOrderIdsInOpenBatches("DRIVER"),
     ]);
     const excludedIds = new Set([...paidIds, ...openIds]);
+
+    // % del repartidor desde la Biblia (MISMA fuente que el panel "Mis ganancias").
+    const settings = await prisma.storeSettings.findUnique({ where: { id: "settings" } });
+    const riderPercent = (settings as any)?.riderCommissionPercent ?? 80;
 
     const orders = await prisma.order.findMany({
         where: {
@@ -193,10 +195,8 @@ export async function getPendingDriverPayouts(): Promise<PendingPayoutSummary[]>
             id: true,
             driverId: true,
             deliveryFee: true,
-            // Rama refactor/separar-motor-y-finanzas:
-            // SubOrders del mismo driver. Si TODOS tienen driverPayoutAmount != null,
-            // sumamos esos valores exactos (Motor Logístico). Si alguno es null
-            // (orders pre-rama), caemos al fallback DRIVER_SHARE 0.70 sobre el order.
+            // SubOrders del driver: computeDriverPayoutForOrder usa driverPayoutAmount
+            // (snapshot exacto) si todos lo tienen; si no, fallback envío × riderPercent%.
             subOrders: {
                 select: {
                     driverId: true,
@@ -220,18 +220,10 @@ export async function getPendingDriverPayouts(): Promise<PendingPayoutSummary[]>
         if (!o.driverId || !o.driver) continue;
         const key = o.driverId;
 
-        // Rama refactor/separar-motor-y-finanzas: preferir snapshots persistidos
-        // por SubOrder. Solo aplicable si el order tiene subOrders del mismo driver
-        // y TODOS tienen driverPayoutAmount populated. Si falta alguno (orders
-        // pre-rama o multi-vendor con drivers mixtos), fallback a la aproximación.
-        const driverSubOrders = o.subOrders.filter((s) => s.driverId === o.driverId);
-        const allHaveSnapshot =
-            driverSubOrders.length > 0 &&
-            driverSubOrders.every((s) => s.driverPayoutAmount !== null && s.driverPayoutAmount !== undefined);
-
-        const amount = allHaveSnapshot
-            ? driverSubOrders.reduce((sum, s) => sum + (s.driverPayoutAmount ?? 0), 0)
-            : (o.deliveryFee ?? 0) * DRIVER_SHARE;
+        // fix/payout-repartidor-consistente: función ÚNICA de cálculo (la MISMA que
+        // usa el panel "Mis ganancias") → el repartidor cobra exactamente lo que ve.
+        // Snapshot exacto (incluye bonus de zona) si existe; si no, envío × riderPercent%.
+        const amount = computeDriverPayoutForOrder(o, riderPercent);
         // feat/driver-bank-mp (2026-04-26): Driver ya tiene bankCbu/bankAlias en schema.
         // Preferimos CBU (más preciso); fallback a Alias. Si ambos null, queda null y el
         // endpoint POST de batches rechaza el recipient — el admin sabe que falta el dato

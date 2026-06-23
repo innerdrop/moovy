@@ -1,0 +1,1 @@
+{ "extends": "./tsconfig.json", "compilerOptions": { "noEmit": true, "skipLibCheck": true, "incremental": false }, "include": ["src/lib/finance/mp-split.ts", "src/lib/finance/mp-reserve.ts", "src/app/api/merchant/packages/purchase/route.ts"] }

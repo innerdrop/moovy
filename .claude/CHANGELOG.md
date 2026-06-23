@@ -10,6 +10,30 @@
 
 ---
 
+## 2026-06-23 (rama `fix/payout-repartidor-consistente`)
+
+fix(pagos): el repartidor cobra exactamente lo que ve (consistencia payout/ganancias)
+
+El panel "Mis ganancias" calculaba envio x 80%, mientras el pago real (payouts.ts)
+usaba el snapshot exacto cuando existia y un envio x 0.70 desactualizado cuando no.
+El repartidor veia un monto y cobraba otro (viola la regla "dos sistemas no calculan
+el mismo parametro con valores distintos").
+
+Fix: una funcion compartida computeDriverPayoutForOrder (src/lib/finance/driver-payout.ts)
+es la UNICA fuente de verdad -> snapshot exacto SubOrder.driverPayoutAmount (incluye
+bonus de zona) si existe; si no, envio x riderCommissionPercent% (de la Biblia). La usan
+TANTO payouts.ts COMO api/driver/earnings, asi que el panel y el pago coinciden por
+construccion. Eliminada la aproximacion fija DRIVER_SHARE 0.70 (asumia un 5% operativo
+que ya se retiro a 0).
+
+Sin schema. Verificacion: un pedido entregado -> el monto en "Mis ganancias" == el monto
+del lote de pago para ese pedido.
+
+Archivos: src/lib/finance/driver-payout.ts (nuevo), src/lib/payouts.ts,
+src/app/api/driver/earnings/route.ts.
+
+**Archivos:** .tsc_probe.json, docs/MAPA_FLUJO_MOOVY.html, docs/PLAN_MAESTRO_CIFRADO_C3.md, src/app/api/driver/earnings/route.ts, src/lib/finance/driver-payout.ts, src/lib/payouts.ts
+
 ## 2026-06-23 (rama `fix/quitar-bypass-fundador-paquetes`)
 
 fix(seguridad): quitar bypass de pago "FUNDADOR" en compra de paquetes

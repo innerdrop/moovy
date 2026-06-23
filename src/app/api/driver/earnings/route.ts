@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireDriverApi } from "@/lib/driver-auth";
+// Rama fix/payout-repartidor-consistente: MISMA función que usa el cálculo del
+// pago real (payouts.ts). El repartidor ve EXACTAMENTE lo que va a cobrar.
+import { computeDriverPayoutForOrder } from "@/lib/finance/driver-payout";
 
 export const dynamic = "force-dynamic";
 
@@ -79,11 +82,13 @@ export async function GET(request: Request) {
                 },
             },
             select: {
+                driverId: true,
                 deliveryFee: true,
                 deliveredAt: true,
                 createdAt: true,
                 driverTipMethod: true,
                 driverTipAmount: true,
+                subOrders: { select: { driverId: true, driverPayoutAmount: true } },
             },
             orderBy: { deliveredAt: "desc" },
         });
@@ -99,9 +104,7 @@ export async function GET(request: Request) {
                 dailyMap[dateKey] = { deliveries: 0, earnings: 0, tipsDeclared: 0, tipsCount: 0 };
             }
             dailyMap[dateKey].deliveries += 1;
-            dailyMap[dateKey].earnings += Math.round(
-                (order.deliveryFee || 0) * riderPercent / 100
-            );
+            dailyMap[dateKey].earnings += computeDriverPayoutForOrder(order, riderPercent);
             if (order.driverTipMethod && order.driverTipMethod !== "NONE" && order.driverTipAmount) {
                 dailyMap[dateKey].tipsDeclared += order.driverTipAmount;
                 dailyMap[dateKey].tipsCount += 1;
@@ -148,11 +151,15 @@ export async function GET(request: Request) {
                         lte: prevEndDate,
                     },
                 },
-                select: { deliveryFee: true },
+                select: {
+                    driverId: true,
+                    deliveryFee: true,
+                    subOrders: { select: { driverId: true, driverPayoutAmount: true } },
+                },
             });
 
             prevTotal = prevOrders.reduce(
-                (s, o) => s + Math.round((o.deliveryFee || 0) * riderPercent / 100),
+                (s, o) => s + computeDriverPayoutForOrder(o, riderPercent),
                 0
             );
         }

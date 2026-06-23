@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Mapa de flujo — Moovy</title>
+<style>
+  :root{
+    --rojo:#e60012; --rojo-osc:#a3000c; --violeta:#7C3AED; --verde:#16a34a;
+    --amarillo:#d97706; --ink:#1e293b; --slate:#64748b; --bg:#f4f5f7; --card:#fff;
+    --line:#e2e8f0;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Plus Jakarta Sans',-apple-system,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;padding-bottom:60px}
+  header{background:linear-gradient(135deg,var(--rojo-osc),var(--rojo));color:#fff;padding:28px 20px}
+  header h1{margin:0;font-size:26px;font-weight:800}
+  header p{margin:6px 0 0;opacity:.92;font-size:14px}
+  .wrap{max-width:1000px;margin:0 auto;padding:18px}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--slate);margin:14px 0 4px}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:10px;height:10px;border-radius:50%}
+  .d-rojo{background:var(--rojo)} .d-amar{background:var(--amarillo)} .d-verde{background:var(--verde)} .d-viol{background:var(--violeta)}
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;margin:10px 0;overflow:hidden}
+  details>summary{cursor:pointer;padding:14px 16px;font-weight:700;font-size:16px;list-style:none;
+    display:flex;align-items:center;gap:10px;user-select:none}
+  details>summary::-webkit-details-marker{display:none}
+  details>summary::before{content:"▸";color:var(--slate);font-size:13px;transition:transform .15s}
+  details[open]>summary::before{transform:rotate(90deg)}
+  details summary:hover{background:#fafbfc}
+  .body{padding:2px 18px 16px 18px}
+  details details{background:#fbfcfd;margin:8px 0;border-radius:10px}
+  details details>summary{font-size:14px;font-weight:600;padding:11px 14px}
+  .ico{font-size:18px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin:8px 0}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--slate);font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  .chip{display:inline-block;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px}
+  .c-rojo{background:#fee2e2;color:#b91c1c} .c-amar{background:#fef3c7;color:#92400e}
+  .c-verde{background:#dcfce7;color:#15803d} .c-viol{background:#ede9fe;color:#6d28d9}
+  .c-gris{background:#f1f5f9;color:#475569}
+  .flow{font-size:13px;background:#f8fafc;border-left:3px solid var(--rojo);padding:10px 12px;border-radius:0 8px 8px 0;margin:8px 0}
+  .flow b{color:var(--rojo-osc)}
+  ul{margin:8px 0;padding-left:20px;font-size:13.5px} li{margin:4px 0}
+  code{background:#f1f5f9;padding:1px 5px;border-radius:5px;font-size:12px;color:#7c3aed;font-family:ui-monospace,monospace}
+  .obs{border-radius:10px;padding:12px 14px;margin:10px 0;font-size:13.5px;border:1px solid}
+  .obs.rojo{background:#fef2f2;border-color:#fecaca} .obs.amar{background:#fffbeb;border-color:#fde68a}
+  .obs.verde{background:#f0fdf4;border-color:#bbf7d0}
+  .obs h4{margin:0 0 4px;font-size:14px;display:flex;gap:8px;align-items:center}
+  .obs .file{font-size:11px;color:var(--slate);font-family:ui-monospace,monospace;margin-top:4px}
+  .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+  .note{font-size:12px;color:var(--slate);font-style:italic;margin-top:6px}
+  .big{font-size:15px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap" style="padding:0">
+    <h1>🗺️ Mapa de flujo — Moovy</h1>
+    <p>Todo lo que hace la plataforma hoy, desplegable. Generado el 2026-06-23 a partir de un relevamiento del código real. Tocá cada sección para abrirla.</p>
+  </div>
+</header>
+<div class="wrap">
+
+  <div class="legend">
+    <span><i class="dot d-rojo"></i> Comprador / pagos</span>
+    <span><i class="dot d-amar"></i> Comercio</span>
+    <span><i class="dot d-viol"></i> Vendedor (marketplace)</span>
+    <span><i class="dot d-verde"></i> Repartidor</span>
+    <span>⚙️ OPS / Admin</span>
+  </div>
+
+  <!-- ============ COMO FLUYE EL DINERO ============ -->
+  <details open>
+    <summary><span class="ico">💸</span> Cómo fluye el dinero (resumen)</summary>
+    <div class="body">
+      <p class="big">En una compra: el comprador paga <b>solo con Mercado Pago</b>. Según quién cobra, la plata se reparte así:</p>
+      <table>
+        <tr><th></th><th>Comprador</th><th>Comercio</th><th>Vendedor (marketplace)</th><th>Repartidor</th></tr>
+        <tr><td><b>Cómo paga/cobra</b></td><td>Solo MercadoPago</td><td>Cobra directo en SU MP (split) si vinculó la cuenta</td><td>Igual que el comercio</td><td>NO cobra por MP. Moovy le transfiere por payout</td></tr>
+        <tr><td><b>Comisión Moovy</b></td><td>—</td><td>0% mes 1 → 8% base (baja a 5% por fidelización)</td><td><b>12% fijo</b> desde el día 1</td><td>—</td></tr>
+        <tr><td><b>Plata del envío</b></td><td>La paga</td><td colspan="2">La cobra Moovy (vía <code>marketplace_fee</code>) para pagarle al repartidor</td><td>Recibe el <b>80%</b> del viaje</td></tr>
+        <tr><td><b>Datos para cobrar</b></td><td>—</td><td>Vínculo MP (OAuth)</td><td>Vínculo MP + CBU/alias</td><td>CBU/alias</td></tr>
+      </table>
+
+      <details>
+        <summary>🔑 El "split" de Mercado Pago (cómo cobra el comercio directo) — lo que arreglamos hoy</summary>
+        <div class="body">
+          <div class="flow">El comprador paga → MP descuenta su comisión → de lo que queda, MP aparta la <b>parte de Moovy</b> (<code>marketplace_fee</code> = comisión del comercio + el envío) → el resto le queda <b>directo al comercio</b> en su cuenta de MP.</div>
+          <ul>
+            <li>El comercio/vendedor <b>vincula su Mercado Pago</b> (OAuth) desde su configuración. Si no lo vincula, la plata cae en la cuenta de Moovy (sin split) y el reparto queda manual.</li>
+            <li><b>Reserva de comisión MP</b> (configurable en la Biblia, ~8%): garantiza que al comercio siempre le quede su producto y que <b>MP no rechace</b> el pago. Esto resolvió el error <code>CPT01 / "Algo salió mal"</code>.</li>
+            <li><b>Hoy (Paso 1):</b> Moovy absorbe la comisión de MP (cobra un poco menos del envío) — no toca el total ni el webhook, cero riesgo.</li>
+            <li><b>Pendiente (Paso 2):</b> el "buffer" al comprador para que Moovy cobre el envío completo. Requiere test real con un comercio vinculado.</li>
+          </ul>
+          <p class="note">Matemática en <code>src/lib/finance/mp-split.ts</code> (función pura + simulador). Reparto en <code>api/orders/route.ts</code>.</p>
+        </div>
+      </details>
+    </div>
+  </details>
+
+  <!-- ============ COMPRADOR ============ -->
+  <details>
+    <summary><span class="ico">🛒</span> Comprador (buyer)</summary>
+    <div class="body">
+      <details><summary>Pantallas y opciones</summary><div class="body">
+        <ul>
+          <li><b>Home / buscar / tiendas / productos / marketplace</b>: descubrir comercios y productos.</li>
+          <li><b>Carrito</b> (agrupa multi-vendor) → <b>Checkout</b>.</li>
+          <li><b>Mis pedidos</b>: seguimiento, PIN, calificar, propina.</li>
+          <li><b>Puntos MOOVER</b>: balance, nivel, referidos.</li>
+          <li><b>Mi perfil</b>: datos, direcciones, favoritos, invitar, privacidad, cambiar contraseña.</li>
+        </ul>
+      </div></details>
+      <details><summary>Cómo paga</summary><div class="body">
+        <div class="flow"><b>Solo MercadoPago.</b> El efectivo y la transferencia fueron removidos del checkout (está fijo en <code>"mercadopago"</code>). Checkout → crea preferencia MP → paga → webhook confirma.</div>
+        <ul>
+          <li><b>Puntos como dinero</b>: se canjean en el checkout (1pt=$1, mín 500, máx 20% del subtotal). Se ganan solo al recibir el pedido (DELIVERED).</li>
+          <li><b>Propina</b>: el comprador solo <b>declara</b> el método (efectivo / transferencia al alias del repartidor / ninguna). <b>Moovy NO procesa la propina.</b></li>
+        </ul>
+      </div></details>
+      <details><summary>Qué pasa cuando… (ramas del checkout)</summary><div class="body">
+        <ul>
+          <li><b>No hay repartidores</b> → ofrece entrega programada o retiro en el local.</li>
+          <li><b>Dirección fuera de zona</b> → "Moovy todavía no llega a esa dirección" (bloquea el pago).</li>
+          <li><b>Sin stock</b> → error con el detalle de qué faltó.</li>
+          <li><b>No logueado</b> → manda a login y vuelve al checkout.</li>
+        </ul>
+      </div></details>
+    </div>
+  </details>
+
+  <!-- ============ COMERCIO ============ -->
+  <details>
+    <summary><span class="ico">🏪</span> Comercio</summary>
+    <div class="body">
+      <details><summary>Onboarding (CON aprobación)</summary><div class="body">
+        <ul>
+          <li>Se registra, carga <b>documentación</b> (CUIT, constancia AFIP, habilitación municipal, registro sanitario si es comida, datos bancarios) con estado por-documento.</li>
+          <li>Queda en <b>pendiente de aprobación</b>. Auto-activa cuando todos los docs requeridos están aprobados.</li>
+        </ul>
+      </div></details>
+      <details><summary>Cómo cobra 💰</summary><div class="body">
+        <div class="flow">Vincula su <b>Mercado Pago (OAuth)</b> desde Configuración → cuando un cliente paga, la preferencia se crea <b>con el token del comercio</b> → cobra directo, Moovy se queda su comisión vía <code>marketplace_fee</code>.</div>
+        <ul>
+          <li><b>Comisión dinámica</b>: 0% el mes 1 → 8% base, baja por fidelización (BRONCE 8% → PLATA 7% → ORO 6% → DIAMANTE 5%). Se congela inmutable en cada pedido (auditoría AFIP).</li>
+          <li><b>Si NO vinculó MP</b>: la plata cae en la cuenta de Moovy y el reparto queda manual. <span class="chip c-amar">hoy ningún comercio vinculó → todo cae en Moovy</span></li>
+          <li><b>Panel /pagos</b>: muestra ventas, ganancia neta y comisión, por mes / histórico (solo lectura).</li>
+        </ul>
+      </div></details>
+      <details><summary>Gestión y otras opciones</summary><div class="body">
+        <ul>
+          <li><b>Productos</b>: alta manual o importar desde "paquetes" B2B (catálogo de productos pre-cargados).</li>
+          <li><b>Pedidos</b>: confirmar → rechazar (motivo obligatorio) → marcar listo. Timeout de confirmación ~5 min (auto-cancela).</li>
+          <li><b>Publicidad</b>: placements pagos. <b>Reseñas</b>, <b>soporte</b> con el equipo.</li>
+        </ul>
+      </div></details>
+    </div>
+  </details>
+
+  <!-- ============ VENDEDOR ============ -->
+  <details>
+    <summary><span class="ico">🛍️</span> Vendedor (marketplace C2C)</summary>
+    <div class="body">
+      <details><summary>Onboarding (FRICTIONLESS, sin aprobación)</summary><div class="body">
+        <p>Se activa al instante (CUIT + datos básicos), <b>sin documentación ni aprobación de admin</b>. Contraste fuerte con comercios y repartidores. No tiene campo de "aprobación", solo activo/inactivo.</p>
+      </div></details>
+      <details><summary>Cómo cobra/paga 💰</summary><div class="body">
+        <ul>
+          <li><b>Comisión 12% fija</b> desde el día 1 (sin mes gratis, sin tiers).</li>
+          <li><b>Split idéntico al comercio</b>: si vincula MP, cobra directo; si no, cae en Moovy.</li>
+          <li>Carga <b>CBU/alias</b> (cifrados) para payout futuro. <span class="chip c-amar">Payout automático NO implementado aún (Fase 1: acumulación + transferencia manual)</span></li>
+        </ul>
+      </div></details>
+      <details><summary>Opciones</summary><div class="body">
+        <ul><li>Publicar y gestionar <b>listings</b> (pausar/reactivar/eliminar), <b>pedidos</b>, <b>ganancias</b>, <b>configuración</b> (banco, MP, horario), reseñas, soporte.</li>
+        <li><b>Subastas</b>: el código existe pero están <b>deshabilitadas en Fase 1</b>.</li></ul>
+      </div></details>
+    </div>
+  </details>
+
+  <!-- ============ REPARTIDOR ============ -->
+  <details>
+    <summary><span class="ico">🛵</span> Repartidor (driver)</summary>
+    <div class="body">
+      <details><summary>Onboarding (CON docs y vencimientos)</summary><div class="body">
+        <ul>
+          <li>Registro en 3 pasos (datos + CUIT/DNI → vehículo → T&C). Carga docs (DNI, licencia, seguro, cédula verde) con <b>vencimientos</b> que un cron avisa 7/3/1 días antes y auto-suspende al vencer.</li>
+          <li>Si le faltan docs, el sistema le dice <b>exactamente cuáles</b>. La app es <b>mobile-only</b> y vive casi toda dentro de <code>/dashboard</code>.</li>
+        </ul>
+      </div></details>
+      <details><summary>Cómo cobra 💰</summary><div class="body">
+        <div class="flow">El repartidor <b>NO cobra por Mercado Pago</b>. Cobra el <b>80% del viaje</b> que Moovy junta (vía el split) y le <b>transfiere por lote (PayoutBatch)</b> a su CBU/alias.</div>
+        <ul>
+          <li>Carga <b>CBU (con checksum BCRA) o alias</b> en su panel.</li>
+          <li>El admin genera el lote en <code>/ops/pagos-pendientes</code> → CSV → marca como pagado (con confirmación textual "CONFIRMAR PAGO").</li>
+          <li><b>Protocolo efectivo</b>: para los primeros viajes hay topes de efectivo a manejar.</li>
+        </ul>
+      </div></details>
+      <details><summary>Operación (aceptar, PIN, no-show)</summary><div class="body">
+        <ul>
+          <li>Se pone <b>online</b>, recibe ofertas (20s para aceptar), acepta, va al comercio.</li>
+          <li><b>PIN de retiro</b> (geofence 100m al comercio) → <b>PIN de entrega</b> (geofence 100m al domicilio). 5 intentos; al 5º se bloquea y suma fraude.</li>
+          <li><b>No-show</b>: espera ≥10 min, reporta, vuelve al comercio con el mismo PIN. Cobra el viaje + bonus.</li>
+        </ul>
+      </div></details>
+    </div>
+  </details>
+
+  <!-- ============ OPS ============ -->
+  <details>
+    <summary><span class="ico">⚙️</span> OPS / Admin (~50 secciones)</summary>
+    <div class="body">
+      <ul>
+        <li><b>Operaciones</b>: dashboard, en vivo, pedidos, soporte, fraude, reseñas pendientes, auditoría.</li>
+        <li><b>Actores</b>: usuarios (clientes/comercios/repartidores/vendedores), pipeline de comercios. <b>Aprobar/suspender</b> comercios y drivers.</li>
+        <li><b>Finanzas</b>: <b>Biblia Financiera</b> (todos los parámetros editables), Unit Economics, Revenue, Comisiones, Lealtad, <b>Pagos Pendientes</b> (payouts + mark-paid).</li>
+        <li><b>Pedidos</b>: refund, cancelar, <b>reasignar repartidor</b>.</li>
+        <li><b>CRM/Marketing</b>: segmentos, broadcast, ads, hero, banners, destacados.</li>
+        <li><b>Catálogo / Paquetes B2B</b>: productos, moderación, categorías, importar, precios, ventas.</li>
+        <li><b>Sistema</b>: feature flags, logística, zonas (delivery y excluidas), backups, emails, playbook, crons.</li>
+      </ul>
+    </div>
+  </details>
+
+  <!-- ============ QUE PASA CUANDO X ============ -->
+  <details>
+    <summary><span class="ico">🔀</span> ¿Qué pasa cuando…? (ramas del sistema)</summary>
+    <div class="body">
+
+      <details><summary>El pedido avanza (state machine)</summary><div class="body">
+        <div class="flow">PENDIENTE → <b>esperando pago</b> → (pago OK) CONFIRMADO → preparando → listo → repartidor asignado → llegó → <b>retiro PIN</b> → en camino → <b>entrega PIN</b> → ENTREGADO.</div>
+        <p class="note">Conviven un estado "legacy" y campos paralelos de comercio/repartidor. Las transiciones validan la secuencia (no se puede saltar pasos).</p>
+      </div></details>
+
+      <details><summary>Se asigna un repartidor</summary><div class="body">
+        <ul>
+          <li>Se busca el driver elegible más cercano (radio ~15 km, prioridad por rating dentro de 300m), filtrando por vehículo y equipamiento de frío.</li>
+          <li>Oferta con <b>20s</b> para aceptar; si no, <b>cascada</b> al siguiente. Máximo 5 intentos → el pedido queda <b>"sin repartidor" (UNASSIGNABLE)</b> y avisa a ops/comprador/comercio.</li>
+          <li><b>Nadie acepta tras ~6 intentos (~30 min)</b> → se cancela, refund, se devuelven puntos y se otorgan <b>500 pts de compensación</b>.</li>
+          <li><b>Multi-vendor</b>: smart batching de pedidos a &lt;3 km con un mismo repartidor.</li>
+        </ul>
+      </div></details>
+
+      <details><summary>El PIN falla</summary><div class="body">
+        <ul>
+          <li><b>Fuera del geofence</b> (100m + gracia 50m) → bloquea, NO cuenta como intento.</li>
+          <li><b>Intentos 1-4</b> → "te quedan X intentos". <b>5º</b> → bloqueado, <b>fraude +1</b>, alerta al admin.</li>
+          <li><b>Fraude ≥ 3</b> → el repartidor se <b>auto-suspende</b>. Puede escalar a soporte (no hay override automático; lo resuelve el admin).</li>
+        </ul>
+      </div></details>
+
+      <details><summary>El pago de MP… (aprobado / rechazado / tardío)</summary><div class="body">
+        <ul>
+          <li><b>Aprobado</b> (webhook con firma + tolerancia $1 + idempotente) → CONFIRMADO, dispara asignación, emails.</li>
+          <li><b>Rechazado</b> → se cancela; <b>restaura stock solo si el pedido estaba en etapa temprana</b> (si ya estaba preparando, queda para intervención manual).</li>
+          <li><b>Pago tarde, después de cancelar</b> → no reactiva el pedido; dispara <b>refund automático</b> + email (Ley 24.240).</li>
+        </ul>
+      </div></details>
+
+      <details><summary>Se cancela un pedido (según quién)</summary><div class="body">
+        <ul>
+          <li><b>Comprador</b> (solo antes de confirmar): restaura stock + devuelve puntos + refund.</li>
+          <li><b>Admin</b> (hasta preparando, pide contraseña): stock + puntos + refund + libera al driver + auditoría.</li>
+          <li><b>Comercio rechaza</b>: refund + stock + puntos.</li>
+          <li><b>Repartidor</b> (antes del retiro): libera el pedido para reasignar, <b>sin penalización ni refund</b> (es operación normal).</li>
+        </ul>
+      </div></details>
+
+      <details><summary>No-show (el cliente no aparece)</summary><div class="body">
+        <p>El repartidor espera ≥10 min, reporta, y vuelve al comercio. Se marca el no-show y se pone un <b>hold de 24h</b> sobre el pago al repartidor. <span class="chip c-rojo">⚠️ ver observación: el hold NO se está respetando</span></p>
+      </div></details>
+
+      <details><summary>Repartidor se desconecta a mitad de la entrega</summary><div class="body">
+        <p>Un cron marca offline a los "repartidores fantasma" (sin señal &gt;90s). Y no se puede desconectar manualmente con un pedido activo. <span class="chip c-amar">⚠️ ver observación: no se reasigna el pedido</span></p>
+      </div></details>
+
+    </div>
+  </details>
+
+  <!-- ============ OBSERVACIONES ============ -->
+  <details open>
+    <summary><span class="ico">🔍</span> Observaciones y cabos sueltos (lo que conviene mejorar)</summary>
+    <div class="body">
+      <p class="note">Encontrados en el relevamiento. Ordenados por riesgo. Los dos primeros tocan plata del repartidor.</p>
+
+      <div class="obs rojo">
+        <h4>🔴 1. El "hold de 24h" del no-show no se respeta</h4>
+        El no-show pone un <code>payoutHoldUntil = +24h</code> sobre el pago al repartidor, pero <code>payouts.ts</code> <b>nunca filtra por ese campo</b> y ningún cron lo libera. Hoy el pedido con no-show entra al pago igual que cualquier otro. <b>Es un campo muerto → riesgo de pagar de más.</b>
+        <div class="file">lib/payouts.ts (no filtra payoutHoldUntil) · api/driver/orders/[id]/report-no-show</div>
+      </div>
+
+      <div class="obs rojo">
+        <h4>🔴 2. El repartidor ve 80% pero podría cobrar 70%</h4>
+        Coexisten <b>dos cálculos del pago al repartidor con valores distintos</b>: el panel de ganancias usa <b>80%</b> (y el snapshot exacto del pedido), pero <code>payouts.ts</code> usa <b>70%</b> sobre el envío para pedidos sin snapshot. Lo que el repartidor ve no coincide con lo que el admin transfiere. <b>Riesgo de dinero + confianza del repartidor.</b>
+        <div class="file">lib/payouts.ts (DRIVER_SHARE = 0.70) vs api/driver/earnings (80%)</div>
+      </div>
+
+      <div class="obs amar">
+        <h4>🟡 3. Repartidor offline a mitad de entrega → no se reasigna</h4>
+        Se lo marca offline, pero el pedido queda con ese repartidor "en camino" sin nadie que lo detecte ni reasigne. Falta un cron que cace "pedido en entrega con repartidor offline &gt; X min".
+      </div>
+
+      <div class="obs amar">
+        <h4>🟡 4. Hay dos caminos de refund distintos</h4>
+        El rechazo del comercio y un cron hacen el refund "a mano" en vez de usar el helper único (<code>refundOrderIfPaid</code>). Pueden divergir en auditoría, idempotencia y email. La Biblia pide un solo helper.
+      </div>
+
+      <div class="obs amar">
+        <h4>🟡 5. Stock no se restaura en rechazo de pago tardío</h4>
+        Si el pago se rechaza cuando el pedido ya estaba preparándose, el stock no se devuelve solo y queda para intervención manual, sin una alerta fuerte.
+      </div>
+
+      <div class="obs amar">
+        <h4>🟡 6. Dos "enums" de estado del pedido desincronizados</h4>
+        El estado "legacy" no incluye varios estados reales del flujo. Si algún componente lo usa para validar transiciones, puede fallar. Conviene unificar.
+      </div>
+
+      <div class="obs verde">
+        <h4>🟢 7. Cupones: backend completo, sin botón en el checkout</h4>
+        Existe todo el sistema de cupones (modelo, validación, ABM en OPS), pero <b>el checkout no tiene dónde ingresarlos</b>. Feature a medias. (Decisión: ¿exponerla o quitarla?)
+      </div>
+
+      <div class="obs verde">
+        <h4>🟢 8. Nombres de los planes de publicidad no coinciden</h4>
+        El código usa <code>DESTACADO_PLATINO/...</code> y la Biblia (CLAUDE.md) dice VISIBLE/DESTACADO/PREMIUM/LANZAMIENTO. Hay que decidir cuál es la fuente de verdad.
+      </div>
+
+      <div class="obs verde">
+        <h4>🟢 9. Limpieza pendiente</h4>
+        Rutas de comercio duplicadas (<code>/tienda</code>, <code>/tiendas</code>, <code>/store</code>); payout automático del vendedor no implementado (Fase 1); subastas deshabilitadas (Fase 1); expiración de puntos no se aplica. Nada roto, pero conviene ordenarlo.
+      </div>
+
+      <div class="obs amar">
+        <h4>🟡 Seguridad — pendientes ya identificados (auditoría)</h4>
+        <b>C-3</b>: cifrar el CBU del repartidor y los tokens de MP (hoy en texto plano) — ya hay <b>plan maestro</b> listo. <b>C-1</b>: la autorización de admin se valida contra el JWT cache, no la DB (un admin degradado sigue operando hasta 7 días).
+      </div>
+    </div>
+  </details>
+
+  <p class="note" style="text-align:center;margin-top:24px">Mapa generado a partir del código real de Moovy. Para el detalle técnico de cada flujo, ver los archivos referenciados.</p>
+</div>
+</body>
+</html>
