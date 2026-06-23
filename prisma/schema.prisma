@@ -1207,6 +1207,10 @@ model StoreSettings {
   // === OPS CONFIG: Commission defaults ===
   defaultMerchantCommission Float  @default(8)
   defaultSellerCommission   Float  @default(12)
+  // Rama fix/split-mp-reserva-y-operativo: % que el split aparta para cubrir la
+  // comisión que MP le cobra al comercio (el cobrador). Evita que MP rechace cuando
+  // el envío es grande. Editable desde OPS; si MP sube su comisión, se sube acá.
+  mpReservePercent          Float  @default(8)
 
   // === OPS CONFIG: Cash Protocol ===
   cashMpOnlyDeliveries     Int     @default(10)

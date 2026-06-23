@@ -184,6 +184,15 @@ export async function PUT(request: Request) {
             { status: 400 }
           );
         }
+        if (
+          data.mpReservePercent !== undefined &&
+          (data.mpReservePercent < 0 || data.mpReservePercent > 30)
+        ) {
+          return NextResponse.json(
+            { error: "Reserva comisión MP debe estar entre 0% y 30%" },
+            { status: 400 }
+          );
+        }
 
         await updateCommissionConfig(data);
         await logConfigChange(

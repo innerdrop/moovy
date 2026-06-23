@@ -549,6 +549,9 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
           <NumInput label="Comisión repartidor" name="riderCommissionPercent" value={config.commissions.riderCommissionPercent}
             onChange={(n, v) => updateField("commissions", n, v)} min={50} max={95} step={1} unit="%"
             info="% del delivery fee que se paga al repartidor. Resto = Moovy." />
+          <NumInput label="Reserva comisión MP" name="mpReservePercent" value={config.commissions.mpReservePercent}
+            onChange={(n, v) => updateField("commissions", n, v)} min={0} max={30} step={0.1} unit="%"
+            info="% que el split aparta para cubrir la comisión que MP le cobra al comercio. Evita que MP rechace los pagos con envío grande. Si MP sube su comisión, subí este número." />
         </div>
 
         {/* Merchant Tiers Display */}

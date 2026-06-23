@@ -21,6 +21,10 @@ import { logUserActivity, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/use
 import { generatePinPair } from "@/lib/pin";
 import { getEffectiveCommission, getEffectiveCommissionWithSource } from "@/lib/merchant-loyalty";
 import { buildSubOrderFinancialSnapshot } from "@/lib/orders/order-totals";
+// Rama fix/split-mp-reserva-y-operativo: reparto del split con reserva para la
+// comisión de MP (que el comercio no quede negativo → MP no rechaza el CPT01).
+import { computeMpSplit } from "@/lib/finance/mp-split";
+import { getMpReservePercent } from "@/lib/finance/mp-reserve";
 import { getZoneSnapshotForLocation, getCoverageStatus } from "@/lib/delivery-zones";
 import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
 // Rama fix/delivery-geocoding-cobertura: COBRO BLINDADO. La distancia se
@@ -1426,12 +1430,32 @@ export async function POST(request: Request) {
                 // la plata del envío para pagarle al repartidor (80% del viaje, vía
                 // PayoutBatch) y quedarse el 20% + operativo. La contabilidad interna
                 // (order-totals.ts) ya asumía este flujo; esto alinea el reparto físico.
-                const rawMarketplaceFee =
-                    orderForPref.subOrders.reduce((s, sub) => s + (sub.moovyCommission || 0), 0)
-                    + (orderForPref.deliveryFee || 0);
-                const marketplaceFee = vendorAccessToken
-                    ? Math.max(0, Math.min(Math.round(rawMarketplaceFee * 100) / 100, orderForPref.total - 1))
-                    : 0;
+                // fix/split-mp-reserva-y-operativo (PASO 1): el marketplace_fee reserva
+                // la comisión de MP para que al comercio (que cobra) le quede SIEMPRE su
+                // producto → MP nunca rechaza (era la causa del "Algo salió mal / CPT01").
+                // grossUp=false: NO tocamos el total del pedido (no toca el webhook).
+                // Moovy absorbe la comisión de MP por ahora; el buffer al comprador
+                // (Moovy cobra el envío completo) es el PASO 2, con test real previo.
+                const commissionSum = orderForPref.subOrders.reduce(
+                    (s, sub) => s + (sub.moovyCommission || 0),
+                    0
+                );
+                const mpReservePercent = await getMpReservePercent();
+                const mpSplit = computeMpSplit({
+                    subtotal: orderForPref.subtotal,
+                    deliveryFee: orderForPref.deliveryFee || 0,
+                    commission: commissionSum,
+                    discount: orderForPref.discount || 0,
+                    mpReservePercent,
+                    grossUp: false,
+                });
+                const marketplaceFee = vendorAccessToken ? mpSplit.marketplaceFee : 0;
+                if (vendorAccessToken && mpSplit.notes.length > 0) {
+                    orderLogger.warn(
+                        { orderId: order.id, mpReservePercent, notes: mpSplit.notes },
+                        "MP split: tope de reserva activado (Moovy cobra menos para que el comercio cobre su producto)"
+                    );
+                }
                 const prefBody = buildPreferenceBody(orderForPref, baseUrl, marketplaceFee);
 
                 const preference = vendorAccessToken

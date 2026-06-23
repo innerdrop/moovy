@@ -10,6 +10,33 @@
 
 ---
 
+## 2026-06-22 (rama `fix/split-mp-reserva-y-operativo`)
+
+fix(pagos): reserva de comision MP en el split (arregla CPT01) + retiro operativo
+
+El marketplace_fee enviaba a Moovy "comision + envio completo", sin dejar lugar para
+la comision que MP le cobra al comercio (el cobrador). Con envio grande, al comercio
+le quedaba negativo y MP rechazaba ("Algo salio mal / CPT01"). Ahora el split reserva
+la comision de MP via computeMpSplit (funcion pura + script de simulacion), asi el
+comercio siempre cobra su producto y MP no rechaza.
+
+Paso 1: Moovy absorbe la comision de MP (NO toca el total del pedido -> sin riesgo de
+webhook). El buffer al comprador (Moovy cobra el envio completo) queda para una rama
+futura, con test real previo (grossUp=true ya soportado en la funcion).
+
+Nuevo parametro configurable "% reserva MP" en la Biblia (StoreSettings.mpReservePercent,
+default 8%, editable desde /ops/config-biblia). Operativo retirado (a 0 desde OPS).
+
+Requiere: npx prisma db push (columna nueva). Deploy en modo schema.
+
+Archivos: src/lib/finance/mp-split.ts (nuevo), src/lib/finance/mp-reserve.ts (nuevo),
+src/app/api/orders/route.ts, prisma/schema.prisma, src/lib/ops-config.ts,
+src/app/api/admin/ops-config/route.ts,
+src/app/ops/(protected)/config-biblia/BibliaConfigClient.tsx,
+scripts/simulate-mp-split.ts.
+
+**Archivos:** prisma/schema.prisma, scripts/simulate-mp-split.ts, src/app/api/admin/ops-config/route.ts, src/app/api/orders/route.ts, src/app/ops/(protected)/config-biblia/BibliaConfigClient.tsx, src/lib/finance/mp-reserve.ts, src/lib/finance/mp-split.ts, src/lib/ops-config.ts
+
 ## 2026-06-19 (rama `fix/driver-profile-no-filtrar-campos-internos`)
 
 fix(seguridad): driver/profile deja de filtrar campos internos al cliente

@@ -29,6 +29,8 @@ export interface CommissionConfig {
   defaultMerchantCommission: number;
   defaultSellerCommission: number;
   riderCommissionPercent: number;
+  /** % que el split aparta para cubrir la comisión de MP (evita que MP rechace). */
+  mpReservePercent: number;
 }
 
 export interface PointsMooverConfig {
@@ -174,6 +176,7 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
       defaultMerchantCommission: (settings as any)?.defaultMerchantCommission ?? 8,
       defaultSellerCommission: (settings as any)?.defaultSellerCommission ?? 12,
       riderCommissionPercent: settings?.riderCommissionPercent ?? 80,
+      mpReservePercent: (settings as any)?.mpReservePercent ?? 8,
     },
     points: {
       pointsPerDollar: pointsConfig?.pointsPerDollar ?? 0.01,
@@ -294,6 +297,8 @@ export async function updateCommissionConfig(
     updateData.defaultSellerCommission = data.defaultSellerCommission;
   if (data.riderCommissionPercent !== undefined)
     updateData.riderCommissionPercent = data.riderCommissionPercent;
+  if (data.mpReservePercent !== undefined)
+    updateData.mpReservePercent = data.mpReservePercent;
 
   await prisma.storeSettings.upsert({
     where: { id: "settings" },
