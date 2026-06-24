@@ -81,6 +81,7 @@ const navSections: NavSection[] = [
             // /api/admin/pending-counts.
             { href: "/ops/usuarios", icon: Users, label: "Usuarios", badge: "pending-total" },
             { href: "/ops/pipeline-comercios", icon: GitBranch, label: "Pipeline Comercios", badge: "pending-merchants" },
+            { href: "/ops/prelaunch", icon: ClipboardList, label: "Lista de espera" },
         ],
     },
     {

@@ -8,17 +8,18 @@
 
 import type { Metadata } from "next";
 import Image from "next/image";
+import PreLaunchForm from "./PreLaunchForm";
 
 export const metadata: Metadata = {
     title: "Moovy — Próximamente",
-    description: "Estamos por abrir. Moovy llega pronto a Ushuaia.",
+    description: "Moovy llega pronto a Ushuaia. Sumá tu comercio o anotate para repartir.",
     robots: { index: false, follow: false },
 };
 
 export default function ProximamentePage() {
     return (
-        <main className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#1a1a1a] via-[#2a0a0c] to-black text-white px-6 text-center">
-            <div className="max-w-md flex flex-col items-center gap-6">
+        <main className="min-h-screen w-full flex flex-col items-center justify-center bg-gradient-to-b from-[#1a1a1a] via-[#2a0a0c] to-black text-white px-6 py-16 text-center">
+            <div className="max-w-md flex flex-col items-center gap-5">
                 <Image
                     src="/logo-moovy-white.svg"
                     alt="Moovy"
@@ -31,20 +32,18 @@ export default function ProximamentePage() {
                 <div className="h-1 w-16 rounded-full bg-[#e60012]" />
 
                 <h1 className="text-3xl sm:text-4xl font-bold tracking-tight">
-                    Estamos por abrir
+                    Moovy está por llegar a Ushuaia 🚀
                 </h1>
 
                 <p className="text-base text-white/70 leading-relaxed">
-                    Moovy llega pronto a Ushuaia. Estamos dando los últimos retoques
-                    para que tu primera experiencia sea perfecta.
+                    Estamos armando algo nuevo para la ciudad. Si tenés un comercio o
+                    querés repartir, sumate ahora y sé de los primeros en ser parte.
                 </p>
 
-                <p className="text-sm text-white/40 mt-2">
-                    Muy pronto, cada compra y cada entrega. Cada vez.
-                </p>
+                <PreLaunchForm />
             </div>
 
-            <footer className="absolute bottom-6 text-xs text-white/30">
+            <footer className="mt-12 text-xs text-white/30">
                 © {new Date().getFullYear()} Moovy · Ushuaia, Tierra del Fuego
             </footer>
         </main>

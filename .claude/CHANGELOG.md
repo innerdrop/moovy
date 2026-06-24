@@ -10,6 +10,37 @@
 
 ---
 
+## 2026-06-24 (rama `feat/landing-cortina-preregistro`)
+
+feat(landing): cortina "Proximamente" con pre-registro de comercios/repartidores + elimina moovyx
+
+Nueva lista de espera pre-lanzamiento: la cortina publica ahora deja a comercios y
+repartidores anotarse para que Moovy los contacte al lanzar.
+
+- Modelo PreLaunchLead (rol, email, whatsapp opcional, nombre opcional, consentimiento +
+  fecha, IP/UA, source). Dedupe por (email, rol). <- cambio de schema, requiere db push.
+- Endpoint publico /api/prelaunch/signup: Zod + rate limit por IP + honeypot anti-bot +
+  upsert + registro de consentimiento (AAIP / Ley 26.951).
+- Rediseno de /proximamente con el formulario (toggle comercio/repartidor, email +
+  WhatsApp opcional + nombre, checkbox de consentimiento, estados loading/error/success).
+- Vista OPS /ops/prelaunch: contadores + lista + exportar CSV. Link en el sidebar (Actores).
+- Eliminado moovyx (page + register endpoint): registro viejo e inseguro que la auditoria
+  habia marcado (sin auth/rate limit/Zod). Lo reemplaza este pre-registro.
+
+Email como dato principal (legalmente mas liviano); WhatsApp opcional. Sin datos fiscales.
+
+NOTA: nuevo modelo Prisma -> correr `npx prisma generate` ANTES de finish.ps1 (para que el
+tsc reconozca PreLaunchLead). Deploy en modo schema (db push).
+
+Archivos: prisma/schema.prisma, src/app/api/prelaunch/signup/route.ts (nuevo),
+src/app/proximamente/page.tsx, src/app/proximamente/PreLaunchForm.tsx (nuevo),
+src/app/ops/(protected)/prelaunch/page.tsx (nuevo),
+src/app/ops/(protected)/prelaunch/ExportLeadsButton.tsx (nuevo),
+src/components/ops/OpsSidebar.tsx.
+Eliminados: src/app/moovyx/, src/app/api/moovyx/.
+
+**Archivos:** docs/RUNBOOK_DEPLOY_2026-06-23.md, prisma/schema.prisma, src/app/api/moovyx/register/route.ts, src/app/api/prelaunch/signup/route.ts, src/app/moovyx/page.tsx, src/app/ops/(protected)/prelaunch/ExportLeadsButton.tsx, src/app/ops/(protected)/prelaunch/page.tsx, src/app/proximamente/PreLaunchForm.tsx (+2 mas)
+
 ## 2026-06-23 (rama `fix/cifrar-tokens-mp`)
 
 fix(seguridad): cifrar at-rest los tokens de MP (Merchant + SellerProfile)

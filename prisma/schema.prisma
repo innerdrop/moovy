@@ -1862,6 +1862,31 @@ model ConsentLog {
   @@index([acceptedAt])
 }
 
+// Rama feat/landing-cortina-preregistro: lista de espera pre-lanzamiento.
+// Comercios y repartidores interesados que se anotan desde la cortina pública
+// ("Próximamente") para que Moovy los contacte al lanzar. Datos mínimos +
+// consentimiento explícito (Ley 25.326 AAIP / Ley 26.951). NO son datos fiscales.
+model PreLaunchLead {
+  id         String    @id @default(cuid())
+  role       String // "COMERCIO" | "DRIVER"
+  name       String?
+  email      String
+  whatsapp   String? // opcional
+  consent    Boolean   @default(false)
+  consentAt  DateTime?
+  ipAddress  String?
+  userAgent  String?
+  source     String?   @default("landing")
+  contacted  Boolean   @default(false) // marca interna OPS: ya lo contactamos
+  createdAt  DateTime  @default(now())
+
+  // Un mismo email puede anotarse como comercio Y como repartidor, pero no
+  // duplicar el mismo rol (dedupe vía upsert en el endpoint).
+  @@unique([email, role])
+  @@index([role])
+  @@index([createdAt])
+}
+
 model Coupon {
   id               String        @id @default(cuid())
   code             String        @unique
