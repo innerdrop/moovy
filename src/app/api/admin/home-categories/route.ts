@@ -1,7 +1,6 @@
 // API Route: Home Category Slots — curated homepage categories (independent of B2B packages)
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 // GET - Get all home category slots with their linked category
@@ -37,10 +36,8 @@ export async function GET() {
 // POST - Add a category to the home (create slot)
 export async function POST(request: Request) {
   try {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const data = await request.json();
 
@@ -116,10 +113,8 @@ export async function POST(request: Request) {
 // PATCH - Update a slot (image, icon, label, isActive) or bulk reorder
 export async function PATCH(request: Request) {
   try {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const data = await request.json();
 
@@ -179,10 +174,8 @@ export async function PATCH(request: Request) {
 // DELETE - Remove a slot (category is NOT affected)
 export async function DELETE(request: Request) {
   try {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { searchParams } = new URL(request.url);
     const id = searchParams.get("id");

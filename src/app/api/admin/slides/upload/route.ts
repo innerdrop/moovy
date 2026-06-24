@@ -2,18 +2,13 @@
 import { NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";
 import path from "path";
-import { auth } from "@/lib/auth";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { isR2Configured, uploadToR2 } from "@/lib/r2-storage";
 
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        const userRole = (session?.user as any)?.role;
-
-        // Check for admin role
-        if (!session || !["ADMIN", "admin"].includes(userRole)) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const formData = await request.formData();
         const file = formData.get("file") as File | null;

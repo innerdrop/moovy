@@ -8,8 +8,7 @@
  * de envío desde la categoría del comercio vía autoDetectShipmentType().
  */
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { autoDetectShipmentType, getShipmentType } from "@/lib/shipment-types";
 import { calculateOrderPriority, classifyOrderUrgency } from "@/lib/order-priority";
@@ -18,13 +17,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!hasAnyRole(session, ["ADMIN"])) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     // Active orders = not delivered, not cancelled, not deleted
     const activeOrders = await prisma.order.findMany({

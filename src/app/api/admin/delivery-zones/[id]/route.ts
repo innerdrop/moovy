@@ -5,8 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { invalidateZonesCache } from "@/lib/delivery-zones";
 import logger from "@/lib/logger";
@@ -33,10 +32,8 @@ const UpdateZoneSchema = z.object({
 // ─── GET: fetch single ──────────────────────────────────────────────────────
 
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await ctx.params;
 
@@ -79,10 +76,8 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
 // ─── PUT: update ────────────────────────────────────────────────────────────
 
 export async function PUT(request: Request, ctx: { params: Promise<{ id: string }> }) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await ctx.params;
 
@@ -173,7 +168,7 @@ export async function PUT(request: Request, ctx: { params: Promise<{ id: string 
 
     const changedKeys = Object.keys(data).join(", ");
     zonesLogger.info(
-        { zoneId: id, name: existing.name, changedKeys, adminId: session.user.id, action: "update", overlapsCount: overlaps.length },
+        { zoneId: id, name: existing.name, changedKeys, adminId: admin.userId, action: "update", overlapsCount: overlaps.length },
         "Delivery zone updated"
     );
     return NextResponse.json({ ok: true, overlaps });
@@ -193,10 +188,8 @@ export async function PUT(request: Request, ctx: { params: Promise<{ id: string 
 // { isActive: false }.
 
 export async function DELETE(request: Request, ctx: { params: Promise<{ id: string }> }) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await ctx.params;
 
@@ -226,7 +219,7 @@ export async function DELETE(request: Request, ctx: { params: Promise<{ id: stri
     invalidateZonesCache();
 
     zonesLogger.info(
-        { zoneId: id, name: existing.name, adminId: session.user.id, action: "hard-delete" },
+        { zoneId: id, name: existing.name, adminId: admin.userId, action: "hard-delete" },
         "Delivery zone hard-deleted"
     );
     return NextResponse.json({ ok: true });

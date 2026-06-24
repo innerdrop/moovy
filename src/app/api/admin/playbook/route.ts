@@ -2,8 +2,7 @@
 // Solo accesible por ADMIN. Las mutaciones generan AuditLog.
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { applyRateLimit } from "@/lib/rate-limit";
@@ -14,10 +13,8 @@ type PlaybookCategory = typeof ALLOWED_CATEGORIES[number];
 // GET: lista todos los checklists. Query opcional ?category=onboarding
 export async function GET(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const limited = await applyRateLimit(request, "admin:playbook:list", 60, 60_000);
         if (limited) return limited;
@@ -57,10 +54,8 @@ const createSchema = z.object({
 // POST: crear un checklist nuevo.
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const limited = await applyRateLimit(request, "admin:playbook:create", 20, 60_000);
         if (limited) return limited;
@@ -102,7 +97,7 @@ export async function POST(request: Request) {
             action: "PLAYBOOK_CREATED",
             entityType: "PlaybookChecklist",
             entityId: created.id,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 name: created.name,
                 category: created.category,

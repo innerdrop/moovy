@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { SegmentFiltersSchema, previewSegment } from "@/lib/user-segments";
 import logger from "@/lib/logger";
@@ -17,10 +17,8 @@ export async function POST(request: NextRequest) {
     const limited = await applyRateLimit(request, "admin:segments-preview", 30, 60_000);
     if (limited) return limited;
 
-    const session = await auth();
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     let body: unknown;
     try {

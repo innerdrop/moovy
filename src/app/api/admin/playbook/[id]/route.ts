@@ -1,8 +1,7 @@
 // API Route: Single Playbook Checklist — GET, PATCH, DELETE
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { applyRateLimit } from "@/lib/rate-limit";
@@ -15,10 +14,8 @@ export async function GET(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await context.params;
 
@@ -60,10 +57,8 @@ export async function PATCH(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const limited = await applyRateLimit(request, "admin:playbook:update", 60, 60_000);
         if (limited) return limited;
@@ -115,7 +110,7 @@ export async function PATCH(
             action: "PLAYBOOK_UPDATED",
             entityType: "PlaybookChecklist",
             entityId: updated.id,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 name: updated.name,
                 changes: data,
@@ -138,10 +133,8 @@ export async function DELETE(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const limited = await applyRateLimit(request, "admin:playbook:delete", 20, 60_000);
         if (limited) return limited;
@@ -165,7 +158,7 @@ export async function DELETE(
             action: "PLAYBOOK_DELETED",
             entityType: "PlaybookChecklist",
             entityId: id,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 name: existing.name,
                 category: existing.category,

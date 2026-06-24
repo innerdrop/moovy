@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { decryptMerchantData } from "@/lib/fiscal-crypto";
@@ -20,10 +19,8 @@ function toCsv(headers: string[], rows: string[][]): string {
 }
 
 export async function GET(request: NextRequest) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const type = request.nextUrl.searchParams.get("type");
 
@@ -129,7 +126,7 @@ export async function GET(request: NextRequest) {
             action: "DATA_EXPORT",
             entityType: type!,
             entityId: `export-${type}-${new Date().toISOString()}`,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 exportType: type,
                 recordCount: rowCount,

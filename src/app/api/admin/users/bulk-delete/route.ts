@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { hasRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { logAdminAction, extractRequestInfo } from "@/lib/user-activity";
 import { logAudit } from "@/lib/audit";
 import { NextResponse } from "next/server";
@@ -11,18 +10,8 @@ const log = logger.child({ context: "admin/users/bulk-delete" });
 export async function POST(request: Request) {
   try {
     // Auth check
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    // Check ADMIN role
-    if (!hasRole(session, "ADMIN")) {
-      return NextResponse.json(
-        { error: "Solo administradores pueden eliminar usuarios" },
-        { status: 403 }
-      );
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const body = await request.json();
     const { userIds } = body;
@@ -92,7 +81,7 @@ export async function POST(request: Request) {
       if (user.sellerProfile) derivedRoles.push("SELLER");
 
       await logAdminAction({
-        adminUserId: session.user.id,
+        adminUserId: admin.userId,
         targetUserId: user.id,
         action: "ADMIN_USER_DELETED",
         entityType: "User",
@@ -111,7 +100,7 @@ export async function POST(request: Request) {
         action: "USER_DELETED",
         entityType: "User",
         entityId: user.id,
-        userId: session.user.id,
+        userId: admin.userId,
         details: {
           email: user.email,
           name: user.name,
@@ -126,7 +115,7 @@ export async function POST(request: Request) {
       {
         count: usersToDelete.length,
         userIds,
-        adminId: session.user.id,
+        adminId: admin.userId,
       },
       "Bulk user soft-delete completed"
     );

@@ -14,7 +14,7 @@
 // y aprovecha el wrapper que ya escribe en CronRunLog (entonces aparece en el panel).
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { CRON_EXPECTATIONS } from "@/lib/cron-health";
 import { logAudit } from "@/lib/audit";
@@ -28,10 +28,8 @@ export async function POST(
     const limited = await applyRateLimit(request, "admin:crons:trigger", 10, 60_000);
     if (limited) return limited;
 
-    const session = await auth();
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { jobName } = await params;
 
@@ -85,12 +83,12 @@ export async function POST(
         action: "CRON_TRIGGERED_MANUALLY",
         entityType: "Cron",
         entityId: jobName,
-        userId: session.user.id,
+        userId: admin.userId,
         details: {
             jobName,
             statusCode: cronResponse.status,
             durationMs,
-            adminEmail: session.user.email,
+            adminEmail: admin.email,
             response: cronBody,
         },
     }).catch(() => {});

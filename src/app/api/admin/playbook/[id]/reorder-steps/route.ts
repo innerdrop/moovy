@@ -3,8 +3,7 @@
 // y acá los actualizamos en batch (más eficiente que N PATCHes individuales).
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { applyRateLimit } from "@/lib/rate-limit";
@@ -18,10 +17,8 @@ export async function POST(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const limited = await applyRateLimit(request, "admin:playbook:reorder", 60, 60_000);
         if (limited) return limited;
@@ -100,7 +97,7 @@ export async function POST(
             action: "PLAYBOOK_STEPS_REORDERED",
             entityType: "PlaybookChecklist",
             entityId: checklistId,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 checklistName: checklist.name,
                 stepCount: stepIds.length,

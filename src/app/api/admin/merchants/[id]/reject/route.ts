@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { sendMerchantRejectedEmail } from "@/lib/email-p0";
 import { rejectMerchantTransition } from "@/lib/roles";
@@ -19,14 +18,8 @@ export async function PUT(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await context.params;
         const body = await request.json().catch(() => ({}));
@@ -53,8 +46,8 @@ export async function PUT(
 
         // Transición centralizada con audit log. No tocamos UserRole.
         await rejectMerchantTransition(id, reason, {
-            adminId: session.user.id,
-            adminEmail: session.user.email ?? "unknown",
+            adminId: admin.userId,
+            adminEmail: admin.email ?? "unknown",
             notified: notify,
         });
 

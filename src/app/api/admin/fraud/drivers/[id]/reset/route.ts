@@ -2,8 +2,7 @@
 // ISSUE-001: permite al admin (tras revisar el contexto) limpiar fraudScore
 // y/o levantar la suspensión de un driver. Cada reset queda auditado.
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 
@@ -12,10 +11,8 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id: driverId } = await params;
         const body = await request.json().catch(() => ({}));
@@ -52,7 +49,7 @@ export async function POST(
             action: "DRIVER_FRAUD_RESET",
             entityType: "Driver",
             entityId: driverId,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 previousFraudScore: driver.fraudScore,
                 previousSuspended: driver.isSuspended,

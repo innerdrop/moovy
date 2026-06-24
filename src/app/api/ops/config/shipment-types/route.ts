@@ -4,8 +4,7 @@
  * PATCH → saves updated shipment types config to MoovyConfig
  */
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import {
   loadShipmentTypesConfig,
   saveShipmentTypesConfig,
@@ -16,13 +15,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!hasAnyRole(session, ["ADMIN"])) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const config = await loadShipmentTypesConfig();
     return NextResponse.json({ config });
@@ -37,13 +31,8 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-    if (!hasAnyRole(session, ["ADMIN"])) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const body = (await request.json()) as ShipmentTypesConfig;
 

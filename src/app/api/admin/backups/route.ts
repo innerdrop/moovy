@@ -1,16 +1,13 @@
 // API: Backup Viewer & Restore
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 // GET - List all backups with pagination and search
 export async function GET(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { searchParams } = new URL(request.url);
 
@@ -58,10 +55,8 @@ export async function GET(request: NextRequest) {
 // POST - Restore backup
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
         const { backupId } = body;

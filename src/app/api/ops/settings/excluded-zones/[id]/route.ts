@@ -2,8 +2,7 @@
 // PATCH  → edita una zona (cualquier campo validado; active incluido)
 // DELETE → elimina la zona por id
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { parseExcludedZones, ExcludedZone } from "@/lib/excluded-zones";
 import { logAudit } from "@/lib/audit";
@@ -83,13 +82,8 @@ export async function PATCH(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await params;
         const body = await request.json();
@@ -131,7 +125,7 @@ export async function PATCH(
             action: "EXCLUDED_ZONE_UPDATED",
             entityType: "StoreSettings",
             entityId: "settings",
-            userId: session.user.id,
+            userId: admin.userId,
             details: { before, after: updated, changes: validation.data },
         });
 
@@ -150,13 +144,8 @@ export async function DELETE(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await params;
         const zones = await loadZones();
@@ -172,7 +161,7 @@ export async function DELETE(
             action: "EXCLUDED_ZONE_DELETED",
             entityType: "StoreSettings",
             entityId: "settings",
-            userId: session.user.id,
+            userId: admin.userId,
             details: { zone: removed },
         });
 

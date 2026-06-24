@@ -8,8 +8,7 @@
  * Query params: ?status=PENDING (opcional, filtra por estado)
  */
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 export async function GET(
@@ -17,13 +16,8 @@ export async function GET(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await context.params;
         const { searchParams } = new URL(request.url);

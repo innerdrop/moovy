@@ -1,7 +1,6 @@
 // API: Initialize canned responses (seed data)
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 const INITIAL_CANNED_RESPONSES = [
@@ -103,10 +102,8 @@ const INITIAL_CANNED_RESPONSES = [
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         // Check if already seeded
         const existing = await (prisma as any).cannedResponse.count();
@@ -143,10 +140,8 @@ export async function POST(request: NextRequest) {
 // GET - Check initialization status
 export async function GET(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const count = await (prisma as any).cannedResponse.count();
 

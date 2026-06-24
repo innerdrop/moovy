@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 // GET — Admin ve todas las solicitudes de publicidad
 export async function GET(request: NextRequest) {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");

@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-import { auth } from "@/lib/auth";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { applyRateLimit } from "@/lib/rate-limit";
-import { hasAnyRole } from "@/lib/auth-utils";
 import {
   getFullOpsConfig,
   updateDeliveryConfig,
@@ -27,17 +26,11 @@ export async function GET(request: Request) {
   if (limited) return limited;
 
   try {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-      logger.warn({ email: (session?.user as any)?.email }, "Unauthorized OPS config read attempt");
-      return NextResponse.json(
-        { error: "No autorizado" },
-        { status: 401 }
-      );
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const config = await getFullOpsConfig();
-    logger.info({ email: (session?.user as any)?.email }, "OPS config retrieved");
+    logger.info({ email: admin.email }, "OPS config retrieved");
     return NextResponse.json(config);
   } catch (error) {
     logger.error({ error }, "OPS config GET error");
@@ -58,14 +51,8 @@ export async function PUT(request: Request) {
   if (limited) return limited;
 
   try {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-      logger.warn({ email: (session?.user as any)?.email }, "Unauthorized OPS config write attempt");
-      return NextResponse.json(
-        { error: "No autorizado" },
-        { status: 401 }
-      );
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const body = await request.json();
     const { section, data } = body;
@@ -79,8 +66,8 @@ export async function PUT(request: Request) {
 
     // Get current config for audit logging
     const currentConfig = await getFullOpsConfig();
-    const adminId = session.user?.id || "unknown";
-    const adminEmail = (session?.user as any)?.email || "unknown";
+    const adminId = admin.userId || "unknown";
+    const adminEmail = admin.email || "unknown";
 
     logger.info({ email: adminEmail, section }, "Updating OPS config section");
 

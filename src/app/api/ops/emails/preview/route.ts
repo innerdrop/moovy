@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { getEmailById, EMAIL_REGISTRY } from "@/lib/email-registry";
 
 /**
@@ -11,10 +10,8 @@ import { getEmailById, EMAIL_REGISTRY } from "@/lib/email-registry";
  * Retorna la lista completa del registro de emails (metadata sin HTML).
  */
 export async function GET(req: NextRequest) {
-    const session = await auth();
-    if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const emailId = req.nextUrl.searchParams.get("id");
 

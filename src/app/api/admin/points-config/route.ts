@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { getPointsConfig, updatePointsConfig } from "@/lib/points";
 
 // GET - Retrieve current configuration
@@ -23,13 +24,9 @@ export async function GET(request: Request) {
 // PUT - Update configuration (ADMIN ONLY)
 export async function PUT(request: Request) {
     try {
-        const session = await auth();
-        const role = (session?.user as any)?.role;
-
-        // Only ADMIN can change core loyalty rules
-        if (role !== "ADMIN") {
-            return NextResponse.json({ error: "Solo administradores pueden cambiar la configuración" }, { status: 403 });
-        }
+        // Only ADMIN can change core loyalty rules (DB source of truth)
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const data = await request.json();
 

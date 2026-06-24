@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { sendMerchantApprovedEmail } from "@/lib/email-p0";
 import { approveMerchantTransition } from "@/lib/roles";
@@ -19,14 +18,8 @@ export async function PUT(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await context.params;
 
@@ -61,8 +54,8 @@ export async function PUT(
         // Logo es requisito de visibilidad pública (filtro image: { not: null } en
         // /tiendas y home) pero NO de capacidad operativa.
         await approveMerchantTransition(id, {
-            adminId: session.user.id,
-            adminEmail: session.user.email ?? "unknown",
+            adminId: admin.userId,
+            adminEmail: admin.email ?? "unknown",
             notified: notify,
         });
 

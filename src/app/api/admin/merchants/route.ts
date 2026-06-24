@@ -1,17 +1,13 @@
 // API Route: Admin Merchants Management
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 // GET - Fetch all merchants with filters
 export async function GET(request: Request) {
     try {
-        const session = await auth();
-
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { searchParams } = new URL(request.url);
         const status = searchParams.get("status");
@@ -82,11 +78,8 @@ const ALLOWED_MERCHANT_UPDATE_FIELDS = new Set([
 // PATCH - Update merchant (whitelist-protected)
 export async function PATCH(request: Request) {
     try {
-        const session = await auth();
-
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const data = await request.json();
         const { id, ...rawData } = data;

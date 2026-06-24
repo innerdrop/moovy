@@ -1,7 +1,6 @@
 // API: Admin Analytics - Comprehensive business metrics
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 interface AnalyticsResponse {
@@ -56,10 +55,8 @@ interface AnalyticsResponse {
 
 export async function GET(request: NextRequest): Promise<NextResponse<AnalyticsResponse | { error: string }>> {
     try {
-        const session = await auth();
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin as NextResponse<{ error: string }>;
 
         const { searchParams } = new URL(request.url);
         const period = searchParams.get("period") || "today";

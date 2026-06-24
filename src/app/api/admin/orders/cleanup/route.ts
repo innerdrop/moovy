@@ -7,8 +7,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import logger from "@/lib/logger";
 import bcrypt from "bcryptjs";
@@ -17,10 +16,8 @@ const cleanupLogger = logger.child({ context: "admin-orders-cleanup" });
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
         const { password } = body;
@@ -31,7 +28,7 @@ export async function POST(request: NextRequest) {
 
         // Verify admin password
         const adminUser = await prisma.user.findUnique({
-            where: { id: session.user.id },
+            where: { id: admin.userId },
             select: { id: true, password: true, name: true },
         });
 
@@ -138,7 +135,7 @@ export async function POST(request: NextRequest) {
         });
 
         cleanupLogger.info({
-            adminId: session.user.id,
+            adminId: admin.userId,
             adminName: adminUser.name,
             ordersCount: hangingOrders.length,
             orderNumbers: hangingOrders.map(o => o.orderNumber),

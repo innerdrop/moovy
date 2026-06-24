@@ -10,6 +10,36 @@
 
 ---
 
+## 2026-06-24 (rama `fix/admin-auth-db-c1`)
+
+fix(seguridad): C-1 — autorización de admin contra DB, no contra el JWT
+
+Cierra el crítico C-1 de la auditoría: toda la autorización de admin se hacía
+contra el rol del JWT (cache de 7 días), así que un admin degradado/suspendido
+seguía operando hasta 7 días (refunds, payouts, broadcasts, borrados).
+
+- Nuevo helper DB-based `requireApiAdmin()` en src/lib/admin-auth.ts (espejo de
+  requireDriverApi/requireMerchantApi): consulta User.role en la base, bloquea
+  no-admin/suspendido/archivado, devuelve 401/403. Degradar un admin tiene efecto
+  inmediato sin tocar la sesión.
+- Layout /ops/(protected) ahora gatea con requireAdminAccess() (DB) en vez de
+  hasAnyRole(JWT).
+- 127 endpoints de /api/admin y /api/ops migrados a requireApiAdmin (incluidos los
+  15 críticos de dinero/irreversibles: refund, payouts, broadcast, hard-delete,
+  cancel/cleanup de pedidos, delete/bulk-delete de usuarios, comisiones, ops-config).
+  Preservados intactos: Zod, rate limit, confirmaciones literales, bcrypt, audit,
+  transacciones Serializable.
+- 4 endpoints GET multi-rol (ADMIN+MERCHANT / visibilidad) se dejan como están a
+  propósito: products, products/[id], pricing-tiers, points-config.
+- El proxy.ts queda como filtro barato de routing (el gate real es layout + API
+  contra DB).
+- Script de verificación scripts/verify-admin-auth.ts (131/131 OK).
+
+Regla canónica nueva (#29): autorización de admin SIEMPRE contra DB via
+requireApiAdmin (API) / requireAdminAccess (layout). El JWT roles[] es cache.
+
+**Archivos:** scripts/verify-admin-auth.ts, src/app/api/admin/active-orders/route.ts, src/app/api/admin/ad-placements/[id]/route.ts, src/app/api/admin/ad-placements/route.ts, src/app/api/admin/analytics/route.ts, src/app/api/admin/audit/route.ts, src/app/api/admin/auto-locked-accounts/route.ts, src/app/api/admin/backups/route.ts (+126 mas)
+
 ## 2026-06-24 (rama `fix/landing-fija-responsive-desktop`)
 
 feat(landing+ops): compartir multi-canal con tarjeta social + borrado permanente de leads

@@ -10,8 +10,7 @@
  * Body: { status: "APPROVED" | "REJECTED", note?: string }
  */
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import {
@@ -28,13 +27,8 @@ export async function POST(
     context: { params: Promise<{ id: string; requestId: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id, requestId } = await context.params;
 
@@ -132,7 +126,7 @@ export async function POST(
                 data: {
                     status,
                     resolvedAt: now,
-                    resolvedBy: session.user!.id,
+                    resolvedBy: admin.userId,
                     resolutionNote: note || null,
                 },
             });
@@ -159,7 +153,7 @@ export async function POST(
                     : "MERCHANT_CHANGE_REQUEST_REJECTED",
             entityType: "Merchant",
             entityId: id,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 requestId,
                 documentField: changeRequest.documentField,

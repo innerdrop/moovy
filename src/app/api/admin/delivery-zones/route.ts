@@ -11,8 +11,7 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { invalidateZonesCache } from "@/lib/delivery-zones";
 import logger from "@/lib/logger";
@@ -52,10 +51,8 @@ const CreateZoneSchema = z.object({
 // ─── GET: list ──────────────────────────────────────────────────────────────
 
 export async function GET() {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     type Row = {
         id: string;
@@ -98,10 +95,8 @@ export async function GET() {
 // ─── POST: create ───────────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     let body: unknown;
     try {
@@ -175,7 +170,7 @@ export async function POST(request: Request) {
     `;
 
     zonesLogger.info(
-        { zoneId: id, name, multiplier, driverBonus, displayOrder, adminId: session.user.id, action: "create", overlapsCount: overlaps.length },
+        { zoneId: id, name, multiplier, driverBonus, displayOrder, adminId: admin.userId, action: "create", overlapsCount: overlaps.length },
         "Delivery zone created"
     );
     return NextResponse.json(

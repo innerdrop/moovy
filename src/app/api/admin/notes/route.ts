@@ -4,8 +4,7 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
@@ -24,13 +23,8 @@ export async function POST(request: Request) {
         const limited = await applyRateLimit(request, "admin:notes:create", 20, 60_000);
         if (limited) return limited;
 
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json().catch(() => null);
         const parsed = createNoteSchema.safeParse(body);
@@ -55,7 +49,7 @@ export async function POST(request: Request) {
         const note = await prisma.adminNote.create({
             data: {
                 userId,
-                adminId: session.user.id,
+                adminId: admin.userId,
                 content: content.trim(),
                 pinned,
             },
@@ -68,7 +62,7 @@ export async function POST(request: Request) {
             action: "ADMIN_NOTE_CREATED",
             entityType: "AdminNote",
             entityId: note.id,
-            userId: session.user.id,
+            userId: admin.userId,
             details: { targetUserId: userId, pinned, length: content.length },
         });
 
@@ -87,13 +81,8 @@ export async function GET(request: Request) {
         const limited = await applyRateLimit(request, "admin:notes:list", 60, 60_000);
         if (limited) return limited;
 
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { searchParams } = new URL(request.url);
         const userId = searchParams.get("userId");

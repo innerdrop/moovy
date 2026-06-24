@@ -1,8 +1,7 @@
 // API Route: Admin Create Merchant
 // Allows OPS admin to create a new merchant (with or without existing user)
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { encryptMerchantData } from "@/lib/fiscal-crypto";
@@ -18,10 +17,8 @@ function generateSlug(name: string): string {
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const data = await request.json();
 

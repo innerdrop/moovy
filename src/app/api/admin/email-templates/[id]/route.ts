@@ -3,8 +3,7 @@
 // DELETE es soft (isActive: false) para que el fallback al hardcode se active.
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { applyRateLimit } from "@/lib/rate-limit";
@@ -20,10 +19,8 @@ export async function GET(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await context.params;
 
@@ -67,10 +64,8 @@ export async function PATCH(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const limited = await applyRateLimit(request, "admin:email-templates", 30, 60_000);
         if (limited) return limited;
@@ -98,7 +93,7 @@ export async function PATCH(
 
         const updateData: any = {
             version: { increment: 1 },
-            lastEditedBy: session.user.id,
+            lastEditedBy: admin.userId,
         };
         if (data.name !== undefined) updateData.name = data.name;
         if (data.subject !== undefined) updateData.subject = data.subject;
@@ -121,7 +116,7 @@ export async function PATCH(
             action: "EMAIL_TEMPLATE_UPDATED",
             entityType: "EmailTemplate",
             entityId: id,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 key: existing.key,
                 version: updated.version,
@@ -152,10 +147,8 @@ export async function DELETE(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const limited = await applyRateLimit(request, "admin:email-templates", 30, 60_000);
         if (limited) return limited;
@@ -179,7 +172,7 @@ export async function DELETE(
             data: {
                 isActive: false,
                 version: { increment: 1 },
-                lastEditedBy: session.user.id,
+                lastEditedBy: admin.userId,
             },
         });
 
@@ -189,7 +182,7 @@ export async function DELETE(
             action: "EMAIL_TEMPLATE_DELETED",
             entityType: "EmailTemplate",
             entityId: id,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 key: existing.key,
                 name: existing.name,

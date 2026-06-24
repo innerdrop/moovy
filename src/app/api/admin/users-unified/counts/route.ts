@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 /**
@@ -10,11 +9,8 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET() {
     try {
-        const session = await auth();
-
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         // Total (excluding soft-deleted)
         const todos = await prisma.user.count({

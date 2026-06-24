@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { SegmentFiltersSchema, countSegment } from "@/lib/user-segments";
@@ -11,10 +11,8 @@ export async function GET(request: NextRequest) {
     const limited = await applyRateLimit(request, "admin:segments", 60, 60_000);
     if (limited) return limited;
 
-    const session = await auth();
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const url = new URL(request.url);
     const isActive = url.searchParams.get("isActive");
@@ -49,12 +47,10 @@ export async function POST(request: NextRequest) {
     const limited = await applyRateLimit(request, "admin:segments-create", 20, 60_000);
     if (limited) return limited;
 
-    const session = await auth();
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
-    const adminId = (session.user as any).id as string;
+    const adminId = admin.userId;
 
     let body: unknown;
     try {

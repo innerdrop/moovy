@@ -17,6 +17,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 
@@ -200,14 +201,9 @@ export async function PUT(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        const adminId = session.user?.id;
-        if (!adminId) {
-            return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
+        const adminId = admin.userId;
 
         const { id } = await context.params;
         const data = await request.json();
@@ -237,14 +233,9 @@ export async function DELETE(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        const adminId = session.user?.id;
-        if (!adminId) {
-            return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
+        const adminId = admin.userId;
 
         const { id } = await context.params;
 

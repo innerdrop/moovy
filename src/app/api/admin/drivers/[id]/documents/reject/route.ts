@@ -8,8 +8,7 @@
  * Body: { field: DriverDocumentField, reason: string }
  */
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import {
     rejectDriverDocument,
@@ -23,13 +22,8 @@ export async function POST(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await context.params;
 
@@ -76,8 +70,8 @@ export async function POST(
         }
 
         await rejectDriverDocument(id, field, reason, {
-            adminId: session.user.id,
-            adminEmail: session.user.email ?? "unknown",
+            adminId: admin.userId,
+            adminEmail: admin.email ?? "unknown",
         });
 
         const driverEmail = driver.user?.email;

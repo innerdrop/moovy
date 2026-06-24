@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import logger from "@/lib/logger";
@@ -12,10 +12,8 @@ export async function GET(
     const limited = await applyRateLimit(request, "admin:broadcast-get", 60, 60_000);
     if (limited) return limited;
 
-    const session = await auth();
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await params;
     try {
@@ -50,12 +48,10 @@ export async function PATCH(
     const limited = await applyRateLimit(request, "admin:broadcast-patch", 30, 60_000);
     if (limited) return limited;
 
-    const session = await auth();
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
-    const adminId = (session.user as any).id as string;
+    const adminId = admin.userId;
     const { id } = await params;
 
     let body: unknown;
@@ -119,12 +115,10 @@ export async function DELETE(
     const limited = await applyRateLimit(request, "admin:broadcast-delete", 20, 60_000);
     if (limited) return limited;
 
-    const session = await auth();
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
-    const adminId = (session.user as any).id as string;
+    const adminId = admin.userId;
     const { id } = await params;
 
     try {

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { decryptMerchantData, encryptMerchantData } from "@/lib/fiscal-crypto";
 
@@ -9,10 +8,8 @@ export async function GET(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await params;
 
@@ -71,10 +68,8 @@ export async function PATCH(
     request: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await params;
     const body = await request.json();

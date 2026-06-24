@@ -8,19 +8,14 @@
  */
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { getPointsConfig, updatePointsConfig } from "@/lib/points";
 
 // GET - Proxy to canonical endpoint
 export async function GET(request: Request) {
     try {
-        const session = await auth();
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
-
-        if (!isAdmin) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const config = await getPointsConfig();
         return NextResponse.json(config);
@@ -33,12 +28,8 @@ export async function GET(request: Request) {
 // POST - Proxy to canonical PUT endpoint at /api/admin/points-config
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
-
-        if (!isAdmin) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
 

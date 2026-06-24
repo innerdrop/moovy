@@ -22,8 +22,7 @@
 // donde puede completar su perfil.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/security";
 import { z } from "zod";
@@ -75,10 +74,8 @@ const createUserSchema = z.discriminatedUnion("type", [
 
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json().catch(() => ({}));
         const parsed = createUserSchema.safeParse(body);
@@ -193,12 +190,12 @@ export async function POST(request: NextRequest) {
         try {
             auditLog({
                 timestamp: new Date().toISOString(),
-                userId: session.user?.id,
+                userId: admin.userId,
                 action: "USER_CREATED_BY_ADMIN",
                 resource: "User",
                 resourceId: result.user.id,
                 details: {
-                    createdByAdmin: session.user?.email,
+                    createdByAdmin: admin.email,
                     targetEmail: result.user.email,
                     targetName: result.user.name,
                     accountType: data.type,

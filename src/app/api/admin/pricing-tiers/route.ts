@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 // GET — list all pricing tiers
@@ -25,10 +26,8 @@ export async function GET() {
 // POST — create a new tier
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
         const { name, minItems, maxItems, pricePerItem, totalPrice } = body;
@@ -64,10 +63,8 @@ export async function POST(request: Request) {
 // PATCH — update a tier
 export async function PATCH(request: Request) {
     try {
-        const session = await auth();
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
         const { id, ...updates } = body;
@@ -100,10 +97,8 @@ export async function PATCH(request: Request) {
 // DELETE — remove a tier
 export async function DELETE(request: Request) {
     try {
-        const session = await auth();
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { searchParams } = new URL(request.url);
         const id = searchParams.get("id");

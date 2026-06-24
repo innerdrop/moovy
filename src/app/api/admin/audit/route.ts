@@ -3,8 +3,7 @@
 // Read-only. Restringido a role ADMIN. Rate limit 60/60s.
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import type { Prisma } from "@prisma/client";
@@ -14,13 +13,8 @@ export async function GET(request: Request) {
         const limited = await applyRateLimit(request, "admin:audit:list", 60, 60_000);
         if (limited) return limited;
 
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { searchParams } = new URL(request.url);
         const action = searchParams.get("action")?.trim() || undefined;

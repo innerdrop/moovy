@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAdminAction, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 import { logAudit } from "@/lib/audit";
@@ -14,14 +13,8 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    if (!hasRole(session, "ADMIN")) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await params;
     const body = await request.json();
@@ -109,7 +102,7 @@ export async function PUT(
 
     // Log admin action
     await logAdminAction({
-      adminUserId: session.user.id,
+      adminUserId: admin.userId,
       targetUserId: id, // Use merchant ID as entity identifier
       action,
       entityType: "Merchant",
@@ -130,7 +123,7 @@ export async function PUT(
       action: "MERCHANT_LOYALTY_TIER_OVERRIDE",
       entityType: "Merchant",
       entityId: id,
-      userId: session.user.id,
+      userId: admin.userId,
       details: {
         oldTier,
         newTier: tier.toUpperCase(),
@@ -142,7 +135,7 @@ export async function PUT(
       {
         merchantId: id,
         merchantName: merchant.name,
-        adminId: session.user.id,
+        adminId: admin.userId,
         oldTier,
         newTier: tier.toUpperCase(),
         locked,

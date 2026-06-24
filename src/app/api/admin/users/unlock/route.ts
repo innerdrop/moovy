@@ -1,19 +1,14 @@
 // API: Admin unlock user account (reset login rate limit)
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { resetRateLimit } from "@/lib/security";
 import { prisma } from "@/lib/prisma";
 import { auditLog } from "@/lib/security";
 
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
-
-        if (!isAdmin) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { email } = await request.json();
 
@@ -58,19 +53,19 @@ export async function POST(request: Request) {
         // Audit log
         auditLog({
             timestamp: new Date().toISOString(),
-            userId: session?.user?.id,
+            userId: admin.userId,
             action: "USER_LOGIN_UNLOCKED_BY_ADMIN",
             resource: "User",
             resourceId: user.id,
             details: {
                 unlockedEmail: user.email,
-                unlockedBy: session?.user?.email,
+                unlockedBy: admin.email,
                 previousAttempts: user.failedLoginAttempts,
                 previousLockUntil: user.loginLockedUntil?.toISOString() ?? null,
             },
         });
 
-        console.log(`[Admin] Account unlocked: ${user.email} by ${session?.user?.email} (was attempts=${user.failedLoginAttempts}, lockUntil=${user.loginLockedUntil?.toISOString() ?? "null"})`);
+        console.log(`[Admin] Account unlocked: ${user.email} by ${admin.email} (was attempts=${user.failedLoginAttempts}, lockUntil=${user.loginLockedUntil?.toISOString() ?? "null"})`);
 
         return NextResponse.json({
             success: true,

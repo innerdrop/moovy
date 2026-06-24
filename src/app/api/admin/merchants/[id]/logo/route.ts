@@ -17,8 +17,7 @@
  */
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 const BodySchema = z.object({
@@ -30,13 +29,8 @@ export async function PATCH(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await context.params;
 
@@ -78,11 +72,11 @@ export async function PATCH(
                 action: "MERCHANT_LOGO_UPDATED_BY_ADMIN",
                 entityType: "Merchant",
                 entityId: id,
-                userId: session.user.id,
+                userId: admin.userId,
                 details: JSON.stringify({
                     merchantName: updated.name,
                     merchantOwnerId: before.ownerId,
-                    adminEmail: session.user.email ?? "unknown",
+                    adminEmail: admin.email ?? "unknown",
                     previousImage: before.image,
                     newImage: updated.image,
                     operation: newUrl ? (before.image ? "REPLACED" : "ADDED") : "REMOVED",

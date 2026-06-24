@@ -4,9 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
-import { hasAnyRole } from "@/lib/auth-utils";
 import logger from "@/lib/logger";
 
 const opsLogger = logger.child({ context: "ops-merchant-loyalty-tiers-update" });
@@ -17,11 +16,8 @@ export async function PUT(
 ) {
   const { id } = await params;
   try {
-    const session = await auth();
-
-    if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const body = await request.json();
     const { minOrdersPerMonth, commissionRate, badgeText, badgeColor, benefitsJson } = body;

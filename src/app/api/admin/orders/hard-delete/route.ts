@@ -20,8 +20,7 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 
@@ -40,14 +39,8 @@ const BodySchema = z.object({
 
 export async function DELETE(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json().catch(() => null);
         const parsed = BodySchema.safeParse(body);
@@ -87,9 +80,9 @@ export async function DELETE(request: Request) {
             action: "ORDERS_HARD_DELETED",
             entityType: "Order",
             entityId: orderIds.join(","),
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
-                adminEmail: session.user.email ?? "unknown",
+                adminEmail: admin.email ?? "unknown",
                 count: ordersToDelete.length,
                 requestedIds: orderIds,
                 snapshot: ordersToDelete.map((o) => ({

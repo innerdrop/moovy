@@ -1,16 +1,13 @@
 // API: Admin Orders Management
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 // GET - List all orders with pagination and filtering
 export async function GET(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { searchParams } = new URL(request.url);
 
@@ -96,10 +93,8 @@ export async function GET(request: NextRequest) {
 // DELETE - Delete orders (with optional backup)
 export async function DELETE(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
         const { orderIds, createBackup, backupName } = body;
@@ -132,7 +127,7 @@ export async function DELETE(request: NextRequest) {
                         orderId: order.id,
                         orderNumber: order.orderNumber,
                         total: order.total,
-                        deletedBy: (session.user as any).id
+                        deletedBy: admin.userId
                     }
                 });
             }

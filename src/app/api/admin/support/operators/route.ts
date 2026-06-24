@@ -1,17 +1,14 @@
 // API: Admin - Operators CRUD
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 // GET - List operators
 export async function GET(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const operators = await (prisma as any).supportOperator.findMany({
             include: {
@@ -54,10 +51,8 @@ export async function GET(request: NextRequest) {
 // 2. Vincular usuario existente: { userId, displayName, maxChats? }
 export async function POST(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!session?.user || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { userId, email, password, displayName, maxChats } = await request.json();
 

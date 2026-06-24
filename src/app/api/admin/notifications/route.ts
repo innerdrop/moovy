@@ -23,8 +23,7 @@
 // devolvemos lista vacia con 200 para no romper el render de la campana.
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -79,10 +78,8 @@ const docLabel = (field: string) => DOC_FIELD_LABELS[field] || field;
 export async function GET() {
     // Auth primero. No-admin -> 403 explicito (la campana solo se monta dentro
     // del layout protegido de OPS, asi que en la practica nunca pasa).
-    const session = await auth().catch(() => null);
-    if (!hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const items: OpsNotificationItem[] = [];
 

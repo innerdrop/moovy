@@ -3,8 +3,7 @@
 // de src/lib/email-templates.ts y generan AuditLog.
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { applyRateLimit } from "@/lib/rate-limit";
@@ -17,10 +16,8 @@ const ALLOWED_RECIPIENTS = new Set(["comprador", "comercio", "repartidor", "vend
 // GET: listar templates con filtros opcionales (category, recipient, isActive, q)
 export async function GET(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const url = new URL(request.url);
         const category = url.searchParams.get("category");
@@ -88,10 +85,8 @@ const createSchema = z.object({
 // POST: crear un template nuevo. Falla si la key ya existe (409).
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const limited = await applyRateLimit(request, "admin:email-templates", 30, 60_000);
         if (limited) return limited;
@@ -132,7 +127,7 @@ export async function POST(request: Request) {
                 category: data.category,
                 recipient: data.recipient,
                 isActive: data.isActive,
-                lastEditedBy: session.user.id,
+                lastEditedBy: admin.userId,
             },
         });
 
@@ -142,7 +137,7 @@ export async function POST(request: Request) {
             action: "EMAIL_TEMPLATE_CREATED",
             entityType: "EmailTemplate",
             entityId: created.id,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 key: created.key,
                 name: created.name,

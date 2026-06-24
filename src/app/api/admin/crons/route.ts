@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getCronsHealthSummary, CRON_EXPECTATIONS } from "@/lib/cron-health";
@@ -23,10 +23,8 @@ export async function GET(request: NextRequest) {
     const limited = await applyRateLimit(request, "admin:crons", 60, 60_000);
     if (limited) return limited;
 
-    const session = await auth();
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const url = new URL(request.url);
     const jobName = url.searchParams.get("jobName");

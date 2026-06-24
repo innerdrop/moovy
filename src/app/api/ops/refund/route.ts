@@ -12,17 +12,14 @@
 //     testing en localhost donde MP webhook no llega.
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { refundOrderIfPaid } from "@/lib/order-refund";
 
 export async function POST(request: NextRequest) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     try {
         const { orderId, amount, reason } = await request.json();
@@ -63,7 +60,7 @@ export async function POST(request: NextRequest) {
         }
 
         const trimmedReason = reason.trim();
-        const adminName = session.user?.name || session.user?.email || "admin";
+        const adminName = admin.name || admin.email || "admin";
         const refundNote = `[REEMBOLSO ${new Date().toLocaleDateString("es-AR")}] $${refundAmount.toLocaleString("es-AR")} — ${trimmedReason} — Por: ${adminName}`;
         const existingNotes = order.adminNotes ? `${order.adminNotes}\n\n` : "";
 
@@ -76,7 +73,7 @@ export async function POST(request: NextRequest) {
         if (isPaidMP) {
             const result = await refundOrderIfPaid(orderId, {
                 triggeredBy: "admin",
-                actorId: session.user.id,
+                actorId: admin.userId,
                 reason: trimmedReason,
                 sendEmail: true,
             });
@@ -120,7 +117,7 @@ export async function POST(request: NextRequest) {
             action: "REFUND_PROCESSED_MANUAL",
             entityType: "order",
             entityId: orderId,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 refundAmount,
                 reason: trimmedReason,

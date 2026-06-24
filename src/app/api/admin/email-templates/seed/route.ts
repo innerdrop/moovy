@@ -8,8 +8,7 @@
 //
 // Se puede re-correr sin efectos colaterales — solo agrega los faltantes.
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { applyRateLimit } from "@/lib/rate-limit";
@@ -58,10 +57,8 @@ function extractPlaceholders(text: string): string[] {
 
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const limited = await applyRateLimit(request, "admin:email-templates:seed", 5, 60_000);
         if (limited) return limited;
@@ -112,7 +109,7 @@ export async function POST(request: Request) {
                         category: mapCategory(entry.recipient),
                         recipient: mapRecipient(entry.recipient),
                         isActive: true,
-                        lastEditedBy: session.user.id,
+                        lastEditedBy: admin.userId,
                     },
                 });
                 invalidateTemplateCache(entry.id);
@@ -129,7 +126,7 @@ export async function POST(request: Request) {
             action: "EMAIL_TEMPLATE_SEEDED",
             entityType: "EmailTemplate",
             entityId: "bulk",
-            userId: session.user.id,
+            userId: admin.userId,
             details: { created, skipped, totalInRegistry: EMAIL_REGISTRY.length, errors },
         });
 

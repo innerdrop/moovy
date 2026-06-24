@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAdminAction, extractRequestInfo, ACTIVITY_ACTIONS } from "@/lib/user-activity";
 import { logAudit } from "@/lib/audit";
@@ -13,14 +12,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    if (!hasRole(session, "ADMIN")) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await params;
     const body = await request.json();
@@ -193,7 +186,7 @@ export async function POST(
 
     // Log admin action
     await logAdminAction({
-      adminUserId: session.user.id,
+      adminUserId: admin.userId,
       targetUserId: id,
       action: ACTIVITY_ACTIONS.ADMIN_SUSPENDED,
       entityType: "User",
@@ -213,7 +206,7 @@ export async function POST(
       action: "USER_SUSPENDED",
       entityType: "User",
       entityId: id,
-      userId: session.user.id,
+      userId: admin.userId,
       details: {
         reason,
         until: untilDate ? untilDate.toISOString() : null,
@@ -222,7 +215,7 @@ export async function POST(
     });
 
     adminLogger.info(
-      { userId: id, adminId: session.user.id, reason, until, role: role || "FULL_USER" },
+      { userId: id, adminId: admin.userId, reason, until, role: role || "FULL_USER" },
       "Usuario suspendido"
     );
 

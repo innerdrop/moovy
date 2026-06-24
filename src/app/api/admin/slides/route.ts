@@ -1,7 +1,6 @@
 // API Route: Hero Slides CRUD
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 // GET - Get all slides
@@ -20,10 +19,8 @@ export async function GET() {
 // POST - Create new slide
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        if (!session || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const data = await request.json();
 
@@ -58,10 +55,8 @@ export async function POST(request: Request) {
 // PATCH - Update slide
 export async function PATCH(request: Request) {
     try {
-        const session = await auth();
-        if (!session || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const data = await request.json();
         const { id, ...updateData } = data;
@@ -85,10 +80,8 @@ export async function PATCH(request: Request) {
 // DELETE - Delete slide
 export async function DELETE(request: Request) {
     try {
-        const session = await auth();
-        if (!session || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { searchParams } = new URL(request.url);
         const id = searchParams.get("id");

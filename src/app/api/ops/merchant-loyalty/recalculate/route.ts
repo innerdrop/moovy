@@ -4,8 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { updateAllMerchantTiers } from "@/lib/merchant-loyalty";
 import logger from "@/lib/logger";
 
@@ -13,11 +12,8 @@ const opsLogger = logger.child({ context: "ops-merchant-loyalty-recalc" });
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-
-    if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     opsLogger.info({}, "Admin triggered tier recalculation");
 

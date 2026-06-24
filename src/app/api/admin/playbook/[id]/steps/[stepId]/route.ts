@@ -1,8 +1,7 @@
 // API Route: Single Playbook Step — PATCH, DELETE
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { applyRateLimit } from "@/lib/rate-limit";
@@ -21,10 +20,8 @@ export async function PATCH(
     context: { params: Promise<{ id: string; stepId: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const limited = await applyRateLimit(request, "admin:playbook:step:update", 120, 60_000);
         if (limited) return limited;
@@ -110,7 +107,7 @@ export async function PATCH(
                 action: "PLAYBOOK_STEP_UPDATED",
                 entityType: "PlaybookStep",
                 entityId: stepId,
-                userId: session.user.id,
+                userId: admin.userId,
                 details: {
                     checklistId,
                     changes: data,
@@ -136,7 +133,7 @@ export async function PATCH(
             action: "PLAYBOOK_STEP_UPDATED",
             entityType: "PlaybookStep",
             entityId: stepId,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 checklistId,
                 changes: data,
@@ -159,10 +156,8 @@ export async function DELETE(
     context: { params: Promise<{ id: string; stepId: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const limited = await applyRateLimit(request, "admin:playbook:step:delete", 60, 60_000);
         if (limited) return limited;
@@ -186,7 +181,7 @@ export async function DELETE(
             action: "PLAYBOOK_STEP_DELETED",
             entityType: "PlaybookStep",
             entityId: stepId,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 checklistId,
                 content: existing.content,

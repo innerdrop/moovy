@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { getPendingDriverPayouts, getPendingMerchantPayouts } from "@/lib/payouts";
 import logger from "@/lib/logger";
@@ -12,10 +12,8 @@ export async function GET(request: NextRequest) {
     const limited = await applyRateLimit(request, "admin:payouts-pending", 30, 60_000);
     if (limited) return limited;
 
-    const session = await auth();
-    if (!session?.user || (session.user as any).role !== "ADMIN") {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const url = new URL(request.url);
     const type = url.searchParams.get("type") as "DRIVER" | "MERCHANT" | null;

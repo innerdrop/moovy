@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 // GET - Fetch all products with filters
@@ -64,14 +65,8 @@ export async function GET(request: Request) {
 // POST - Create product (Admin only)
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-
-        if (!session || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json(
-                { error: "No autorizado" },
-                { status: 401 }
-            );
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const data = await request.json();
 
@@ -134,11 +129,8 @@ export async function POST(request: Request) {
 // respeta las reglas de moderación estricta sobre productos de comercio.
 export async function PATCH(request: Request) {
     try {
-        const session = await auth();
-
-        if (!session || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const data = await request.json();
         const { id, action } = data;

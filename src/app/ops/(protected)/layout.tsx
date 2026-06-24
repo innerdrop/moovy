@@ -1,16 +1,19 @@
 // Ops Layout - Panel de Operaciones Moovy
 import { redirect } from "next/navigation";
 import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireAdminAccess } from "@/lib/roles";
 import OpsSidebar from "@/components/ops/OpsSidebar";
 
 async function OpsLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();
 
-    // Redirect if not authenticated or not admin
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
+    if (!session?.user?.id) {
         redirect("/ops/login");
     }
+
+    // C-1: gate contra la DB (no el JWT). Bloquea admin degradado/suspendido/
+    // archivado de inmediato. requireAdminAccess redirige según el caso.
+    await requireAdminAccess(session.user.id);
 
     return (
         <div className="min-h-screen bg-gray-100 flex overflow-x-hidden w-full max-w-[100vw]">

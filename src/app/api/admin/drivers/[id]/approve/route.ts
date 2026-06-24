@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { sendDriverApprovalEmail } from "@/lib/email";
 import { approveDriverTransition } from "@/lib/roles";
@@ -22,15 +21,8 @@ export async function PUT(
     context: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        // Check admin role
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await context.params;
 
@@ -66,8 +58,8 @@ export async function PUT(
         // La foto del driver es requisito de visibilidad/UX (defense in depth en
         // tracking con fallback a avatar default), NO de capacidad operativa.
         await approveDriverTransition(id, {
-            adminId: session.user.id,
-            adminEmail: session.user.email ?? "unknown",
+            adminId: admin.userId,
+            adminEmail: admin.email ?? "unknown",
             notified: notify,
         });
 

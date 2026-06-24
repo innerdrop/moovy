@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 
@@ -43,10 +42,8 @@ function generateSlug(name: string): string {
 // POST - Bulk import products from parsed data (JSON array)
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
         const { rows, dryRun = false } = body as { rows: ImportRow[]; dryRun?: boolean };
@@ -173,7 +170,7 @@ export async function POST(request: Request) {
             action: "BULK_IMPORT_PRODUCTS",
             entityType: "Product",
             entityId: `import-${new Date().toISOString()}`,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 totalRows: rows.length,
                 created,

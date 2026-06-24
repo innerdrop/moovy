@@ -1,8 +1,7 @@
 // API Route: Get GPS trace for an order (for dispute resolution)
 // GET /api/admin/orders/[id]/location-trace - Returns complete GPS trace with timestamps
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { createRequestLogger } from "@/lib/logger";
 
@@ -14,18 +13,8 @@ export async function GET(
 ) {
     const { id } = await params;
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        // Auth: ADMIN only
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json(
-                { error: "Solo administradores pueden ver trazas de ubicación" },
-                { status: 403 }
-            );
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const orderId = id;
 

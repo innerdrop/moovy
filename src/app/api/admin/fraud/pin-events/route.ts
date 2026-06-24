@@ -3,8 +3,7 @@
 // bloqueos, auto-suspensiones) + lista de drivers con fraudScore > 0.
 // Usado por /ops/fraude para monitoreo y triage.
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -19,10 +18,8 @@ const PIN_AUDIT_ACTIONS = [
 
 export async function GET(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { searchParams } = new URL(request.url);
         const limit = Math.min(200, Number(searchParams.get("limit") ?? 100));

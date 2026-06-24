@@ -1,7 +1,6 @@
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { recordPointsTransaction } from "@/lib/points";
 
 // POST - Adjust user points
@@ -10,12 +9,8 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> } // Params is a promise in Next 15+
 ) {
     try {
-        const session = await auth();
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
-
-        if (!isAdmin) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await params;
         const { amount, description, type } = await request.json();

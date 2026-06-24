@@ -5,8 +5,7 @@
 // en vez de enumerar activos. Antes pedidos con status=DRIVER_ARRIVED desaparecían
 // del live dashboard del ops.
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { LEGACY_TERMINAL_STATUSES } from "@/lib/orders/order-status-machine";
 
@@ -14,14 +13,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         // Get active orders (not delivered/cancelled, not soft-deleted).
         // fix/aprobacion-sin-foto-driver (2026-04-28): respetar el soft delete del

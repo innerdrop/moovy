@@ -18,8 +18,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 
@@ -29,10 +28,8 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
     try {
-        const session = await auth();
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         // Buscar Orders con cualquiera de los 3 ratings en PENDING.
         const orders = await prisma.order.findMany({
@@ -178,13 +175,11 @@ const resolveSchema = z.object({
 
 export async function PATCH(request: NextRequest) {
     try {
-        const session = await auth();
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
-        const adminId = (session?.user as any)?.id as string;
-        const adminEmail = (session?.user as any)?.email as string;
+        const adminId = admin.userId;
+        const adminEmail = admin.email as string;
 
         const body = await request.json().catch(() => ({}));
         const parsed = resolveSchema.safeParse(body);

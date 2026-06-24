@@ -1,6 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { auth } from "@/lib/auth";
-import { hasRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { logAdminAction, extractRequestInfo } from "@/lib/user-activity";
 import { logAudit } from "@/lib/audit";
 import { NextResponse } from "next/server";
@@ -16,18 +15,8 @@ export async function POST(
     const { id } = await context.params;
 
     // Auth check
-    const session = await auth();
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
-
-    // Check ADMIN role
-    if (!hasRole(session, "ADMIN")) {
-      return NextResponse.json(
-        { error: "Solo administradores pueden eliminar usuarios" },
-        { status: 403 }
-      );
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const body = await request.json();
     const { restore } = body;
@@ -62,7 +51,7 @@ export async function POST(
 
       // Log activity
       await logAdminAction({
-        adminUserId: session.user.id,
+        adminUserId: admin.userId,
         targetUserId: id,
         action: "ADMIN_USER_RESTORED",
         entityType: "User",
@@ -80,7 +69,7 @@ export async function POST(
         action: "USER_RESTORED",
         entityType: "User",
         entityId: id,
-        userId: session.user.id,
+        userId: admin.userId,
         details: {
           email: user.email,
           name: user.name,
@@ -89,7 +78,7 @@ export async function POST(
       });
 
       log.info(
-        { userId: id, email: user.email, adminId: session.user.id },
+        { userId: id, email: user.email, adminId: admin.userId },
         "User restored"
       );
 
@@ -202,7 +191,7 @@ export async function POST(
 
       // Log activity
       await logAdminAction({
-        adminUserId: session.user.id,
+        adminUserId: admin.userId,
         targetUserId: id,
         action: "ADMIN_USER_DELETED",
         entityType: "User",
@@ -221,7 +210,7 @@ export async function POST(
         action: "USER_DELETED",
         entityType: "User",
         entityId: id,
-        userId: session.user.id,
+        userId: admin.userId,
         details: {
           email: user.email,
           name: user.name,
@@ -237,7 +226,7 @@ export async function POST(
         {
           userId: id,
           email: user.email,
-          adminId: session.user.id,
+          adminId: admin.userId,
           roles: derivedRoles,
         },
         "User soft-deleted"

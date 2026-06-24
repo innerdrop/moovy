@@ -1,7 +1,6 @@
 // Admin Listing API - Approve/Pause/Reject (PUT) + Soft Delete (DELETE)
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import prisma from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 
@@ -9,10 +8,8 @@ export async function PUT(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await params;
 
@@ -63,10 +60,8 @@ export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const session = await auth();
-    if (!session || !hasAnyRole(session, ["ADMIN"])) {
-        return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-    }
+    const admin = await requireApiAdmin();
+    if (admin instanceof NextResponse) return admin;
 
     const { id } = await params;
 
@@ -95,10 +90,7 @@ export async function DELETE(
             // body vacío o inválido — OK, reason queda null
         }
 
-        const adminId = session.user?.id;
-        if (!adminId) {
-            return NextResponse.json({ error: "Sesión inválida" }, { status: 401 });
-        }
+        const adminId = admin.userId;
 
         await prisma.$transaction(async (tx) => {
             await tx.listing.update({

@@ -3,8 +3,7 @@
 // POST → crea una nueva zona excluida
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { parseExcludedZones, validateZoneInput, ExcludedZone } from "@/lib/excluded-zones";
 import { logAudit } from "@/lib/audit";
@@ -25,13 +24,8 @@ async function persistZones(zones: ExcludedZone[]): Promise<void> {
 
 export async function GET() {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const zones = await loadZones();
         return NextResponse.json({ zones });
@@ -46,13 +40,8 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
         const validation = validateZoneInput(body);
@@ -90,7 +79,7 @@ export async function POST(request: Request) {
             action: "EXCLUDED_ZONE_CREATED",
             entityType: "StoreSettings",
             entityId: "settings",
-            userId: session.user.id,
+            userId: admin.userId,
             details: { zone: newZone },
         });
 

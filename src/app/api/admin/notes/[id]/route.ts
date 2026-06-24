@@ -5,8 +5,7 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { logAudit } from "@/lib/audit";
@@ -33,13 +32,8 @@ export async function PATCH(
         const limited = await applyRateLimit(request, "admin:notes:update", 30, 60_000);
         if (limited) return limited;
 
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await context.params;
 
@@ -52,7 +46,7 @@ export async function PATCH(
         }
 
         // Ownership: solo el autor puede editar el contenido
-        if (note.adminId !== session.user.id) {
+        if (note.adminId !== admin.userId) {
             return NextResponse.json(
                 { error: "Solo el autor de la nota puede editarla" },
                 { status: 403 }
@@ -84,7 +78,7 @@ export async function PATCH(
             action: "ADMIN_NOTE_UPDATED",
             entityType: "AdminNote",
             entityId: updated.id,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 targetUserId: note.userId,
                 changed: Object.keys(data),
@@ -110,13 +104,8 @@ export async function DELETE(
         const limited = await applyRateLimit(request, "admin:notes:delete", 30, 60_000);
         if (limited) return limited;
 
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-        if (!hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "Acceso denegado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const { id } = await context.params;
 
@@ -142,7 +131,7 @@ export async function DELETE(
             action: "ADMIN_NOTE_DELETED",
             entityType: "AdminNote",
             entityId: note.id,
-            userId: session.user.id,
+            userId: admin.userId,
             details: {
                 targetUserId: note.userId,
                 authorId: note.adminId,

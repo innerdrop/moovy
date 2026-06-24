@@ -12,8 +12,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
 import { socketEmitToRooms } from "@/lib/socket-emit";
@@ -29,10 +28,8 @@ export async function POST(
     const { id: orderId } = await params;
 
     try {
-        const session = await auth();
-        if (!session?.user?.id || !hasAnyRole(session, ["ADMIN"])) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
         const { password, reason } = body;
@@ -43,7 +40,7 @@ export async function POST(
 
         // Verify admin password
         const adminUser = await prisma.user.findUnique({
-            where: { id: session.user.id },
+            where: { id: admin.userId },
             select: { id: true, password: true, name: true },
         });
 
@@ -53,7 +50,7 @@ export async function POST(
 
         const passwordValid = await bcrypt.compare(password, adminUser.password);
         if (!passwordValid) {
-            cancelLogger.warn({ adminId: session.user.id, orderId }, "Admin cancel: wrong password");
+            cancelLogger.warn({ adminId: admin.userId, orderId }, "Admin cancel: wrong password");
             return NextResponse.json({ error: "Contraseña incorrecta" }, { status: 403 });
         }
 
@@ -169,7 +166,7 @@ export async function POST(
             orderId,
             orderNumber: order.orderNumber,
             previousStatus,
-            adminId: session.user.id,
+            adminId: admin.userId,
             adminName: adminUser.name,
             reason: reason || "Sin motivo especificado",
         }, "Order cancelled by admin");
@@ -179,7 +176,7 @@ export async function POST(
         import("@/lib/order-refund").then(({ refundOrderIfPaid }) => {
             refundOrderIfPaid(orderId, {
                 triggeredBy: "admin",
-                actorId: session.user?.id ?? null,
+                actorId: admin.userId,
                 reason: reason || "Cancelado por administrador",
             }).catch((err) => console.error("[admin-cancel] refund failed:", err));
         }).catch(() => { /* import safety */ });

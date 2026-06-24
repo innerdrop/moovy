@@ -1,20 +1,14 @@
 
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 
 // GET - List all users (Admin only)
 export async function GET(request: Request) {
     try {
-        const session = await auth();
-        // Check if user is admin - Adjust role check based on your auth implementation
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
-
-        if (!isAdmin) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const users = await prisma.user.findMany({
             select: {
@@ -39,12 +33,8 @@ export async function GET(request: Request) {
 // POST - Create a new user (Admin only)
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
-
-        if (!isAdmin) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
         const { name, email, phone, password, role = "CLIENT" } = body;
@@ -97,12 +87,8 @@ export async function POST(request: Request) {
 // PATCH - Update a user (Admin only)
 export async function PATCH(request: Request) {
     try {
-        const session = await auth();
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
-
-        if (!isAdmin) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
         const { id, name, email, phone, pointsBalance, action, newPassword } = body;
@@ -170,12 +156,8 @@ export async function PATCH(request: Request) {
 // DELETE - Delete users (Admin only, bulk)
 export async function DELETE(request: Request) {
     try {
-        const session = await auth();
-        const isAdmin = hasAnyRole(session, ["ADMIN"]);
-
-        if (!isAdmin) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 403 });
-        }
+        const admin = await requireApiAdmin();
+        if (admin instanceof NextResponse) return admin;
 
         const body = await request.json();
         const { userIds } = body;
