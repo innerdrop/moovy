@@ -17,6 +17,8 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
 import { validateBankAccount } from "@/lib/bank-account";
+// Rama fix/cifrar-datos-bancarios-driver: bankCbu/bankAlias se guardan cifrados.
+import { encryptDriverData, decryptDriverData } from "@/lib/fiscal-crypto";
 import { z } from "zod";
 
 const PatchSchema = z.object({
@@ -44,11 +46,13 @@ export async function GET() {
         return NextResponse.json({ error: "Perfil de repartidor no encontrado" }, { status: 404 });
     }
 
+    // Descifrar antes de devolverle al repartidor su propio dato.
+    const dec = decryptDriverData(driver);
     return NextResponse.json({
-        bankCbu: driver.bankCbu ?? null,
-        bankAlias: driver.bankAlias ?? null,
+        bankCbu: dec.bankCbu ?? null,
+        bankAlias: dec.bankAlias ?? null,
         bankAccountUpdatedAt: driver.bankAccountUpdatedAt?.toISOString() ?? null,
-        hasBankAccount: !!(driver.bankCbu || driver.bankAlias),
+        hasBankAccount: !!(dec.bankCbu || dec.bankAlias),
     });
 }
 
@@ -127,13 +131,15 @@ export async function PATCH(request: NextRequest) {
     }
 
     const now = new Date();
+    // Cifrar bankCbu/bankAlias at-rest antes de guardar (encryptDriverData solo
+    // cifra los campos string no-nulos de DRIVER_ENCRYPTED_FIELDS; los null pasan igual).
     await prisma.driver.update({
         where: { id: driver.id },
-        data: {
+        data: encryptDriverData({
             bankCbu: normalizedCbu,
             bankAlias: normalizedAlias,
             bankAccountUpdatedAt: now,
-        },
+        }),
     });
 
     // Audit log con valores previos y nuevos (sin guardar CBU plaintext en details — solo flag)

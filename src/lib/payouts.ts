@@ -30,6 +30,11 @@ import { prisma } from "@/lib/prisma";
 // repartidor (la misma función la usa el panel "Mis ganancias"), para que el
 // repartidor cobre EXACTAMENTE lo que ve. Reemplaza la aproximación DRIVER_SHARE 0.70.
 import { computeDriverPayoutForOrder } from "@/lib/finance/driver-payout";
+// Rama fix/cifrar-datos-bancarios-driver: el CBU/CUIT que va al CSV de transferencia
+// está cifrado at-rest → hay que DESCIFRARLO acá antes de armar el payout, o se le
+// transferiría a una cuenta ilegible. (También arregla el bug preexistente del comercio:
+// bankAccount/cuit del Merchant ya estaban cifrados y se leían crudos.)
+import { decryptDriverData, decryptMerchantData } from "@/lib/fiscal-crypto";
 
 export type RecipientType = "DRIVER" | "MERCHANT";
 
@@ -142,6 +147,8 @@ export async function getPendingMerchantPayouts(): Promise<PendingPayoutSummary[
     for (const o of orders) {
         if (!o.merchantId || !o.merchant) continue;
         const key = o.merchantId;
+        // Descifrar bankAccount + cuit antes de armar el payout (van al CSV de transferencia).
+        const m = decryptMerchantData(o.merchant);
         const current = map.get(key);
         const amount = o.merchantPayout ?? 0;
         if (current) {
@@ -155,8 +162,8 @@ export async function getPendingMerchantPayouts(): Promise<PendingPayoutSummary[
                 // businessName es nullable en schema; caemos a Merchant.name (NOT NULL)
                 // y a un placeholder defensivo. PayoutItem.recipientName es NOT NULL.
                 recipientName: o.merchant.businessName ?? o.merchant.name ?? "(comercio sin nombre)",
-                bankAccount: o.merchant.bankAccount ?? null,
-                cuit: o.merchant.cuit ?? null,
+                bankAccount: m.bankAccount ?? null,
+                cuit: m.cuit ?? null,
                 orderCount: 1,
                 totalAmount: amount,
                 orderIds: [o.id],
@@ -228,7 +235,9 @@ export async function getPendingDriverPayouts(): Promise<PendingPayoutSummary[]>
         // Preferimos CBU (más preciso); fallback a Alias. Si ambos null, queda null y el
         // endpoint POST de batches rechaza el recipient — el admin sabe que falta el dato
         // y debe pedirle al driver que lo cargue desde su panel (/repartidor/configuracion).
-        const driverBank: string | null = o.driver.bankCbu || o.driver.bankAlias || null;
+        // Descifrar CBU/alias/cuit antes de armar el payout (van al CSV de transferencia).
+        const d = decryptDriverData(o.driver);
+        const driverBank: string | null = d.bankCbu || d.bankAlias || null;
         const current = map.get(key);
         if (current) {
             current.totalAmount += amount;
@@ -240,7 +249,7 @@ export async function getPendingDriverPayouts(): Promise<PendingPayoutSummary[]>
                 recipientId: o.driverId,
                 recipientName: o.driver.user?.name || o.driver.user?.email || "(sin nombre)",
                 bankAccount: driverBank,
-                cuit: o.driver.cuit ?? null,
+                cuit: d.cuit ?? null,
                 orderCount: 1,
                 totalAmount: amount,
                 orderIds: [o.id],

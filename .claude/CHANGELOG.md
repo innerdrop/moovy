@@ -10,6 +10,35 @@
 
 ---
 
+## 2026-06-23 (rama `fix/cifrar-datos-bancarios-driver`)
+
+fix(seguridad): cifrar at-rest el CBU/alias del repartidor (+ 2 bugs preexistentes)
+
+C-3 Rama 1. El bankCbu/bankAlias del Driver se guardaban en TEXTO PLANO (el del
+SellerProfile ya estaba cifrado). Ahora se cifran at-rest (AES-256-GCM): se agregan
+a DRIVER_ENCRYPTED_FIELDS y se aplica encrypt en el write / decrypt en cada read.
+
+Read-sites cubiertos (decrypt es graceful sobre texto plano -> transicion sin downtime):
+- driver/bank-account GET (descifra) + PATCH (cifra)
+- payouts.ts: descifra el CBU del repartidor antes del CSV de transferencia
+- orders/[id]: descifra el bankAlias que ve el comprador para la propina
+
+Bugs PREEXISTENTES arreglados de paso:
+- payouts.ts leia merchant.bankAccount/cuit (ya cifrados) SIN descifrar -> el CSV de
+  pago a comercios tenia ciphertext. Ahora descifra.
+- vendedor/ganancias mostraba el bankCbu/bankAlias del vendedor cifrado en pantalla.
+
+Sin schema (la lista de campos cifrados es codigo). Backfill idempotente:
+scripts/backfill-encrypt-driver-bank.ts. ORDEN: deployar el codigo PRIMERO, despues
+correr el backfill (dry-run -> --execute) en prod. decrypt graceful tolera la mezcla.
+
+Archivos: src/lib/fiscal-crypto.ts, src/app/api/driver/bank-account/route.ts,
+src/lib/payouts.ts, src/app/api/orders/[id]/route.ts,
+src/app/vendedor/(protected)/ganancias/page.tsx,
+scripts/backfill-encrypt-driver-bank.ts (nuevo).
+
+**Archivos:** scripts/backfill-encrypt-driver-bank.ts, src/app/api/driver/bank-account/route.ts, src/app/api/orders/[id]/route.ts, src/app/vendedor/(protected)/ganancias/page.tsx, src/lib/fiscal-crypto.ts, src/lib/payouts.ts
+
 ## 2026-06-23 (rama `fix/payout-repartidor-consistente`)
 
 fix(pagos): el repartidor cobra exactamente lo que ve (consistencia payout/ganancias)

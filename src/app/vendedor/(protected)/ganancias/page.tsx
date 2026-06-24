@@ -1,6 +1,9 @@
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { redirect } from "next/navigation";
+// Rama fix/cifrar-datos-bancarios-driver: el bankCbu/bankAlias del vendedor está
+// cifrado at-rest; esta página lo mostraba sin descifrar (bug preexistente).
+import { decryptSellerData } from "@/lib/fiscal-crypto";
 import {
     DollarSign,
     TrendingUp,
@@ -29,6 +32,9 @@ export default async function VendedorGananciasPage() {
             </div>
         );
     }
+
+    // Descifrar datos bancarios para mostrarlos legibles (estaban cifrados at-rest).
+    Object.assign(seller, decryptSellerData(seller));
 
     // Current month
     const now = new Date();

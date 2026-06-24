@@ -8,6 +8,9 @@ import { sendOrderReadyNotification } from "@/lib/push";
 import { notifyBuyer } from "@/lib/notifications";
 import { UpdateOrderSchema, validateInput } from "@/lib/validations";
 import { orderLogger } from "@/lib/logger";
+// Rama fix/cifrar-datos-bancarios-driver: el bankAlias del repartidor está cifrado;
+// se descifra antes de devolverlo al comprador (lo usa para la propina por transferencia).
+import { decrypt } from "@/lib/encryption";
 
 // GET - Get single order details
 export async function GET(
@@ -50,6 +53,14 @@ export async function GET(
         if (!isAdmin && order.userId !== session.user.id) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
+
+        // Descifrar el alias bancario del repartidor (lo ve el comprador para la
+        // propina por transferencia). decrypt() es seguro sobre texto plano.
+        const od = order as any;
+        if (od.driver?.bankAlias) od.driver.bankAlias = decrypt(od.driver.bankAlias);
+        od.subOrders?.forEach((sub: any) => {
+            if (sub.driver?.bankAlias) sub.driver.bankAlias = decrypt(sub.driver.bankAlias);
+        });
 
         // ISSUE-001: PIN doble — sanitización para el comprador.
         // - pickupPin: NUNCA al comprador (es el código que el comercio le da al driver).

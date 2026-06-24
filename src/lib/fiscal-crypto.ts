@@ -18,7 +18,9 @@ const MERCHANT_ENCRYPTED_FIELDS = ["cuit", "bankAccount", "cuil", "ownerDni"] as
 const SELLER_ENCRYPTED_FIELDS = ["cuit", "bankCbu", "bankAlias"] as const;
 
 // Fields to encrypt in Driver model
-const DRIVER_ENCRYPTED_FIELDS = ["cuit"] as const;
+// Rama fix/cifrar-datos-bancarios-driver: bankCbu/bankAlias se cifran at-rest
+// (igual que el SellerProfile). Antes estaban en texto plano.
+const DRIVER_ENCRYPTED_FIELDS = ["cuit", "bankCbu", "bankAlias"] as const;
 
 /**
  * Encrypt fiscal fields before saving Merchant to DB
