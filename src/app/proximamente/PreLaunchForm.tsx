@@ -2,7 +2,7 @@
 
 // Formulario de pre-registro de la cortina "Próximamente".
 // Rama: feat/landing-cortina-preregistro
-// Comercios y repartidores se anotan para que Moovy los contacte al lanzar.
+// Tarjeta blanca (resalta sobre el fondo rojo Moovy del diseño mundialista).
 
 import { useState } from "react";
 
@@ -18,6 +18,57 @@ export default function PreLaunchForm() {
     const [website, setWebsite] = useState(""); // honeypot
     const [status, setStatus] = useState<Status>("idle");
     const [error, setError] = useState("");
+    const [shareMsg, setShareMsg] = useState("");
+
+    const shareUrl = () =>
+        typeof window !== "undefined" ? window.location.origin : "https://somosmoovy.com";
+
+    // Copia legacy que funciona también en http (sin HTTPS): textarea + execCommand.
+    const legacyCopy = (url: string): boolean => {
+        try {
+            const ta = document.createElement("textarea");
+            ta.value = url;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            const ok = document.execCommand("copy");
+            document.body.removeChild(ta);
+            return ok;
+        } catch {
+            return false;
+        }
+    };
+
+    const copyLink = async () => {
+        setShareMsg("");
+        const url = shareUrl();
+        try {
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(url);
+                setShareMsg("¡Link copiado! Pegalo donde quieras compartirlo.");
+                return;
+            }
+        } catch {
+            // Sigue al fallback legacy.
+        }
+        if (legacyCopy(url)) {
+            setShareMsg("¡Link copiado! Pegalo donde quieras compartirlo.");
+        } else {
+            setShareMsg(`Copiá este link para compartir: ${url}`);
+        }
+    };
+
+    const shareWhatsApp = () => {
+        // Mensaje pre-escrito que llega listo para enviar.
+        const message =
+            `Mirá esto: Moovy está por llegar a Ushuaia. ` +
+            `Si tenés un comercio o querés repartir, anotate ahora y sé de los primeros en ser parte: ` +
+            `${shareUrl()}`;
+        const msg = encodeURIComponent(message);
+        window.open(`https://wa.me/?text=${msg}`, "_blank", "noopener,noreferrer");
+    };
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -48,13 +99,36 @@ export default function PreLaunchForm() {
 
     if (status === "success") {
         return (
-            <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-6 text-center">
-                <div className="text-3xl mb-2">🙌</div>
-                <h2 className="text-xl font-bold text-white">¡Listo! Ya quedaste anotado.</h2>
-                <p className="mt-2 text-sm text-white/60">
+            <div className="w-full max-w-sm rounded-2xl bg-white p-6 text-center shadow-2xl">
+                <h2 className="text-xl font-black text-slate-800">¡Listo! Ya quedaste anotado.</h2>
+                <p className="mt-2 text-sm text-slate-500">
                     Te vamos a escribir apenas Moovy abra en Ushuaia. Gracias por querer ser
                     de los primeros.
                 </p>
+
+                <p className="mt-4 text-sm font-semibold text-slate-700">
+                    ¿Conocés a alguien a quien le sirva? Compartilo.
+                </p>
+
+                <button
+                    type="button"
+                    onClick={shareWhatsApp}
+                    className="mt-3 w-full rounded-xl bg-[#25D366] px-4 py-2.5 text-sm font-bold text-white transition hover:brightness-95"
+                >
+                    Compartir por WhatsApp
+                </button>
+
+                <button
+                    type="button"
+                    onClick={copyLink}
+                    className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50"
+                >
+                    Copiar link
+                </button>
+
+                {shareMsg && (
+                    <p className="mt-2 text-xs font-medium text-slate-500">{shareMsg}</p>
+                )}
             </div>
         );
     }
@@ -66,20 +140,23 @@ export default function PreLaunchForm() {
             className={`flex-1 rounded-xl px-4 py-2.5 text-sm font-semibold transition ${
                 role === value
                     ? "bg-[#e60012] text-white shadow"
-                    : "bg-white/5 text-white/60 hover:bg-white/10"
+                    : "bg-slate-100 text-slate-500 hover:bg-slate-200"
             }`}
         >
             {label}
         </button>
     );
 
+    const input =
+        "w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 outline-none focus:border-[#e60012] focus:ring-2 focus:ring-[#e60012]/20";
+
     return (
         <form
             onSubmit={submit}
-            className="w-full max-w-sm rounded-2xl border border-white/10 bg-white/5 p-5 text-left backdrop-blur"
+            className="w-full max-w-sm rounded-2xl bg-white p-5 text-left shadow-2xl"
         >
-            <p className="mb-3 text-center text-sm font-medium text-white/80">
-                Sumate ahora y sé de los primeros 👇
+            <p className="mb-3 text-center text-sm font-semibold text-slate-700">
+                Sumate ahora y sé de los primeros
             </p>
 
             <div className="mb-3 flex gap-2">
@@ -95,7 +172,7 @@ export default function PreLaunchForm() {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Tu email *"
                     autoComplete="email"
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 text-sm text-white placeholder-white/40 outline-none focus:border-[#e60012]"
+                    className={input}
                 />
                 <input
                     type="tel"
@@ -103,7 +180,7 @@ export default function PreLaunchForm() {
                     onChange={(e) => setWhatsapp(e.target.value)}
                     placeholder="WhatsApp (opcional)"
                     autoComplete="tel"
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 text-sm text-white placeholder-white/40 outline-none focus:border-[#e60012]"
+                    className={input}
                 />
                 <input
                     type="text"
@@ -111,7 +188,7 @@ export default function PreLaunchForm() {
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Tu nombre (opcional)"
                     autoComplete="name"
-                    className="w-full rounded-xl border border-white/10 bg-black/30 px-4 py-2.5 text-sm text-white placeholder-white/40 outline-none focus:border-[#e60012]"
+                    className={input}
                 />
 
                 {/* Honeypot anti-bot: oculto para humanos, los bots lo completan. */}
@@ -125,23 +202,26 @@ export default function PreLaunchForm() {
                     aria-hidden="true"
                 />
 
-                <label className="flex items-start gap-2 pt-1 text-xs text-white/60">
+                <label className="flex items-start gap-2 pt-1 text-xs text-slate-500">
                     <input
                         type="checkbox"
                         checked={consent}
                         onChange={(e) => setConsent(e.target.checked)}
                         className="mt-0.5 accent-[#e60012]"
                     />
-                    <span>Quiero que Moovy me contacte cuando lance en Ushuaia.</span>
+                    <span>
+                        Quiero que Moovy me contacte cuando lance en Ushuaia.
+                        <span className="text-[#e60012]"> *</span>
+                    </span>
                 </label>
             </div>
 
-            {error && <p className="mt-2 text-xs text-red-400">{error}</p>}
+            {error && <p className="mt-2 text-xs font-medium text-red-600">{error}</p>}
 
             <button
                 type="submit"
                 disabled={status === "loading"}
-                className="mt-4 w-full rounded-xl bg-[#e60012] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#c2000f] disabled:opacity-60"
+                className="mt-4 w-full rounded-xl bg-[#e60012] px-4 py-3 text-sm font-bold text-white shadow-lg shadow-[#e60012]/30 transition hover:bg-[#c2000f] disabled:opacity-60"
             >
                 {status === "loading" ? "Enviando…" : "Quiero ser de los primeros"}
             </button>

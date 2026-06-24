@@ -10,6 +10,26 @@
 
 ---
 
+## 2026-06-24 (rama `fix/landing-fija-responsive-desktop`)
+
+feat(landing+ops): compartir multi-canal con tarjeta social + borrado permanente de leads
+
+Landing /proximamente:
+- Compartir tras registro: WhatsApp (mensaje pre-escrito listo para enviar) y Copiar link
+- Copiar link con fallback para http (pruebas por IP local sin HTTPS)
+- Open Graph + Twitter Card: al pegar el link en WhatsApp/Facebook se muestra una tarjeta (imagen public/og-moovy.png 1200x630, título y descripción). Facebook ya no permite pre-escribir el posteo; esto es lo que muestra automáticamente
+- Layout adaptativo (min-h-[100dvh]): sin scroll si entra, scroll si la pantalla es muy chica; desktop en dos columnas
+- Sin emojis; consentimiento obligatorio (validado en cliente y servidor)
+
+OPS lista de espera:
+- Endpoint DELETE /api/ops/prelaunch/[id] (solo ADMIN, rate limit, audit log): borra el lead permanentemente de la base
+- Botón "Eliminar" con confirmación en dos pasos (sin window.confirm nativo)
+
+Assets:
+- public/og-moovy.png: tarjeta social (logo blanco sobre rojo + "Está por llegar a Ushuaia")
+
+**Archivos:** public/og-moovy.png, src/app/api/ops/prelaunch/[id]/route.ts, src/app/ops/(protected)/prelaunch/DeleteLeadButton.tsx, src/app/ops/(protected)/prelaunch/page.tsx, src/app/proximamente/PreLaunchForm.tsx, src/app/proximamente/page.tsx
+
 ## 2026-06-24 (rama `feat/landing-cortina-preregistro`)
 
 feat(landing): cortina "Proximamente" con pre-registro de comercios/repartidores + elimina moovyx

@@ -1439,6 +1439,28 @@ CREATE TABLE public."PointsTransaction" (
 ALTER TABLE public."PointsTransaction" OWNER TO postgres;
 
 --
+-- Name: PreLaunchLead; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."PreLaunchLead" (
+    id text NOT NULL,
+    role text NOT NULL,
+    name text,
+    email text NOT NULL,
+    whatsapp text,
+    consent boolean DEFAULT false NOT NULL,
+    "consentAt" timestamp(3) without time zone,
+    "ipAddress" text,
+    "userAgent" text,
+    source text DEFAULT 'landing'::text,
+    contacted boolean DEFAULT false NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+
+ALTER TABLE public."PreLaunchLead" OWNER TO postgres;
+
+--
 -- Name: Product; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2067,6 +2089,12 @@ cmqiv6a3u0001mu1u5je97kda	FEATURE_FLAG_TOGGLED	FeatureFlag	cmqiaeodz0001xgin52pe
 cmqiv6u8v0003mu1uonuwkpky	FEATURE_FLAG_TOGGLED	FeatureFlag	cmqiaeoeg0003xgink0telh49	cmnuzx1fg0002zgw8zimoxguz	{"key":"merchant.doc.habilitacion-municipal","previousState":true,"newState":false,"toggledBy":"maurod@me.com"}	2026-06-18 02:12:09.248
 cmqiv6v9h0005mu1u0eyt1qpg	FEATURE_FLAG_TOGGLED	FeatureFlag	cmqiaeoeo0004xginfq6e7mz8	cmnuzx1fg0002zgw8zimoxguz	{"key":"merchant.doc.registro-sanitario","previousState":true,"newState":false,"toggledBy":"maurod@me.com"}	2026-06-18 02:12:10.565
 cmqiv6zwg0007mu1uwhzy92qy	FEATURE_FLAG_TOGGLED	FeatureFlag	cmqiaeodz0001xgin52pe786a	cmnuzx1fg0002zgw8zimoxguz	{"key":"merchant.doc.bank-account","previousState":false,"newState":true,"toggledBy":"maurod@me.com"}	2026-06-18 02:12:16.576
+cmqs5ue0t0008a6psq5gaptvw	USER_DELETED	User	cmpmpj1yp00025izc1cmefuzm	cmnuzx1fg0002zgw8zimoxguz	{"email":"maugrod@gmail.com","name":"Mauro Rodriguez","roles":["USER","COMERCIO","DRIVER","SELLER"],"bulkOperation":true,"deletedAt":"2026-06-24T14:20:19.708Z"}	2026-06-24 14:20:19.71
+cmqs5ue1w000ca6ps7msft05z	USER_DELETED	User	cmpohhrhn001z5izc9v3rk0e9	cmnuzx1fg0002zgw8zimoxguz	{"email":"bimsads@gmail.com","name":"Juan Perez","roles":["USER","COMERCIO","DRIVER"],"bulkOperation":true,"deletedAt":"2026-06-24T14:20:19.747Z"}	2026-06-24 14:20:19.748
+cmqs5ue25000ga6ps47zw78qe	USER_DELETED	User	cmnuzx1fg0002zgw8zimoxguz	cmnuzx1fg0002zgw8zimoxguz	{"email":"maurod@me.com","name":"Mauro Rodriguez","roles":["USER"],"bulkOperation":true,"deletedAt":"2026-06-24T14:20:19.756Z"}	2026-06-24 14:20:19.757
+cmqs9emoo000613ajraehcx0p	PRELAUNCH_LEAD_DELETED	PreLaunchLead	cmqs8r3k9000113aj8bksp99j	cmnuzx1fg0002zgw8zimoxguz	{"role":"DRIVER","email":"pedro@somosmoovy.com","whatsapp":null}	2026-06-24 16:00:02.903
+cmqs9eobo000813ajlog0rsab	PRELAUNCH_LEAD_DELETED	PreLaunchLead	cmqs8mc3b000013aj57p8479b	cmnuzx1fg0002zgw8zimoxguz	{"role":"COMERCIO","email":"juan@somosmoovy.com","whatsapp":null}	2026-06-24 16:00:05.029
+cmqs9epli000a13ajiy1qzk2b	PRELAUNCH_LEAD_DELETED	PreLaunchLead	cmqs70usq000013bh2vp3uhal	cmnuzx1fg0002zgw8zimoxguz	{"role":"COMERCIO","email":"demo@somosmoovy.com","whatsapp":"2901652974"}	2026-06-24 16:00:06.678
 \.
 
 
@@ -2241,8 +2269,8 @@ zone_1778019117199_6b2b2x	USHUAIA	#ef4444	1	0	0103000020E61000000100000008000000
 --
 
 COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel", "vehicleYear", "vehicleColor", "licensePlate", cuit, "licenciaUrl", "seguroUrl", "vtvUrl", "dniFrenteUrl", "dniDorsoUrl", "acceptedTermsAt", "isActive", "isOnline", "totalDeliveries", rating, "createdAt", "updatedAt", "availabilityStatus", "lastLocationAt", latitude, longitude, "approvalStatus", "approvedAt", "rejectionReason", ubicacion, "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "fraudScore", "lastFraudCheckAt", "acceptedPrivacyAt", "cedulaVerdeApprovedAt", "cedulaVerdeExpiresAt", "cedulaVerdeNotifiedStage", "cedulaVerdeRejectionReason", "cedulaVerdeStatus", "cedulaVerdeUrl", "constanciaCuitApprovedAt", "constanciaCuitRejectionReason", "constanciaCuitStatus", "constanciaCuitUrl", "cuitApprovedAt", "cuitRejectionReason", "cuitStatus", "dniDorsoApprovedAt", "dniDorsoRejectionReason", "dniDorsoStatus", "dniFrenteApprovedAt", "dniFrenteRejectionReason", "dniFrenteStatus", "licenciaApprovedAt", "licenciaExpiresAt", "licenciaNotifiedStage", "licenciaRejectionReason", "licenciaStatus", "seguroApprovedAt", "seguroExpiresAt", "seguroNotifiedStage", "seguroRejectionReason", "seguroStatus", "vtvApprovedAt", "vtvExpiresAt", "vtvNotifiedStage", "vtvRejectionReason", "vtvStatus", "cedulaVerdeApprovalNote", "cedulaVerdeApprovalSource", "constanciaCuitApprovalNote", "constanciaCuitApprovalSource", "cuitApprovalNote", "cuitApprovalSource", "dniDorsoApprovalNote", "dniDorsoApprovalSource", "dniFrenteApprovalNote", "dniFrenteApprovalSource", "licenciaApprovalNote", "licenciaApprovalSource", "seguroApprovalNote", "seguroApprovalSource", "vtvApprovalNote", "vtvApprovalSource", "bankAccountUpdatedAt", "bankAlias", "bankCbu", "applicationStatus", "cancelledByUserAt", "cancelledByUserReason", "pausedByUserAt", "pausedByUserReason", "hasColdStorage", "hasThermalBag") FROM stdin;
-cmqa2y3bi000110vwqkxgnj94	cmpmpj1yp00025izc1cmefuzm	CAMIONETA	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-06-11 22:39:22.441	t	f	0	\N	2026-06-11 22:39:22.444	2026-06-11 23:48:59.371	FUERA_DE_SERVICIO	2026-06-11 23:57:11.305	-54.83192353907596	-68.35039311726986	APPROVED	2026-06-11 23:33:25.181	\N	0101000020E6100000B9DA40D76C1651C04A8D74787C6A4BC0	f	\N	\N	\N	0	\N	\N	\N	\N	0	\N	PENDING	\N	\N	\N	PENDING	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	\N	\N	\N	\N	f	f
-cmqa5j1dz000ca4mwnopicdv9	cmpohhrhn001z5izc9v3rk0e9	AUTO	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-06-11 23:51:38.945	f	f	0	\N	2026-06-11 23:51:38.951	2026-06-11 23:51:38.951	FUERA_DE_SERVICIO	2026-06-15 15:19:14.129	-54.83159809571269	-68.35043611890764	PENDING	\N	\N	0101000020E6100000E9829D8B6D1651C03E4070CE716A4BC0	f	\N	\N	\N	0	\N	\N	\N	\N	0	\N	PENDING	\N	\N	\N	PENDING	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	DRAFT	\N	\N	\N	\N	f	f
+cmqa2y3bi000110vwqkxgnj94	cmpmpj1yp00025izc1cmefuzm	CAMIONETA	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-06-11 22:39:22.441	f	f	0	\N	2026-06-11 22:39:22.444	2026-06-24 14:20:19.666	FUERA_DE_SERVICIO	2026-06-11 23:57:11.305	-54.83192353907596	-68.35039311726986	APPROVED	2026-06-11 23:33:25.181	\N	0101000020E6100000B9DA40D76C1651C04A8D74787C6A4BC0	f	\N	\N	\N	0	\N	\N	\N	\N	0	\N	PENDING	\N	\N	\N	PENDING	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	\N	\N	\N	\N	f	f
+cmqa5j1dz000ca4mwnopicdv9	cmpohhrhn001z5izc9v3rk0e9	AUTO	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-06-11 23:51:38.945	f	f	0	\N	2026-06-11 23:51:38.951	2026-06-24 14:20:19.666	FUERA_DE_SERVICIO	2026-06-15 15:19:14.129	-54.83159809571269	-68.35043611890764	PENDING	\N	\N	0101000020E6100000E9829D8B6D1651C03E4070CE716A4BC0	f	\N	\N	\N	0	\N	\N	\N	\N	0	\N	PENDING	\N	\N	\N	PENDING	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	DRAFT	\N	\N	\N	\N	f	f
 \.
 
 
@@ -2376,8 +2404,8 @@ cmq9hq03j000suxa8f6gahoi5	cmq8jljq9000auxa8wtd8x13l	https://pub-8e9cd8ba192646df
 --
 
 COPY public."Merchant" (id, name, slug, description, image, banner, "isActive", "isOpen", "scheduleEnabled", "scheduleJson", "isVerified", email, phone, address, latitude, longitude, "deliveryRadiusKm", "deliveryTimeMin", "deliveryTimeMax", "deliveryFee", "minOrderAmount", "allowPickup", cuit, "constanciaAfipUrl", "habilitacionMunicipalUrl", "registroSanitarioUrl", "acceptedTermsAt", "acceptedPrivacyAt", category, "ownerId", "createdAt", "updatedAt", rating, "adminNotes", "bankAccount", "businessName", "commissionRate", cuil, "displayOrder", "facebookUrl", "instagramUrl", "isPremium", "ownerBirthDate", "ownerDni", "premiumTier", "premiumUntil", "startedAt", "whatsappNumber", "mpAccessToken", "mpRefreshToken", "mpUserId", "mpEmail", "mpLinkedAt", "approvalStatus", "approvedAt", "rejectionReason", ubicacion, "loyaltyTier", "loyaltyOrderCount", "loyaltyUpdatedAt", "commissionOverride", "commissionOverrideReason", "isSuspended", "loyaltyTierLocked", "suspendedAt", "suspendedUntil", "suspensionReason", "firstOrderWelcomeSentAt", "bankAccountApprovedAt", "bankAccountRejectionReason", "bankAccountStatus", "constanciaAfipApprovedAt", "constanciaAfipRejectionReason", "constanciaAfipStatus", "cuitApprovedAt", "cuitRejectionReason", "cuitStatus", "habilitacionMunicipalApprovedAt", "habilitacionMunicipalRejectionReason", "habilitacionMunicipalStatus", "registroSanitarioApprovedAt", "registroSanitarioRejectionReason", "registroSanitarioStatus", "bankAccountApprovalNote", "bankAccountApprovalSource", "constanciaAfipApprovalNote", "constanciaAfipApprovalSource", "cuitApprovalNote", "cuitApprovalSource", "habilitacionMunicipalApprovalNote", "habilitacionMunicipalApprovalSource", "registroSanitarioApprovalNote", "registroSanitarioApprovalSource", "applicationStatus", "cancelledByUserAt", "cancelledByUserReason", "pausedByUserAt", "pausedByUserReason") FROM stdin;
-cmqfcutsx00039xze96rz3gz0	TEST 2	test-2	Nuevo comercio Moovy	\N	\N	t	t	f	\N	t	bimsads@gmail.com	+5492901652974	Del Recodo 1100	-54.830988	-68.3574893	5	30	45	0	0	f	\N	\N	\N	\N	2026-06-15 15:15:37.174	2026-06-15 15:15:37.174	Restaurante	cmpohhrhn001z5izc9v3rk0e9	2026-06-15 15:15:37.184	2026-06-18 14:05:17.144	\N	\N	\N	TEST 2	8	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-16 21:22:41.584	\N	\N	BRONCE	0	2026-06-15 15:15:37.184	\N	\N	f	f	\N	\N	\N	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	\N	\N	\N	\N
-cmpogk423000c5izcv6er1c6g	MOOVY	9410	Nuevo comercio Moovy	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1779910482835-logo.webp	\N	t	t	t	{"1":[{"open":"09:00","close":"21:00"}],"2":[{"open":"09:00","close":"21:00"}],"3":[{"open":"09:00","close":"21:00"}],"4":[{"open":"09:00","close":"21:00"}],"5":[{"open":"09:00","close":"21:00"}],"6":[{"open":"10:00","close":"14:00"}],"7":null}	t	maugrod@gmail.com	+5492901652974	Paseo de la Plaza 2065	-54.82898400000001	-68.3487997	5	30	45	0	0	f	\N	\N	\N	\N	2026-05-27 19:29:28.957	2026-05-27 19:29:28.957	Kiosco	cmpmpj1yp00025izc1cmefuzm	2026-05-27 19:29:28.967	2026-05-27 19:43:55.562	\N	\N	\N	MOOVY	8	\N	0	\N	@somosmoovy	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-05-27 19:30:10.971	\N	\N	BRONCE	0	2026-05-27 19:29:28.967	\N	\N	f	f	\N	\N	\N	2026-05-27 19:43:55.559	2026-05-27 19:33:57.11	\N	APPROVED	2026-05-27 19:34:00.678	\N	APPROVED	2026-05-27 19:33:53.161	\N	APPROVED	2026-05-27 19:34:05.444	\N	APPROVED	2026-05-27 19:34:09.175	\N	APPROVED	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	APPROVED	\N	\N	\N	\N
+cmqfcutsx00039xze96rz3gz0	TEST 2	test-2	Nuevo comercio Moovy	\N	\N	f	t	f	\N	t	bimsads@gmail.com	+5492901652974	Del Recodo 1100	-54.830988	-68.3574893	5	30	45	0	0	f	\N	\N	\N	\N	2026-06-15 15:15:37.174	2026-06-15 15:15:37.174	Restaurante	cmpohhrhn001z5izc9v3rk0e9	2026-06-15 15:15:37.184	2026-06-24 14:20:19.647	\N	\N	\N	TEST 2	8	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-16 21:22:41.584	\N	\N	BRONCE	0	2026-06-15 15:15:37.184	\N	\N	f	f	\N	\N	\N	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	\N	\N	\N	\N
+cmpogk423000c5izcv6er1c6g	MOOVY	9410	Nuevo comercio Moovy	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1779910482835-logo.webp	\N	f	t	t	{"1":[{"open":"09:00","close":"21:00"}],"2":[{"open":"09:00","close":"21:00"}],"3":[{"open":"09:00","close":"21:00"}],"4":[{"open":"09:00","close":"21:00"}],"5":[{"open":"09:00","close":"21:00"}],"6":[{"open":"10:00","close":"14:00"}],"7":null}	t	maugrod@gmail.com	+5492901652974	Paseo de la Plaza 2065	-54.82898400000001	-68.3487997	5	30	45	0	0	f	\N	\N	\N	\N	2026-05-27 19:29:28.957	2026-05-27 19:29:28.957	Kiosco	cmpmpj1yp00025izc1cmefuzm	2026-05-27 19:29:28.967	2026-06-24 14:20:19.647	\N	\N	\N	MOOVY	8	\N	0	\N	@somosmoovy	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-05-27 19:30:10.971	\N	\N	BRONCE	0	2026-05-27 19:29:28.967	\N	\N	f	f	\N	\N	\N	2026-05-27 19:43:55.559	2026-05-27 19:33:57.11	\N	APPROVED	2026-05-27 19:34:00.678	\N	APPROVED	2026-05-27 19:33:53.161	\N	APPROVED	2026-05-27 19:34:05.444	\N	APPROVED	2026-05-27 19:34:09.175	\N	APPROVED	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	APPROVED	\N	\N	\N	\N
 \.
 
 
@@ -2629,6 +2657,17 @@ COPY public."PointsTransaction" (id, "userId", "orderId", type, amount, "balance
 
 
 --
+-- Data for Name: PreLaunchLead; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."PreLaunchLead" (id, role, name, email, whatsapp, consent, "consentAt", "ipAddress", "userAgent", source, contacted, "createdAt") FROM stdin;
+cmqs9f785000b13aj5yhzctde	COMERCIO	\N	juan@somosmoovy.com	\N	t	2026-06-24 16:06:50.808	192.168.68.113	Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1	landing	f	2026-06-24 16:00:29.526
+cmqs9vo46000d13aj1p3thn4w	COMERCIO	Iyad	ing.iyad@gmail.com	92901611605	t	2026-06-24 16:13:17.907	192.168.68.102	Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Mobile/15E148 Safari/604.1	landing	f	2026-06-24 16:13:17.909
+cmqsbyks4000e13aj7ol75qq7	DRIVER	\N	juan@somosmoovy.com	\N	t	2026-06-24 17:11:32.784	192.168.68.113	Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1	landing	f	2026-06-24 17:11:32.785
+\.
+
+
+--
 -- Data for Name: Product; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
@@ -2857,7 +2896,7 @@ cmq9hpdw9000ouxa8c9kbi4jj	cmpmpj1yp00025izc1cmefuzm	f	f	\N	15	f	\N	2026-06-11 12
 --
 
 COPY public."SellerProfile" (id, "userId", "displayName", bio, avatar, cuit, "acceptedTermsAt", "bankAlias", "bankCbu", "isActive", "isVerified", "totalSales", rating, "commissionRate", "mpAccessToken", "mpRefreshToken", "mpUserId", "mpEmail", "mpLinkedAt", "isOnline", "isPaused", "pauseEndsAt", "preparationMinutes", "scheduleEnabled", "scheduleJson", "createdAt", "updatedAt", "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "acceptedPrivacyAt", "applicationStatus", "approvedAt", "cancelledByUserAt", "cancelledByUserReason", "pausedByUserAt", "pausedByUserReason", "rejectionReason") FROM stdin;
-cmq8jg75w0004uxa8gw9hi4uk	cmpmpj1yp00025izc1cmefuzm	Tienda de Mau	Venta de articulos usados	\N	d851e9ef38595bac206faadf31281620:cbf4017fb4ac577074c40fc905b875db:b34e9c040420bf774a331fe68d	2026-06-10 20:45:48.73	\N	\N	t	f	0	\N	12	\N	\N	\N	\N	\N	f	f	\N	15	f	\N	2026-06-10 20:45:48.737	2026-06-10 20:45:48.737	f	\N	\N	\N	2026-06-10 20:45:48.73	DRAFT	\N	\N	\N	\N	\N	\N
+cmq8jg75w0004uxa8gw9hi4uk	cmpmpj1yp00025izc1cmefuzm	Tienda de Mau	Venta de articulos usados	\N	d851e9ef38595bac206faadf31281620:cbf4017fb4ac577074c40fc905b875db:b34e9c040420bf774a331fe68d	2026-06-10 20:45:48.73	\N	\N	f	f	0	\N	12	\N	\N	\N	\N	\N	f	f	\N	15	f	\N	2026-06-10 20:45:48.737	2026-06-24 14:20:19.681	f	\N	\N	\N	2026-06-10 20:45:48.73	DRAFT	\N	\N	\N	\N	\N	\N
 \.
 
 
@@ -2915,10 +2954,10 @@ cmpolj37500345izcyx5jokcd	cmpolj36c00305izc7gc617lp	Facu	t	t	5	2026-05-27 21:51:
 COPY public."User" (id, email, password, name, "firstName", "lastName", phone, role, "emailVerified", image, "pointsBalance", "pendingBonusPoints", "bonusActivated", "referralCode", "referredById", "createdAt", "updatedAt", "privacyConsentAt", "termsConsentAt", "resetToken", "resetTokenExpiry", "deletedAt", "archivedAt", "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "onboardingCompletedAt", "age18Confirmed", "cookiesConsent", "cookiesConsentAt", "marketingConsent", "marketingConsentAt", "marketingConsentRevokedAt", "privacyConsentVersion", "termsConsentVersion", "pointsExpiryNotifiedAt", "failedLoginAttempts", "loginLockedUntil") FROM stdin;
 cmpoh5mvw001e5izcyrgkd0ts	buyer1@somosmoovy.com	$2b$10$jYTBPvs74dqSBpTUNYOiE.0.YKeUutLrRxcy6MmYAJf0IHMvIeEG2	Juan Perez	Juan	Perez	\N	USER	\N	\N	0	0	f	cmpoh5mvw001f5izcakhckvw6	\N	2026-05-27 19:46:13.148	2026-05-27 19:46:31.816	\N	\N	c09eb78dad615bbcbde4b4fc1f25e48dc827686e1a1fc615beccb481c233143a	2026-05-28 19:46:13.016	2026-05-27 19:46:31.814	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
 cmpoh719b001m5izc10mntdbv	getinnerdrop@gmail.com	$2b$10$Y/KRt7jaMTT7rvkWqk92Auz3VOcBQ7d5e4Jg2w7XZGm6pTnNFM0cC	Juan Perez	Juan	Perez	\N	USER	\N	\N	0	0	f	cmpoh719b001n5izcol2u7htw	\N	2026-05-27 19:47:18.431	2026-05-27 19:48:09.061	\N	\N	76824853e87089af56d3347441903041c4867fdc5ea806b2e0cd93af16cc65d2	2026-05-28 19:47:18.284	2026-05-27 19:48:09.059	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	$2b$12$JsnYaQTYra8HYzOzFwhCH.owWDtAyP5Rj3EEA2NEZxo7ddSrpJy2K	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	ADMIN	\N	\N	0	0	f	MOV-54Z4	\N	2026-04-11 23:58:37.179	2026-06-16 21:10:40.519	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmpmpj1yp00025izc1cmefuzm	maugrod@gmail.com	$2b$10$hYH2q0XYbGOGz5h5b9s9.eiKK3lzWN5QAtVTkpAXJItsh.fEcO3my	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	USER	\N	\N	0	1000	f	MOV-2WVN	\N	2026-05-26 14:05:03.788	2026-06-16 21:31:28.539	2026-05-26 14:05:03.779	2026-05-26 14:05:03.779	\N	\N	\N	\N	f	\N	\N	\N	2026-05-26 14:05:10.706	t	\N	\N	t	2026-05-26 14:05:03.779	\N	2.0	1.2	\N	0	\N
-cmpohhrhn001z5izc9v3rk0e9	bimsads@gmail.com	$2b$10$DiC1m.tCZs8jl/z7XQuF6ebC7QCIntTAlFsuf7izDZhtQ6oUYIUGy	Juan Perez	Juan	Perez	+54 29011234567	USER	\N	\N	0	1000	f	MOV-Z4RL	cmpmpj1yp00025izc1cmefuzm	2026-05-27 19:55:38.986	2026-06-18 14:05:17.144	2026-05-27 19:55:38.984	2026-05-27 19:55:38.984	\N	\N	\N	\N	f	\N	\N	\N	2026-05-27 19:55:42.638	t	\N	\N	t	2026-05-27 19:55:38.984	\N	2.0	1.2	\N	0	\N
 cmpolj36c00305izc7gc617lp	facundotdf@gmail.com	$2b$12$PJfSJKI84teea.YzWbh8euyJIStohd70rtdUwHAyOQTcBQvzbGteq	Facu	\N	\N	\N	USER	\N	\N	0	0	f	cmpolj36c00315izciap0wmx1	\N	2026-05-27 21:48:39.251	2026-05-28 13:12:49.452	\N	\N	\N	\N	2026-05-28 13:12:49.411	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
+cmpmpj1yp00025izc1cmefuzm	maugrod@gmail.com	$2b$10$hYH2q0XYbGOGz5h5b9s9.eiKK3lzWN5QAtVTkpAXJItsh.fEcO3my	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	USER	\N	\N	0	1000	f	MOV-2WVN	\N	2026-05-26 14:05:03.788	2026-06-24 14:20:19.619	2026-05-26 14:05:03.779	2026-05-26 14:05:03.779	\N	\N	2026-06-24 14:20:19.617	\N	f	\N	\N	\N	2026-05-26 14:05:10.706	t	\N	\N	t	2026-05-26 14:05:03.779	\N	2.0	1.2	\N	0	\N
+cmpohhrhn001z5izc9v3rk0e9	bimsads@gmail.com	$2b$10$DiC1m.tCZs8jl/z7XQuF6ebC7QCIntTAlFsuf7izDZhtQ6oUYIUGy	Juan Perez	Juan	Perez	+54 29011234567	USER	\N	\N	0	1000	f	MOV-Z4RL	cmpmpj1yp00025izc1cmefuzm	2026-05-27 19:55:38.986	2026-06-24 14:20:19.619	2026-05-27 19:55:38.984	2026-05-27 19:55:38.984	\N	\N	2026-06-24 14:20:19.617	\N	f	\N	\N	\N	2026-05-27 19:55:42.638	t	\N	\N	t	2026-05-27 19:55:38.984	\N	2.0	1.2	\N	0	\N
+cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	$2b$12$JsnYaQTYra8HYzOzFwhCH.owWDtAyP5Rj3EEA2NEZxo7ddSrpJy2K	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	ADMIN	\N	\N	0	0	f	MOV-54Z4	\N	2026-04-11 23:58:37.179	2026-06-24 14:20:19.619	\N	\N	\N	\N	2026-06-24 14:20:19.617	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
 \.
 
 
@@ -2953,6 +2992,10 @@ cmqh4zaay0001mvt38w4crmuc	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8
 cmqh547co0006mvt3jswhw0id	cmpohhrhn001z5izc9v3rk0e9	LOGIN	User	cmpohhrhn001z5izc9v3rk0e9	{"method":"credentials"}	\N	\N	2026-06-16 21:14:30.072
 cmqh5q192000bmvt32695e96s	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-06-16 21:31:28.597
 cmqh66oec000dmvt3ue82diw4	cmpohhrhn001z5izc9v3rk0e9	LOGIN	User	cmpohhrhn001z5izc9v3rk0e9	{"method":"credentials"}	\N	\N	2026-06-16 21:44:25.092
+cmqs5u5540003a6psm7quuj6g	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-06-24 14:20:08.198
+cmqs5ue0d0006a6ps60jffy9d	cmpmpj1yp00025izc1cmefuzm	ADMIN_USER_DELETED	User	cmpmpj1yp00025izc1cmefuzm	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"maugrod@gmail.com","name":"Mauro Rodriguez","roles":["USER","COMERCIO","DRIVER","SELLER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36	2026-06-24 14:20:19.693
+cmqs5ue1r000aa6psavb6oigs	cmpohhrhn001z5izc9v3rk0e9	ADMIN_USER_DELETED	User	cmpohhrhn001z5izc9v3rk0e9	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"bimsads@gmail.com","name":"Juan Perez","roles":["USER","COMERCIO","DRIVER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36	2026-06-24 14:20:19.744
+cmqs5ue21000ea6psi0mszagi	cmnuzx1fg0002zgw8zimoxguz	ADMIN_USER_DELETED	User	cmnuzx1fg0002zgw8zimoxguz	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"maurod@me.com","name":"Mauro Rodriguez","roles":["USER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36	2026-06-24 14:20:19.753
 \.
 
 
@@ -3396,6 +3439,14 @@ ALTER TABLE ONLY public."PointsConfig"
 
 ALTER TABLE ONLY public."PointsTransaction"
     ADD CONSTRAINT "PointsTransaction_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: PreLaunchLead PreLaunchLead_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."PreLaunchLead"
+    ADD CONSTRAINT "PreLaunchLead_pkey" PRIMARY KEY (id);
 
 
 --
@@ -4557,6 +4608,27 @@ CREATE INDEX "PlaybookChecklist_category_isActive_order_idx" ON public."Playbook
 --
 
 CREATE INDEX "PlaybookStep_checklistId_order_idx" ON public."PlaybookStep" USING btree ("checklistId", "order");
+
+
+--
+-- Name: PreLaunchLead_createdAt_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "PreLaunchLead_createdAt_idx" ON public."PreLaunchLead" USING btree ("createdAt");
+
+
+--
+-- Name: PreLaunchLead_email_role_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "PreLaunchLead_email_role_key" ON public."PreLaunchLead" USING btree (email, role);
+
+
+--
+-- Name: PreLaunchLead_role_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "PreLaunchLead_role_idx" ON public."PreLaunchLead" USING btree (role);
 
 
 --

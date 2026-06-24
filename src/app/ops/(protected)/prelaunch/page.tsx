@@ -4,6 +4,7 @@
 
 import { prisma } from "@/lib/prisma";
 import ExportLeadsButton from "./ExportLeadsButton";
+import DeleteLeadButton from "./DeleteLeadButton";
 
 export const dynamic = "force-dynamic";
 
@@ -68,6 +69,7 @@ export default async function PreLaunchLeadsPage() {
                                 <th className="px-4 py-3">Email</th>
                                 <th className="px-4 py-3">WhatsApp</th>
                                 <th className="px-4 py-3">Fecha</th>
+                                <th className="px-4 py-3 text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -88,6 +90,9 @@ export default async function PreLaunchLeadsPage() {
                                     <td className="px-4 py-3 text-slate-700">{l.email}</td>
                                     <td className="px-4 py-3 text-slate-700">{l.whatsapp || "—"}</td>
                                     <td className="px-4 py-3 text-slate-500">{fmt(l.createdAt)}</td>
+                                    <td className="px-4 py-3 text-right">
+                                        <DeleteLeadButton id={l.id} email={l.email} />
+                                    </td>
                                 </tr>
                             ))}
                         </tbody>
