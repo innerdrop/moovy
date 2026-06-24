@@ -68,7 +68,8 @@ interface Merchant {
     rating: number | null;
     scheduleEnabled: boolean;
     scheduleJson: string | null;
-    mpAccessToken: string | null;
+    // Rama fix/cifrar-tokens-mp: el endpoint ya no expone el token; solo el estado de vínculo.
+    mpLinked: boolean;
     owner: {
         id: string;
         name: string;
@@ -1224,7 +1225,7 @@ export default function MerchantDetailPage() {
                             <div>
                                 <p className="text-sm text-gray-500 mb-1">MercadoPago</p>
                                 <p className="font-medium text-sm flex items-center gap-2">
-                                    {merchant.mpAccessToken ? (
+                                    {merchant.mpLinked ? (
                                         <>
                                             <CheckCircle className="w-4 h-4 text-green-600" />
                                             Vinculado

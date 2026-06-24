@@ -25,6 +25,9 @@ import { buildSubOrderFinancialSnapshot } from "@/lib/orders/order-totals";
 // comisión de MP (que el comercio no quede negativo → MP no rechaza el CPT01).
 import { computeMpSplit } from "@/lib/finance/mp-split";
 import { getMpReservePercent } from "@/lib/finance/mp-reserve";
+// Rama fix/cifrar-tokens-mp: el token del vendedor (split) se guarda cifrado at-rest;
+// se descifra antes de usarlo para crear la preferencia. decrypt es seguro sobre plano.
+import { decrypt } from "@/lib/encryption";
 import { getZoneSnapshotForLocation, getCoverageStatus } from "@/lib/delivery-zones";
 import { parseExcludedZones, getExcludedZone } from "@/lib/excluded-zones";
 // Rama fix/delivery-geocoding-cobertura: COBRO BLINDADO. La distancia se
@@ -1402,20 +1405,20 @@ export async function POST(request: Request) {
                                 where: { id: sub.merchantId },
                                 select: { mpAccessToken: true },
                             });
-                            vendorAccessToken = m?.mpAccessToken || null;
+                            vendorAccessToken = m?.mpAccessToken ? decrypt(m.mpAccessToken) : null;
                         } else if (sub.sellerId) {
                             const s = await prisma.sellerProfile.findUnique({
                                 where: { id: sub.sellerId },
                                 select: { mpAccessToken: true },
                             });
-                            vendorAccessToken = s?.mpAccessToken || null;
+                            vendorAccessToken = s?.mpAccessToken ? decrypt(s.mpAccessToken) : null;
                         }
                     } else if (merchantId && orderForPref.subOrders.length === 0) {
                         const m = await prisma.merchant.findUnique({
                             where: { id: merchantId },
                             select: { mpAccessToken: true },
                         });
-                        vendorAccessToken = m?.mpAccessToken || null;
+                        vendorAccessToken = m?.mpAccessToken ? decrypt(m.mpAccessToken) : null;
                     }
                 }
 

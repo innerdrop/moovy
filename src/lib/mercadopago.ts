@@ -2,6 +2,9 @@
 import { MercadoPagoConfig, Preference, Payment, MerchantOrder } from "mercadopago";
 import crypto from "crypto";
 import { prisma } from "@/lib/prisma";
+// Rama fix/cifrar-tokens-mp: el mpAccessToken se guarda cifrado at-rest; se descifra
+// acá antes de usarlo como token (refunds/reconcile). decrypt es seguro sobre texto plano.
+import { decrypt } from "@/lib/encryption";
 
 const globalForMp = global as unknown as { mpClient: MercadoPagoConfig };
 
@@ -405,14 +408,14 @@ export async function resolveOrderVendorToken(orderId: string): Promise<string |
                 where: { id: sub.merchantId },
                 select: { mpAccessToken: true },
             });
-            return m?.mpAccessToken || null;
+            return m?.mpAccessToken ? decrypt(m.mpAccessToken) : null;
         }
         if (sub.sellerId) {
             const s = await prisma.sellerProfile.findUnique({
                 where: { id: sub.sellerId },
                 select: { mpAccessToken: true },
             });
-            return s?.mpAccessToken || null;
+            return s?.mpAccessToken ? decrypt(s.mpAccessToken) : null;
         }
         return null;
     } catch (err) {

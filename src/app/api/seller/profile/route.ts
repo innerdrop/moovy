@@ -82,9 +82,10 @@ export async function PUT(request: Request) {
             data: encryptedData,
         });
 
-        // Decrypt before returning to client
+        // Decrypt before returning to client, stripping sensitive tokens (igual que el GET).
         const decrypted = decryptSellerData(updated);
-        return NextResponse.json(decrypted);
+        const { mpAccessToken: _token, mpRefreshToken: _refresh, ...safeProfile } = decrypted;
+        return NextResponse.json(safeProfile);
     } catch (error) {
         console.error("Error updating seller profile:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });

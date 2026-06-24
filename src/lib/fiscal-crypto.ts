@@ -12,10 +12,12 @@
 import { encrypt, decrypt, encryptIfNeeded, isEncrypted } from "./encryption";
 
 // Fields to encrypt in Merchant model
-const MERCHANT_ENCRYPTED_FIELDS = ["cuit", "bankAccount", "cuil", "ownerDni"] as const;
+// Rama fix/cifrar-tokens-mp: mpAccessToken/mpRefreshToken (tokens OAuth de MP) se
+// cifran at-rest. Antes estaban en texto plano (permitían operar la cuenta MP del comercio).
+const MERCHANT_ENCRYPTED_FIELDS = ["cuit", "bankAccount", "cuil", "ownerDni", "mpAccessToken", "mpRefreshToken"] as const;
 
 // Fields to encrypt in SellerProfile model
-const SELLER_ENCRYPTED_FIELDS = ["cuit", "bankCbu", "bankAlias"] as const;
+const SELLER_ENCRYPTED_FIELDS = ["cuit", "bankCbu", "bankAlias", "mpAccessToken", "mpRefreshToken"] as const;
 
 // Fields to encrypt in Driver model
 // Rama fix/cifrar-datos-bancarios-driver: bankCbu/bankAlias se cifran at-rest

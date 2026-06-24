@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { exchangeOAuthCode, verifyOAuthState } from "@/lib/mercadopago";
+// Rama fix/cifrar-tokens-mp: cifrar mpAccessToken/mpRefreshToken at-rest antes de guardar.
+import { encryptMerchantData, encryptSellerData } from "@/lib/fiscal-crypto";
 
 export async function GET(request: NextRequest) {
     try {
@@ -63,7 +65,7 @@ export async function GET(request: NextRequest) {
 
             await prisma.merchant.update({
                 where: { id: merchant.id },
-                data: mpData,
+                data: encryptMerchantData(mpData),
             });
 
             return NextResponse.redirect(`${baseUrl}/comercios/configuracion?mp=connected`);
@@ -75,7 +77,7 @@ export async function GET(request: NextRequest) {
 
             await prisma.sellerProfile.update({
                 where: { userId },
-                data: mpData,
+                data: encryptSellerData(mpData),
             });
 
             return NextResponse.redirect(`${baseUrl}/vendedor/configuracion?mp=connected`);

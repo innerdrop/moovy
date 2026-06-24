@@ -52,7 +52,11 @@ export async function GET(
             (decrypted as any).rating = decrypted.rating || null;
             (decrypted as any).scheduleEnabled = decrypted.scheduleEnabled || false;
             (decrypted as any).scheduleJson = decrypted.scheduleJson || null;
-            (decrypted as any).mpAccessToken = decrypted.mpAccessToken || null;
+            // Rama fix/cifrar-tokens-mp: NO exponer el token al cliente admin; solo
+            // un booleano de estado de vínculo. Strippear los tokens del response.
+            (decrypted as any).mpLinked = !!decrypted.mpAccessToken;
+            delete (decrypted as any).mpAccessToken;
+            delete (decrypted as any).mpRefreshToken;
         }
 
         return NextResponse.json(decrypted);
@@ -168,7 +172,10 @@ export async function PATCH(
         (decrypted as any).rating = decrypted.rating || null;
         (decrypted as any).scheduleEnabled = decrypted.scheduleEnabled || false;
         (decrypted as any).scheduleJson = decrypted.scheduleJson || null;
-        (decrypted as any).mpAccessToken = decrypted.mpAccessToken || null;
+        // Rama fix/cifrar-tokens-mp: booleano de vínculo, sin exponer el token.
+        (decrypted as any).mpLinked = !!decrypted.mpAccessToken;
+        delete (decrypted as any).mpAccessToken;
+        delete (decrypted as any).mpRefreshToken;
 
         return NextResponse.json(decrypted);
     } catch (error) {

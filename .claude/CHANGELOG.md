@@ -10,6 +10,38 @@
 
 ---
 
+## 2026-06-23 (rama `fix/cifrar-tokens-mp`)
+
+fix(seguridad): cifrar at-rest los tokens de MP (Merchant + SellerProfile)
+
+C-3 Rama 2 (ultima pieza del cifrado). mpAccessToken/mpRefreshToken se guardaban en
+TEXTO PLANO -> permitian operar la cuenta MP del comercio/vendedor si se filtraba la DB.
+Ahora se cifran at-rest (AES-256-GCM).
+
+- fiscal-crypto: mpAccessToken/mpRefreshToken agregados a MERCHANT_ y SELLER_ENCRYPTED_FIELDS.
+- WRITE: mp/callback cifra mpData antes de guardar (merchant + seller).
+- READ-USE (descifran; cubren TODA la plata):
+  - orders/route.ts -> los 3 tokens del split (crear preferencia).
+  - mercadopago.ts resolveOrderVendorToken -> 1 punto que cubre los 4 callers de refund.
+- FUGAS DE DISPLAY tapadas (con cifrado serian peores):
+  - seller/profile PUT: strippea los tokens del response (igual que el GET).
+  - admin/merchants/[id] GET+PATCH: booleano mpLinked en vez del token;
+    ops/comercios/[id] ajustado a mpLinked.
+
+decrypt es graceful sobre texto plano -> transicion sin downtime. ORDEN DE DEPLOY:
+codigo PRIMERO, despues backfill (scripts/backfill-encrypt-mp-tokens.ts, dry-run -> --execute).
+
+Nota: refreshOAuthToken hoy no tiene callers; si se implementa el cron de refresh, ese
+caller debera descifrar el refresh token antes de usarlo.
+
+Archivos: src/lib/fiscal-crypto.ts, src/lib/mercadopago.ts, src/app/api/orders/route.ts,
+src/app/api/mp/callback/route.ts, src/app/api/seller/profile/route.ts,
+src/app/api/admin/merchants/[id]/route.ts,
+src/app/ops/(protected)/comercios/[id]/page.tsx,
+scripts/backfill-encrypt-mp-tokens.ts (nuevo).
+
+**Archivos:** scripts/backfill-encrypt-mp-tokens.ts, src/app/api/admin/merchants/[id]/route.ts, src/app/api/mp/callback/route.ts, src/app/api/orders/route.ts, src/app/api/seller/profile/route.ts, src/app/ops/(protected)/comercios/[id]/page.tsx, src/lib/fiscal-crypto.ts, src/lib/mercadopago.ts
+
 ## 2026-06-23 (rama `fix/cifrar-datos-bancarios-driver`)
 
 fix(seguridad): cifrar at-rest el CBU/alias del repartidor (+ 2 bugs preexistentes)
