@@ -46,7 +46,7 @@ export function buildPreferenceBody(
     baseUrl: string,
     marketplaceFee = 0
 ) {
-    const items = order.items.map((item) => ({
+    const productItems = order.items.map((item) => ({
         id: item.id,
         title: item.name,
         quantity: item.quantity,
@@ -54,15 +54,47 @@ export function buildPreferenceBody(
         currency_id: "ARS",
     }));
 
-    // Add delivery fee as a separate item if > 0
-    if (order.deliveryFee > 0) {
-        items.push({
-            id: `delivery-${order.id}`,
-            title: "Envío a domicilio",
-            quantity: 1,
-            unit_price: order.deliveryFee,
-            currency_id: "ARS",
-        });
+    // Rama fix/split-mp-grossup-comprador: la preferencia SIEMPRE totaliza
+    // `order.total` — el monto REAL que paga el comprador. order.total ya trae:
+    //   (a) el descuento aplicado (cupón/puntos), que antes NO llegaba al cobro
+    //       (la preferencia cobraba el precio sin descuento → webhook amount_mismatch), y
+    //   (b) la comisión de MP embebida vía gross-up (el comprador la cubre, Paso 2),
+    //       cuando orders/route.ts ya seteó order.total = chargedTotal.
+    // El buffer de MP queda ESCONDIDO en la línea de envío (sin "tarifa de servicio"
+    // aparte — eso es lo legalmente seguro). Si por un descuento grande el ajuste
+    // diera ≤ 0, o si es retiro (sin envío), colapsamos a UNA sola línea positiva =
+    // total, porque MP no acepta montos negativos ni una línea de "envío" en pickup.
+    const target = Math.round(order.total);
+    const productSum = productItems.reduce(
+        (sum, i) => sum + i.unit_price * i.quantity,
+        0
+    );
+    const adjustment = Math.round(target - productSum);
+
+    let items: typeof productItems;
+    if (order.deliveryFee > 0 && adjustment > 0) {
+        items = [
+            ...productItems,
+            {
+                id: `delivery-${order.id}`,
+                title: "Envío a domicilio",
+                quantity: 1,
+                unit_price: adjustment,
+                currency_id: "ARS",
+            },
+        ];
+    } else if (adjustment === 0) {
+        items = productItems;
+    } else {
+        items = [
+            {
+                id: `order-${order.id}`,
+                title: `Pedido Moovy #${order.orderNumber}`,
+                quantity: 1,
+                unit_price: target,
+                currency_id: "ARS",
+            },
+        ];
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || baseUrl;

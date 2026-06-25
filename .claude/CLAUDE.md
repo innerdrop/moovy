@@ -106,7 +106,7 @@ Mapping a vehículo en `src/lib/product-weight.ts` (`SIZE_METADATA`).
 - Costo operativo embebido: **5%** del subtotal en delivery fee (cubre MP 3.81% + margen)
 - Repartidor: **80%** del costo del viaje (NO incluye 5% operativo)
 - Moovy delivery: 20% del viaje + 5% operativo
-- MP real: 3.81%
+- MP real: 7.6% (acreditación AL INSTANTE — es la que usamos). El 3.81% es la tarifa con acreditación diferida, que NO aplica a Moovy.
 - Gastos fijos: ~$440K ARS/mes
 
 Helper canónico: `getEffectiveCommissionWithSource(merchantId)` con precedencia

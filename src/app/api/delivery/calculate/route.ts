@@ -422,6 +422,9 @@ export async function POST(request: Request) {
             packageCategory,
             // Total final que paga el cliente — matchea el cobro de POST /api/orders
             totalCost: finalTotal,
+            // Rama fix/split-mp-grossup-comprador: el checkout usa este % para grossear
+            // el total que ve el comprador (cubre la comisión de MP, embebida en el envío).
+            mpReservePercent: (settings as any).mpReservePercent ?? 8,
             isWithinRange,
             isFreeDelivery,
             storeAddress: originAddress,

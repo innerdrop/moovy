@@ -54,6 +54,15 @@
 
 ---
 
+## ✅ Resueltos esta sesión (2026-06-24)
+
+| Tema | Rama | Resumen |
+|---|---|---|
+| Landing cortina fija + responsive + compartir | `fix/landing-fija-responsive-desktop` | `/proximamente` pantalla adaptativa (sin scroll si entra, scroll si la pantalla es chica), desktop en dos columnas, sin emojis, consentimiento obligatorio. Compartir tras registro: WhatsApp (mensaje pre-escrito) + Copiar link + tarjeta social Open Graph (`public/og-moovy.png`). Borrado permanente de leads en OPS (`/api/ops/prelaunch/[id]` DELETE, solo ADMIN + audit). |
+| **C-1 (CRÍTICO seguridad) — auth admin contra DB** | `fix/admin-auth-db-c1` | Cierra el último crítico de la auditoría. Helper `requireApiAdmin()` DB-based + layout `/ops` con `requireAdminAccess()` + 127 endpoints migrados (15 críticos de dinero incluidos). 4 GET multi-rol quedan por diseño. Verificado con `scripts/verify-admin-auth.ts` (131/131). Degradar/suspender un admin tiene efecto inmediato (antes hasta 7 días por el JWT cache). **Pendiente migrar a CLAUDE.md a mano (regla #29).** |
+
+> Con C-1 cerrado, **los 4 críticos de la auditoría (C-1..C-4) están resueltos.**
+
 ## ✅ Resueltos esta sesión (2026-06-17 → 18)
 
 **Operativos (sin rama de código):**

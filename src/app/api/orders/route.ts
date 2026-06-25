@@ -1444,13 +1444,22 @@ export async function POST(request: Request) {
                     0
                 );
                 const mpReservePercent = await getMpReservePercent();
+                // Rama fix/split-mp-grossup-comprador (PASO 2): grossUp=true → el
+                // comprador cubre la comisión de MP (7,6% acreditación al instante),
+                // embebida en el envío. Además, el descuento (cupón/puntos) entra en
+                // chargedTotal vía netTarget, así que ahora SÍ queda aplicado al cobro
+                // (antes la preferencia cobraba el precio sin descuento → amount_mismatch).
                 const mpSplit = computeMpSplit({
                     subtotal: orderForPref.subtotal,
                     deliveryFee: orderForPref.deliveryFee || 0,
                     commission: commissionSum,
                     discount: orderForPref.discount || 0,
                     mpReservePercent,
-                    grossUp: false,
+                    // Gross-up SOLO si hay envío con costo: ahí se embebe la comisión de
+                    // MP dentro del envío. En retiro o envío gratis (deliveryFee = 0) no
+                    // hay dónde esconderla sin una línea de "servicio" aparte (lo legalmente
+                    // riesgoso), así que en esos casos Moovy absorbe MP (minoría, ~break-even).
+                    grossUp: (orderForPref.deliveryFee || 0) > 0,
                 });
                 const marketplaceFee = vendorAccessToken ? mpSplit.marketplaceFee : 0;
                 if (vendorAccessToken && mpSplit.notes.length > 0) {
@@ -1458,6 +1467,20 @@ export async function POST(request: Request) {
                         { orderId: order.id, mpReservePercent, notes: mpSplit.notes },
                         "MP split: tope de reserva activado (Moovy cobra menos para que el comercio cobre su producto)"
                     );
+                }
+                // El comprador paga chargedTotal = (subtotal + envío − descuento) / (1 − reservaMP).
+                // order.total pasa a ser ESE número: la preferencia (buildPreferenceBody
+                // totaliza order.total) y el webhook (valida transaction_amount vs order.total)
+                // quedan alineados al peso. El repartidor y el comercio NO se afectan: usan
+                // el snapshot inmutable (tripCost / comisión), nunca order.total.
+                const chargedTotal = Math.round(mpSplit.chargedTotal);
+                if (chargedTotal !== orderForPref.total) {
+                    await prisma.order.update({
+                        where: { id: order.id },
+                        data: { total: chargedTotal },
+                    });
+                    orderForPref.total = chargedTotal;
+                    order.total = chargedTotal;
                 }
                 const prefBody = buildPreferenceBody(orderForPref, baseUrl, marketplaceFee);
 

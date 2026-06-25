@@ -10,6 +10,19 @@
 
 ---
 
+## 2026-06-25 (rama `feat/split-mp-grossup-comprador`)
+
+feat(pagos): comprador cubre la comisión de MP (gross-up) embebida en el envío + fix descuento no aplicado al cobro
+
+- orders/route.ts: grossUp=true cuando hay envío con costo; order.total = chargedTotal (descuento aplicado + comisión MP embebida). En retiro/envío gratis Moovy absorbe MP (no hay dónde esconderlo sin línea de servicio, ~break-even).
+- mercadopago.ts: buildPreferenceBody totaliza order.total. Arregla bug pre-existente: el descuento (cupón/puntos) no llegaba al cobro de MP (cobraba precio sin descuento → webhook amount_mismatch). Colapsa a una línea en pickup/descuento grande.
+- delivery/calculate: expone mpReservePercent para que el checkout muestre el total correcto.
+- checkout: total y envío muestran el gross-up embebido en el envío; el desglose cuadra, sin línea de "tarifa de servicio".
+- unit-economics: costo MP NETO (descuenta el buffer que paga el comprador) para no subestimar el margen.
+- Sin cambios de schema. PENDIENTE antes de abrir la cortina: test real de pago con MP en prod (gross-up + reparto + webhook sin amount_mismatch).
+
+**Archivos:** .claude/CLAUDE.md, ISSUES.md, docs/AUDITORIA_SEGURIDAD_2026-06-18.md, src/app/(store)/checkout/page.tsx, src/app/api/delivery/calculate/route.ts, src/app/api/orders/route.ts, src/lib/finance/unit-economics.ts, src/lib/mercadopago.ts
+
 ## 2026-06-24 (rama `fix/admin-auth-db-c1`)
 
 fix(seguridad): C-1 — autorización de admin contra DB, no contra el JWT

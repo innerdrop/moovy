@@ -7,7 +7,9 @@
 //
 // MODELO (todo READ-ONLY sobre snapshots congelados, nunca recalcula cobros):
 //   ingreso_moovy   = Σ moovyCommission  +  (Σ deliveryFee − Σ driverPayout)
-//   costo_mp        = mpFeePercent% × order.total   (lo que paga el buyer)
+//   buffer_mp       = max(0, order.total − (subtotal + deliveryFee − descuento))
+//                     (lo que el comprador aportó para cubrir MP vía gross-up; 0 en retiro/gratis)
+//   costo_mp NETO   = max(0, mpFeePercent% × order.total − buffer_mp)  (Moovy solo absorbe lo no cubierto)
 //   descuento       = order.discount                (cupón, lo absorbe Moovy)
 //   margen          = ingreso_moovy − costo_mp − descuento
 
@@ -68,8 +70,14 @@ export function computeOrderEconomics(o: OrderEcoInput, mpFeePercent: number): O
 
     const deliveryMargin = deliveryFee - driverPayout; // lo que Moovy retiene del envío
     const moovyGross = moovyCommission + deliveryMargin;
-    const mpCost = round2((mpFeePercent / 100) * (o.total || 0));
     const discount = o.discount || 0;
+    // Rama fix/split-mp-grossup-comprador: en pedidos con envío el comprador cubre la
+    // comisión de MP (gross-up) → order.total trae un buffer por encima del neto. Ese
+    // buffer ya le pagó a MP, así que el costo MP NETO para Moovy = feeMP − buffer
+    // (≈ 0 con envío). En retiro / envío gratis no hay buffer y Moovy absorbe MP.
+    const netTarget = (o.subtotal || 0) + deliveryFee - discount;
+    const buyerMpBuffer = Math.max(0, round2((o.total || 0) - netTarget));
+    const mpCost = round2(Math.max(0, (mpFeePercent / 100) * (o.total || 0) - buyerMpBuffer));
     const margin = round2(moovyGross - mpCost - discount);
 
     const subtotal = o.subtotal || 0;

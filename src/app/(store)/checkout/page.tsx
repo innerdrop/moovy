@@ -37,6 +37,9 @@ interface DeliveryResult {
     isFreeDelivery: boolean;
     message: string;
     isRealRoadDistance?: boolean;
+    // Rama fix/split-mp-grossup-comprador: % de reserva de MP (Biblia). El checkout
+    // lo usa para grossear el total que ve el comprador (cubre la comisión de MP).
+    mpReservePercent?: number;
     // ISSUE-032: Zona excluida (sin cobertura). Si viene, el backend devolvió 422
     // con `error: "zone_excluded"`. La UI muestra un card rojo con el motivo.
     zoneExcluded?: { name: string; reason: string };
@@ -149,7 +152,22 @@ export default function CheckoutPage() {
             : (deliveryResult?.isWithinRange && !deliveryResult.isFreeDelivery ? deliveryResult.totalCost : 0)
     );
     const deliveryCost = totalDeliveryCost;
-    const finalTotal = Math.max(0, subtotal + deliveryCost - discountAmount);
+    // Rama fix/split-mp-grossup-comprador: el comprador cubre la comisión de MP,
+    // ESCONDIDA en el envío. Igual que el servidor, solo aplica cuando hay envío con
+    // costo (en retiro / envío gratis no se grossea: Moovy absorbe MP ahí).
+    // chargedTotal = (subtotal + envío − descuento) / (1 − reservaMP) — coincide con
+    // order.total que calcula POST /api/orders.
+    const mpReservePct = (isMultiVendor ? vendorResults[0]?.mpReservePercent : deliveryResult?.mpReservePercent) ?? 8;
+    const netTarget = Math.max(0, subtotal + deliveryCost - discountAmount);
+    const grossUpActive = deliveryCost > 0 && mpReservePct > 0 && mpReservePct < 100;
+    const finalTotal = grossUpActive
+        ? Math.round(netTarget / (1 - mpReservePct / 100))
+        : netTarget;
+    const mpBuffer = Math.max(0, finalTotal - netTarget); // queda embebido en el envío
+    // Reparte el buffer dentro del envío mostrado (proporcional por vendor en multi-vendor)
+    // para que el desglose cuadre sin una línea de "servicio" aparte.
+    const grossDelivery = (base: number) =>
+        grossUpActive && deliveryCost > 0 ? Math.round(base + (mpBuffer * base) / deliveryCost) : base;
 
     // ISSUE-032: Zonas excluidas bloqueantes — si algún vendor cae en zona sin cobertura,
     // mostramos card rojo con nombre de zona + motivo + CTA a cambiar dirección.
@@ -1533,7 +1551,7 @@ export default function CheckoutPage() {
                                                 <div key={group.vendorId} className="flex justify-between text-sm lg:text-base">
                                                     <span className="text-gray-500">Envío a domicilio · {group.vendorName}</span>
                                                     <span className={result.isFreeDelivery ? "text-green-600" : ""}>
-                                                        {result.isFreeDelivery ? "GRATIS" : formatPrice(result.totalCost)}
+                                                        {result.isFreeDelivery ? "GRATIS" : formatPrice(grossDelivery(result.totalCost))}
                                                     </span>
                                                 </div>
                                             );
@@ -1546,7 +1564,7 @@ export default function CheckoutPage() {
                                             <span className={deliveryResult.isFreeDelivery ? "text-green-600" : ""}>
                                                 {deliveryResult.isFreeDelivery
                                                     ? "GRATIS"
-                                                    : formatPrice(deliveryResult.totalCost)}
+                                                    : formatPrice(grossDelivery(deliveryResult.totalCost))}
                                             </span>
                                         </div>
                                         {/* Rama feat/zonas-delivery-multiplicador: si el destino cae en una

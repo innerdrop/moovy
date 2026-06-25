@@ -20,7 +20,9 @@ Pero hay **un patrón crítico sistémico** y **fugas de tokens/PII** que convie
 
 ## 🔴 CRÍTICOS (recomiendo cerrarlos antes del launch)
 
-### C-1 — Autorización de ADMIN por JWT cache, no DB (sistémico)
+### C-1 — Autorización de ADMIN por JWT cache, no DB (sistémico) — ✅ RESUELTO 2026-06-24 (rama `fix/admin-auth-db-c1`)
+> Helper DB-based `requireApiAdmin()` (`src/lib/admin-auth.ts`) + layout `/ops` con `requireAdminAccess()` + 127 endpoints migrados (15 críticos incluidos). 4 GET multi-rol quedan por diseño. Verificado con `scripts/verify-admin-auth.ts` (131/131). Degradar/suspender un admin tiene efecto inmediato.
+
 **Dónde**: `src/app/ops/(protected)/layout.tsx:11`, `src/proxy.ts:231`, y ~75 endpoints `/api/admin/*` + `/api/ops/*` (ej. `ops/refund/route.ts:23`, `admin/broadcast/route.ts:14`, `admin/payouts/*`).
 **Qué pasa**: todos autorizan con `hasAnyRole(session, ["ADMIN"])` / `session.user.role === "ADMIN"`, leyendo el rol del **JWT de 7 días**. El helper correcto DB-based (`requireAdminAccess()` en `src/lib/roles.ts:629`) **ya existe pero no se usa en ningún lado**.
 **Escenario**: degradás a un admin (`UPDATE User SET role='USER'`). Su JWT sigue diciendo `role:"ADMIN"`. Durante hasta 7 días entra a `/ops`, **procesa refunds**, dispara broadcasts masivos, marca payouts y borra usuarios. No hay nada que invalide la sesión al degradar.
