@@ -7,11 +7,10 @@
 //
 // MODELO (todo READ-ONLY sobre snapshots congelados, nunca recalcula cobros):
 //   ingreso_moovy   = Σ moovyCommission  +  (Σ deliveryFee − Σ driverPayout)
-//   buffer_mp       = max(0, order.total − (subtotal + deliveryFee − descuento))
-//                     (lo que el comprador aportó para cubrir MP vía gross-up; 0 en retiro/gratis)
-//   costo_mp NETO   = max(0, mpFeePercent% × order.total − buffer_mp)  (Moovy solo absorbe lo no cubierto)
+//   costo_mp        = lo cobra MP al COMERCIO (que es el que cobra). Moovy NO lo paga;
+//                     se calcula como referencia pero NO se resta al margen de Moovy.
 //   descuento       = order.discount                (cupón, lo absorbe Moovy)
-//   margen          = ingreso_moovy − costo_mp − descuento
+//   margen          = ingreso_moovy − descuento
 
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 
@@ -71,14 +70,13 @@ export function computeOrderEconomics(o: OrderEcoInput, mpFeePercent: number): O
     const deliveryMargin = deliveryFee - driverPayout; // lo que Moovy retiene del envío
     const moovyGross = moovyCommission + deliveryMargin;
     const discount = o.discount || 0;
-    // Rama fix/split-mp-grossup-comprador: en pedidos con envío el comprador cubre la
-    // comisión de MP (gross-up) → order.total trae un buffer por encima del neto. Ese
-    // buffer ya le pagó a MP, así que el costo MP NETO para Moovy = feeMP − buffer
-    // (≈ 0 con envío). En retiro / envío gratis no hay buffer y Moovy absorbe MP.
-    const netTarget = (o.subtotal || 0) + deliveryFee - discount;
-    const buyerMpBuffer = Math.max(0, round2((o.total || 0) - netTarget));
-    const mpCost = round2(Math.max(0, (mpFeePercent / 100) * (o.total || 0) - buyerMpBuffer));
-    const margin = round2(moovyGross - mpCost - discount);
+    // Rama fix/split-mp-grossup-comprador: el que cobra es el comercio, que banca su
+    // propia comisión de MP. Moovy cobra su comisión + envío LIMPIOS, sin pagar MP.
+    // mpCost queda como REFERENCIA de lo que cobra MP (lo paga el comercio), pero NO se
+    // le resta al margen de Moovy.
+    const mpCost = round2((mpFeePercent / 100) * (o.total || 0));
+    // Moovy NO resta MP (lo banca el comercio). Solo absorbe el descuento (cupón).
+    const margin = round2(moovyGross - discount);
 
     const subtotal = o.subtotal || 0;
     const deliveryPct = subtotal > 0 ? round2((deliveryFee / subtotal) * 100) : 0;
@@ -176,7 +174,8 @@ export function aggregateEconomics(
     const orderCount = rows.length;
     const deliveryMarginTotal = sumDeliveryFee - sumDriverPayout;
     const moovyGrossTotal = sumMoovyCommission + deliveryMarginTotal;
-    const contributionMargin = round2(moovyGrossTotal - sumMpCost - sumDiscount);
+    // Moovy NO resta MP (lo banca el comercio). sumMpCost queda como referencia.
+    const contributionMargin = round2(moovyGrossTotal - sumDiscount);
     const avgMarginPerOrder = orderCount > 0 ? round2(contributionMargin / orderCount) : 0;
     const avgDeliveryPct = orderCount > 0 ? round2(sumDeliveryPct / orderCount) : 0;
     const avgDriverPayout = allTripPayouts.length > 0

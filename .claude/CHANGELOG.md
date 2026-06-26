@@ -10,6 +10,20 @@
 
 ---
 
+## 2026-06-26 (rama `fix/split-mp-comercio-banca-mp`)
+
+fix(pagos): el comercio banca su comisión de MP y Moovy cobra su comisión completa + fix descuento no aplicado al cobro
+
+- mp-split.ts: se saca el tope que protegía el producto del comercio y hacía que Moovy absorbiera MP (en retiro daba $0 de comisión). Ahora Moovy cobra su comisión + envío COMPLETOS; el comercio (que es el que cobra) banca su propia comisión de MP según cómo configure su cuenta. Queda solo un tope de seguridad para que el comercio no quede negativo en casos extremos (envío enorme vs producto) y MP no rechace.
+- orders/route.ts: se quita el gross-up (el comprador NO paga MP). order.total no se toca.
+- mercadopago.ts: buildPreferenceBody totaliza order.total → arregla el bug por el que el descuento (cupón/puntos) no llegaba al cobro de MP (cobraba el precio sin descuento → amount_mismatch). Colapsa a una línea en retiro / descuento grande.
+- checkout: vuelve a mostrar el precio limpio (sin gross-up).
+- delivery/calculate: se saca mpReservePercent (ya no se usa en el checkout).
+- unit-economics: Moovy ya NO resta MP del margen (lo banca el comercio); mpCost queda como referencia.
+- Comisión queda en 8%. Sin cambios de schema. Pendiente: test real de pago en prod antes de abrir la cortina.
+
+**Archivos:** src/app/(store)/checkout/page.tsx, src/app/api/delivery/calculate/route.ts, src/app/api/orders/route.ts, src/lib/finance/mp-split.ts, src/lib/finance/unit-economics.ts
+
 ## 2026-06-25 (rama `feat/split-mp-grossup-comprador`)
 
 feat(pagos): comprador cubre la comisión de MP (gross-up) embebida en el envío + fix descuento no aplicado al cobro

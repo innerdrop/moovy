@@ -91,18 +91,22 @@ export function computeMpSplit(input: MpSplitInput): MpSplitResult {
     // 2) Parte ideal de Moovy: su comisión + el envío, MENOS el descuento que absorbe.
     const idealMoovyFee = Math.max(0, round2(commission + deliveryFee - discount));
 
-    // 3) Tope "el comercio siempre cobra su producto" (→ MP nunca rechaza).
-    //    Después de la comisión estimada de MP, al comercio le tiene que quedar ≥ (subtotal - comisión).
-    const merchantFloor = round2(subtotal - commission);
-    const maxFee = round2(chargedTotal * (1 - r) - merchantFloor);
+    // 3) Moovy cobra SU parte completa (comisión + envío). El comercio es el que
+    //    cobra, así que banca su propia comisión de MP según cómo configure su cuenta
+    //    (al instante o a X días) — eso escapa de Moovy. ÚNICO tope: que al comercio no
+    //    le quede negativo después de la comisión de MP (sino MP rechaza el pago). Usamos
+    //    la reserva `r` como estimación máxima de esa comisión. En pedidos normales el
+    //    tope no se activa: Moovy se lleva su comisión + envío enteros.
+    const merchantFloor = round2(subtotal - commission); // informativo (ver expectedMerchantNet)
+    const maxFee = round2(chargedTotal * (1 - r));
     const marketplaceFee = Math.max(0, round2(Math.min(idealMoovyFee, maxFee)));
 
     const notes: string[] = [];
     if (marketplaceFee + 0.01 < idealMoovyFee) {
         notes.push(
-            `Tope activado: Moovy recibe $${marketplaceFee} en vez de $${idealMoovyFee} ` +
-            `para que el comercio cobre su producto ($${merchantFloor}). ` +
-            `Si querés recuperar la diferencia, subí el % de reserva de MP o el precio del envío.`
+            `Tope de seguridad activado: Moovy recibe $${marketplaceFee} en vez de $${idealMoovyFee} ` +
+            `para que al comercio no le quede negativo tras la comisión de MP (sino MP rechaza el pago). ` +
+            `Pasa solo cuando el envío es enorme frente al producto.`
         );
     }
 
