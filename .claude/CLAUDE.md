@@ -1,6 +1,6 @@
 # MOOVY — CLAUDE.md
 
-Última actualización: 2026-04-28
+Última actualización: 2026-06-26
 
 > **Este archivo contiene SOLO información canónica y perdurable.**
 >
@@ -351,13 +351,11 @@ Cada decisión debe reducir la probabilidad de al menos una.
 
 ### MercadoPago
 
-| Componente     | Estado     | Uso               |
-| -------------- | ---------- | ----------------- |
-| Checkout Pro   | ✅ Sandbox | Pagos pedidos     |
-| Webhooks IPN   | ✅ Test    | Confirmación auto |
-| OAuth merchant | 🟡         | Split payments    |
-
-**Pendiente prod**: credenciales prod + webhook URL en panel MP.
+| Componente     | Estado  | Uso               |
+| -------------- | ------- | ----------------- |
+| Checkout Pro   | ✅ Prod | Pagos pedidos     |
+| Webhooks IPN   | ✅ Prod | Confirmación auto |
+| OAuth merchant | 🟡      | Split payments    |
 
 ### Otros
 

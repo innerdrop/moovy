@@ -1,5 +1,5 @@
 # Moovy — Estado del proyecto
-Última actualización: 2026-06-18
+Última actualización: 2026-06-26
 
 > **Dashboard de una pantalla.** Para detalle de tareas → `ISSUES.md`. Para histórico de ramas → `.claude/CHANGELOG.md`.
 > Para el detalle vivo de pendientes del checklist pre-launch → `docs/HANDOFF_PENDIENTES.md`.
@@ -10,76 +10,75 @@
 
 | Categoría | Estado |
 |---|---|
-| MP producción | ✅ Credenciales de PROD cargadas (ya no se usa sandbox; pagos se prueban en prod) |
-| Split payments | 🟡 Implementado (Grupos B/C). Falta test real con 3 cuentas MP distintas en prod |
+| MP producción | ✅ Credenciales de PROD cargadas (ya no se usa sandbox; los pagos se prueban en prod) |
+| Modelo de pago / split | 🟡 **Modelo final cerrado**: el comercio banca su propia comisión de MP; Moovy cobra su comisión + el envío completos; cada parte paga su 7,6% de MP por la acreditación al instante. También se arregló el bug de que el descuento no se aplicaba al cobro. Rama `fix/split-mp-comercio-banca-mp` (556a7ce) cerrada y mergeada a develop. **Falta: deployar + 1 test real de pago con cuentas MP distintas en prod** |
+| Comisión del comercio | ✅ **Decidida: 10%** (ni 8% ni 12%) — competitiva y subible de a poco. Mes 1 gratis. **Falta aplicar el 10% en `/ops/config-biblia` de prod** (confirmar también operativo 5%) |
 | Motor de envío (Biblia) | ✅ Conectado: fórmula fuel-based + zona/clima/demanda, preview = cobro, sin config fantasma |
 | Cobertura por zonas | 🟡 Gate point-in-polygon OK. **Falta confirmar/pintar las zonas en `/ops/zonas-delivery`** |
-| Candado de lanzamiento | ✅ `LAUNCH_GATE` (env, fail-closed) + cortina `/proximamente`. Cortina CONFIRMADA puesta en prod (2026-06-18) |
+| Candado de lanzamiento | ✅ `LAUNCH_GATE` (env, fail-closed) + cortina `/proximamente`. Cortina CONFIRMADA puesta en prod |
 | Unit Economics | ✅ Dashboard read-only en `/ops/unit-economics` |
-| Deploy del batch acumulado | ✅ DEPLOYADO a prod 2026-06-18 (19 commits, modo schema, db push no-op "already in sync", smoke test OK). Scripts post-deploy corridos |
-| Crons en prod | ✅ ARREGLADOS 2026-06-18 — estaban todos en 401 hace ~14 días por comillas en `CRON_SECRET` del `.env`. Ver `docs/RUNBOOK_CRONS.md`. Falta sumar `daily-revenue-summary` al crontab (línea dada) |
-| Data cleanup pre-launch | 🔴 ABIERTO (script listo, falta ejecución día launch — ISSUE-004) |
-| Split payments | 🟡 Implementado. Falta test real con 3 cuentas MP distintas en prod |
-| Tests automatizados | 🟡 0 E2E (Vitest configurado); scripts validate-*.ts sí corren |
+| Deploy a prod | 🟡 El batch grande ya está en prod (2026-06-18, 19 commits). PERO develop tiene el **fix de pagos sin deployar** → próximo `devmain.ps1` lo lleva a prod |
+| Crons en prod | ✅ Andando (se arregló el 401 por comillas en `CRON_SECRET`). Ver `docs/RUNBOOK_CRONS.md`. Falta sumar `daily-revenue-summary` al crontab |
+| Data cleanup pre-launch | 🔴 ABIERTO (script listo, se ejecuta el día del launch — ISSUE-004) |
+| Tests automatizados | 🟡 0 E2E (Vitest configurado); scripts `validate-*.ts` sí corren |
 | Seguridad (PIN, fraud, refund, encrypt, AAIP) | ✅ Cerrado |
 | Panel OPS operativo | ✅ Cerrado |
 
-**Veredicto**: el batch grande ya está en producción detrás de la cortina y los crons volvieron a andar. Quedan tareas operativas (categorías home, zonas, test MP, 5 items a re-probar) y los 2 pasos del día del launch. Ver el checklist simple en `docs/CHECKLIST_PARA_LANZAR.md`.
+**Veredicto**: el batch grande ya está en producción detrás de la cortina. Lo nuevo de esta sesión es el modelo de pago definitivo (rama cerrada en develop, falta deployar) y la decisión de comisión al 10%. El camino a launch es: aplicar comisión 10% + deployar el fix + hacer el primer pago real de prueba.
 
 ---
 
-## Sprint actual (2026-06-18)
+## Sprint actual (2026-06-26)
 
-**Foco**: resolver TODAS las observaciones del checklist QA pre-launch, probar en develop/local (menos pagos, que ya están en prod), y después deployar el batch acumulado.
+**Foco**: cerrar el modelo de pago definitivo, dejarlo listo para deployar, y hacer el primer pago real de prueba en producción.
 
-**Plan acordado con el founder**:
-1. Resolver todas las observaciones (rama por rama).
-2. Probar en develop/local (pagos NO — MP en prod, se prueban en prod).
-3. `devmain.ps1` en **modo schema** + re-seed `DeliveryRate` + `cerrar-tienda.ps1`.
-4. Re-test de lo nuevo en producción (detrás de la cortina).
-
-**Cerrado esta sesión (2026-06-17 → 18)** — 6 ramas:
-1. `feat/ops-notificacion-opcional-aprobacion` — checkbox "Notificar al usuario por email" (default ON) al aprobar/rechazar comercio y driver desde OPS. El audit log siempre registra + ahora guarda `notified`. Permite correcciones/QA sin spamear.
-2. `fix/merchant-api-db-auth` — BUG del 403 post-aprobación: las APIs `/api/merchant/*` validaban contra el JWT cache (stale tras aprobar) → 403 aunque la DB dijera APPROVED. Nuevo helper `requireMerchantApi` (DB-based, espejo de `requireDriverApi`), 21 handlers migrados + refetch del dashboard al refrescar sesión. **Probado: la redirección post-aprobación carga sin 403.**
-3. `feat/docs-comercio-configurables-ops` — documentación del comercio configurable desde `/ops/feature-flags` (5 flags `merchant.doc.*`). Semántica fail-safe inversa: requerido salvo flag explícito en OFF. **Pendiente correr el seed** (`scripts/seed-feature-flags.ts`) en local + prod.
-4. `chore/quitar-flag-efectivo` — removido el flag fantasma `buyer.cash-payment` (checkout es electrónico-only; el flag no cableaba nada). Código de efectivo queda dormido para Fase 2. **Pendiente correr `cleanup-deprecated-feature-flags.ts --execute`** en local + prod.
-5. `feat/ops-campana-notificaciones` — campana de notificaciones en el header de OPS. Endpoint nuevo `/api/admin/notifications` que deriva 4 fuentes (aprobaciones pendientes, change-requests docs, reseñas en moderación, incidentes de PIN) sin tocar schema. Componente con polling 45s + localStorage de "vistos". **Pendiente verificación local**: `npx tsx scripts/verify-ops-notifications.ts` + click-through.
-6. `feat/puntos-wording-amex-y-acceso` — Sección de Puntos: wording estilo Amex (titular de valor + cálculo "10 por $1.000" movido a desplegable "Cómo se calcula"), chip de saldo en el header (`PointsBalanceChip`, solo logueados), y "dónde aplican" visible (productos no envío + se acreditan al recibir). Sin tocar lógica de earn/burn, sin schema. **Pendiente verificación local**: ver el chip con saldo + recorrer /puntos.
-
-**Además esta sesión (2026-06-18), fuera de ramas de código:**
-- ✅ **Logo del comercio (s4-4b-02)**: probado en local, guarda OK. La falla era data vieja de prod; el deploy lo arregló. Cerrado sin código.
-- ✅ **DEPLOY del batch a producción**: `devmain.ps1` modo schema, 19 commits, smoke test OK. + scripts post-deploy (`seed-feature-flags`, `cleanup-deprecated-feature-flags --execute`, `fix-orders-completed-to-delivered --execute`) + `cerrar-tienda.ps1` (cortina confirmada).
-- ✅ **Crons arreglados**: estaban en 401 hace ~14 días por comillas en `CRON_SECRET` del `.env` (la app las saca, el crontab no). Se removieron las comillas → 200. Documentado en `docs/RUNBOOK_CRONS.md`. Pendiente: sumar la línea de `daily-revenue-summary` al crontab del VPS.
-- 📄 Docs nuevos (sin commitear en develop): `docs/RUNBOOK_DEPLOY_2026-06-18.md`, `docs/RUNBOOK_CRONS.md`, `docs/CHECKLIST_PARA_LANZAR.md`.
-
-**Siguiente**: ver `docs/CHECKLIST_PARA_LANZAR.md` — categorías home, zonas, test MP, 5 items a re-probar; y día del launch: cleanup + abrir-tienda.
-
-**Pendiente de migrar a CLAUDE.md** (Mauro a mano, `.claude/` protegido): (a) `requireMerchantApi` como helper canónico de auth API del comercio (regla tipo #13/#28). (b) Semántica fail-safe **inversa** de los flags `merchant.doc.*` (requerido salvo OFF explícito). (c) El `notified` en el audit log de aprobaciones.
+**Cerrado esta sesión**:
+- **Modelo de pago final**: se definió y se implementó que el comercio banca su propia comisión de MP, Moovy cobra su comisión + el envío completos, y cada parte paga su 7,6% de MP por la acreditación al instante (Moovy NO absorbe el MP del comercio). El comprador paga precio limpio (sin recargo visible). Los descuentos los absorbe Moovy.
+- **Bug del descuento**: se arregló que el descuento no se estaba aplicando al cobro real (`buildPreferenceBody` ahora totaliza sobre `order.total`).
+- **Comisión 10%**: decisión del founder — arrancar en 10% (no 8%, no 12%) para ser competitivos y poder subirla de a poco. Falta aplicarla en la biblia de prod.
+- **Rama `fix/split-mp-comercio-banca-mp` (556a7ce)** cerrada y mergeada a develop.
+- **Orden de ramas**: se recuperó un enredo donde el cambio había quedado suelto en develop; se movió a su rama y se cerró bien. Se borraron 4 ramas viejas ya mergeadas.
+- **Herramientas financieras (uso personal del founder)**: PDF del flujo de pago, PDF de análisis financiero (3 escenarios: desastre / real / óptimo) y un simulador interactivo (`Moovy_Simulador_Financiero.html`) con comparación de escenarios, programa MOOVER y % de envíos gratis.
+- **Limpieza del manual + nueva modalidad de trabajo**: se corrigió `CLAUDE.md` (MP a prod + fecha). Acordamos: el **estado vivo** se mantiene en este tablero (que Claude edita en cada cierre); `CLAUDE.md` queda solo con canon perdurable; Claude entrega un bloque listo para pegar solo cuando cambia una regla de fondo.
 
 ---
 
-## Próximas tareas (orden) — ver `docs/CHECKLIST_PARA_LANZAR.md`
+## Próximas tareas (orden)
 
-1. **Sumar `daily-revenue-summary` al crontab del VPS** (línea ya dada; `0 12 * * *` = 9 AM ART). Verificar que el aviso rojo de "broadcast" del dashboard se vaya solo en ~1h.
-2. **Configurar categorías de la home** en `/ops/categorias` (operativo).
-3. **Pintar/confirmar zonas de cobertura** en `/ops/zonas-delivery`.
-4. **Test real de pago MP** (1 compra real + split con 3 cuentas distintas) en prod.
-5. **Re-probar 5 items sueltos** (sin bug conocido, solo verificar): s2-2a-11 (bonus bienvenida), s2-2b-01 (email registro comercio), s3-3c-01 (errores OPS en toast), s4-4c-04 (variantes producto), s7-7a-02 (bloqueo fuera de zona).
-6. **Día del launch**: `scripts/clean-db-pre-launch.ts --execute` + `abrir-tienda.ps1`.
-7. **Post-launch**: SEO (aggregateRating + review), tests E2E, `feat/propinas-driver`.
+1. **Aplicar comisión 10%** en `/ops/config-biblia` de prod + confirmar operativo 5%.
+2. **Deploy del fix de pagos**: `devmain.ps1` (modo schema) detrás de la cortina.
+3. **Test real de pago MP** (1 compra real + split, verificar que el repartidor y el comercio cobren bien).
+4. **Sumar `daily-revenue-summary` al crontab del VPS** (`0 12 * * *`).
+5. **Categorías de la home** (`/ops/categorias`) + **pintar zonas** (`/ops/zonas-delivery`).
+6. **Re-probar 5 items sueltos**: s2-2a-11 (bonus bienvenida), s2-2b-01 (email registro comercio), s3-3c-01 (errores OPS en toast), s4-4c-04 (variantes producto), s7-7a-02 (bloqueo fuera de zona).
+7. **Día del launch**: `scripts/clean-db-pre-launch.ts --execute` + `abrir-tienda.ps1`.
+8. **Post-launch**: SEO (aggregateRating + review), tests E2E, `feat/propinas-driver`.
 
-> Commitear cuando puedas los docs nuevos en develop (no van en una rama, son docs):
-> `git add docs/ ISSUES.md PROJECT_STATUS.md && git commit -m "docs: cierre sesion 2026-06-18 (deploy + crons + checklists)" && git push origin develop`
+---
+
+## Pendiente de migrar a CLAUDE.md (Mauro a mano — `.claude/` protegido)
+
+Decisiones ya tomadas que el manual todavía no tiene. Claude arma el bloque listo para pegar (ver `docs/PARA_PEGAR_EN_CLAUDE_md.md`):
+
+- ✅ Tabla de estado de MP → **corregida 2026-06-26**.
+- Modelo de pago final + comisión 10% (sección Reparto Financiero).
+- `requireMerchantApi` (auth de API del comercio contra DB, no JWT cache).
+- Flags `merchant.doc.*` con semántica fail-safe inversa.
+- `notified` en el audit log de aprobaciones/rechazos.
+- Candado de lanzamiento `LAUNCH_GATE`.
+- Vendedor marketplace frictionless (sin docs ni aprobación).
+- Compra del propio comercio bloqueada.
+- Dashboard Unit Economics.
+- Efectivo = electrónico-only para lanzamiento (código dormido para Fase 2).
 
 ---
 
 ## Métricas
 
-- **Issues 🔴 abiertos**: 1 (ISSUE-004 cleanup data, es del día del launch). El deploy del batch ya NO es 🔴 (deployado 2026-06-18).
-- **Ramas cerradas esta sesión (2026-06-17 → 18)**: 6 (ver ISSUES.md "Resueltos esta sesión").
-- **Prod**: batch deployado (19 commits), cortina puesta, crons andando.
-- **Pendiente operativo**: sumar `daily-revenue-summary` al crontab del VPS.
-- **TS en prod**: el deploy corrió tsc + build limpio sin errores (red de seguridad de `devmain`).
+- **Issues 🔴 abiertos**: 1 (ISSUE-004 cleanup data, es del día del launch).
+- **Prod**: batch grande deployado (19 commits), cortina puesta, crons andando. **Fix de pagos en develop sin deployar.**
+- **Ramas locales viejas**: limpiadas (4 ramas mergeadas borradas).
+- **TS**: `finish.ps1` corrió tsc-strict al cerrar la rama del fix de pagos.
 
 ---
 
