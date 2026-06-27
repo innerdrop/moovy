@@ -100,10 +100,10 @@ Mapping a vehículo en `src/lib/product-weight.ts` (`SIZE_METADATA`).
 #### Comisiones
 
 - Comercio MES 1: **0%** (30 días desde `Merchant.createdAt`)
-- Comercio MES 2+: **8%** base, dinámico por tier (BRONCE 8% → DIAMANTE 5%)
+- Comercio MES 2+: **10%** base, dinámico por tier (BRONCE 10% → PLATA 9% → ORO 8% → DIAMANTE 7%)
 - Seller marketplace: **12%** desde día 1 (sin first-month-free)
 - Service fee al comprador: 0% (precio limpio)
-- Costo operativo embebido: **5%** del subtotal en delivery fee (cubre MP 3.81% + margen)
+- Costo operativo embebido: **5%** del subtotal en delivery fee (cubre el ~7.6% de MP sobre la porción de Moovy + margen)
 - Repartidor: **80%** del costo del viaje (NO incluye 5% operativo)
 - Moovy delivery: 20% del viaje + 5% operativo
 - MP real: 7.6% (acreditación AL INSTANTE — es la que usamos). El 3.81% es la tarifa con acreditación diferida, que NO aplica a Moovy.
@@ -154,7 +154,7 @@ Helper canónico: `getEffectiveCommissionWithSource(merchantId)` con precedencia
 - **Email transaccional**: función exportada (NUNCA inline) + entrada en `EMAIL_REGISTRY` con `generatePreview()` + trigger conectado. Editable desde `/ops/emails`
 - **Cron idempotente**: patrón `updateMany WHERE flag IS NULL + count === 1` antes del side effect. Wrap en `recordCronRun(jobName, fn)` + entrada en `CRON_EXPECTATIONS`
 - **Panel OPS único operativo**: todo parámetro editable post-launch (copy, segmentos, playbooks, tiers, zonas, emails) en DB con UI CRUD desde `/ops`. NUNCA en constantes del código
-- **Biblia Financiera única fuente de verdad** financiera. `getEffectiveCommission()` con precedencia: `commissionOverride > first-month-free (0%) > tier > fallback 8%`
+- **Biblia Financiera única fuente de verdad** financiera. `getEffectiveCommission()` con precedencia: `commissionOverride > first-month-free (0%) > tier > fallback 10%`
 - **Wording user-facing**: NUNCA "OPS" → "el equipo de Moovy". NUNCA mencionar competidores
 - **PIN doble entrega**: state machine bloquea PICKED_UP sin pickup verified, DELIVERED sin delivery verified. Geofence 100m+gracia, 5 intentos, fraudScore +1 al lockear, auto-suspend ≥3 incidentes
 - **proxy.ts no chequea roles JWT** para `/comercios/*` ni `/repartidor/*`. Solo sesión. Layout protegido decide vía DB. ADMIN sí en proxy para `/ops/*`
@@ -277,7 +277,7 @@ PedidosYa/Rappi: retención de dinero, comisiones 25-30%, soporte lento, presenc
 
 MOOVY es un movimiento, no comparación. Filosofía Apple: no nombramos a Samsung.
 
-- ❌ "A diferencia de PedidosYa..." | ✅ "Comisiones desde el 8% — las más bajas del mercado"
+- ❌ "A diferencia de PedidosYa..." | ✅ "Comisiones desde el 10% — las más bajas del mercado"
 - ❌ "Mientras otros retienen tu dinero..." | ✅ "Cobrás al instante. Cada venta, cada vez"
 
 ### Pre-mortem antes de cada decisión grande
@@ -390,3 +390,119 @@ next 16 | react 19 | prisma 5.22 | next-auth 5 (beta) | @react-google-maps 2 | s
 3. Warning de deprecación: documentar con plan
 4. Cada 2 semanas: `npm outdated`
 5. Pre-deploy prod: verificar APIs habilitadas + credenciales
+
+## 2. Candado de lanzamiento (`LAUNCH_GATE`)
+
+**Qué es:** la decisión de que el sitio se mantiene privado mostrando
+"Próximamente" hasta que vos lo abras a mano. Ya funciona; falta que el manual lo diga.
+
+**Dónde va:** sección **"Decisiones arquitectónicas canónicas"** (como un bullet más).
+
+```
+- **Candado de lanzamiento `LAUNCH_GATE`** (en `proxy.ts`): por entorno, fail-closed,
+  solo en prod y solo en páginas. El público ve la cortina `/proximamente`. Se entra
+  con `?preview=PREVIEW_TOKEN` → cookie httpOnly 30 días. Se abre/cierra con
+  `scripts/abrir-tienda.ps1` / `cerrar-tienda.ps1` (NO desde OPS; el modo
+  mantenimiento se sacó de OPS). Deployar NO expone el sitio.
+```
+
+---
+
+## 3. Cómo se verifica que un comercio está aprobado (`requireMerchantApi`)
+
+**Qué es:** cuando un comercio entra a su panel, el sistema chequea contra la base
+de datos que esté realmente aprobado (no por un atajo guardado que puede quedar viejo).
+
+**Dónde va:** lista **"Reglas acumuladas"** (como una regla nueva).
+
+```
+- **Auth de API del comercio contra DB**: `requireMerchantApi()` consulta la base de
+  datos (no el JWT cache, que queda stale tras aprobar). Espejo de `requireDriverApi`.
+  El JWT `roles[]` es solo cache. (Arregló el 403 post-aprobación.)
+```
+
+---
+
+## 4. Documentos del comercio configurables (fail-safe inverso)
+
+**Qué es:** desde OPS se puede prender/apagar qué documentos se le piden a un comercio.
+Por seguridad legal, si algo falla, el documento **se pide igual**.
+
+**Dónde va:** lista **"Reglas acumuladas"**.
+
+```
+- **Flags `merchant.doc.*` con fail-safe inverso**: el documento es requerido SALVO
+  que el flag exista y esté explícitamente en OFF. Si falta la fila o falla la query,
+  se pide igual (compliance). `getRequiredDocumentFields` es async + flag-aware.
+```
+
+---
+
+## 5. Aviso opcional al aprobar/rechazar (`notified`)
+
+**Qué es:** al aprobar o rechazar un comercio/repartidor desde OPS, hay un casillero
+"Notificar por email" (prendido por defecto). El registro guarda si se avisó o no.
+
+**Dónde va:** lista **"Reglas acumuladas"**.
+
+```
+- **Aprobación/rechazo con notificación opcional**: checkbox "Notificar al usuario por
+  email" (default ON) al aprobar/rechazar comercio o driver. El audit log siempre
+  registra y guarda `notified` (permite correcciones/QA sin spamear).
+```
+
+---
+
+## 6. Vendedor del marketplace sin fricción
+
+**Qué es:** los vendedores del marketplace entran directo, sin subir documentación ni
+esperar aprobación (a diferencia de los comercios).
+
+**Dónde va:** sección **"Decisiones arquitectónicas canónicas"**.
+
+```
+- **Vendedor marketplace = frictionless**: sin documentación ni aprobación. Entra y
+  publica directo (a diferencia del comercio, que sí pasa por aprobación de docs).
+```
+
+---
+
+## 7. Compra del propio comercio bloqueada
+
+**Qué es:** un comercio no puede comprarse a sí mismo.
+
+**Dónde va:** sección **"Decisiones arquitectónicas canónicas"**.
+
+```
+- **Compra del propio comercio bloqueada** (ISSUE-003): un usuario-comercio no puede
+  comprar en su propia tienda.
+```
+
+---
+
+## 8. Dashboard de Unit Economics
+
+**Qué es:** una pantalla de solo lectura en OPS que muestra los números por pedido
+(cuánto gana Moovy, cuánto el repartidor, etc.).
+
+**Dónde va:** sección **"Decisiones arquitectónicas canónicas"**.
+
+```
+- **Unit Economics**: dashboard read-only en `/ops/unit-economics` + lib
+  `src/lib/finance/unit-economics.ts`.
+```
+
+---
+
+## 9. Efectivo apagado para el lanzamiento
+
+**Qué es:** para arrancar, solo se acepta pago electrónico. El código del pago en
+efectivo quedó guardado para más adelante.
+
+**Dónde va:** sección **"Decisiones arquitectónicas canónicas"**.
+
+```
+- **Efectivo = electrónico-only para lanzamiento**: el checkout es solo pago
+  electrónico. El flag fantasma `buyer.cash-payment` se removió; el código de efectivo
+  queda dormido para Fase 2.
+```
