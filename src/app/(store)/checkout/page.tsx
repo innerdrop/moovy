@@ -842,13 +842,6 @@ export default function CheckoutPage() {
                                             <div className="flex flex-col sm:flex-row gap-2">
                                                 <button
                                                     type="button"
-                                                    onClick={() => { setDeliveryMethod("home"); setDeliveryType("SCHEDULED"); }}
-                                                    className="flex-1 text-sm font-semibold text-blue-700 hover:text-blue-900 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 transition"
-                                                >
-                                                    Programar para más tarde
-                                                </button>
-                                                <button
-                                                    type="button"
                                                     onClick={() => { setDeliveryMethod("pickup"); setDeliveryType("IMMEDIATE"); }}
                                                     className="flex-1 text-sm font-semibold text-blue-700 hover:text-blue-900 bg-white hover:bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 transition"
                                                 >
@@ -867,11 +860,7 @@ export default function CheckoutPage() {
 
                                     <div className="grid grid-cols-2 gap-4 lg:gap-6 mb-6 lg:mb-8">
                                         <button
-                                            onClick={() => {
-                                                setDeliveryMethod("home");
-                                                // If no drivers available, suggest scheduled delivery
-                                                if (!hasDrivers) setDeliveryType("SCHEDULED");
-                                            }}
+                                            onClick={() => setDeliveryMethod("home")}
                                             className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${deliveryMethod === "home"
                                                 ? "border-moovy bg-moovy-light"
                                                 : "border-gray-100 hover:border-gray-200"

@@ -115,6 +115,15 @@ export async function PUT(request: Request) {
                 }).catch((err) =>
                     console.error("[driver/status] notifyAvailabilitySubscribers failed:", err)
                 );
+
+                // feat/asignacion-reintento-y-reembolso: al conectarse un repartidor,
+                // reintentar los pedidos pagados que quedaron en "buscando repartidor".
+                // Import dinámico para no arrastrar el motor entero a esta ruta.
+                import("@/lib/assignment-engine")
+                    .then(({ retryAllSearchingOrders }) => retryAllSearchingOrders())
+                    .catch((err) =>
+                        console.error("[driver/status] retryAllSearchingOrders failed:", err)
+                    );
             }
         }
 

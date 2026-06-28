@@ -16,6 +16,9 @@ import { getCompatibleVehicles, getShipmentType, autoDetectShipmentType, driverM
 import { prioritizeOrders, type OrderForPriority } from "./order-priority";
 import { deliveryLogger } from "./logger";
 import { sendDriverAssignedEmail } from "./email-legal-ux";
+// feat/asignacion-reintento-y-reembolso: reembolso automático cuando un pedido
+// pagado agota la ventana de búsqueda sin repartilor.
+import { refundOrderIfPaid } from "./order-refund";
 // feat/driver-cancelar-pedido (2026-06-04): reusamos el mismo umbral de fraude que
 // el flujo de PIN para auto-suspender drivers que cancelan pedidos ya aceptados.
 
@@ -469,7 +472,7 @@ export async function startAssignmentCycle(
         );
 
         if (!driver) {
-            await handleNoDriverFound(orderId, order.user.id, order.orderNumber);
+            await onNoEligibleDriver(orderId, order.user.id, order.orderNumber);
             return { success: false, error: "No hay repartidores disponibles en la zona" };
         }
 
@@ -1027,7 +1030,7 @@ export async function processExpiredAssignments(): Promise<number> {
         const excludeDriverIds = [...new Set(previousLogs.map((l) => l.driverId))];
 
         if (assignment.attemptNumber >= maxAttempts) {
-            await handleNoDriverFound(assignment.orderId, assignment.order.userId, assignment.order.orderNumber);
+            await onNoEligibleDriver(assignment.orderId, assignment.order.userId, assignment.order.orderNumber);
             deliveryLogger.info(
                 { orderId: assignment.orderId, orderNumber: assignment.order.orderNumber, maxAttempts },
                 "Order reached max attempts. Marked UNASSIGNABLE."
@@ -1038,7 +1041,7 @@ export async function processExpiredAssignments(): Promise<number> {
 
         // Try next driver
         if (!assignment.order.merchant?.latitude || !assignment.order.merchant?.longitude) {
-            await handleNoDriverFound(assignment.orderId, assignment.order.userId, assignment.order.orderNumber);
+            await onNoEligibleDriver(assignment.orderId, assignment.order.userId, assignment.order.orderNumber);
             processed++;
             continue;
         }
@@ -1063,7 +1066,7 @@ export async function processExpiredAssignments(): Promise<number> {
         );
 
         if (!nextDriver) {
-            await handleNoDriverFound(assignment.orderId, assignment.order.userId, assignment.order.orderNumber);
+            await onNoEligibleDriver(assignment.orderId, assignment.order.userId, assignment.order.orderNumber);
             deliveryLogger.info(
                 { orderId: assignment.orderId, orderNumber: assignment.order.orderNumber },
                 "No more eligible drivers. Marked UNASSIGNABLE."
@@ -1447,7 +1450,7 @@ export async function driverRejectOrder(
         const timeoutSeconds = parseInt(timeoutStr, 10) || 20;
 
         if (!pending.order.merchant?.latitude || !pending.order.merchant?.longitude || pending.attemptNumber >= maxAttempts) {
-            await handleNoDriverFound(orderId, pending.order.userId, pending.order.orderNumber);
+            await onNoEligibleDriver(orderId, pending.order.userId, pending.order.orderNumber);
             return { success: true };
         }
 
@@ -1471,7 +1474,7 @@ export async function driverRejectOrder(
         );
 
         if (!nextDriver) {
-            await handleNoDriverFound(orderId, pending.order.userId, pending.order.orderNumber);
+            await onNoEligibleDriver(orderId, pending.order.userId, pending.order.orderNumber);
             return { success: true };
         }
 
@@ -1732,6 +1735,144 @@ export async function driverCancelAcceptedOrder(
 }
 
 // ─── Internal Helpers ───────────────────────────────────────────────────────────
+
+// ─── feat/asignacion-reintento-y-reembolso ───────────────────────────────────
+// Un pedido PAGADO nunca queda en el limbo. Si al asignar no hay repartidor:
+//   1. Primera vez → entra en SEARCHING_DRIVER con una ventana (config, default
+//      20 min). El comprador ve "Buscando repartidor".
+//   2. El cron (retryAllSearchingOrders) y el hook de driver-online reintentan
+//      mientras la ventana siga abierta.
+//   3. Si vence sin repartidor → se finaliza (UNASSIGNABLE) + refund automático.
+
+/** Minutos de la ventana de búsqueda de repartidor (config, default 20). */
+async function getSearchWindowMinutes(): Promise<number> {
+    const str = await getConfig("driver_search_window_minutes", "20").catch(() => "20");
+    const n = parseInt(str, 10);
+    return Number.isFinite(n) && n > 0 ? n : 20;
+}
+
+/** Pone el pedido en SEARCHING_DRIVER con su fecha límite + avisa a comprador y comercio. */
+async function enterDriverSearch(orderId: string, userId: string, orderNumber: string, now: Date): Promise<void> {
+    const windowMin = await getSearchWindowMinutes();
+    const until = new Date(now.getTime() + windowMin * 60 * 1000);
+
+    const updated = await prisma.order.update({
+        where: { id: orderId },
+        data: {
+            status: "SEARCHING_DRIVER",
+            driverSearchUntil: until,
+            pendingDriverId: null,
+            assignmentExpiresAt: null,
+        },
+        select: { merchantId: true },
+    });
+
+    // Mantener viva la PendingAssignment para que el cron la reintente.
+    await prisma.pendingAssignment.update({
+        where: { orderId },
+        data: { status: "WAITING" },
+    }).catch(() => { /* puede no existir todavía */ });
+
+    notifyBuyer(userId, "SEARCHING_DRIVER", orderNumber, { orderId }).catch((err) =>
+        deliveryLogger.error({ error: err }, "[searching] buyer notify error")
+    );
+    emitSocket("order_status_changed", `customer:${userId}`, { orderId, orderNumber, status: "SEARCHING_DRIVER" }).catch(() => {});
+    if (updated.merchantId) {
+        emitSocket("order_status_changed", `merchant:${updated.merchantId}`, { orderId, orderNumber, status: "SEARCHING_DRIVER" }).catch(() => {});
+    }
+    deliveryLogger.info({ orderId, until, windowMin }, "[searching] order entered SEARCHING_DRIVER window");
+}
+
+/**
+ * Punto único cuando no hay repartidor elegible. Reemplaza la llamada directa a
+ * handleNoDriverFound en todo el motor. Decide: abrir/mantener la ventana de
+ * búsqueda, o finalizar + reembolsar si ya venció (o si el pedido no está pagado).
+ */
+async function onNoEligibleDriver(orderId: string, userId: string, orderNumber: string): Promise<void> {
+    const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: { paymentStatus: true, driverSearchUntil: true },
+    });
+    if (!order) return;
+
+    const now = new Date();
+    const isPaid = order.paymentStatus === "PAID";
+
+    // No pagado (caso borde — este flujo corre post-confirmación) → finaliza directo.
+    if (!isPaid) {
+        await handleNoDriverFound(orderId, userId, orderNumber);
+        return;
+    }
+
+    // Ya buscaba y venció la ventana → finalizar + refund automático.
+    if (order.driverSearchUntil && now >= order.driverSearchUntil) {
+        await handleNoDriverFound(orderId, userId, orderNumber);
+        await refundOrderIfPaid(orderId, {
+            triggeredBy: "cron",
+            reason: "No se encontró repartidor dentro de la ventana de búsqueda. Reembolso automático.",
+        }).catch((err) => deliveryLogger.error({ orderId, error: err }, "[searching] auto-refund failed"));
+        return;
+    }
+
+    // Primera vez sin repartidor → abrir la ventana de búsqueda.
+    if (!order.driverSearchUntil) {
+        await enterDriverSearch(orderId, userId, orderNumber, now);
+        return;
+    }
+
+    // En búsqueda, dentro de la ventana → seguir esperando (cron/driver-online reintentan).
+    deliveryLogger.info({ orderId, until: order.driverSearchUntil }, "[searching] sin repartidor aún, dentro de la ventana");
+}
+
+/**
+ * Reintenta UN pedido en SEARCHING_DRIVER. Ventana vencida → finaliza + refund.
+ * Ventana abierta y sin oferta en vuelo → re-corre el ciclo de asignación.
+ * Idempotente y safe desde el cron o el hook de driver-online.
+ */
+export async function retrySearchingOrder(orderId: string): Promise<void> {
+    const order = await prisma.order.findUnique({
+        where: { id: orderId },
+        select: {
+            id: true, status: true, driverId: true, driverSearchUntil: true,
+            pendingDriverId: true, assignmentExpiresAt: true, userId: true, orderNumber: true,
+        },
+    });
+    if (!order) return;
+    if (order.status !== "SEARCHING_DRIVER" || order.driverId) return;
+
+    const now = new Date();
+
+    // Oferta en vuelo (driver notificado, dentro del timeout) → no pisar, dejar resolver.
+    if (order.pendingDriverId && order.assignmentExpiresAt && order.assignmentExpiresAt > now) return;
+
+    // Ventana vencida → finalizar + refund.
+    if (order.driverSearchUntil && now >= order.driverSearchUntil) {
+        await onNoEligibleDriver(order.id, order.userId, order.orderNumber);
+        return;
+    }
+
+    // Dentro de ventana, sin oferta activa → reintentar.
+    await startAssignmentCycle(order.id).catch((err) =>
+        deliveryLogger.error({ orderId, error: err }, "[searching] retry startAssignmentCycle failed")
+    );
+}
+
+/**
+ * Reintenta TODOS los pedidos en SEARCHING_DRIVER. Lo usa el cron (cada pocos min)
+ * y el hook de driver-online (cuando un repartidor se conecta). En una ciudad chica
+ * los pedidos en búsqueda son pocos; reintentar todos es seguro.
+ */
+export async function retryAllSearchingOrders(): Promise<number> {
+    const searching = await prisma.order.findMany({
+        where: { status: "SEARCHING_DRIVER", deletedAt: null },
+        select: { id: true },
+        take: 100,
+    });
+    for (const o of searching) {
+        await retrySearchingOrder(o.id).catch(() => { /* ya logueado adentro */ });
+    }
+    return searching.length;
+}
 
 /** Mark order as UNASSIGNABLE and notify ops + buyer + merchant */
 async function handleNoDriverFound(orderId: string, userId: string, orderNumber: string): Promise<void> {

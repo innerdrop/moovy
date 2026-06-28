@@ -111,6 +111,13 @@ const STATUS_MESSAGES: Record<string, MessageBuilder> = {
         title: '❌ Pedido programado cancelado',
         body: (n) => `Tu pedido programado ${n} fue cancelado. Te reembolsamos ❌`,
     },
+    // feat/asignacion-reintento-y-reembolso: el pedido pagado no encontró repartidor
+    // al instante y entró en la ventana de búsqueda. Se le avisa con las salidas a mano.
+    SEARCHING_DRIVER: {
+        title: '🔎 Buscando repartidor',
+        body: (n) =>
+            `Estamos buscando un repartidor para tu pedido ${n}. Te avisamos apenas haya uno. Si preferís, podés retirarlo en el local o cancelar y te devolvemos el dinero.`,
+    },
 };
 
 /**

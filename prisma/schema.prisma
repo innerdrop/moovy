@@ -385,6 +385,12 @@ model Order {
   attemptedDriverIds  Json?
   lastAssignmentAt    DateTime?
   pendingDriverId     String?
+  // feat/asignacion-reintento-y-reembolso: cuando un pedido PAGADO no encuentra
+  // repartidor al primer intento, en vez de morir en UNASSIGNABLE entra en estado
+  // "SEARCHING_DRIVER" hasta esta fecha límite. El cron + el hook de driver-online
+  // reintentan mientras `driverSearchUntil > now`; al vencer, se dispara el refund
+  // automático. Null = no está en búsqueda activa.
+  driverSearchUntil   DateTime?
   deletedAt           DateTime?
   address             Address     @relation(fields: [addressId], references: [id])
   driver              Driver?     @relation(fields: [driverId], references: [id])

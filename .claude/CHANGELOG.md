@@ -10,6 +10,26 @@
 
 ---
 
+## 2026-06-28 (rama `feat/asignacion-reintento-y-reembolso`)
+
+feat(logistica): un pedido pagado nunca queda sin asignar — ventana de búsqueda + reintento + reembolso automático
+
+- Si no hay repartidor al confirmar, el pedido entra en SEARCHING_DRIVER (ventana
+  configurable `driver_search_window_minutes`, default 20 min) en vez de morir en
+  UNASSIGNABLE. El cron assignment-tick y el hook de driver-online reintentan; al
+  vencer la ventana sin repartidor → refund automático (refundOrderIfPaid).
+- `onNoEligibleDriver` reemplaza las 6 llamadas directas a handleNoDriverFound.
+- Estado "Buscando repartidor" visible para comprador y comercio (no más fantasma).
+- Checkout: sacado "Programar para más tarde" del cartel sin repartidor; queda
+  "Retirar en local" + "Avisame cuando haya repartidor". El pago sigue bloqueado si
+  no hay repartidor y es envío inmediato.
+- Aviso "ya hay repartidor" ahora también por email (sendDriverAvailableEmail,
+  registrado en EMAIL_REGISTRY) — confiable en iPhone web donde el push no llega.
+- Schema: Order.driverSearchUntil → deploy en MODO SCHEMA.
+- Script de verificación: scripts/verify-driver-search-flow.ts.
+
+**Archivos:** .claude/CLAUDE.md, PROJECT_STATUS.md, prisma/schema.prisma, scripts/verify-driver-search-flow.ts, src/app/(store)/checkout/page.tsx, src/app/(store)/mis-pedidos/page.tsx, src/app/api/cron/assignment-tick/route.ts, src/app/api/driver/status/route.ts (+6 mas)
+
 ## 2026-06-26 (rama `fix/split-mp-comercio-banca-mp`)
 
 fix(pagos): el comercio banca su comisión de MP y Moovy cobra su comisión completa + fix descuento no aplicado al cobro

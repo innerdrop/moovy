@@ -160,7 +160,7 @@ Helper canónico: `getEffectiveCommissionWithSource(merchantId)` con precedencia
 - **proxy.ts no chequea roles JWT** para `/comercios/*` ni `/repartidor/*`. Solo sesión. Layout protegido decide vía DB. ADMIN sí en proxy para `/ops/*`
 - **Zonas de delivery con polígonos** (rama `feat/zonas-delivery-multiplicador`): la fuente de verdad de multiplicadores y bonus driver por zona es la tabla `DeliveryZone` (PostGIS Polygon SRID 4326 + GiST index), editable desde `/ops/zonas-delivery` con drawing UX pro (click-by-click / pintar freehand / edit inline). Helper canónico `getZoneSnapshotForLocation(lat, lng)` con cache invalidable. Snapshot inmutable persistido en `SubOrder.zoneCode/zoneMultiplier/zoneDriverBonus` al crear pedido (NUNCA recalcular retroactivo). El campo `StoreSettings.zoneMultipliersJson` queda como legacy del simulador en `/ops/config-biblia` y NO afecta el cobro real. Detección de overlaps con `ST_Intersects` al guardar zona — informativo, gana displayOrder mayor.
 
-## Reglas acumuladas (#1-#28)
+## Reglas acumuladas (#1-#29)
 
 > Lista numerada que crece con cada sprint. Antes de empezar una rama, escanear las que apliquen al dominio.
 
@@ -192,6 +192,7 @@ Helper canónico: `getEffectiveCommissionWithSource(merchantId)` con precedencia
 26. **Operaciones irreversibles** — confirmación textual literal en body Zod, no solo click. Audit log antes del side effect
 27. **UI multi-rol** — minimizar clicks al panel principal. Si rol activo requiere >2 clicks desde la home, hay un detour
 28. **proxy.ts y JWT roles[]** — chequeos en proxy son cache, no autorización. Layouts protegidos usan `computeUserAccess` contra DB
+29. **Pedido pagado nunca queda sin asignar** (`feat/asignacion-reintento-y-reembolso`): si al confirmar no hay repartidor elegible, el pedido entra en `SEARCHING_DRIVER` con ventana configurable (`driver_search_window_minutes`, default 20 min). El cron `assignment-tick` y el hook de driver-online reintentan vía `retrySearchingOrder`/`retryAllSearchingOrders`; al vencer sin repartidor → `refundOrderIfPaid` automático. `onNoEligibleDriver` es el punto único (reemplaza las llamadas directas a `handleNoDriverFound`). El checkout bloquea el pago sin repartidor y ofrece "Retirar en local" / "Avisame cuando haya repartidor" (con email, no solo push). Campo `Order.driverSearchUntil`. Sin "pagar y esperar".
 
 ## Variables de entorno
 

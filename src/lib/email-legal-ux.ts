@@ -461,6 +461,36 @@ export async function sendOrderReadyForPickupEmail(data: {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// feat/asignacion-reintento-y-reembolso — "Ya hay repartidor en tu zona"
+// Se dispara desde notifyAvailabilitySubscribers cuando un repartidor se conecta
+// y el comprador tenía una suscripción "avisame cuando haya repartidor". Llega al
+// mail registrado, así funciona en cualquier dispositivo (iPhone web incluido,
+// donde el push web no llega sin instalar la app).
+// ═══════════════════════════════════════════════════════════════════════════
+
+export async function sendDriverAvailableEmail(data: {
+    buyerEmail: string;
+    buyerName: string | null;
+}) {
+    const saludo = data.buyerName ? `${data.buyerName}, ` : "";
+
+    const html = emailLayout(`
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">¡Ya hay repartidor en tu zona! 🏍️</h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+            ${saludo}se conectó un repartidor cerca tuyo. Entrá ahora y completá tu pedido antes de que vuelva a subir la demanda.
+        </p>
+        ${emailButton("Completar mi pedido", `${baseUrl}/checkout`, "red")}
+    `);
+
+    return sendEmail({
+        to: data.buyerEmail,
+        subject: "¡Ya hay repartidor en tu zona! 🏍️",
+        html,
+        tag: "driver_available",
+    });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // UX #8 — Recordatorio de calificar (24h post-DELIVERED)
 // ═══════════════════════════════════════════════════════════════════════════
 

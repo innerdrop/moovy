@@ -1121,7 +1121,8 @@ CREATE TABLE public."Order" (
     "merchantRatingModerationStatus" text DEFAULT 'AUTO_APPROVED'::text NOT NULL,
     "merchantRatingReportCount" integer DEFAULT 0 NOT NULL,
     "sellerRatingModerationStatus" text DEFAULT 'AUTO_APPROVED'::text NOT NULL,
-    "sellerRatingReportCount" integer DEFAULT 0 NOT NULL
+    "sellerRatingReportCount" integer DEFAULT 0 NOT NULL,
+    "driverSearchUntil" timestamp(3) without time zone
 );
 
 
@@ -2496,7 +2497,7 @@ COPY public."MpWebhookLog" (id, "eventId", "eventType", "resourceId", processed,
 -- Data for Name: Order; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Order" (id, "orderNumber", "userId", "addressId", "merchantId", status, "paymentId", "paymentStatus", "paymentMethod", subtotal, "deliveryFee", discount, total, "isPickup", "distanceKm", "deliveryNotes", "estimatedTime", "driverId", "deliveryStatus", "deliveredAt", "deliveryPhoto", "customerNotes", "adminNotes", "createdAt", "updatedAt", "cancelReason", "commissionPaid", "driverRating", "merchantPayout", "moovyCommission", "ratedAt", "ratingComment", "merchantRating", "merchantRatingComment", "sellerRating", "sellerRatingComment", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "lastAssignmentAt", "pendingDriverId", "deletedAt", "mpPreferenceId", "mpPaymentId", "mpMerchantOrderId", "mpStatus", "paidAt", "isMultiVendor", "deliveryType", "scheduledSlotStart", "scheduledSlotEnd", "scheduledConfirmedAt", "couponCode", "pointsEarned", "pointsUsed", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "rateReminderSentAt", "driverStatus", "merchantStatus", "noShowFlag", "noShowReportedAt", "payoutHoldUntil", "waitingStartedAt", "driverRatingModerationStatus", "driverRatingReportCount", "driverTipAmount", "driverTipDeclaredAt", "driverTipMethod", "merchantRatingModerationStatus", "merchantRatingReportCount", "sellerRatingModerationStatus", "sellerRatingReportCount") FROM stdin;
+COPY public."Order" (id, "orderNumber", "userId", "addressId", "merchantId", status, "paymentId", "paymentStatus", "paymentMethod", subtotal, "deliveryFee", discount, total, "isPickup", "distanceKm", "deliveryNotes", "estimatedTime", "driverId", "deliveryStatus", "deliveredAt", "deliveryPhoto", "customerNotes", "adminNotes", "createdAt", "updatedAt", "cancelReason", "commissionPaid", "driverRating", "merchantPayout", "moovyCommission", "ratedAt", "ratingComment", "merchantRating", "merchantRatingComment", "sellerRating", "sellerRatingComment", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "lastAssignmentAt", "pendingDriverId", "deletedAt", "mpPreferenceId", "mpPaymentId", "mpMerchantOrderId", "mpStatus", "paidAt", "isMultiVendor", "deliveryType", "scheduledSlotStart", "scheduledSlotEnd", "scheduledConfirmedAt", "couponCode", "pointsEarned", "pointsUsed", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "rateReminderSentAt", "driverStatus", "merchantStatus", "noShowFlag", "noShowReportedAt", "payoutHoldUntil", "waitingStartedAt", "driverRatingModerationStatus", "driverRatingReportCount", "driverTipAmount", "driverTipDeclaredAt", "driverTipMethod", "merchantRatingModerationStatus", "merchantRatingReportCount", "sellerRatingModerationStatus", "sellerRatingReportCount", "driverSearchUntil") FROM stdin;
 \.
 
 

@@ -71,6 +71,8 @@ const statusConfig: Record<string, {
     AWAITING_PAYMENT: { label: "Esperando pago", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500", icon: <Clock className="w-4 h-4" />, step: 1 },
     PENDING_PAYMENT: { label: "Esperando pago", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500", icon: <Clock className="w-4 h-4" />, step: 1 },
     CONFIRMED: { label: "Confirmado", color: "text-blue-600", bg: "bg-blue-50", dot: "bg-blue-500", icon: <CheckCircle className="w-4 h-4" />, step: 2 },
+    // feat/asignacion-reintento-y-reembolso: pagado, buscando repartidor (no murió).
+    SEARCHING_DRIVER: { label: "Buscando repartidor", color: "text-amber-600", bg: "bg-amber-50", dot: "bg-amber-500", icon: <Clock className="w-4 h-4" />, step: 2 },
     PREPARING: { label: "En preparacion", color: "text-red-600", bg: "bg-red-50", dot: "bg-red-500", icon: <Package className="w-4 h-4" />, step: 3 },
     READY: { label: "Listo para retirar", color: "text-indigo-600", bg: "bg-indigo-50", dot: "bg-indigo-500", icon: <Package className="w-4 h-4" />, step: 4 },
     DRIVER_ASSIGNED: { label: "Repartidor asignado", color: "text-cyan-600", bg: "bg-cyan-50", dot: "bg-cyan-500", icon: <Truck className="w-4 h-4" />, step: 5 },

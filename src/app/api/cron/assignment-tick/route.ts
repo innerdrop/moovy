@@ -5,7 +5,7 @@
 // Rama chore/cron-monitoring-completo: envuelto con recordCronRun para que
 // aparezca en el dashboard /ops/crons con success rate, tiempo promedio, etc.
 import { NextResponse } from "next/server";
-import { processExpiredAssignments } from "@/lib/assignment-engine";
+import { processExpiredAssignments, retryAllSearchingOrders } from "@/lib/assignment-engine";
 import { verifyBearerToken } from "@/lib/env-validation";
 import { recordCronRun } from "@/lib/cron-health";
 
@@ -21,13 +21,17 @@ export async function POST(request: Request) {
 
         return await recordCronRun<NextResponse>("assignment-tick", async () => {
             const processed = await processExpiredAssignments();
+            // feat/asignacion-reintento-y-reembolso: reintentar los pedidos en
+            // "buscando repartidor" y finalizar/reembolsar los que vencieron la ventana.
+            const searching = await retryAllSearchingOrders().catch(() => 0);
             return {
                 result: NextResponse.json({
                     success: true,
-                    message: `Procesados ${processed} pedidos con timeout`,
+                    message: `Procesados ${processed} timeouts · ${searching} pedidos en búsqueda reintentados`,
                     processed,
+                    searching,
                 }) as NextResponse,
-                itemsProcessed: processed,
+                itemsProcessed: processed + searching,
             };
         });
     } catch (error) {

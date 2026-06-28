@@ -51,6 +51,9 @@ export async function notifyAvailabilitySubscribers(params: {
                 latitude: true,
                 longitude: true,
                 merchantId: true,
+                // feat/asignacion-reintento-y-reembolso: email para avisar también por
+                // mail (confiable en iPhone web, donde el push no llega sin instalar).
+                user: { select: { email: true, name: true } },
             },
             take: 500, // cap defensivo
         });
@@ -119,6 +122,20 @@ export async function notifyAvailabilitySubscribers(params: {
                             }),
                         }).catch(() => { /* fire-and-forget */ });
                     } catch { /* swallow — push ya se mandó */ }
+
+                    // feat/asignacion-reintento-y-reembolso: además del push, mail al
+                    // comprador (confiable en cualquier dispositivo, iPhone web incluido).
+                    if (sub.user?.email) {
+                        const email = sub.user.email;
+                        const name = sub.user.name ?? null;
+                        import("@/lib/email-legal-ux")
+                            .then(({ sendDriverAvailableEmail }) =>
+                                sendDriverAvailableEmail({ buyerEmail: email, buyerName: name })
+                            )
+                            .catch((err) =>
+                                logger.warn({ error: err }, "[availability] driver-available email failed")
+                            );
+                    }
 
                     return { skipped: false } as const;
                 })

@@ -143,6 +143,9 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
     SCHEDULED: { label: "Programado", color: "text-violet-600", bgColor: "bg-violet-100", icon: <Calendar className="w-5 h-5" /> },
     SCHEDULED_CONFIRMED: { label: "Programado · confirmado", color: "text-violet-700", bgColor: "bg-violet-100", icon: <Calendar className="w-5 h-5" /> },
     CONFIRMED: { label: "Confirmado", color: "text-blue-600", bgColor: "bg-blue-100", icon: <CheckCircle className="w-5 h-5" /> },
+    // feat/asignacion-reintento-y-reembolso: el pedido pagado está buscando repartidor
+    // (no murió). Es estado ACTIVO, no fallido — el comercio sabe que sigue vivo.
+    SEARCHING_DRIVER: { label: "Buscando repartidor", color: "text-amber-700", bgColor: "bg-amber-100", icon: <Clock className="w-5 h-5" /> },
     PREPARING: { label: "Preparando", color: "text-red-600", bgColor: "bg-red-100", icon: <Package className="w-5 h-5" /> },
     READY: { label: "Listo", color: "text-indigo-600", bgColor: "bg-indigo-100", icon: <Package className="w-5 h-5" /> },
     DRIVER_ASSIGNED: { label: "Rider asignado", color: "text-cyan-600", bgColor: "bg-cyan-100", icon: <Truck className="w-5 h-5" /> },

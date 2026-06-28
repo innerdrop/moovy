@@ -1718,6 +1718,26 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
             ${emailButton("Ver el pedido", `https://somosmoovy.com/comercios/pedidos`, "red")}
         `),
     },
+    {
+        id: 'driver_available',
+        number: 65,
+        name: 'Hay repartidor en tu zona',
+        category: 'Ciclo de Vida del Pedido (Comprador)',
+        recipient: 'comprador',
+        priority: 'P1',
+        status: 'implemented',
+        trigger: 'PUT /api/driver/status (driver online) → notifyAvailabilitySubscribers',
+        subject: '¡Ya hay repartidor en tu zona! 🏍️',
+        functionName: 'sendDriverAvailableEmail',
+        file: 'src/lib/email-legal-ux.ts',
+        generatePreview: () => emailLayout(`
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">¡Ya hay repartidor en tu zona! 🏍️</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                ${SAMPLE.buyerName}, se conectó un repartidor cerca tuyo. Entrá ahora y completá tu pedido antes de que vuelva a subir la demanda.
+            </p>
+            ${emailButton("Completar mi pedido", `https://somosmoovy.com/checkout`, "red")}
+        `),
+    },
 ];
 
 // ─── Helpers de búsqueda ────────────────────────────────────────────────────

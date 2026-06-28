@@ -40,15 +40,15 @@
 - **Orden de ramas**: se recuperó un enredo donde el cambio había quedado suelto en develop; se movió a su rama y se cerró bien. Se borraron 4 ramas viejas ya mergeadas.
 - **Herramientas financieras (uso personal del founder)**: PDF del flujo de pago, PDF de análisis financiero (3 escenarios: desastre / real / óptimo) y un simulador interactivo (`Moovy_Simulador_Financiero.html`) con comparación de escenarios, programa MOOVER y % de envíos gratis.
 - **Limpieza del manual + nueva modalidad de trabajo**: se corrigió `CLAUDE.md` (MP a prod + fecha). Acordamos: el **estado vivo** se mantiene en este tablero (que Claude edita en cada cierre); `CLAUDE.md` queda solo con canon perdurable; Claude entrega un bloque listo para pegar solo cuando cambia una regla de fondo.
+- **Comisión 10% aplicada + deploy del fix de pagos + pago de prueba real en prod**. El pago confirma OK, pero el pedido quedaba `UNASSIGNABLE`: el motor buscaba repartidor UNA sola vez y, sin nadie online en ese instante, mataba el pedido sin reintentar. Diagnóstico cerrado (no era el pago, ni los vehículos, ni el GPS — era el hueco de re-disparo cuando un repartidor se conecta tarde).
+- **Rama `feat/asignacion-reintento-y-reembolso`** (implementada + verificada): un pedido pagado nunca queda sin asignar. Estado `SEARCHING_DRIVER` con ventana configurable (`driver_search_window_minutes`, default 20 min), reintento por cron `assignment-tick` + al conectarse un repartidor, y **reembolso automático** al vencer la ventana. Checkout bloquea el pago si no hay repartidor (ofrece "Retirar en local" / "Avisame cuando haya repartidor", sin opción de programar). El aviso "ya hay repartidor" ahora también va por **email** (confiable en iPhone web). Schema: `Order.driverSearchUntil`. Script: `scripts/verify-driver-search-flow.ts`. **Pendiente: merge (finish.ps1) + deploy modo schema + prueba real en prod.**
 
 ---
 
 ## Próximas tareas (orden)
 
-1. **Aplicar comisión 10%** en `/ops/config-biblia` de prod + confirmar operativo 5%.
-2. **Deploy del fix de pagos**: `devmain.ps1` (modo schema) detrás de la cortina.
-3. **Test real de pago MP** (1 compra real + split, verificar que el repartidor y el comercio cobren bien).
-4. **Sumar `daily-revenue-summary` al crontab del VPS** (`0 12 * * *`).
+1. **Cerrar + deployar `feat/asignacion-reintento-y-reembolso`** (`finish.ps1` → `devmain.ps1` modo schema). Probar en prod detrás de la cortina: pedido sin repartidor online → debe quedar en "🔎 Buscando repartidor" (no morir); conectar un repartidor → se asigna solo; dejar vencer la ventana → reembolso automático (poné `driver_search_window_minutes` en 1 para probar rápido y devolvelo a 20 después).
+2. **Sumar `daily-revenue-summary` al crontab del VPS** (`0 12 * * *`).
 5. **Categorías de la home** (`/ops/categorias`) + **pintar zonas** (`/ops/zonas-delivery`).
 6. **Re-probar 5 items sueltos**: s2-2a-11 (bonus bienvenida), s2-2b-01 (email registro comercio), s3-3c-01 (errores OPS en toast), s4-4c-04 (variantes producto), s7-7a-02 (bloqueo fuera de zona).
 7. **Día del launch**: `scripts/clean-db-pre-launch.ts --execute` + `abrir-tienda.ps1`.
