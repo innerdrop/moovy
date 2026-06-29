@@ -167,7 +167,7 @@ async function main() {
                 ownerId: anyUser.id,
                 approvalStatus: "APPROVED",
                 loyaltyTier: "BRONCE",
-                commissionRate: 8,
+                commissionRate: 10,
                 // createdAt lo sobrescribimos con raw SQL después (Prisma default es now())
             },
         });

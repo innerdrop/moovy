@@ -100,7 +100,7 @@ async function main() {
             create: {
                 tier: "BRONCE",
                 minOrdersPerMonth: 0,
-                commissionRate: 8,
+                commissionRate: 10,
                 badgeText: "Estándar",
                 badgeColor: "gray",
                 benefitsJson: JSON.stringify(["Cobrá instantáneamente", "Acceso al dashboard"]),
@@ -113,7 +113,7 @@ async function main() {
             create: {
                 tier: "PLATA",
                 minOrdersPerMonth: 31,
-                commissionRate: 7,
+                commissionRate: 9,
                 badgeText: "Popular",
                 badgeColor: "blue",
                 benefitsJson: JSON.stringify([
@@ -131,7 +131,7 @@ async function main() {
             create: {
                 tier: "ORO",
                 minOrdersPerMonth: 81,
-                commissionRate: 6,
+                commissionRate: 8,
                 badgeText: "Destacado",
                 badgeColor: "yellow",
                 benefitsJson: JSON.stringify([
@@ -150,7 +150,7 @@ async function main() {
             create: {
                 tier: "DIAMANTE",
                 minOrdersPerMonth: 151,
-                commissionRate: 5,
+                commissionRate: 7,
                 badgeText: "Elite",
                 badgeColor: "purple",
                 benefitsJson: JSON.stringify([

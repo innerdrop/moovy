@@ -44,7 +44,7 @@ const STEPS: Step[] = [
     },
     {
         name: "2. Biblia Financiera",
-        description: "StoreSettings (delivery, comisiones, zonas legacy, clima), PointsConfig (10pts/$1k, signup 1.000, niveles), MerchantLoyaltyConfig (BRONCE 8% → DIAMANTE 5%), MoovyConfig (key-value).",
+        description: "StoreSettings (delivery, comisiones, zonas legacy, clima), PointsConfig (10pts/$1k, signup 1.000, niveles), MerchantLoyaltyConfig (BRONCE 10% → DIAMANTE 7%), MoovyConfig (key-value).",
         script: "seed-biblia-launch.ts",
     },
     {

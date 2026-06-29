@@ -51,7 +51,7 @@ async function getOpsSettings() {
     const settings = await prisma.storeSettings.findUnique({ where: { id: "settings" } });
     const s = settings as any;
     return {
-        defaultMerchantCommission: s?.defaultMerchantCommission ?? 8,
+        defaultMerchantCommission: s?.defaultMerchantCommission ?? 10,
         defaultSellerCommission: s?.defaultSellerCommission ?? 12,
         riderCommissionPercent: settings?.riderCommissionPercent ?? 80,
         maxOrdersPerSlot: s?.maxOrdersPerSlot ?? 15,
@@ -863,7 +863,7 @@ export async function POST(request: Request) {
             // MERCHANT LOYALTY: Get effective commission from loyalty tier.
             // ISSUE-020: getEffectiveCommission puede devolver 0 legítimo durante
             // el mes 1 gratis (Biblia v3). Usamos ?? en vez de || para no tratar
-            // 0 como falsy y caer al fallback del 8%.
+            // 0 como falsy y caer al fallback del 10%.
             const loyaltyRate = await getEffectiveCommission(merchantId);
             const rate = loyaltyRate ?? merchant.commissionRate ?? defaultMerchantCommission;
             moovyCommission = subtotal * (rate / 100);

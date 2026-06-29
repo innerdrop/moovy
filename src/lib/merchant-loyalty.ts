@@ -5,10 +5,10 @@
  * Tiers provide reduced commission rates and visibility benefits.
  *
  * Tier thresholds (default):
- * - BRONCE: 0-30 pedidos/mes → 8% comisión
- * - PLATA: 31-80 pedidos/mes → 7% comisión
- * - ORO: 81-150 pedidos/mes → 6% comisión
- * - DIAMANTE: 151+ pedidos/mes → 5% comisión
+ * - BRONCE: 0-30 pedidos/mes → 10% comisión
+ * - PLATA: 31-80 pedidos/mes → 9% comisión
+ * - ORO: 81-150 pedidos/mes → 8% comisión
+ * - DIAMANTE: 151+ pedidos/mes → 7% comisión
  *
  * MES 1 GRATIS (Biblia Financiera v3):
  * Todo comercio nuevo paga 0% de comisión durante sus primeros
@@ -152,13 +152,13 @@ export async function calculateMerchantTier(merchantId: string): Promise<Merchan
 /**
  * Get the effective commission rate for a merchant based on their current tier.
  * This is the critical function used during order creation.
- * ALWAYS use this for commission calculations, never hardcode 8%.
+ * ALWAYS use this for commission calculations, never hardcode the rate.
  *
  * Prioridad (Biblia Financiera v3):
  *   1. commissionOverride manual del admin (convenio especial) — gana siempre.
  *   2. Mes 1 gratis: 0% durante los primeros FIRST_MONTH_FREE_DAYS desde createdAt.
- *   3. Tier del programa de fidelización (BRONCE 8%, PLATA 7%, ORO 6%, DIAMANTE 5%).
- *   4. Fallback 8% si no hay config.
+ *   3. Tier del programa de fidelización (BRONCE 10%, PLATA 9%, ORO 8%, DIAMANTE 7%).
+ *   4. Fallback 10% si no hay config.
  *
  * El override gana al mes gratis porque puede existir un acuerdo firmado
  * (ej: "Convenio especial lanzamiento 5% desde el día uno") que un admin
@@ -193,8 +193,8 @@ export interface EffectiveCommissionResult {
  * dependen de que el rate aplicado al cerrar quede inmutable.
  */
 export async function getEffectiveCommissionWithSource(merchantId: string): Promise<EffectiveCommissionResult> {
-  // Rama fix/biblia-motor-envio-y-comisiones: el FALLBACK ya NO es 8 hardcodeado.
-  // Lee defaultMerchantCommission de la Biblia (StoreSettings), con 8 como respaldo
+  // Rama fix/biblia-motor-envio-y-comisiones: el FALLBACK ya NO es un número hardcodeado.
+  // Lee defaultMerchantCommission de la Biblia (StoreSettings), con 10 como respaldo
   // conservador solo si la config no existe. Respeta la precedencia canónica:
   // override > first-month > tier > default Biblia.
   const fallbackRate = await getDefaultMerchantCommission();
@@ -239,7 +239,7 @@ export async function getEffectiveCommissionWithSource(merchantId: string): Prom
 
 /**
  * Lee la comisión merchant por default de la Biblia (StoreSettings.defaultMerchantCommission).
- * Rama fix/biblia-motor-envio-y-comisiones. Respaldo conservador 8% si falta config
+ * Rama fix/biblia-motor-envio-y-comisiones. Respaldo conservador 10% si falta config
  * (regla #15: defaults conservadores). Cache 1 min para no pegarle a la DB en cada pedido.
  */
 let _defaultMerchantCommissionCache: { value: number; at: number } | null = null;
@@ -254,11 +254,12 @@ export async function getDefaultMerchantCommission(): Promise<number> {
       select: { defaultMerchantCommission: true } as any,
     });
     const raw = (settings as any)?.defaultMerchantCommission;
-    const value = typeof raw === "number" && raw >= 0 ? raw : 8;
+    // feat/comision-10-canonica: el default de lanzamiento es 10% (el 8% quedó obsoleto).
+    const value = typeof raw === "number" && raw >= 0 ? raw : 10;
     _defaultMerchantCommissionCache = { value, at: Date.now() };
     return value;
   } catch {
-    return 8;
+    return 10;
   }
 }
 

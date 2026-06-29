@@ -337,7 +337,7 @@ async function main() {
         habilitacionMunicipalApprovalSource: "PHYSICAL",
         habilitacionMunicipalApprovalNote: "Aprobado por seed",
         registroSanitarioStatus: "NOT_REQUIRED",
-        commissionRate: 8,
+        commissionRate: 10,
         loyaltyTier: "BRONCE",
         deliveryRadiusKm: 15,
         deliveryTimeMin: 20,

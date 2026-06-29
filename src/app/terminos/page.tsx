@@ -199,7 +199,7 @@ export default function TerminosPage() {
                 </li>
                 <li>
                   <strong>Precios:</strong> Fijan libremente sus precios. MOOVY
-                  retiene una comisión según el plan contratado (standard 8%)
+                  retiene una comisión según el plan contratado (standard 10%)
                 </li>
                 <li>
                   <strong>Stock:</strong> Son responsables de mantener stock
@@ -287,7 +287,7 @@ export default function TerminosPage() {
               </p>
               <ul className="list-disc list-inside space-y-2 ml-2">
                 <li>
-                  Comercios: <strong>8%</strong> de la venta (configurable)
+                  Comercios: <strong>10%</strong> de la venta (configurable)
                 </li>
                 <li>
                   Repartidores: <strong>20%</strong> del delivery fee

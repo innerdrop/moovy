@@ -10,6 +10,23 @@
 
 ---
 
+## 2026-06-28 (rama `fix/comision-10-canonica-en-seeds`)
+
+fix(finanzas): comisión 10% canónica en seeds + fallbacks + páginas (el 8% queda obsoleto)
+
+- Seeds (seed.ts, seed-local-reset.ts, seed-production.ts) + scripts de config
+  (fix-ops-config.ts, reset-db.ts, seed-biblia-launch.ts): comisión base 10% y
+  tiers BRONCE 10 / PLATA 9 / ORO 8 / DIAMANTE 7. seed-production sigue PRUDENTE
+  (StoreSettings + tiers con update:{}, no pisa la config viva de prod).
+- Fallbacks de código: merchant-loyalty.ts (getDefaultMerchantCommission → 10),
+  ops-config.ts y orders/route.ts (defaultMerchantCommission ?? 10).
+- Páginas user-facing y legales (/comisiones, /terminos): 8% → 10%.
+- Fixtures de test + logs/descripciones: 8% → 10%.
+- Resultado: el 8% de comisión ya no existe en ningún rincón del repo. La config
+  vive en código (canónica) y OPS sigue mandando en runtime.
+
+**Archivos:** prisma/seed-local-reset.ts, prisma/seed-production.ts, prisma/seed.ts, scripts/fix-ops-config.ts, scripts/reset-db.ts, scripts/seed-biblia-launch.ts, scripts/seed-real-world-test.ts, scripts/seed-test-merchants.js (+8 mas)
+
 ## 2026-06-28 (rama `feat/asignacion-reintento-y-reembolso`)
 
 feat(logistica): un pedido pagado nunca queda sin asignar — ventana de búsqueda + reintento + reembolso automático

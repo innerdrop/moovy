@@ -173,7 +173,7 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
       activeDemandCondition: (settings as any)?.activeDemandCondition ?? "normal",
     },
     commissions: {
-      defaultMerchantCommission: (settings as any)?.defaultMerchantCommission ?? 8,
+      defaultMerchantCommission: (settings as any)?.defaultMerchantCommission ?? 10,
       defaultSellerCommission: (settings as any)?.defaultSellerCommission ?? 12,
       riderCommissionPercent: settings?.riderCommissionPercent ?? 80,
       mpReservePercent: (settings as any)?.mpReservePercent ?? 8,

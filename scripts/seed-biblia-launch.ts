@@ -35,7 +35,7 @@ const FUEL_PRICE_PER_LITER = 1658;
  *   npx tsx scripts/seed-biblia-launch.ts --month2
  */
 const MERCHANT_COMMISSION_MONTH1 = 0;
-const MERCHANT_COMMISSION_NORMAL = 8;
+const MERCHANT_COMMISSION_NORMAL = 10;
 
 // ═══════════════════════════════════════════════════════════════════
 
@@ -79,7 +79,7 @@ async function seedStoreSettings() {
     activeClimateCondition: "normal",
 
     // ── Comisiones ────────────────────────────────────────────────
-    defaultMerchantCommission: merchantCommission,  // 0% mes 1, 8% mes 2+
+    defaultMerchantCommission: merchantCommission,  // 0% mes 1, 10% mes 2+
     defaultSellerCommission: 12,                    // Marketplace sellers: 12% desde dia 1
 
     // ── Protocolo Efectivo (Biblia v3) ────────────────────────────
@@ -194,11 +194,11 @@ async function seedMerchantLoyaltyTiers() {
     {
       tier: "BRONCE",
       minOrdersPerMonth: 0,
-      commissionRate: 8,
+      commissionRate: 10,
       badgeText: "Comercio Verificado",
       badgeColor: "gray",
       benefitsJson: JSON.stringify([
-        "Comision estandar 8%",
+        "Comision estandar 10%",
         "Soporte prioritario",
         "Panel de estadisticas basico",
       ]),
@@ -207,11 +207,11 @@ async function seedMerchantLoyaltyTiers() {
     {
       tier: "PLATA",
       minOrdersPerMonth: 10,
-      commissionRate: 7,
+      commissionRate: 9,
       badgeText: "Comercio Destacado",
       badgeColor: "blue",
       benefitsJson: JSON.stringify([
-        "Comision reducida 7%",
+        "Comision reducida 9%",
         "Badge visible en la tienda",
         "Prioridad en busqueda",
         "Reporte semanal de ventas",
@@ -221,11 +221,11 @@ async function seedMerchantLoyaltyTiers() {
     {
       tier: "ORO",
       minOrdersPerMonth: 25,
-      commissionRate: 6,
+      commissionRate: 8,
       badgeText: "Comercio Popular",
       badgeColor: "yellow",
       benefitsJson: JSON.stringify([
-        "Comision reducida 6%",
+        "Comision reducida 8%",
         "Badge dorado visible",
         "Posicion destacada en home",
         "Soporte VIP",
@@ -236,11 +236,11 @@ async function seedMerchantLoyaltyTiers() {
     {
       tier: "DIAMANTE",
       minOrdersPerMonth: 50,
-      commissionRate: 5,
+      commissionRate: 7,
       badgeText: "Comercio Elite",
       badgeColor: "purple",
       benefitsJson: JSON.stringify([
-        "Comision minima 5%",
+        "Comision minima 7%",
         "Badge diamante exclusivo",
         "Posicion #1 en su categoria",
         "Soporte dedicado",
@@ -386,7 +386,7 @@ async function printSummary() {
 
   if (!isMonth2) {
     console.log("  ⚠️  RECORDATORIOS POST-LANZAMIENTO:");
-    console.log("    • Dia 30: ejecutar con --month2 para activar comision 8%");
+    console.log("    • Dia 30: ejecutar con --month2 para activar comision 10%");
     console.log("    • Dia 31: verificar que boost de puntos se desactive");
     console.log("    • Fase 2 (5+ comercios): activar seccion publicidad");
     console.log("    • Verificar precio nafta si cambia y re-ejecutar");

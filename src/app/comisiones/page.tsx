@@ -36,7 +36,7 @@ const pricingCards = [
   {
     role: "Comercios",
     icon: <MoovyIconStore className="w-8 h-8" />,
-    mainPrice: "8%",
+    mainPrice: "10%",
     description: "Comisión por venta",
     details: [
       "Pago instantáneo al instante",
@@ -113,7 +113,7 @@ const pricingCards = [
 
 // Our commitments data (no competitor comparisons)
 const commitments = [
-  { metric: "Comisión Comercio", value: "8%", detail: "Sin cargos ocultos ni sorpresas" },
+  { metric: "Comisión Comercio", value: "10%", detail: "Sin cargos ocultos ni sorpresas" },
   { metric: "Tarifa Fundador", value: "5%", detail: "Primeros 10 comercios por categoría, 12 meses" },
   { metric: "Pago a Comercios", value: "Instantáneo", detail: "El dinero es tuyo desde que se confirma la venta" },
   { metric: "Retención de Dinero", value: "0%", detail: "Nunca retenemos un peso" },
@@ -132,12 +132,12 @@ const faqSections = [
         a: "En MOOVY, los pagos son instantáneos. Apenas un cliente paga en nuestra plataforma, el dinero llega a tu cuenta en tiempo real. No hay retenciones ni plazos de espera como en otras plataformas.",
       },
       {
-        q: "¿Qué incluye la comisión del 8%?",
-        a: "La comisión del 8% cubre: plataforma tecnológica, procesamiento de pagos, servicio de delivery, soporte 24/7 y herramientas de marketing. Es todo incluido.",
+        q: "¿Qué incluye la comisión del 10%?",
+        a: "La comisión del 10% cubre: plataforma tecnológica, procesamiento de pagos, servicio de delivery, soporte 24/7 y herramientas de marketing. Es todo incluido.",
       },
       {
         q: "¿Cuál es la Tarifa Fundador?",
-        a: "Los primeros 10 comercios en cada categoría pagan solo 5% de comisión durante el primer año. Después se ajusta al 8%. Queremos recompensar a los pioneros que confían en MOOVY.",
+        a: "Los primeros 10 comercios en cada categoría pagan solo 5% de comisión durante el primer año. Después se ajusta al 10%. Queremos recompensar a los pioneros que confían en MOOVY.",
       },
       {
         q: "¿Hay costo de configuración o mensualidad?",
@@ -247,7 +247,7 @@ export default function ComisionesPage() {
               <div className="grid md:grid-cols-4 gap-4 md:gap-6">
                 <div className="text-center">
                   <p className="text-gray-600 text-sm font-medium mb-1">Comercios</p>
-                  <p className="text-3xl font-bold text-red-600">8%</p>
+                  <p className="text-3xl font-bold text-red-600">10%</p>
                   <p className="text-xs text-gray-500">la más baja del mercado</p>
                 </div>
                 <div className="text-center">
@@ -360,7 +360,7 @@ export default function ComisionesPage() {
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                  <span>5% de comisión en lugar de 8% durante 12 meses</span>
+                  <span>5% de comisión en lugar de 10% durante 12 meses</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
@@ -446,7 +446,7 @@ export default function ComisionesPage() {
               {
                 icon: <MoovyIconFairFees className="w-8 h-8" />,
                 title: "Comisiones Bajas",
-                desc: "8% de comisión. Sin cargos ocultos. La diferencia se nota en tu flujo de caja.",
+                desc: "10% de comisión. Sin cargos ocultos. La diferencia se nota en tu flujo de caja.",
               },
               {
                 icon: <MoovyIconHumanSupport className="w-8 h-8" />,

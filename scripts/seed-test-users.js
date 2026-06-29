@@ -79,7 +79,7 @@ async function main() {
                     isOpen: true,
                     approvalStatus: 'APPROVED',
                     approvedAt: new Date(),
-                    commissionRate: 8,
+                    commissionRate: 10,
                     ownerId: comercioUser.id,
                 }
             });

@@ -31,7 +31,7 @@ const MERCHANTS = [
             deliveryTimeMin: 20,
             deliveryTimeMax: 35,
             deliveryRadiusKm: 5,
-            commissionRate: 8,
+            commissionRate: 10,
         },
         products: [
             {
@@ -85,7 +85,7 @@ const MERCHANTS = [
             deliveryTimeMin: 30,
             deliveryTimeMax: 50,
             deliveryRadiusKm: 4,
-            commissionRate: 8,
+            commissionRate: 10,
         },
         products: [
             {
@@ -139,7 +139,7 @@ const MERCHANTS = [
             deliveryTimeMin: 15,
             deliveryTimeMax: 30,
             deliveryRadiusKm: 6,
-            commissionRate: 8,
+            commissionRate: 10,
         },
         products: [
             {

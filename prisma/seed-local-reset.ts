@@ -94,7 +94,7 @@ async function main() {
             maintenanceFactor: 1.35,
             maxDeliveryDistance: 15,
             riderCommissionPercent: 80,
-            defaultMerchantCommission: 8,
+            defaultMerchantCommission: 10,
             defaultSellerCommission: 12,
             heroSliderEnabled: true,
             heroSliderInterval: 5000,
@@ -201,10 +201,10 @@ async function main() {
 
     // ─── 7. Loyalty Tiers ───────────────────────────────────────────
     const loyaltyTiers = [
-        { tier: "BRONCE", minOrdersPerMonth: 0, commissionRate: 8, badgeText: "Nuevo", badgeColor: "gray", displayOrder: 1, benefitsJson: "[]" },
-        { tier: "PLATA", minOrdersPerMonth: 30, commissionRate: 7, badgeText: "Destacado", badgeColor: "blue", displayOrder: 2, benefitsJson: '["Comisión reducida 7%","Prioridad en soporte"]' },
-        { tier: "ORO", minOrdersPerMonth: 80, commissionRate: 6, badgeText: "Popular", badgeColor: "yellow", displayOrder: 3, benefitsJson: '["Comisión reducida 6%","Prioridad en soporte","Destacado en búsquedas"]' },
-        { tier: "DIAMANTE", minOrdersPerMonth: 200, commissionRate: 5, badgeText: "Elite", badgeColor: "purple", displayOrder: 4, benefitsJson: '["Comisión reducida 5%","Soporte prioritario 24/7","Destacado en home","Account manager dedicado"]' },
+        { tier: "BRONCE", minOrdersPerMonth: 0, commissionRate: 10, badgeText: "Nuevo", badgeColor: "gray", displayOrder: 1, benefitsJson: "[]" },
+        { tier: "PLATA", minOrdersPerMonth: 30, commissionRate: 9, badgeText: "Destacado", badgeColor: "blue", displayOrder: 2, benefitsJson: '["Comisión reducida 9%","Prioridad en soporte"]' },
+        { tier: "ORO", minOrdersPerMonth: 80, commissionRate: 8, badgeText: "Popular", badgeColor: "yellow", displayOrder: 3, benefitsJson: '["Comisión reducida 8%","Prioridad en soporte","Destacado en búsquedas"]' },
+        { tier: "DIAMANTE", minOrdersPerMonth: 200, commissionRate: 7, badgeText: "Elite", badgeColor: "purple", displayOrder: 4, benefitsJson: '["Comisión reducida 7%","Soporte prioritario 24/7","Destacado en home","Account manager dedicado"]' },
     ];
     for (const lt of loyaltyTiers) {
         await db.merchantLoyaltyConfig.create({ data: lt });
@@ -324,7 +324,7 @@ async function main() {
                 isOpen: true,
                 approvalStatus: "APPROVED",
                 approvedAt: new Date(),
-                commissionRate: 8,
+                commissionRate: 10,
                 deliveryRadiusKm: 5,
                 deliveryTimeMin: 30,
                 deliveryTimeMax: 45,
