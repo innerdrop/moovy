@@ -65,10 +65,17 @@ export interface SubOrderFinancialSnapshotInput {
     /** Delivery fee total del SubOrder (incluye operativo si se cobra) */
     deliveryFee: number;
     /**
-     * Costo operativo del SubOrder (5% del subtotal por default).
-     * Si el endpoint no lo calculó separado, podemos derivarlo del operationalCostPercent.
+     * Costo operativo del SubOrder. Modelo aditivo (Plan Maestro v1): el operativo
+     * se eliminó, así que esto es 0. Se mantiene por compatibilidad del snapshot.
      */
     operationalCost: number;
+    /**
+     * Costo REAL del viaje (para el pago al repartidor), independiente de lo que
+     * paga el cliente. En envío gratis el cliente paga $0 pero el viaje se calcula
+     * igual y el repartidor cobra: por eso el snapshot necesita el viaje real, no el
+     * deliveryFee (que sería 0). Si no se pasa, se deriva de deliveryFee − operativo.
+     */
+    tripCost?: number;
     /** Si es un SubOrder de comercio, su id; sino null */
     merchantId: string | null;
     /** Si es un SubOrder de seller marketplace, su id; sino null */
@@ -156,7 +163,9 @@ export async function buildSubOrderFinancialSnapshot(
     // tripCost = lo que paga el cliente del envío MENOS lo operativo (que va a Moovy).
     // Defensivo: si por algún error operationalCost > deliveryFee, tripCost = 0
     // (no permitir tripCost negativo nunca).
-    const tripCost = Math.max(0, deliveryFee - operationalCost);
+    // Viaje real para el payout: explícito si el caller lo pasó (envío gratis →
+    // el cliente paga 0 pero el repartidor cobra igual), si no se deriva del fee.
+    const tripCost = input.tripCost ?? Math.max(0, deliveryFee - operationalCost);
 
     // ── Reparto Financiero — Driver ─────────────────────────────────────────
     // Repartidor cobra riderSharePercent% del costo del viaje SIN operativo +

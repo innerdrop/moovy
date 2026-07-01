@@ -10,6 +10,19 @@
 
 ---
 
+## 2026-07-01 (rama `fix/motor-envio-aditivo-y-pago-repartidor`)
+
+fix: motor de envío aditivo (Plan Maestro v1) + repartidor siempre pago
+
+- Fórmula aditiva: envío = base_vehículo + costo_km × distancia (× zona × clima × demanda). Se eliminó el max() y el factor 2.2.
+- Operativo (5% del subtotal) ELIMINADO: el envío es solo logística; el margen de Moovy vive en la comisión, no embebido en el envío.
+- Valores Ushuaia por vehículo en seed-delivery: Bici $1.600/$90, Moto $1.800/$130, Auto $2.600/$190, Pickup $6.500/$300, Flete $18.000/$450 (consumo=0 → costo_km directo).
+- Envío gratis controlado por Moovy: el snapshot usa el VIAJE REAL, no el fee del cliente, así el repartidor SIEMPRE cobra su 80% aunque el cliente pague $0 (arreglo del hallazgo de auditoría).
+- Fallback de payout queda correcto al eliminar el operativo (envío = costo del viaje).
+- scripts/simular-envios.ts: verificación de los 5 vehículos × distancias × zonas + invariantes financieros. Verificado OK.
+
+**Archivos:** .claude/CLAUDE.md, .qa-slides/slide-1.jpg, .qa-slides/slide-2.jpg, .qa-slides/slide-3.jpg, .qa-slides/slide-4.jpg, .qa-slides/slide-5.jpg, .qa-slides/slide-6.jpg, .qa-slides/slide-7.jpg (+14 mas)
+
 ## 2026-06-28 (rama `fix/comision-10-canonica-en-seeds`)
 
 fix(finanzas): comisión 10% canónica en seeds + fallbacks + páginas (el 8% queda obsoleto)

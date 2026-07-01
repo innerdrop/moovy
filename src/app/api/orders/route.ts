@@ -421,7 +421,7 @@ export async function POST(request: Request) {
         // captura en validatedGroupFees para que buildSubOrderFinancialSnapshot
         // derive tripCost exacto (deliveryFee − operationalCost).
         let validatedDeliveryFee = 0;
-        const validatedGroupFees: Map<string, { deliveryFee: number; distanceKm: number; operationalCost: number }> = new Map();
+        const validatedGroupFees: Map<string, { deliveryFee: number; tripCost: number; distanceKm: number; operationalCost: number }> = new Map();
 
         // Clima activo de la Biblia (se aplica DENTRO de computeDeliveryFee).
         const climateCond = opsSettings.activeClimateCondition || "normal";
@@ -497,6 +497,7 @@ export async function POST(request: Request) {
 
                                 validatedGroupFees.set(groupKey, {
                                     deliveryFee: serverFee.totalCost,
+                                    tripCost: serverFee.tripCost,
                                     distanceKm: groupDistKm,
                                     operationalCost: serverFee.operationalCost,
                                 });
@@ -504,6 +505,7 @@ export async function POST(request: Request) {
                                 // Envío gratis del comercio: el cliente solo paga el operativo.
                                 validatedGroupFees.set(groupKey, {
                                     deliveryFee: serverFee.totalCost,
+                                    tripCost: serverFee.tripCost,
                                     distanceKm: groupDistKm,
                                     operationalCost: serverFee.operationalCost,
                                 });
@@ -581,6 +583,7 @@ export async function POST(request: Request) {
                             // Operativo del pedido (single-vendor también lo registra para el snapshot).
                             validatedGroupFees.set(merchantId || "single", {
                                 deliveryFee: serverFee.totalCost,
+                                tripCost: serverFee.tripCost,
                                 distanceKm: singleServerKm,
                                 operationalCost: serverFee.operationalCost,
                             });
@@ -727,8 +730,11 @@ export async function POST(request: Request) {
                     const originalFee = validatedDeliveryFee;
                     let newTotal = 0;
                     for (const [, val] of validatedGroupFees) {
-                        const groupTrip = Math.max(0, val.deliveryFee - val.operationalCost);
-                        const adjustedTrip = Math.round(groupTrip * zoneSnapshot.zoneMultiplier);
+                        // La zona multiplica el VIAJE. Ajustamos el tripCost real (base
+                        // del payout al repartidor) y el fee del cliente por igual.
+                        // (op = 0 en el modelo aditivo → deliveryFee = tripCost.)
+                        const adjustedTrip = Math.round(val.tripCost * zoneSnapshot.zoneMultiplier);
+                        val.tripCost = adjustedTrip;
                         val.deliveryFee = adjustedTrip + val.operationalCost;
                         newTotal += val.deliveryFee;
                     }
@@ -1187,6 +1193,10 @@ export async function POST(request: Request) {
                         subtotal: groupSubtotal,
                         deliveryFee: groupDeliveryFee,
                         operationalCost: groupOperationalCost,
+                        // Viaje real para el payout: en envío gratis el cliente paga $0
+                        // (groupDeliveryFee) pero el repartidor cobra igual sobre el viaje.
+                        // Fallback defensivo: derivar del fee si el grupo no trae tripCost.
+                        tripCost: groupFeeData?.tripCost ?? Math.max(0, groupDeliveryFee - groupOperationalCost),
                         merchantId: group.merchantId || null,
                         sellerId: group.sellerId || null,
                         sellerCommissionRate: opsSettings.defaultSellerCommission,

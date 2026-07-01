@@ -77,35 +77,27 @@ async function main() {
   // ─── 2. Delivery Rates ─────────────────────────────────────────────────────
 
   const allCategories = await prisma.packageCategory.findMany();
-  // Rama fix/biblia-motor-envio-y-comisiones: valores CANÓNICOS de CLAUDE.md
-  // (costo_km + mínimo POR VEHÍCULO), mapeados a categoría vía SIZE_METADATA:
-  //   MICRO/SMALL → Bici  ($15/km, min $800)
-  //   MEDIUM      → Moto  ($73/km, min $1.500)
-  //   LARGE       → Auto chico ($193/km, min $2.200)
-  //   XL          → Pickup/SUV ($269/km, min $3.000)  (Flete $329/min $3.800 si XXL)
-  // El MOTOR ÚNICO (delivery.ts) lee base=mínimo (basePriceArs) y costo_km
-  // (pricePerKmArs) de acá. base ya NO es "tarifa base sumada", es el MÍNIMO del
-  // max(MIN, costo_km×dist×2.2).
-  //
-  // MODELO B (rama fix/biblia-motor-envio-y-comisiones): el costo_km ahora se
-  // DERIVA del combustible global de la Biblia: costo_km = fuel × consumo × maint.
-  // Seedeamos `consumptionPerKm` calcado a los costo_km canónicos para que al
-  // lanzamiento (fuel=1591, maint=1.35) los números den IDÉNTICOS a hoy:
-  //   consumo = costo_km_canónico / (1591 × 1.35) = costo_km_canónico / 2147.85
-  // Con 7 decimales el costo_km derivado da EXACTO al canónico (verificado):
-  //     Bici  $15  → 0.0069837   ·  Moto  $73  → 0.0339875
-  //     Auto  $193 → 0.0898573   ·  Pickup $269 → 0.1252415  ·  Flete $329 → 0.1531764
-  // pricePerKmArs queda como valor legacy/fallback (si falta consumo o fuel/maint).
+  // Plan Maestro v1 — modelo ADITIVO (labor-first): el motor (delivery.ts) calcula
+  //   envío = base_vehículo + costo_km × distancia  (× zona × clima × demanda)
+  // La base (basePriceArs) captura el TIEMPO + manejo del repartidor; el costo_km
+  // (pricePerKmArs) captura combustible + desgaste. Números calibrados para Ushuaia
+  // (ver Plan Maestro Financiero). consumo = 0 → el motor usa el costo_km DIRECTO,
+  // no la derivación por combustible (que no aplica a la bici y ya no es el modelo).
+  //   MICRO/SMALL → Bici  (base $1.600, $90/km)
+  //   MEDIUM      → Moto  (base $1.800, $130/km)
+  //   LARGE       → Auto  (base $2.600, $190/km)
+  //   XL          → Pickup/SUV (base $6.500, $300/km)
+  //   fallback    → Flete (base $18.000, $450/km)
   const rateDefaults: Record<string, { base: number; perKm: number; consumo: number }> = {
-    MICRO: { base: 800, perKm: 15, consumo: 0.0069837 },    // Bici
-    SMALL: { base: 800, perKm: 15, consumo: 0.0069837 },    // Bici
-    MEDIUM: { base: 1500, perKm: 73, consumo: 0.0339875 },  // Moto
-    LARGE: { base: 2200, perKm: 193, consumo: 0.0898573 },  // Auto chico
-    XL: { base: 3000, perKm: 269, consumo: 0.1252415 },     // Pickup/SUV
+    MICRO: { base: 1600, perKm: 90, consumo: 0 },    // Bici
+    SMALL: { base: 1600, perKm: 90, consumo: 0 },    // Bici
+    MEDIUM: { base: 1800, perKm: 130, consumo: 0 },  // Moto
+    LARGE: { base: 2600, perKm: 190, consumo: 0 },   // Auto chico
+    XL: { base: 6500, perKm: 300, consumo: 0 },      // Pickup/SUV
   };
 
   for (const cat of allCategories) {
-    const rate = rateDefaults[cat.name] || { base: 1500, perKm: 350, consumo: 0.1531764 };
+    const rate = rateDefaults[cat.name] || { base: 18000, perKm: 450, consumo: 0 };
     await prisma.deliveryRate.upsert({
       where: { categoryId: cat.id },
       update: { basePriceArs: rate.base, pricePerKmArs: rate.perKm, consumptionPerKm: rate.consumo },

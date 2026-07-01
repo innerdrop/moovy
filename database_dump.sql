@@ -215,14 +215,14 @@ ALTER TABLE public."AdminNote" OWNER TO postgres;
 CREATE TABLE public."AssignmentLog" (
     id text NOT NULL,
     "orderId" text NOT NULL,
+    "subOrderId" text,
     "driverId" text NOT NULL,
     "attemptNumber" integer DEFAULT 1 NOT NULL,
     "notifiedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "respondedAt" timestamp(3) without time zone,
     outcome public."AssignmentOutcomeEnum" DEFAULT 'ACCEPTED'::public."AssignmentOutcomeEnum" NOT NULL,
     "distanceKm" double precision,
-    "cancelReason" text,
-    "subOrderId" text
+    "cancelReason" text
 );
 
 
@@ -483,10 +483,10 @@ CREATE TABLE public."DeliveryRate" (
     "categoryId" text NOT NULL,
     "basePriceArs" double precision NOT NULL,
     "pricePerKmArs" double precision NOT NULL,
+    "consumptionPerKm" double precision DEFAULT 0.0339875,
     "isActive" boolean DEFAULT true NOT NULL,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL,
-    "consumptionPerKm" double precision DEFAULT 0.0339875
+    "updatedAt" timestamp(3) without time zone NOT NULL
 );
 
 
@@ -526,12 +526,63 @@ CREATE TABLE public."Driver" (
     "vehicleColor" text,
     "licensePlate" text,
     cuit text,
+    "constanciaCuitUrl" text,
     "licenciaUrl" text,
     "seguroUrl" text,
     "vtvUrl" text,
+    "cedulaVerdeUrl" text,
     "dniFrenteUrl" text,
     "dniDorsoUrl" text,
+    "cuitStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "cuitApprovedAt" timestamp(3) without time zone,
+    "cuitRejectionReason" text,
+    "cuitApprovalSource" text,
+    "cuitApprovalNote" text,
+    "constanciaCuitStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "constanciaCuitApprovedAt" timestamp(3) without time zone,
+    "constanciaCuitRejectionReason" text,
+    "constanciaCuitApprovalSource" text,
+    "constanciaCuitApprovalNote" text,
+    "dniFrenteStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "dniFrenteApprovedAt" timestamp(3) without time zone,
+    "dniFrenteRejectionReason" text,
+    "dniFrenteApprovalSource" text,
+    "dniFrenteApprovalNote" text,
+    "dniDorsoStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "dniDorsoApprovedAt" timestamp(3) without time zone,
+    "dniDorsoRejectionReason" text,
+    "dniDorsoApprovalSource" text,
+    "dniDorsoApprovalNote" text,
+    "licenciaStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "licenciaApprovedAt" timestamp(3) without time zone,
+    "licenciaRejectionReason" text,
+    "licenciaApprovalSource" text,
+    "licenciaApprovalNote" text,
+    "seguroStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "seguroApprovedAt" timestamp(3) without time zone,
+    "seguroRejectionReason" text,
+    "seguroApprovalSource" text,
+    "seguroApprovalNote" text,
+    "vtvStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "vtvApprovedAt" timestamp(3) without time zone,
+    "vtvRejectionReason" text,
+    "vtvApprovalSource" text,
+    "vtvApprovalNote" text,
+    "cedulaVerdeStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "cedulaVerdeApprovedAt" timestamp(3) without time zone,
+    "cedulaVerdeRejectionReason" text,
+    "cedulaVerdeApprovalSource" text,
+    "cedulaVerdeApprovalNote" text,
+    "licenciaExpiresAt" timestamp(3) without time zone,
+    "licenciaNotifiedStage" integer DEFAULT 0 NOT NULL,
+    "seguroExpiresAt" timestamp(3) without time zone,
+    "seguroNotifiedStage" integer DEFAULT 0 NOT NULL,
+    "vtvExpiresAt" timestamp(3) without time zone,
+    "vtvNotifiedStage" integer DEFAULT 0 NOT NULL,
+    "cedulaVerdeExpiresAt" timestamp(3) without time zone,
+    "cedulaVerdeNotifiedStage" integer DEFAULT 0 NOT NULL,
     "acceptedTermsAt" timestamp(3) without time zone,
+    "acceptedPrivacyAt" timestamp(3) without time zone,
     "isActive" boolean DEFAULT true NOT NULL,
     "isOnline" boolean DEFAULT false NOT NULL,
     "totalDeliveries" integer DEFAULT 0 NOT NULL,
@@ -545,74 +596,23 @@ CREATE TABLE public."Driver" (
     "approvalStatus" text DEFAULT 'PENDING'::text NOT NULL,
     "approvedAt" timestamp(3) without time zone,
     "rejectionReason" text,
-    ubicacion public.geography,
+    "applicationStatus" text DEFAULT 'DRAFT'::text NOT NULL,
+    "pausedByUserAt" timestamp(3) without time zone,
+    "pausedByUserReason" text,
+    "cancelledByUserAt" timestamp(3) without time zone,
+    "cancelledByUserReason" text,
     "isSuspended" boolean DEFAULT false NOT NULL,
     "suspendedAt" timestamp(3) without time zone,
     "suspendedUntil" timestamp(3) without time zone,
     "suspensionReason" text,
+    ubicacion public.geography,
     "fraudScore" integer DEFAULT 0 NOT NULL,
     "lastFraudCheckAt" timestamp(3) without time zone,
-    "acceptedPrivacyAt" timestamp(3) without time zone,
-    "cedulaVerdeApprovedAt" timestamp(3) without time zone,
-    "cedulaVerdeExpiresAt" timestamp(3) without time zone,
-    "cedulaVerdeNotifiedStage" integer DEFAULT 0 NOT NULL,
-    "cedulaVerdeRejectionReason" text,
-    "cedulaVerdeStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "cedulaVerdeUrl" text,
-    "constanciaCuitApprovedAt" timestamp(3) without time zone,
-    "constanciaCuitRejectionReason" text,
-    "constanciaCuitStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "constanciaCuitUrl" text,
-    "cuitApprovedAt" timestamp(3) without time zone,
-    "cuitRejectionReason" text,
-    "cuitStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "dniDorsoApprovedAt" timestamp(3) without time zone,
-    "dniDorsoRejectionReason" text,
-    "dniDorsoStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "dniFrenteApprovedAt" timestamp(3) without time zone,
-    "dniFrenteRejectionReason" text,
-    "dniFrenteStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "licenciaApprovedAt" timestamp(3) without time zone,
-    "licenciaExpiresAt" timestamp(3) without time zone,
-    "licenciaNotifiedStage" integer DEFAULT 0 NOT NULL,
-    "licenciaRejectionReason" text,
-    "licenciaStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "seguroApprovedAt" timestamp(3) without time zone,
-    "seguroExpiresAt" timestamp(3) without time zone,
-    "seguroNotifiedStage" integer DEFAULT 0 NOT NULL,
-    "seguroRejectionReason" text,
-    "seguroStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "vtvApprovedAt" timestamp(3) without time zone,
-    "vtvExpiresAt" timestamp(3) without time zone,
-    "vtvNotifiedStage" integer DEFAULT 0 NOT NULL,
-    "vtvRejectionReason" text,
-    "vtvStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "cedulaVerdeApprovalNote" text,
-    "cedulaVerdeApprovalSource" text,
-    "constanciaCuitApprovalNote" text,
-    "constanciaCuitApprovalSource" text,
-    "cuitApprovalNote" text,
-    "cuitApprovalSource" text,
-    "dniDorsoApprovalNote" text,
-    "dniDorsoApprovalSource" text,
-    "dniFrenteApprovalNote" text,
-    "dniFrenteApprovalSource" text,
-    "licenciaApprovalNote" text,
-    "licenciaApprovalSource" text,
-    "seguroApprovalNote" text,
-    "seguroApprovalSource" text,
-    "vtvApprovalNote" text,
-    "vtvApprovalSource" text,
-    "bankAccountUpdatedAt" timestamp(3) without time zone,
-    "bankAlias" text,
     "bankCbu" text,
-    "applicationStatus" text DEFAULT 'DRAFT'::text NOT NULL,
-    "cancelledByUserAt" timestamp(3) without time zone,
-    "cancelledByUserReason" text,
-    "pausedByUserAt" timestamp(3) without time zone,
-    "pausedByUserReason" text,
-    "hasColdStorage" boolean DEFAULT false NOT NULL,
-    "hasThermalBag" boolean DEFAULT false NOT NULL
+    "bankAlias" text,
+    "bankAccountUpdatedAt" timestamp(3) without time zone,
+    "hasThermalBag" boolean DEFAULT false NOT NULL,
+    "hasColdStorage" boolean DEFAULT false NOT NULL
 );
 
 
@@ -806,11 +806,11 @@ CREATE TABLE public."Listing" (
     "auctionStatus" text,
     "auctionWinnerId" text,
     "winnerPaymentDeadline" timestamp(3) without time zone,
-    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL,
     "deletedAt" timestamp(3) without time zone,
     "deletedBy" text,
-    "deletedReason" text
+    "deletedReason" text,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
 );
 
 
@@ -861,6 +861,31 @@ CREATE TABLE public."Merchant" (
     "constanciaAfipUrl" text,
     "habilitacionMunicipalUrl" text,
     "registroSanitarioUrl" text,
+    "cuitStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "cuitApprovedAt" timestamp(3) without time zone,
+    "cuitRejectionReason" text,
+    "cuitApprovalSource" text,
+    "cuitApprovalNote" text,
+    "bankAccountStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "bankAccountApprovedAt" timestamp(3) without time zone,
+    "bankAccountRejectionReason" text,
+    "bankAccountApprovalSource" text,
+    "bankAccountApprovalNote" text,
+    "constanciaAfipStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "constanciaAfipApprovedAt" timestamp(3) without time zone,
+    "constanciaAfipRejectionReason" text,
+    "constanciaAfipApprovalSource" text,
+    "constanciaAfipApprovalNote" text,
+    "habilitacionMunicipalStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "habilitacionMunicipalApprovedAt" timestamp(3) without time zone,
+    "habilitacionMunicipalRejectionReason" text,
+    "habilitacionMunicipalApprovalSource" text,
+    "habilitacionMunicipalApprovalNote" text,
+    "registroSanitarioStatus" text DEFAULT 'PENDING'::text NOT NULL,
+    "registroSanitarioApprovedAt" timestamp(3) without time zone,
+    "registroSanitarioRejectionReason" text,
+    "registroSanitarioApprovalSource" text,
+    "registroSanitarioApprovalNote" text,
     "acceptedTermsAt" timestamp(3) without time zone,
     "acceptedPrivacyAt" timestamp(3) without time zone,
     category text DEFAULT 'Otro'::text,
@@ -891,48 +916,23 @@ CREATE TABLE public."Merchant" (
     "approvalStatus" text DEFAULT 'PENDING'::text NOT NULL,
     "approvedAt" timestamp(3) without time zone,
     "rejectionReason" text,
-    ubicacion public.geography,
-    "loyaltyTier" text DEFAULT 'BRONCE'::text NOT NULL,
-    "loyaltyOrderCount" integer DEFAULT 0 NOT NULL,
-    "loyaltyUpdatedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "commissionOverride" double precision,
-    "commissionOverrideReason" text,
+    "applicationStatus" text DEFAULT 'DRAFT'::text NOT NULL,
+    "pausedByUserAt" timestamp(3) without time zone,
+    "pausedByUserReason" text,
+    "cancelledByUserAt" timestamp(3) without time zone,
+    "cancelledByUserReason" text,
     "isSuspended" boolean DEFAULT false NOT NULL,
-    "loyaltyTierLocked" boolean DEFAULT false NOT NULL,
     "suspendedAt" timestamp(3) without time zone,
     "suspendedUntil" timestamp(3) without time zone,
     "suspensionReason" text,
-    "firstOrderWelcomeSentAt" timestamp(3) without time zone,
-    "bankAccountApprovedAt" timestamp(3) without time zone,
-    "bankAccountRejectionReason" text,
-    "bankAccountStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "constanciaAfipApprovedAt" timestamp(3) without time zone,
-    "constanciaAfipRejectionReason" text,
-    "constanciaAfipStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "cuitApprovedAt" timestamp(3) without time zone,
-    "cuitRejectionReason" text,
-    "cuitStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "habilitacionMunicipalApprovedAt" timestamp(3) without time zone,
-    "habilitacionMunicipalRejectionReason" text,
-    "habilitacionMunicipalStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "registroSanitarioApprovedAt" timestamp(3) without time zone,
-    "registroSanitarioRejectionReason" text,
-    "registroSanitarioStatus" text DEFAULT 'PENDING'::text NOT NULL,
-    "bankAccountApprovalNote" text,
-    "bankAccountApprovalSource" text,
-    "constanciaAfipApprovalNote" text,
-    "constanciaAfipApprovalSource" text,
-    "cuitApprovalNote" text,
-    "cuitApprovalSource" text,
-    "habilitacionMunicipalApprovalNote" text,
-    "habilitacionMunicipalApprovalSource" text,
-    "registroSanitarioApprovalNote" text,
-    "registroSanitarioApprovalSource" text,
-    "applicationStatus" text DEFAULT 'DRAFT'::text NOT NULL,
-    "cancelledByUserAt" timestamp(3) without time zone,
-    "cancelledByUserReason" text,
-    "pausedByUserAt" timestamp(3) without time zone,
-    "pausedByUserReason" text
+    "commissionOverride" double precision,
+    "commissionOverrideReason" text,
+    ubicacion public.geography,
+    "loyaltyTier" text DEFAULT 'BRONCE'::text NOT NULL,
+    "loyaltyTierLocked" boolean DEFAULT false NOT NULL,
+    "loyaltyOrderCount" integer DEFAULT 0 NOT NULL,
+    "loyaltyUpdatedAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "firstOrderWelcomeSentAt" timestamp(3) without time zone
 );
 
 
@@ -1069,20 +1069,42 @@ CREATE TABLE public."Order" (
     "updatedAt" timestamp(3) without time zone NOT NULL,
     "cancelReason" text,
     "commissionPaid" boolean DEFAULT false NOT NULL,
+    "pointsEarned" integer,
+    "pointsUsed" integer,
+    "pickupPin" text,
+    "pickupPinVerifiedAt" timestamp(3) without time zone,
+    "pickupPinAttempts" integer DEFAULT 0 NOT NULL,
+    "deliveryPin" text,
+    "deliveryPinVerifiedAt" timestamp(3) without time zone,
+    "deliveryPinAttempts" integer DEFAULT 0 NOT NULL,
+    "failedDeliveryAt" timestamp(3) without time zone,
+    "failedDeliveryReason" text,
+    "nearDestinationNotified" boolean DEFAULT false NOT NULL,
     "driverRating" integer,
     "merchantPayout" double precision DEFAULT 0,
     "moovyCommission" double precision DEFAULT 0,
     "ratedAt" timestamp(3) without time zone,
+    "rateReminderSentAt" timestamp(3) without time zone,
     "ratingComment" text,
     "merchantRating" integer,
     "merchantRatingComment" text,
     "sellerRating" integer,
     "sellerRatingComment" text,
+    "driverRatingModerationStatus" text DEFAULT 'AUTO_APPROVED'::text NOT NULL,
+    "driverRatingReportCount" integer DEFAULT 0 NOT NULL,
+    "merchantRatingModerationStatus" text DEFAULT 'AUTO_APPROVED'::text NOT NULL,
+    "merchantRatingReportCount" integer DEFAULT 0 NOT NULL,
+    "sellerRatingModerationStatus" text DEFAULT 'AUTO_APPROVED'::text NOT NULL,
+    "sellerRatingReportCount" integer DEFAULT 0 NOT NULL,
+    "driverTipMethod" text,
+    "driverTipAmount" double precision,
+    "driverTipDeclaredAt" timestamp(3) without time zone,
     "assignmentAttempts" integer DEFAULT 0 NOT NULL,
     "assignmentExpiresAt" timestamp(3) without time zone,
     "attemptedDriverIds" jsonb,
     "lastAssignmentAt" timestamp(3) without time zone,
     "pendingDriverId" text,
+    "driverSearchUntil" timestamp(3) without time zone,
     "deletedAt" timestamp(3) without time zone,
     "mpPreferenceId" text,
     "mpPaymentId" text,
@@ -1095,34 +1117,12 @@ CREATE TABLE public."Order" (
     "scheduledSlotEnd" timestamp(3) without time zone,
     "scheduledConfirmedAt" timestamp(3) without time zone,
     "couponCode" text,
-    "pointsEarned" integer,
-    "pointsUsed" integer,
-    "deliveryPin" text,
-    "deliveryPinAttempts" integer DEFAULT 0 NOT NULL,
-    "deliveryPinVerifiedAt" timestamp(3) without time zone,
-    "failedDeliveryAt" timestamp(3) without time zone,
-    "failedDeliveryReason" text,
-    "pickupPin" text,
-    "pickupPinAttempts" integer DEFAULT 0 NOT NULL,
-    "pickupPinVerifiedAt" timestamp(3) without time zone,
-    "nearDestinationNotified" boolean DEFAULT false NOT NULL,
-    "rateReminderSentAt" timestamp(3) without time zone,
-    "driverStatus" text DEFAULT 'ASSIGNED'::text,
     "merchantStatus" text DEFAULT 'PREPARING'::text,
-    "noShowFlag" boolean DEFAULT false NOT NULL,
+    "driverStatus" text DEFAULT 'ASSIGNED'::text,
+    "waitingStartedAt" timestamp(3) without time zone,
     "noShowReportedAt" timestamp(3) without time zone,
     "payoutHoldUntil" timestamp(3) without time zone,
-    "waitingStartedAt" timestamp(3) without time zone,
-    "driverRatingModerationStatus" text DEFAULT 'AUTO_APPROVED'::text NOT NULL,
-    "driverRatingReportCount" integer DEFAULT 0 NOT NULL,
-    "driverTipAmount" double precision,
-    "driverTipDeclaredAt" timestamp(3) without time zone,
-    "driverTipMethod" text,
-    "merchantRatingModerationStatus" text DEFAULT 'AUTO_APPROVED'::text NOT NULL,
-    "merchantRatingReportCount" integer DEFAULT 0 NOT NULL,
-    "sellerRatingModerationStatus" text DEFAULT 'AUTO_APPROVED'::text NOT NULL,
-    "sellerRatingReportCount" integer DEFAULT 0 NOT NULL,
-    "driverSearchUntil" timestamp(3) without time zone
+    "noShowFlag" boolean DEFAULT false NOT NULL
 );
 
 
@@ -1477,14 +1477,14 @@ CREATE TABLE public."Product" (
     "minStock" integer DEFAULT 5 NOT NULL,
     "isActive" boolean DEFAULT true NOT NULL,
     "isFeatured" boolean DEFAULT false NOT NULL,
-    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL,
-    "packageCategoryId" text,
     "deletedAt" timestamp(3) without time zone,
     "deletedBy" text,
     "deletedReason" text,
-    "volumeMl" integer,
-    "weightGrams" integer
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "packageCategoryId" text,
+    "weightGrams" integer,
+    "volumeMl" integer
 );
 
 
@@ -1618,12 +1618,12 @@ CREATE TABLE public."SavedCart" (
     "userId" text NOT NULL,
     items jsonb NOT NULL,
     "merchantId" text,
-    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL,
-    "cartValue" double precision DEFAULT 0 NOT NULL,
+    "reminderCount" integer DEFAULT 0 NOT NULL,
     "lastRemindedAt" timestamp(3) without time zone,
     "recoveredAt" timestamp(3) without time zone,
-    "reminderCount" integer DEFAULT 0 NOT NULL
+    "cartValue" double precision DEFAULT 0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
 );
 
 
@@ -1661,10 +1661,18 @@ CREATE TABLE public."SellerProfile" (
     avatar text,
     cuit text,
     "acceptedTermsAt" timestamp(3) without time zone,
+    "acceptedPrivacyAt" timestamp(3) without time zone,
     "bankAlias" text,
     "bankCbu" text,
     "isActive" boolean DEFAULT true NOT NULL,
     "isVerified" boolean DEFAULT false NOT NULL,
+    "applicationStatus" text DEFAULT 'DRAFT'::text NOT NULL,
+    "approvedAt" timestamp(3) without time zone,
+    "rejectionReason" text,
+    "pausedByUserAt" timestamp(3) without time zone,
+    "pausedByUserReason" text,
+    "cancelledByUserAt" timestamp(3) without time zone,
+    "cancelledByUserReason" text,
     "totalSales" integer DEFAULT 0 NOT NULL,
     rating double precision,
     "commissionRate" double precision DEFAULT 12 NOT NULL,
@@ -1676,23 +1684,15 @@ CREATE TABLE public."SellerProfile" (
     "isOnline" boolean DEFAULT false NOT NULL,
     "isPaused" boolean DEFAULT false NOT NULL,
     "pauseEndsAt" timestamp(3) without time zone,
-    "preparationMinutes" integer DEFAULT 15 NOT NULL,
-    "scheduleEnabled" boolean DEFAULT false NOT NULL,
-    "scheduleJson" text,
-    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL,
     "isSuspended" boolean DEFAULT false NOT NULL,
     "suspendedAt" timestamp(3) without time zone,
     "suspendedUntil" timestamp(3) without time zone,
     "suspensionReason" text,
-    "acceptedPrivacyAt" timestamp(3) without time zone,
-    "applicationStatus" text DEFAULT 'DRAFT'::text NOT NULL,
-    "approvedAt" timestamp(3) without time zone,
-    "cancelledByUserAt" timestamp(3) without time zone,
-    "cancelledByUserReason" text,
-    "pausedByUserAt" timestamp(3) without time zone,
-    "pausedByUserReason" text,
-    "rejectionReason" text
+    "preparationMinutes" integer DEFAULT 15 NOT NULL,
+    "scheduleEnabled" boolean DEFAULT false NOT NULL,
+    "scheduleJson" text,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
 );
 
 
@@ -1737,6 +1737,7 @@ CREATE TABLE public."StoreSettings" (
     "heroSliderEnabled" boolean DEFAULT true NOT NULL,
     "heroSliderInterval" integer DEFAULT 5000 NOT NULL,
     "heroSliderShowArrows" boolean DEFAULT true NOT NULL,
+    "supportChatEnabled" boolean DEFAULT true NOT NULL,
     "promoBannerButtonLink" text DEFAULT '/productos?categoria=pizzas'::text NOT NULL,
     "promoBannerButtonText" text DEFAULT 'Ver locales'::text NOT NULL,
     "promoBannerEnabled" boolean DEFAULT true NOT NULL,
@@ -1750,9 +1751,13 @@ Pizza & Pelis'::text NOT NULL,
     "zoneMultipliersJson" text DEFAULT '{"ZONA_A":1.0,"ZONA_B":1.15,"ZONA_C":1.35}'::text NOT NULL,
     "climateMultipliersJson" text DEFAULT '{"normal":1.0,"lluvia_leve":1.15,"temporal_fuerte":1.30}'::text NOT NULL,
     "activeClimateCondition" text DEFAULT 'normal'::text NOT NULL,
+    "demandMultipliersJson" text DEFAULT '{"normal":1.0,"alta":1.20,"pico":1.40}'::text NOT NULL,
+    "activeDemandCondition" text DEFAULT 'normal'::text NOT NULL,
     "operationalCostPercent" double precision DEFAULT 5 NOT NULL,
+    "excludedZonesJson" text DEFAULT '[]'::text NOT NULL,
     "defaultMerchantCommission" double precision DEFAULT 8 NOT NULL,
     "defaultSellerCommission" double precision DEFAULT 12 NOT NULL,
+    "mpReservePercent" double precision DEFAULT 8 NOT NULL,
     "cashMpOnlyDeliveries" integer DEFAULT 10 NOT NULL,
     "cashLimitL1" double precision DEFAULT 15000 NOT NULL,
     "cashLimitL2" double precision DEFAULT 25000 NOT NULL,
@@ -1786,12 +1791,7 @@ Pizza & Pelis'::text NOT NULL,
     "bankAccountHolder" text DEFAULT ''::text NOT NULL,
     "bankCbu" text DEFAULT ''::text NOT NULL,
     "bankAlias" text DEFAULT ''::text NOT NULL,
-    "bankCuit" text DEFAULT ''::text NOT NULL,
-    "supportChatEnabled" boolean DEFAULT true NOT NULL,
-    "excludedZonesJson" text DEFAULT '[]'::text NOT NULL,
-    "activeDemandCondition" text DEFAULT 'normal'::text NOT NULL,
-    "demandMultipliersJson" text DEFAULT '{"normal":1.0,"alta":1.20,"pico":1.40}'::text NOT NULL,
-    "mpReservePercent" double precision DEFAULT 8 NOT NULL
+    "bankCuit" text DEFAULT ''::text NOT NULL
 );
 
 
@@ -1814,6 +1814,14 @@ CREATE TABLE public."SubOrder" (
     "driverId" text,
     "moovyCommission" double precision DEFAULT 0,
     "sellerPayout" double precision DEFAULT 0,
+    "tripCost" double precision,
+    "operationalCost" double precision,
+    "driverPayoutAmount" double precision,
+    "merchantCommissionRate" double precision,
+    "merchantCommissionSource" text,
+    "zoneCode" text,
+    "zoneMultiplier" double precision,
+    "zoneDriverBonus" integer,
     "paymentStatus" text DEFAULT 'PENDING'::text NOT NULL,
     "deliveryStatus" public."DeliveryStatus",
     "deliveredAt" timestamp(3) without time zone,
@@ -1828,29 +1836,21 @@ CREATE TABLE public."SubOrder" (
     "mpTransferId" text,
     "payoutStatus" text DEFAULT 'PENDING'::text NOT NULL,
     "paidOutAt" timestamp(3) without time zone,
+    "pickupPin" text,
+    "pickupPinVerifiedAt" timestamp(3) without time zone,
+    "pickupPinAttempts" integer DEFAULT 0 NOT NULL,
     "deliveryPin" text,
-    "deliveryPinAttempts" integer DEFAULT 0 NOT NULL,
     "deliveryPinVerifiedAt" timestamp(3) without time zone,
+    "deliveryPinAttempts" integer DEFAULT 0 NOT NULL,
     "failedDeliveryAt" timestamp(3) without time zone,
     "failedDeliveryReason" text,
-    "pickupPin" text,
-    "pickupPinAttempts" integer DEFAULT 0 NOT NULL,
-    "pickupPinVerifiedAt" timestamp(3) without time zone,
     "nearDestinationNotified" boolean DEFAULT false NOT NULL,
-    "driverPayoutAmount" double precision,
-    "merchantCommissionRate" double precision,
-    "merchantCommissionSource" text,
-    "operationalCost" double precision,
-    "tripCost" double precision,
-    "zoneCode" text,
-    "zoneDriverBonus" integer,
-    "zoneMultiplier" double precision,
-    "driverStatus" text DEFAULT 'ASSIGNED'::text,
     "merchantStatus" text DEFAULT 'PREPARING'::text,
-    "noShowFlag" boolean DEFAULT false NOT NULL,
+    "driverStatus" text DEFAULT 'ASSIGNED'::text,
+    "waitingStartedAt" timestamp(3) without time zone,
     "noShowReportedAt" timestamp(3) without time zone,
     "payoutHoldUntil" timestamp(3) without time zone,
-    "waitingStartedAt" timestamp(3) without time zone
+    "noShowFlag" boolean DEFAULT false NOT NULL
 );
 
 
@@ -1943,26 +1943,26 @@ CREATE TABLE public."User" (
     "updatedAt" timestamp(3) without time zone NOT NULL,
     "privacyConsentAt" timestamp(3) without time zone,
     "termsConsentAt" timestamp(3) without time zone,
+    "privacyConsentVersion" text,
+    "termsConsentVersion" text,
+    "age18Confirmed" boolean DEFAULT false NOT NULL,
+    "marketingConsent" boolean DEFAULT false NOT NULL,
+    "marketingConsentAt" timestamp(3) without time zone,
+    "marketingConsentRevokedAt" timestamp(3) without time zone,
+    "cookiesConsent" text,
+    "cookiesConsentAt" timestamp(3) without time zone,
     "resetToken" text,
     "resetTokenExpiry" timestamp(3) without time zone,
     "deletedAt" timestamp(3) without time zone,
-    "archivedAt" timestamp(3) without time zone,
     "isSuspended" boolean DEFAULT false NOT NULL,
     "suspendedAt" timestamp(3) without time zone,
     "suspendedUntil" timestamp(3) without time zone,
     "suspensionReason" text,
-    "onboardingCompletedAt" timestamp(3) without time zone,
-    "age18Confirmed" boolean DEFAULT false NOT NULL,
-    "cookiesConsent" text,
-    "cookiesConsentAt" timestamp(3) without time zone,
-    "marketingConsent" boolean DEFAULT false NOT NULL,
-    "marketingConsentAt" timestamp(3) without time zone,
-    "marketingConsentRevokedAt" timestamp(3) without time zone,
-    "privacyConsentVersion" text,
-    "termsConsentVersion" text,
-    "pointsExpiryNotifiedAt" timestamp(3) without time zone,
+    "archivedAt" timestamp(3) without time zone,
     "failedLoginAttempts" integer DEFAULT 0 NOT NULL,
-    "loginLockedUntil" timestamp(3) without time zone
+    "loginLockedUntil" timestamp(3) without time zone,
+    "onboardingCompletedAt" timestamp(3) without time zone,
+    "pointsExpiryNotifiedAt" timestamp(3) without time zone
 );
 
 
@@ -2035,9 +2035,10 @@ COPY public."AdPlacement" (id, "merchantId", type, status, "startsAt", "endsAt",
 --
 
 COPY public."Address" (id, "userId", label, street, number, apartment, neighborhood, city, province, "zipCode", latitude, longitude, "isDefault", "createdAt", "updatedAt", "deletedAt") FROM stdin;
-cmpoh2nvm00145izck15fethn	cmnuzx1fg0002zgw8zimoxguz	Entrega	Retiro en local	S/N	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-05-27 19:43:54.465	2026-05-27 19:43:54.465	\N
-cmpohjbna002c5izcsg50ddmu	cmpohhrhn001z5izc9v3rk0e9	Entrega	Retiro en local	S/N	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-05-27 19:56:51.766	2026-05-27 19:56:51.766	\N
-cmq9i703y000vuxa814s3qtu2	cmpmpj1yp00025izc1cmefuzm	Entrega	Retiro en local	S/N	\N	\N	Ushuaia	Tierra del Fuego	\N	\N	\N	f	2026-06-11 12:58:26.255	2026-06-11 12:58:26.255	\N
+cmqz5vwfn00g4xhd871muduw0	cmqz5vwfh00fzxhd8bchmmyw5	Casa	Kuanip	100	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8055	-68.3045	t	2026-06-29 11:55:53.459	2026-06-29 11:55:53.459	\N
+cmqz5vwoc00gaxhd8v0vglrcm	cmqz5vwo300g5xhd8ok66ryk2	Casa	Onas	250	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8078	-68.3098	t	2026-06-29 11:55:53.772	2026-06-29 11:55:53.772	\N
+cmqz5vwwy00ggxhd88dx3zolb	cmqz5vwws00gbxhd8xdblt14z	Casa	Deloqui	500	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8035	-68.3012	t	2026-06-29 11:55:54.082	2026-06-29 11:55:54.082	\N
+cmqz5vx5w00gmxhd8vmbf5m8b	cmqz5vx5l00ghxhd8xnar59ix	Casa	Yaganes	300	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8092	-68.307	t	2026-06-29 11:55:54.404	2026-06-29 11:55:54.404	\N
 \.
 
 
@@ -2053,7 +2054,7 @@ COPY public."AdminNote" (id, "userId", "adminId", content, pinned, "createdAt", 
 -- Data for Name: AssignmentLog; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."AssignmentLog" (id, "orderId", "driverId", "attemptNumber", "notifiedAt", "respondedAt", outcome, "distanceKm", "cancelReason", "subOrderId") FROM stdin;
+COPY public."AssignmentLog" (id, "orderId", "subOrderId", "driverId", "attemptNumber", "notifiedAt", "respondedAt", outcome, "distanceKm", "cancelReason") FROM stdin;
 \.
 
 
@@ -2062,40 +2063,6 @@ COPY public."AssignmentLog" (id, "orderId", "driverId", "attemptNumber", "notifi
 --
 
 COPY public."AuditLog" (id, action, "entityType", "entityId", "userId", details, "createdAt") FROM stdin;
-cmpogl0si000f5izc9ln7jcpb	MERCHANT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"merchantName":"9410","merchantOwnerId":"cmpmpj1yp00025izc1cmefuzm","adminEmail":"maurod@me.com"}	2026-05-27 19:30:11.394
-cmpogprxo000k5izchy9s6hfc	MERCHANT_DOCUMENT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"documentField":"cuit","documentLabel":"CUIT","adminEmail":"maurod@me.com","triggeredAutoActivation":false}	2026-05-27 19:33:53.196
-cmpogpv0r000n5izcvht6wiz2	MERCHANT_DOCUMENT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"documentField":"bankAccount","documentLabel":"CBU/Alias bancario","adminEmail":"maurod@me.com","triggeredAutoActivation":false}	2026-05-27 19:33:57.195
-cmpogpxq1000q5izcrtnw7vts	MERCHANT_DOCUMENT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"documentField":"constanciaAfipUrl","documentLabel":"Constancia de Inscripción AFIP","adminEmail":"maurod@me.com","triggeredAutoActivation":false}	2026-05-27 19:34:00.698
-cmpogq1eo000t5izc057r5m7g	MERCHANT_DOCUMENT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"documentField":"habilitacionMunicipalUrl","documentLabel":"Habilitación Municipal","adminEmail":"maurod@me.com","triggeredAutoActivation":false}	2026-05-27 19:34:05.473
-cmpogq4ax000w5izcggfr0q1u	MERCHANT_DOCUMENT_APPROVED	Merchant	cmpogk423000c5izcv6er1c6g	cmnuzx1fg0002zgw8zimoxguz	{"documentField":"registroSanitarioUrl","documentLabel":"Registro Sanitario / Habilitación Bromatológica","adminEmail":"maurod@me.com","triggeredAutoActivation":false}	2026-05-27 19:34:09.226
-cmpoh61bg001k5izc7xqoy2sl	USER_DELETED	User	cmpoh5mvw001e5izcyrgkd0ts	cmnuzx1fg0002zgw8zimoxguz	{"email":"buyer1@somosmoovy.com","name":"Juan Perez","roles":["USER"],"bulkOperation":true,"deletedAt":"2026-05-27T19:46:31.849Z"}	2026-05-27 19:46:31.852
-cmpoh84i3001s5izcxroo262d	USER_DELETED	User	cmpoh719b001m5izc10mntdbv	cmnuzx1fg0002zgw8zimoxguz	{"email":"getinnerdrop@gmail.com","name":"Juan Perez","roles":["USER"],"bulkOperation":true,"deletedAt":"2026-05-27T19:48:09.289Z"}	2026-05-27 19:48:09.292
-cmpohg56w001w5izcpsksl42t	ACCOUNT_RESURRECTION_BLOCKED	user	cmpoh719b001m5izc10mntdbv	cmpoh719b001m5izc10mntdbv	{"email":"getinnerdrop@gmail.com","deletedAt":"2026-05-27T19:48:09.059Z","source":"auth/register","timestamp":"2026-05-27T19:54:23.430Z"}	2026-05-27 19:54:23.432
-cmppijkux0008a6dsaarakc2s	USER_DELETED	User	cmpolj36c00305izc7gc617lp	cmnuzx1fg0002zgw8zimoxguz	{"email":"facundotdf@gmail.com","name":"Facu","roles":["USER"],"deletedAt":"2026-05-28T13:12:49.494Z","merchants":[],"driver":null,"seller":null}	2026-05-28 13:12:49.497
-cmppitaol000da6ds1sct3p50	FEATURE_FLAG_TOGGLED	FeatureFlag	cmp9w9vv80006hfbsset0o5kv	cmnuzx1fg0002zgw8zimoxguz	{"key":"buyer.cash-payment","previousState":false,"newState":true,"toggledBy":"maurod@me.com"}	2026-05-28 13:20:22.87
-cmq9h2tc0000huxa8z14go8xf	ORDERS_HARD_DELETED	Order	cmppizrji000sa6dsy4qp8i38,cmpojlzv3002t5izcu40rjffy,cmpohjboq002f5izctdtzn3i6,cmpoh2nx800175izcq1rb05s2	cmnuzx1fg0002zgw8zimoxguz	{"adminEmail":"maurod@me.com","count":4,"requestedIds":["cmppizrji000sa6dsy4qp8i38","cmpojlzv3002t5izcu40rjffy","cmpohjboq002f5izctdtzn3i6","cmpoh2nx800175izcq1rb05s2"],"snapshot":[{"id":"cmpoh2nx800175izcq1rb05s2","orderNumber":"MOV-CFU4","total":1000,"status":"AWAITING_PAYMENT","userId":"cmnuzx1fg0002zgw8zimoxguz","wasSoftDeleted":false},{"id":"cmpohjboq002f5izctdtzn3i6","orderNumber":"MOV-59TV","total":1000,"status":"CONFIRMED","userId":"cmpohhrhn001z5izc9v3rk0e9","wasSoftDeleted":false},{"id":"cmpojlzv3002t5izcu40rjffy","orderNumber":"MOV-RGSJ","total":1000,"status":"CANCELLED","userId":"cmpohhrhn001z5izc9v3rk0e9","wasSoftDeleted":false},{"id":"cmppizrji000sa6dsy4qp8i38","orderNumber":"MOV-N3DT","total":1000,"status":"CANCELLED","userId":"cmpohhrhn001z5izc9v3rk0e9","wasSoftDeleted":false}]}	2026-06-11 12:27:11.232
-cmqa2yvjo000410vwplrapnjc	DRIVER_APPROVED	Driver	cmqa2y3bi000110vwqkxgnj94	cmnuzx1fg0002zgw8zimoxguz	{"driverUserId":"cmpmpj1yp00025izc1cmefuzm","adminEmail":"maurod@me.com"}	2026-06-11 22:39:59.028
-cmqa31692000710vw7ajyjyhh	DRIVER_REJECTED	Driver	cmqa2y3bi000110vwqkxgnj94	cmnuzx1fg0002zgw8zimoxguz	{"driverUserId":"cmpmpj1yp00025izc1cmefuzm","adminEmail":"maurod@me.com","reason":"TEST"}	2026-06-11 22:41:46.215
-cmqa455ch0002a4mwjbk98kb3	DRIVER_APPROVED	Driver	cmqa2y3bi000110vwqkxgnj94	cmnuzx1fg0002zgw8zimoxguz	{"driverUserId":"cmpmpj1yp00025izc1cmefuzm","adminEmail":"maurod@me.com"}	2026-06-11 23:12:51.281
-cmqa478y40005a4mw55rij5uo	DRIVER_REJECTED	Driver	cmqa2y3bi000110vwqkxgnj94	cmnuzx1fg0002zgw8zimoxguz	{"driverUserId":"cmpmpj1yp00025izc1cmefuzm","adminEmail":"maurod@me.com","reason":"PRUEBA 2"}	2026-06-11 23:14:29.261
-cmqa4vllb0008a4mwwmwko3on	DRIVER_APPROVED	Driver	cmqa2y3bi000110vwqkxgnj94	cmnuzx1fg0002zgw8zimoxguz	{"driverUserId":"cmpmpj1yp00025izc1cmefuzm","adminEmail":"maurod@me.com"}	2026-06-11 23:33:25.391
-cmqfczc4d00069xzep19s5lv5	MERCHANT_APPROVED	Merchant	cmqfcutsx00039xze96rz3gz0	cmnuzx1fg0002zgw8zimoxguz	{"merchantName":"TEST 2","merchantOwnerId":"cmpohhrhn001z5izc9v3rk0e9","adminEmail":"maurod@me.com","notified":false}	2026-06-15 15:19:07.549
-cmqfdr3jy00099xze6n5h2nyi	MERCHANT_REJECTED	Merchant	cmqfcutsx00039xze96rz3gz0	cmnuzx1fg0002zgw8zimoxguz	{"merchantName":"TEST 2","merchantOwnerId":"cmpohhrhn001z5izc9v3rk0e9","adminEmail":"maurod@me.com","reason":"Prueba de rechazo","notified":false}	2026-06-15 15:40:42.814
-cmqfdrujy000c9xzessrg1nl7	MERCHANT_APPROVED	Merchant	cmqfcutsx00039xze96rz3gz0	cmnuzx1fg0002zgw8zimoxguz	{"merchantName":"TEST 2","merchantOwnerId":"cmpohhrhn001z5izc9v3rk0e9","adminEmail":"maurod@me.com","notified":true}	2026-06-15 15:41:17.807
-cmqh527wd0004mvt3531202hp	MERCHANT_REJECTED	Merchant	cmqfcutsx00039xze96rz3gz0	cmnuzx1fg0002zgw8zimoxguz	{"merchantName":"TEST 2","merchantOwnerId":"cmpohhrhn001z5izc9v3rk0e9","adminEmail":"maurod@me.com","reason":"TEST 3","notified":false}	2026-06-16 21:12:57.469
-cmqh5eqmj0009mvt3xp9a2nyg	MERCHANT_APPROVED	Merchant	cmqfcutsx00039xze96rz3gz0	cmnuzx1fg0002zgw8zimoxguz	{"merchantName":"TEST 2","merchantOwnerId":"cmpohhrhn001z5izc9v3rk0e9","adminEmail":"maurod@me.com","notified":false}	2026-06-16 21:22:41.611
-cmqh6b0ck000gmvt3hs3eprlb	FEATURE_FLAG_TOGGLED	FeatureFlag	cmp9w9vv80006hfbsset0o5kv	cmnuzx1fg0002zgw8zimoxguz	{"key":"buyer.cash-payment","previousState":true,"newState":false,"toggledBy":"maurod@me.com"}	2026-06-16 21:47:47.204
-cmqh6b18t000imvt3rvd87m8l	FEATURE_FLAG_TOGGLED	FeatureFlag	cmp9w9vv80006hfbsset0o5kv	cmnuzx1fg0002zgw8zimoxguz	{"key":"buyer.cash-payment","previousState":false,"newState":true,"toggledBy":"maurod@me.com"}	2026-06-16 21:47:48.366
-cmqiv6a3u0001mu1u5je97kda	FEATURE_FLAG_TOGGLED	FeatureFlag	cmqiaeodz0001xgin52pe786a	cmnuzx1fg0002zgw8zimoxguz	{"key":"merchant.doc.bank-account","previousState":true,"newState":false,"toggledBy":"maurod@me.com"}	2026-06-18 02:11:43.144
-cmqiv6u8v0003mu1uonuwkpky	FEATURE_FLAG_TOGGLED	FeatureFlag	cmqiaeoeg0003xgink0telh49	cmnuzx1fg0002zgw8zimoxguz	{"key":"merchant.doc.habilitacion-municipal","previousState":true,"newState":false,"toggledBy":"maurod@me.com"}	2026-06-18 02:12:09.248
-cmqiv6v9h0005mu1u0eyt1qpg	FEATURE_FLAG_TOGGLED	FeatureFlag	cmqiaeoeo0004xginfq6e7mz8	cmnuzx1fg0002zgw8zimoxguz	{"key":"merchant.doc.registro-sanitario","previousState":true,"newState":false,"toggledBy":"maurod@me.com"}	2026-06-18 02:12:10.565
-cmqiv6zwg0007mu1uwhzy92qy	FEATURE_FLAG_TOGGLED	FeatureFlag	cmqiaeodz0001xgin52pe786a	cmnuzx1fg0002zgw8zimoxguz	{"key":"merchant.doc.bank-account","previousState":false,"newState":true,"toggledBy":"maurod@me.com"}	2026-06-18 02:12:16.576
-cmqs5ue0t0008a6psq5gaptvw	USER_DELETED	User	cmpmpj1yp00025izc1cmefuzm	cmnuzx1fg0002zgw8zimoxguz	{"email":"maugrod@gmail.com","name":"Mauro Rodriguez","roles":["USER","COMERCIO","DRIVER","SELLER"],"bulkOperation":true,"deletedAt":"2026-06-24T14:20:19.708Z"}	2026-06-24 14:20:19.71
-cmqs5ue1w000ca6ps7msft05z	USER_DELETED	User	cmpohhrhn001z5izc9v3rk0e9	cmnuzx1fg0002zgw8zimoxguz	{"email":"bimsads@gmail.com","name":"Juan Perez","roles":["USER","COMERCIO","DRIVER"],"bulkOperation":true,"deletedAt":"2026-06-24T14:20:19.747Z"}	2026-06-24 14:20:19.748
-cmqs5ue25000ga6ps47zw78qe	USER_DELETED	User	cmnuzx1fg0002zgw8zimoxguz	cmnuzx1fg0002zgw8zimoxguz	{"email":"maurod@me.com","name":"Mauro Rodriguez","roles":["USER"],"bulkOperation":true,"deletedAt":"2026-06-24T14:20:19.756Z"}	2026-06-24 14:20:19.757
-cmqs9emoo000613ajraehcx0p	PRELAUNCH_LEAD_DELETED	PreLaunchLead	cmqs8r3k9000113aj8bksp99j	cmnuzx1fg0002zgw8zimoxguz	{"role":"DRIVER","email":"pedro@somosmoovy.com","whatsapp":null}	2026-06-24 16:00:02.903
-cmqs9eobo000813ajlog0rsab	PRELAUNCH_LEAD_DELETED	PreLaunchLead	cmqs8mc3b000013aj57p8479b	cmnuzx1fg0002zgw8zimoxguz	{"role":"COMERCIO","email":"juan@somosmoovy.com","whatsapp":null}	2026-06-24 16:00:05.029
-cmqs9epli000a13ajiy1qzk2b	PRELAUNCH_LEAD_DELETED	PreLaunchLead	cmqs70usq000013bh2vp3uhal	cmnuzx1fg0002zgw8zimoxguz	{"role":"COMERCIO","email":"demo@somosmoovy.com","whatsapp":"2901652974"}	2026-06-24 16:00:06.678
 \.
 
 
@@ -2120,16 +2087,6 @@ COPY public."BroadcastCampaign" (id, name, channel, "segmentId", "templateId", "
 --
 
 COPY public."CannedResponse" (id, shortcut, title, content, category, "sortOrder", "isActive", "createdAt", "updatedAt") FROM stdin;
-cmnw2pza5001o3ooe7qdfmjcw	/saludo	Saludo inicial	¡Hola! Soy del equipo de MOOVY. ¿En qué puedo ayudarte?	general	1	t	2026-04-12 18:04:52.83	2026-04-12 18:04:52.83
-cmnw2pzac001p3ooeu68v6zal	/espera	Pedir paciencia	Dame unos minutos para revisar tu caso. Ya te respondo.	general	2	t	2026-04-12 18:04:52.837	2026-04-12 18:04:52.837
-cmnw2pzah001q3ooe4u8crz30	/pedido-estado	Estado del pedido	Estoy revisando el estado de tu pedido. Un momento por favor.	pedido	3	t	2026-04-12 18:04:52.841	2026-04-12 18:04:52.841
-cmnw2pzam001r3ooe5j4jd49i	/pedido-demora	Demora en pedido	Lamento la demora. Estoy contactando al comercio para acelerar tu pedido.	pedido	4	t	2026-04-12 18:04:52.846	2026-04-12 18:04:52.846
-cmnw2pzau001s3ooehvvzhy1d	/pago-pendiente	Pago pendiente	Veo que el pago todavía está pendiente. ¿Pudiste completarlo desde MercadoPago?	pago	5	t	2026-04-12 18:04:52.855	2026-04-12 18:04:52.855
-cmnw2pzaz001t3ooewwj7axqe	/pago-reembolso	Reembolso	Voy a gestionar el reembolso ahora. Puede demorar hasta 48hs en reflejarse en tu cuenta de MercadoPago.	pago	6	t	2026-04-12 18:04:52.86	2026-04-12 18:04:52.86
-cmnw2pzb6001u3ooeswx9y1md	/cuenta-datos	Datos de cuenta	Para proteger tu seguridad, no puedo modificar datos sensibles por chat. Podés actualizarlos desde tu perfil en la app.	cuenta	7	t	2026-04-12 18:04:52.866	2026-04-12 18:04:52.866
-cmnw2pzba001v3ooeuqmxm3qf	/cierre	Cierre de chat	¡Listo! ¿Hay algo más en lo que pueda ayudarte? Si no, cierro el chat. ¡Que tengas un excelente día!	cierre	8	t	2026-04-12 18:04:52.871	2026-04-12 18:04:52.871
-cmnw2pzbe001w3ooesgjbjt3u	/horario	Horario de atención	Nuestro horario de atención es de lunes a sábado de 9:00 a 21:00. Fuera de ese horario, dejanos tu mensaje y te respondemos apenas abramos.	general	9	t	2026-04-12 18:04:52.875	2026-04-12 18:04:52.875
-cmnw2pzbl001x3ooeuacc81f4	/repartidor	Problema con repartidor	Lamento el inconveniente. Voy a reportar la situación al equipo de operaciones para que tomen acción.	pedido	10	t	2026-04-12 18:04:52.881	2026-04-12 18:04:52.881
 \.
 
 
@@ -2146,37 +2103,26 @@ COPY public."CartItem" (id, "userId", "productId", quantity, "variantId", "creat
 --
 
 COPY public."Category" (id, name, slug, description, image, "isActive", "order", scope, "createdAt", "updatedAt", "allowIndividualPurchase", price, "starterPrice", "isStarter", "isPackageAvailable", "parentId", icon) FROM stdin;
-cmnw2pz3p000h3ooelz8hg192	Restaurante	restaurante	\N	\N	t	1	STORE	2026-04-12 18:04:52.597	2026-04-12 18:04:52.597	t	0	\N	f	t	\N	\N
-cmnw2pz3v000i3ooejddg6d35	Pizzería	pizzeria	\N	\N	t	2	STORE	2026-04-12 18:04:52.603	2026-04-12 18:04:52.603	t	0	\N	f	t	\N	\N
-cmnw2pz3z000j3ooeqo3xfgth	Hamburguesería	hamburgueseria	\N	\N	t	3	STORE	2026-04-12 18:04:52.608	2026-04-12 18:04:52.608	t	0	\N	f	t	\N	\N
-cmnw2pz44000k3ooed9vepfz1	Parrilla	parrilla	\N	\N	t	4	STORE	2026-04-12 18:04:52.612	2026-04-12 18:04:52.612	t	0	\N	f	t	\N	\N
-cmnw2pz49000l3ooegno5am0a	Cafetería	cafeteria	\N	\N	t	5	STORE	2026-04-12 18:04:52.617	2026-04-12 18:04:52.617	t	0	\N	f	t	\N	\N
-cmnw2pz4e000m3ooeu0ik70ks	Panadería	panaderia	\N	\N	t	6	STORE	2026-04-12 18:04:52.622	2026-04-12 18:04:52.622	t	0	\N	f	t	\N	\N
-cmnw2pz4j000n3ooe3ln25yrx	Farmacia	farmacia	\N	\N	t	7	STORE	2026-04-12 18:04:52.627	2026-04-12 18:04:52.627	t	0	\N	f	t	\N	\N
-cmnw2pz4q000o3ooeetdfhz46	Supermercado	supermercado	\N	\N	t	8	STORE	2026-04-12 18:04:52.635	2026-04-12 18:04:52.635	t	0	\N	f	t	\N	\N
-cmnw2pz4u000p3ooerlyvtabj	Kiosco	kiosco	\N	\N	t	9	STORE	2026-04-12 18:04:52.639	2026-04-12 18:04:52.639	t	0	\N	f	t	\N	\N
-cmnw2pz4z000q3ooeez0jc54c	Verdulería	verduleria	\N	\N	t	10	STORE	2026-04-12 18:04:52.643	2026-04-12 18:04:52.643	t	0	\N	f	t	\N	\N
-cmnw2pz54000r3ooecus3vhhr	Carnicería	carniceria	\N	\N	t	11	STORE	2026-04-12 18:04:52.649	2026-04-12 18:04:52.649	t	0	\N	f	t	\N	\N
-cmnw2pz59000s3ooegksqh88s	Otro	otro	\N	\N	t	99	BOTH	2026-04-12 18:04:52.653	2026-04-12 18:04:52.653	t	0	\N	f	t	\N	\N
-cmnw2pz5d000t3ooeypsf73lm	Electrónica	electronica	\N	\N	t	1	MARKETPLACE	2026-04-12 18:04:52.657	2026-04-12 18:04:52.657	t	0	\N	f	t	\N	\N
-cmnw2pz5h000u3ooe9fu5jn1o	Ropa y Calzado	ropa-calzado	\N	\N	t	2	MARKETPLACE	2026-04-12 18:04:52.661	2026-04-12 18:04:52.661	t	0	\N	f	t	\N	\N
-cmnw2pz5l000v3ooe9ymzwrfn	Hogar y Jardín	hogar-jardin	\N	\N	t	3	MARKETPLACE	2026-04-12 18:04:52.665	2026-04-12 18:04:52.665	t	0	\N	f	t	\N	\N
-cmnw2pz5p000w3ooej2c5lade	Deportes	deportes	\N	\N	t	4	MARKETPLACE	2026-04-12 18:04:52.669	2026-04-12 18:04:52.669	t	0	\N	f	t	\N	\N
-cmnw2pz5t000x3ooep0jbcfaq	Juguetes	juguetes	\N	\N	t	5	MARKETPLACE	2026-04-12 18:04:52.673	2026-04-12 18:04:52.673	t	0	\N	f	t	\N	\N
-cmnw2pz5x000y3ooeozweeavw	Libros y Música	libros-musica	\N	\N	t	6	MARKETPLACE	2026-04-12 18:04:52.678	2026-04-12 18:04:52.678	t	0	\N	f	t	\N	\N
-cmnw2pz61000z3ooes09qfjps	Mascotas	mascotas	\N	\N	t	7	MARKETPLACE	2026-04-12 18:04:52.681	2026-04-12 18:04:52.681	t	0	\N	f	t	\N	\N
-cmnw2pz6500103ooe19uns92d	Automotor	automotor	\N	\N	t	8	MARKETPLACE	2026-04-12 18:04:52.685	2026-04-12 18:04:52.685	t	0	\N	f	t	\N	\N
-cmnw2pz6900113ooenw7hjmjx	Artesanías	artesanias	\N	\N	t	9	MARKETPLACE	2026-04-12 18:04:52.689	2026-04-12 18:04:52.689	t	0	\N	f	t	\N	\N
-cmoqaear00000vlhqnfnspio8	Comidas	comidas	Restaurantes, rotiserías, cocinas	\N	t	1	STORE	2026-05-03 21:32:50.028	2026-05-03 21:32:50.028	t	0	\N	f	t	\N	restaurant
-cmoqaearl0001vlhqepu89res	Cafeterías	cafeterias	Cafés, panaderías, medialunas	\N	t	2	STORE	2026-05-03 21:32:50.05	2026-05-03 21:32:50.05	t	0	\N	f	t	\N	coffee
-cmoqaearw0002vlhqhbr35lt8	Bebidas	bebidas	Vinotecas, distribuidoras, cervecerías	\N	t	4	STORE	2026-05-03 21:32:50.061	2026-05-03 21:32:50.061	t	0	\N	f	t	\N	wine
-cmoqaeasg0003vlhqwc434cop	Helados	helados	Heladerías, postres	\N	t	8	STORE	2026-05-03 21:32:50.081	2026-05-03 21:32:50.081	t	0	\N	f	t	\N	ice-cream
-cmor6f2sn0000hw6jmjo5byij	Hogar	hogar	Muebles, decoración, electrodomésticos	\N	t	102	MARKETPLACE	2026-05-04 12:29:14.088	2026-05-04 12:29:14.088	t	0	\N	f	t	\N	home
-cmor6f2t80001hw6j3tg8w4cq	Vehículos	vehiculos	Motos, autos, repuestos	\N	t	104	MARKETPLACE	2026-05-04 12:29:14.109	2026-05-04 12:29:14.109	t	0	\N	f	t	\N	car
-cmor6f2tg0002hw6jyq76os52	Gaming	gaming	Consolas, juegos, periféricos	\N	t	105	MARKETPLACE	2026-05-04 12:29:14.116	2026-05-04 12:29:14.116	t	0	\N	f	t	\N	gamepad
-cmor6f2to0003hw6joa10m8x5	Bebés y Niños	bebes-y-ninos	Ropa infantil, juguetes, cochecitos	\N	t	106	MARKETPLACE	2026-05-04 12:29:14.124	2026-05-04 12:29:14.124	t	0	\N	f	t	\N	baby
-cmor6f2tu0004hw6jov1i70ah	Herramientas	herramientas	Herramientas, materiales, jardín	\N	t	107	MARKETPLACE	2026-05-04 12:29:14.13	2026-05-04 12:29:14.13	t	0	\N	f	t	\N	wrench
-cmor6f2u40005hw6jkpdsqu4w	Belleza	belleza	Perfumes, maquillaje, cuidado personal	\N	t	109	MARKETPLACE	2026-05-04 12:29:14.14	2026-05-04 12:29:14.14	t	0	\N	f	t	\N	sparkles
+cmqz5vqwu000gxhd8quylpbyn	Restaurante	restaurante	\N	\N	t	1	STORE	2026-06-29 11:55:46.302	2026-06-29 11:55:46.302	t	0	\N	f	t	\N	\N
+cmqz5vqx1000hxhd86j3rab6t	Pizzería	pizzeria	\N	\N	t	2	STORE	2026-06-29 11:55:46.31	2026-06-29 11:55:46.31	t	0	\N	f	t	\N	\N
+cmqz5vqxd000ixhd8e2wu3ki0	Hamburguesería	hamburgueseria	\N	\N	t	3	STORE	2026-06-29 11:55:46.322	2026-06-29 11:55:46.322	t	0	\N	f	t	\N	\N
+cmqz5vqxu000jxhd856aalwvq	Parrilla	parrilla	\N	\N	t	4	STORE	2026-06-29 11:55:46.339	2026-06-29 11:55:46.339	t	0	\N	f	t	\N	\N
+cmqz5vqxz000kxhd8glc5szfn	Cafetería	cafeteria	\N	\N	t	5	STORE	2026-06-29 11:55:46.344	2026-06-29 11:55:46.344	t	0	\N	f	t	\N	\N
+cmqz5vqy3000lxhd8hcaqu9dk	Panadería	panaderia	\N	\N	t	6	STORE	2026-06-29 11:55:46.348	2026-06-29 11:55:46.348	t	0	\N	f	t	\N	\N
+cmqz5vqy9000mxhd84i6y95uu	Farmacia	farmacia	\N	\N	t	7	STORE	2026-06-29 11:55:46.353	2026-06-29 11:55:46.353	t	0	\N	f	t	\N	\N
+cmqz5vqyf000nxhd8rnn283uf	Supermercado	supermercado	\N	\N	t	8	STORE	2026-06-29 11:55:46.36	2026-06-29 11:55:46.36	t	0	\N	f	t	\N	\N
+cmqz5vqyn000oxhd8fpc7qxgz	Kiosco	kiosco	\N	\N	t	9	STORE	2026-06-29 11:55:46.368	2026-06-29 11:55:46.368	t	0	\N	f	t	\N	\N
+cmqz5vqyv000pxhd8lec7u05x	Verdulería	verduleria	\N	\N	t	10	STORE	2026-06-29 11:55:46.375	2026-06-29 11:55:46.375	t	0	\N	f	t	\N	\N
+cmqz5vqz1000qxhd87idexjyt	Carnicería	carniceria	\N	\N	t	11	STORE	2026-06-29 11:55:46.381	2026-06-29 11:55:46.381	t	0	\N	f	t	\N	\N
+cmqz5vqz8000rxhd8i92g71fs	Otro	otro	\N	\N	t	99	BOTH	2026-06-29 11:55:46.388	2026-06-29 11:55:46.388	t	0	\N	f	t	\N	\N
+cmqz5vqzf000sxhd8ommos2gv	Electrónica	electronica	\N	\N	t	1	MARKETPLACE	2026-06-29 11:55:46.395	2026-06-29 11:55:46.395	t	0	\N	f	t	\N	\N
+cmqz5vqzl000txhd8b3j5zwws	Ropa y Calzado	ropa-calzado	\N	\N	t	2	MARKETPLACE	2026-06-29 11:55:46.401	2026-06-29 11:55:46.401	t	0	\N	f	t	\N	\N
+cmqz5vqzt000uxhd8ime07uc9	Hogar y Jardín	hogar-jardin	\N	\N	t	3	MARKETPLACE	2026-06-29 11:55:46.409	2026-06-29 11:55:46.409	t	0	\N	f	t	\N	\N
+cmqz5vr07000vxhd8dvyam1ju	Deportes	deportes	\N	\N	t	4	MARKETPLACE	2026-06-29 11:55:46.424	2026-06-29 11:55:46.424	t	0	\N	f	t	\N	\N
+cmqz5vr0e000wxhd871dqy12g	Juguetes	juguetes	\N	\N	t	5	MARKETPLACE	2026-06-29 11:55:46.43	2026-06-29 11:55:46.43	t	0	\N	f	t	\N	\N
+cmqz5vr0i000xxhd8lsjz1e47	Libros y Música	libros-musica	\N	\N	t	6	MARKETPLACE	2026-06-29 11:55:46.435	2026-06-29 11:55:46.435	t	0	\N	f	t	\N	\N
+cmqz5vr0m000yxhd8gfimq465	Mascotas	mascotas	\N	\N	t	7	MARKETPLACE	2026-06-29 11:55:46.439	2026-06-29 11:55:46.439	t	0	\N	f	t	\N	\N
+cmqz5vr0q000zxhd8p3tglvrd	Artesanías	artesanias	\N	\N	t	9	MARKETPLACE	2026-06-29 11:55:46.443	2026-06-29 11:55:46.443	t	0	\N	f	t	\N	\N
 \.
 
 
@@ -2185,9 +2131,6 @@ cmor6f2u40005hw6jkpdsqu4w	Belleza	belleza	Perfumes, maquillaje, cuidado personal
 --
 
 COPY public."ConfigAuditLog" (id, "adminUserId", "adminEmail", "configType", "fieldChanged", "oldValue", "newValue", "createdAt") FROM stdin;
-cmpd5oaxa00003l3viwz69vyp	cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	STORE_SETTINGS	delivery	{"baseDeliveryFee":1500,"fuelPricePerLiter":1658,"fuelConsumptionPerKm":0.06,"maintenanceFactor":1.35,"maxDeliveryDistance":15,"freeDeliveryMinimum":null,"riderCommissionPercent":80,"operationalCostPercent":5,"zoneMultipliers":{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35},"climateMultipliers":{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3},"activeClimateCondition":"normal"}	{"baseDeliveryFee":1500,"fuelPricePerLiter":1678,"fuelConsumptionPerKm":0.06,"maintenanceFactor":1.35,"maxDeliveryDistance":15,"freeDeliveryMinimum":null,"riderCommissionPercent":80,"operationalCostPercent":5,"zoneMultipliers":{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35},"climateMultipliers":{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3},"activeClimateCondition":"normal"}	2026-05-19 21:39:20.781
-cmpd5ojn200013l3vmum8fmnp	cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	STORE_SETTINGS	delivery	{"baseDeliveryFee":1500,"fuelPricePerLiter":1678,"fuelConsumptionPerKm":0.06,"maintenanceFactor":1.35,"maxDeliveryDistance":15,"freeDeliveryMinimum":null,"riderCommissionPercent":80,"operationalCostPercent":5,"zoneMultipliers":{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35},"climateMultipliers":{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3},"activeClimateCondition":"normal"}	{"baseDeliveryFee":1500,"fuelPricePerLiter":1680,"fuelConsumptionPerKm":0.06,"maintenanceFactor":1.35,"maxDeliveryDistance":15,"freeDeliveryMinimum":null,"riderCommissionPercent":80,"operationalCostPercent":5,"zoneMultipliers":{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35},"climateMultipliers":{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3},"activeClimateCondition":"normal"}	2026-05-19 21:39:32.078
-cmq5nozl40004uewydopcdsp7	cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	STORE_SETTINGS	commissions	{"defaultMerchantCommission":0,"defaultSellerCommission":12,"riderCommissionPercent":80}	{"defaultMerchantCommission":10,"defaultSellerCommission":12,"riderCommissionPercent":80}	2026-06-08 20:21:18.76
 \.
 
 
@@ -2196,14 +2139,6 @@ cmq5nozl40004uewydopcdsp7	cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	STORE_SETTINGS
 --
 
 COPY public."ConsentLog" (id, "userId", "consentType", version, action, "ipAddress", "userAgent", details, "acceptedAt") FROM stdin;
-cmpmpj1zo00045izcb99hqgiu	cmpmpj1yp00025izc1cmefuzm	TERMS	1.2	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-26 14:05:03.828
-cmpmpj20500065izcx5osuge3	cmpmpj1yp00025izc1cmefuzm	PRIVACY	2.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-26 14:05:03.846
-cmpmpj20c00085izc21vnawof	cmpmpj1yp00025izc1cmefuzm	MARKETING	1.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-26 14:05:03.852
-cmpohhrih00235izcob6zu4gf	cmpohhrhn001z5izc9v3rk0e9	TERMS	1.2	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-27 19:55:39.016
-cmpohhrir00255izctj9nmtf1	cmpohhrhn001z5izc9v3rk0e9	PRIVACY	2.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-27 19:55:39.027
-cmpohhriw00275izcdf2tlxa8	cmpohhrhn001z5izc9v3rk0e9	MARKETING	1.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	\N	2026-05-27 19:55:39.032
-cmq8jg76v0006uxa86edumnpl	cmpmpj1yp00025izc1cmefuzm	TERMS	1.2	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	{"context":"seller_activation"}	2026-06-10 20:45:48.775
-cmq8jg7740008uxa8rc324j57	cmpmpj1yp00025izc1cmefuzm	PRIVACY	2.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	{"context":"seller_activation"}	2026-06-10 20:45:48.784
 \.
 
 
@@ -2243,13 +2178,12 @@ COPY public."DeliveryAttempt" (id, "orderId", "subOrderId", "driverId", reason, 
 -- Data for Name: DeliveryRate; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."DeliveryRate" (id, "categoryId", "basePriceArs", "pricePerKmArs", "isActive", "createdAt", "updatedAt", "consumptionPerKm") FROM stdin;
-cmoqaeda90002a2f0wz26u3g1	cmoqaed9h0000a2f0xygyvz4p	1500	350	t	2026-05-03 21:32:53.313	2026-06-04 23:44:26.491	0.1531764
-cmnw2pz89001c3ooex4r4zxb5	cmnw2pz7c00163ooeim6ijao4	800	15	t	2026-04-12 18:04:52.762	2026-06-04 23:44:26.509	0.0069837
-cmnw2pz8o001e3ooe9elkxxcs	cmnw2pz7m00173ooelfp0vilx	800	15	t	2026-04-12 18:04:52.776	2026-06-04 23:44:26.515	0.0069837
-cmnw2pz8w001g3ooep1fxaxag	cmnw2pz7r00183ooe6a3uhqx2	1500	73	t	2026-04-12 18:04:52.785	2026-06-04 23:44:26.521	0.0339875
-cmnw2pz93001i3ooev0k4453m	cmnw2pz7y00193ooe51d5kek8	2200	193	t	2026-04-12 18:04:52.791	2026-06-04 23:44:26.526	0.0898573
-cmnw2pz99001k3ooear8pbd54	cmnw2pz83001a3ooeozrxhvfw	3000	269	t	2026-04-12 18:04:52.798	2026-06-04 23:44:26.53	0.1252415
+COPY public."DeliveryRate" (id, "categoryId", "basePriceArs", "pricePerKmArs", "consumptionPerKm", "isActive", "createdAt", "updatedAt") FROM stdin;
+cmqz5vr1r0016xhd8f6bn02x1	cmqz5vr1f0014xhd83erjqolw	1600	90	0	t	2026-06-29 11:55:46.479	2026-07-01 17:36:59.628
+cmqz5vr230019xhd8yor90shy	cmqz5vr1z0017xhd8k68fpeuc	1600	90	0	t	2026-06-29 11:55:46.491	2026-07-01 17:36:59.638
+cmqz5vr29001cxhd8fc542du8	cmqz5vr26001axhd8t5ik06rv	1800	130	0	t	2026-06-29 11:55:46.497	2026-07-01 17:36:59.642
+cmqz5vr2l001fxhd8347sr8h9	cmqz5vr2g001dxhd8t1c3c19v	2600	190	0	t	2026-06-29 11:55:46.509	2026-07-01 17:36:59.647
+cmqz5vr2t001ixhd8y6u4ev1q	cmqz5vr2o001gxhd8q3y0ks8l	6500	300	0	t	2026-06-29 11:55:46.518	2026-07-01 17:36:59.652
 \.
 
 
@@ -2258,10 +2192,6 @@ cmnw2pz99001k3ooear8pbd54	cmnw2pz83001a3ooeozrxhvfw	3000	269	t	2026-04-12 18:04:
 --
 
 COPY public."DeliveryZone" (id, name, color, multiplier, "driverBonus", polygon, "isActive", "displayOrder", "createdAt", "updatedAt") FROM stdin;
-zone_1777788896671_2nymxy	Zona B — Intermedia	#eab308	1.15	150	0103000020E61000000100000050000000EBD19D253D1351C08C0E806C1D664BC0618F9D78AD1351C0E958D32C38664BC0FB0D9EFFDA1351C013ACC07C31664BC099829DB1FB1351C0AD54D1D14A664BC0CE719E4C241451C01602F36F5B664BC0F1449E91391451C0A97AD68E92664BC077BA9DC4BA1451C0BF81409CC4664BC0D07C9EA4F81451C06D1B674F19674BC09D7EDEC1401551C0E7E62FB524674BC0750C7ED1541551C09100386D3B674BC0048D1D7D811551C07341AB0348674BC092CA9D64CE1551C03AE92C9CAC674BC068A79D9C2C1651C0E289C05BD7674BC00B41BD02391651C0AEFB94518F674BC03EBABD16071651C0231C135F36674BC030FCBCB6B21551C0CA68AA4801674BC0DA23BD70531551C072FE2614E2664BC0CDDFBCEC221551C0D7407102BE664BC04B6169D6B51451C05D7262636C664BC068C369DA481451C09307F90B43664BC086AC693C231451C0EC33E34426664BC0782C37CAFA1351C037E138D214664BC0551D815EC91351C08E36385812664BC08EF880067C1351C0B431A9B3F0654BC003B080904C1351C0830D0B92D7654BC015CF804A1A1351C03D671FECD3654BC0B3E22834C11251C090F6F8EA8E654BC0BF4F6985081251C093B135B6F2644BC08B96ED57A21151C08C103509D2644BC0B3C5EC67FC1051C088B27377B6644BC0D97DEDB7BB1051C04FEAF199B1644BC0898C531C231051C0F6C4C6FEEA644BC034A153D45C0F51C0CCCA6B2F26654BC01E75DE40ED0E51C05E98F15B19654BC08093DD34CC0E51C02246F3F3EB644BC094CD57F4870E51C0B27506CCD7644BC019B11756660E51C0C368F844CE644BC0C751D7DF940E51C0468713DAEA644BC057FF57859C0E51C0D7BA9A5DF3644BC072F6575AA90E51C0132FF17509654BC05F5D57C4B70E51C0A9FFC0DD18654BC0FA505898D40E51C0EE686A7928654BC02CDC57BDFA0E51C007B794773E654BC0B1CB97E7260F51C043B14A263D654BC010EF5706570F51C0349A22E137654BC0ED4C4DF46C0F51C01B091B3B34654BC0DA6242C2930F51C0184C1AA82E654BC0FF09A0ABDC0F51C0FCA83A6F19654BC066EFFC0A281051C04D94C45F01654BC0FDC93675C01051C094248166CD644BC08F6C378CE51051C066382409D0644BC09BB83603051151C050106FAFE2644BC08F71371B1A1151C07BDCB2A1ED644BC022E335D5311151C00440B20CF3644BC0F3A433CD471151C00168ABCAF2644BC062CE31F55A1151C01B511E39F9644BC0D5753198821151C03270733CFC644BC0383C31A9A91151C0D249471D03654BC073CC30F0C71151C068A93B9D0B654BC07F94B0EDEF1151C0575665A232654BC0302630AFF91151C0398AFF7D3E654BC0F6C330A9FF1151C029B7483547654BC0B0A4307D1C1251C0FB43427A5B654BC01C0831E63A1251C0680B59F486654BC06EEFB00F461251C02950DA0798654BC0C2CD3055531251C0E31AA482B8654BC0E2F91419601251C0828003FAC7654BC0406EF9277C1251C050BBAE4BCC654BC08E6EF9529C1251C00163F210CA654BC0FBD0F8CAAB1251C09C8BF4DFD9654BC0EF89F9E2C01251C09AE2C550FB654BC059FEF822CC1251C0E424555A0D664BC01BBBF866F11251C03391168A1B664BC07D6F9EAD2D1351C046A214D02B664BC024B79DEB581351C0E7DE219748664BC0AF859D85641351C03CBAE1DC3E664BC0C78E9D226D1351C00695C0FF39664BC0A2C49DC1551351C08D31EFF226664BC0FBFE9D523D1351C0F1FCB6E823664BC0EBD19D253D1351C08C0E806C1D664BC0	t	2	2026-05-03 06:14:56.677	2026-05-05 21:57:51.168
-zone_1777832004567_wcxi1z	Zona A — Centro	#22c55e	1	0	0103000020E6100000010000004F000000F56FE0D3510E51C05426BBEDD0644BC0D50DE186620E51C02D000C52D0644BC04E3AE0A67E0E51C0A6CCDF1ADE644BC00624E05E990E51C008C21DC1F0644BC05599E0D6A80E51C06F54A44B0A654BC04ACD6084B70E51C0C04F66CD19654BC03B9EE0ACD20E51C09BBD52E728654BC02FD9E093FA0E51C0246651333F654BC06849E00C270F51C093E0DD2F3E654BC0A514E117580F51C0E0EE0A4F38654BC09760E0D56C0F51C0F4E2C91035654BC0FA72E081930F51C023A69FCB2F654BC01FC0E0A2CC0F51C09903E16320654BC05C98E02F211051C0C505386E05654BC073A6E05B5E1051C02EE8CC5CF1644BC0592EE1F1A91051C05D4EAECED6644BC0BFACE106C21051C02589BB00CF644BC0F040E10FE61051C0B2C750BDD1644BC0B857E1F4001151C0A18272C4E2644BC076AA607A191151C0A3C17025F0644BC0356AE159321151C0D05BE102F5644BC0A8B1E025481151C0D05BE102F5644BC0DABAE07B5B1151C076C7767FFB644BC09E6EE0DB821151C07BBFF755FE644BC024D2E0FDAB1151C02A06E50906654BC07F08E139CA1151C0E1272AF50E654BC09893E0A5E51151C05B44CDBD2B654BC00E3FE1E7FD1151C09B9E2E8D4A654BC06A75E1231C1251C01765EA395F654BC0688BE0893D1251C0521901408E654BC0B8F7E01D4F1251C0DE07DE98B7654BC0D2F7E0D6591251C0485B6CC5C4654BC00CD660635C1251C0C74D1C5FCC654BC04C99E043651251C0CF8C7B7CCD654BC0E98BE026731251C05DBF35B7CF654BC02DB9E0C5881251C0A88F5383CF654BC09A1BE03D981251C0CF8C7B7CCD654BC0E5A2E07DA31251C0B19F9060D4654BC06A8CE0C3A81251C0CF48540DDA654BC0A75FE0C1C81251C04258115E10664BC0CA2AE113EF1251C04D53CC8D1E664BC074DEE0BA0B1351C053D85E6E24664BC0E626E177301351C00E7B5D6330664BC08B77E099591351C05A0097234B664BC09D42907E791351C0D589F92936664BC01827E95AAE1351C09D4A99E33B664BC06A684013DA1351C054E957D533664BC0F280A046FB1351C0148026924D664BC04AC860F5221451C0BB0746305E664BC0A682E0AA381451C0B79B9E7F94664BC022A160D8B71451C0782326BAC4664BC04306E009F71451C01B543EAB1C674BC0366C3D3E3F1551C0B66AE1F627674BC0611B6D2C531551C0C3BA59D23D674BC055AA833D7F1551C0E8BA7E2E4B674BC029CF9B0ECD1551C0ED152F79B0674BC0E15DF9EF2B1651C0190CF78FDA674BC07CFD55EF6C1651C01022C82A2D684BC09CA36D80821651C026F243F658684BC0E9EA8453831651C0860D566979684BC0C0C5B3995D1651C0CD2FB0B2A9684BC074541232601651C00D6C230BC9684BC0B6AC6F1E961651C0AF4AF4C235694BC0F804CD0ACC1651C0783F341473694BC06EAEB83D431751C00956564CC5694BC02CD99003FF1751C03F5688F89B694BC04F2D4197071751C092DB5C20B46B4BC06729F16A0D1551C0B4DD0797836A4BC0B766C8047E1451C02084780BC16B4BC034B59F9E941351C0257105FDCD6B4BC02ADC5003361251C0611DD63A42674BC0832F0018451151C0928C9F3D8C664BC0CF606011741051C0BCBCF4874A664BC0D04B2080AF0F51C063A8AE6F2C664BC066D9DF4E6C0F51C09604997E38664BC03A6E004F3D0F51C0758AEB9E10664BC0E7B920839E0E51C04F127D04DF654BC0BC0B6123730E51C05991C99000654BC0F56FE0D3510E51C05426BBEDD0644BC0	t	1	2026-05-03 18:13:24.564	2026-05-05 19:28:45.235
-zone_1777788896680_2y869o	Zona C — Alta / Difícil	#ef4444	1.35	350	0103000020E6100000010000001A000000AE47E17A141651C01283C0CAA1654BC0CD9D6B28AD1551C03B7881EDFB664BC023F2239F531551C0118EAFF6DD664BC0C82BDD4BC41451C0D1A1A1B96D664BC0E03C4E31641451C0DE5227D042664BC03B10B1C62B1451C02D2AE2C829664BC0251493EA021451C0776D891914664BC0B27675DAC21351C05B7203660C664BC0DD8080A5451351C024BA4089D2654BC0CE5E31052B1351C0DD059EA6D3654BC0BF3C62C91C1351C082F1E39AC8654BC0D65C45B1021351C0DB0D4243B6654BC04CBF0A116C1251C019B4A46438654BC00B6233CF101251C0031450CCED644BC088D9477ECF1151C0CC279822DA644BC00E2D5C9D961151C0FA184656CB644BC096D78493B81051C06C3E4171A6644BC08D941E67091051C02771749AE7644BC0E3FBB7D2580F51C04DC9E6681D654BC0A1DCEBE1A10D51C05936CE015D644BC0E17A14AE471151C0E17A14AE47614BC0AE47E17A141651C0C3F5285C8F624BC0B81E85EB511851C014AE47E17A644BC00E6CE1EE361651C0E386123F5C664BC05481E1FCB01551C0FC111764F1664BC0AE47E17A141651C01283C0CAA1654BC0	t	3	2026-05-03 06:14:56.685	2026-05-05 21:54:30.285
-zone_1778019117199_6b2b2x	USHUAIA	#ef4444	1	0	0103000020E6100000010000000800000011C14F54CA1951C081C69BE872684BC042B54FB4751D51C03194C1417C6D4BC072A94F14761751C0550DAEF8476F4BC0F44A4F14850851C0547F15C4A6684BC096454F34A90F51C0E6E2A725A15F4BC086274FB4861B51C0EBF6AD6434634BC05AE24FF4831A51C066D1694D1B674BC011C14F54CA1951C081C69BE872684BC0	t	0	2026-05-05 22:11:57.197	2026-05-06 12:41:05.748
 \.
 
 
@@ -2269,10 +2199,11 @@ zone_1778019117199_6b2b2x	USHUAIA	#ef4444	1	0	0103000020E61000000100000008000000
 -- Data for Name: Driver; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel", "vehicleYear", "vehicleColor", "licensePlate", cuit, "licenciaUrl", "seguroUrl", "vtvUrl", "dniFrenteUrl", "dniDorsoUrl", "acceptedTermsAt", "isActive", "isOnline", "totalDeliveries", rating, "createdAt", "updatedAt", "availabilityStatus", "lastLocationAt", latitude, longitude, "approvalStatus", "approvedAt", "rejectionReason", ubicacion, "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "fraudScore", "lastFraudCheckAt", "acceptedPrivacyAt", "cedulaVerdeApprovedAt", "cedulaVerdeExpiresAt", "cedulaVerdeNotifiedStage", "cedulaVerdeRejectionReason", "cedulaVerdeStatus", "cedulaVerdeUrl", "constanciaCuitApprovedAt", "constanciaCuitRejectionReason", "constanciaCuitStatus", "constanciaCuitUrl", "cuitApprovedAt", "cuitRejectionReason", "cuitStatus", "dniDorsoApprovedAt", "dniDorsoRejectionReason", "dniDorsoStatus", "dniFrenteApprovedAt", "dniFrenteRejectionReason", "dniFrenteStatus", "licenciaApprovedAt", "licenciaExpiresAt", "licenciaNotifiedStage", "licenciaRejectionReason", "licenciaStatus", "seguroApprovedAt", "seguroExpiresAt", "seguroNotifiedStage", "seguroRejectionReason", "seguroStatus", "vtvApprovedAt", "vtvExpiresAt", "vtvNotifiedStage", "vtvRejectionReason", "vtvStatus", "cedulaVerdeApprovalNote", "cedulaVerdeApprovalSource", "constanciaCuitApprovalNote", "constanciaCuitApprovalSource", "cuitApprovalNote", "cuitApprovalSource", "dniDorsoApprovalNote", "dniDorsoApprovalSource", "dniFrenteApprovalNote", "dniFrenteApprovalSource", "licenciaApprovalNote", "licenciaApprovalSource", "seguroApprovalNote", "seguroApprovalSource", "vtvApprovalNote", "vtvApprovalSource", "bankAccountUpdatedAt", "bankAlias", "bankCbu", "applicationStatus", "cancelledByUserAt", "cancelledByUserReason", "pausedByUserAt", "pausedByUserReason", "hasColdStorage", "hasThermalBag") FROM stdin;
-cmqxvnei0000i127w3shh4oek	cmqxvnefa0006127wa7pqn7t4	MOTO	\N	\N	\N	\N	TEST-001	\N	\N	\N	\N	\N	\N	\N	t	t	0	5	2026-06-28 14:21:34.632	2026-06-28 14:23:39.604	DISPONIBLE	2026-06-29 02:10:37.816	-54.83193289620835	-68.35037221642479	APPROVED	\N	\N	0101000020E61000002DBE967F6C1651C039D7F2C67C6A4BC0	f	\N	\N	\N	0	\N	\N	\N	\N	0	\N	PENDING	\N	\N	\N	PENDING	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	DRAFT	\N	\N	\N	\N	f	f
-cmqa2y3bi000110vwqkxgnj94	cmpmpj1yp00025izc1cmefuzm	CAMIONETA	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-06-11 22:39:22.441	f	f	0	\N	2026-06-11 22:39:22.444	2026-06-24 14:20:19.666	FUERA_DE_SERVICIO	2026-06-11 23:57:11.305	-54.83192353907596	-68.35039311726986	APPROVED	2026-06-11 23:33:25.181	\N	0101000020E6100000B9DA40D76C1651C04A8D74787C6A4BC0	f	\N	\N	\N	0	\N	\N	\N	\N	0	\N	PENDING	\N	\N	\N	PENDING	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	\N	\N	\N	\N	f	f
-cmqa5j1dz000ca4mwnopicdv9	cmpohhrhn001z5izc9v3rk0e9	AUTO	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	2026-06-11 23:51:38.945	f	f	0	\N	2026-06-11 23:51:38.951	2026-06-24 14:20:19.666	FUERA_DE_SERVICIO	2026-06-15 15:19:14.129	-54.83159809571269	-68.35043611890764	PENDING	\N	\N	0101000020E6100000E9829D8B6D1651C03E4070CE716A4BC0	f	\N	\N	\N	0	\N	\N	\N	\N	0	\N	PENDING	\N	\N	\N	PENDING	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	0	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	DRAFT	\N	\N	\N	\N	f	f
+COPY public."Driver" (id, "userId", "vehicleType", "vehicleBrand", "vehicleModel", "vehicleYear", "vehicleColor", "licensePlate", cuit, "constanciaCuitUrl", "licenciaUrl", "seguroUrl", "vtvUrl", "cedulaVerdeUrl", "dniFrenteUrl", "dniDorsoUrl", "cuitStatus", "cuitApprovedAt", "cuitRejectionReason", "cuitApprovalSource", "cuitApprovalNote", "constanciaCuitStatus", "constanciaCuitApprovedAt", "constanciaCuitRejectionReason", "constanciaCuitApprovalSource", "constanciaCuitApprovalNote", "dniFrenteStatus", "dniFrenteApprovedAt", "dniFrenteRejectionReason", "dniFrenteApprovalSource", "dniFrenteApprovalNote", "dniDorsoStatus", "dniDorsoApprovedAt", "dniDorsoRejectionReason", "dniDorsoApprovalSource", "dniDorsoApprovalNote", "licenciaStatus", "licenciaApprovedAt", "licenciaRejectionReason", "licenciaApprovalSource", "licenciaApprovalNote", "seguroStatus", "seguroApprovedAt", "seguroRejectionReason", "seguroApprovalSource", "seguroApprovalNote", "vtvStatus", "vtvApprovedAt", "vtvRejectionReason", "vtvApprovalSource", "vtvApprovalNote", "cedulaVerdeStatus", "cedulaVerdeApprovedAt", "cedulaVerdeRejectionReason", "cedulaVerdeApprovalSource", "cedulaVerdeApprovalNote", "licenciaExpiresAt", "licenciaNotifiedStage", "seguroExpiresAt", "seguroNotifiedStage", "vtvExpiresAt", "vtvNotifiedStage", "cedulaVerdeExpiresAt", "cedulaVerdeNotifiedStage", "acceptedTermsAt", "acceptedPrivacyAt", "isActive", "isOnline", "totalDeliveries", rating, "createdAt", "updatedAt", "availabilityStatus", "lastLocationAt", latitude, longitude, "approvalStatus", "approvedAt", "rejectionReason", "applicationStatus", "pausedByUserAt", "pausedByUserReason", "cancelledByUserAt", "cancelledByUserReason", "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", ubicacion, "fraudScore", "lastFraudCheckAt", "bankCbu", "bankAlias", "bankAccountUpdatedAt", "hasThermalBag", "hasColdStorage") FROM stdin;
+cmqz5vvmq00fixhd8msq0bruf	cmqz5vvmh00fbxhd84xtx2cxu	AUTO	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	\N	0	\N	0	\N	0	\N	0	\N	\N	t	t	0	\N	2026-06-29 11:55:52.419	2026-06-29 11:55:52.419	DISPONIBLE	\N	-54.8081	-68.3105	APPROVED	\N	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	0101000020E61000001D5A643BDF1351C0E5F21FD26F674BC0	0	\N	\N	\N	\N	f	f
+cmqz5vvwp00fqxhd8jpelcna7	cmqz5vvwa00fjxhd8xtqudcev	BIKE	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	\N	0	\N	0	\N	0	\N	0	\N	\N	t	t	0	\N	2026-06-29 11:55:52.777	2026-06-29 11:55:52.777	DISPONIBLE	\N	-54.804	-68.3001	APPROVED	\N	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	0101000020E6100000E561A1D6341351C0F4FDD478E9664BC0	0	\N	\N	\N	\N	f	f
+cmqz5vw6r00fyxhd8xrpu2gkp	cmqz5vw6e00frxhd8xzbnhvi3	MOTO	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	\N	0	\N	0	\N	0	\N	0	\N	\N	t	t	0	\N	2026-06-29 11:55:53.139	2026-06-29 11:55:53.139	DISPONIBLE	\N	-54.81	-68.3082	APPROVED	\N	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	0101000020E610000024287E8CB91351C048E17A14AE674BC0	0	\N	\N	\N	\N	f	f
+cmqz5vval00faxhd8b67o5uhl	cmqz5vva600f3xhd89zcsytov	MOTO	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	\N	0	\N	0	\N	0	\N	0	\N	\N	t	f	0	\N	2026-06-29 11:55:51.981	2026-06-29 12:11:45.399	FUERA_DE_SERVICIO	2026-06-29 12:22:28.771	-54.83194472593177	-68.35038533658037	APPROVED	\N	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	0101000020E610000015679EB66C1651C073FA2E2A7D6A4BC0	0	\N	\N	\N	\N	f	f
 \.
 
 
@@ -2305,38 +2236,6 @@ COPY public."DriverLocationHistory" (id, "driverId", "orderId", latitude, longit
 --
 
 COPY public."EmailTemplate" (id, key, name, subject, "bodyHtml", placeholders, category, recipient, "isActive", version, "lastEditedBy", "createdAt", "updatedAt") FROM stdin;
-cmod65qgz0000sabwxgatu2ug	welcome	Bienvenida comprador	¡Bienvenido a MOOVY! 🎉	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n                <h2 style="color: #111827; margin-top: 0;">¡Hola María López! 👋</h2>\n                <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">\n                    ¡Bienvenido a la comunidad MOOVY! Ya podés empezar a disfrutar de todos los beneficios.\n                </p>\n                <div style="background: linear-gradient(135deg, #fff7ed 0%, #fef3c7 100%); border-radius: 10px; padding: 20px; margin: 20px 0; border-left: 4px solid #f59e0b;">\n                    <h3 style="color: #b45309; margin: 0 0 10px 0; font-size: 16px;">⭐ Tu código de referido</h3>\n                    <p style="color: #78350f; font-size: 24px; font-weight: bold; margin: 0; letter-spacing: 2px;">MARIA2026</p>\n                    <p style="color: #92400e; font-size: 12px; margin: 8px 0 0 0;">Compartílo y gana puntos MOOVER cuando tus amigos compren</p>\n                </div>\n                <h3 style="color: #111827; font-size: 16px; margin-top: 25px;">¿Qué podés hacer con MOOVY?</h3>\n                <ul style="color: #6b7280; font-size: 14px; line-height: 1.8; padding-left: 20px;">\n                    <li>🛍️ <strong>Comprar</strong> en comercios locales</li>\n                    <li>🚀 <strong>Recibir</strong> tus pedidos en minutos</li>\n                    <li>⭐ <strong>Sumar puntos MOOVER</strong> con cada compra</li>\n                    <li>🎁 <strong>Canjear</strong> tus puntos por descuentos exclusivos</li>\n                    <li>👥 <strong>Referir amigos</strong> y ganar más puntos</li>\n                </ul>\n                \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/tienda"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Empezar a comprar\n        </a>\n    </div>\n            \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.746	2026-04-24 17:13:11.746
-cmod65qhk0001sabwuracn7af	order_confirmation	Pedido confirmado	¡Confirmación de tu pedido MOV-20260320-001! 🛍️	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n                <div style="text-align: center; margin-bottom: 25px;">\n                    <div style="display: inline-block; background-color: #def7ec; color: #03543f; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Pedido Confirmado</div>\n                    <h2 style="color: #111827; margin-top: 0;">¡Gracias por tu compra, María López!</h2>\n                    <p style="color: #6b7280; font-size: 16px;">Recibimos tu pedido <strong>#MOV-20260320-001</strong> y ya estamos trabajando en él.</p>\n                </div>\n                <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;">\n                    <h3 style="color: #1a202c; font-size: 16px; margin-top: 0; margin-bottom: 15px;">Resumen del Pedido</h3>\n                    <table style="width: 100%; border-collapse: collapse;">\n                        <tr><td style="padding: 10px 0; border-bottom: 1px solid #edf2f7; color: #4a5568;">Hamburguesa clásica<div style="font-size: 12px; color: #a0aec0;">x2</div></td><td style="text-align: right; color: #2d3748; font-weight: 500;">$2.400</td></tr>\n                        <tr><td style="padding: 10px 0; border-bottom: 1px solid #edf2f7; color: #4a5568;">Coca-Cola 500ml<div style="font-size: 12px; color: #a0aec0;">x2</div></td><td style="text-align: right; color: #2d3748; font-weight: 500;">$1.400</td></tr>\n                    </table>\n                    <table style="width: 100%; margin-top: 15px;">\n                        <tr><td style="color: #718096; font-size: 14px;">Subtotal</td><td style="text-align: right; color: #2d3748;">$3.800</td></tr>\n                        <tr><td style="color: #718096; font-size: 14px;">Envío</td><td style="text-align: right; color: #2d3748;">$500</td></tr>\n                        <tr><td style="color: #e53e3e; font-size: 14px;">Descuento</td><td style="text-align: right; color: #e53e3e;">-$200</td></tr>\n                        <tr><td style="color: #1a202c; font-weight: bold; font-size: 18px; padding-top: 15px;">Total</td><td style="text-align: right; color: #e60012; font-weight: bold; font-size: 18px; padding-top: 15px;">$4.500</td></tr>\n                    </table>\n                </div>\n                \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/mis-pedidos"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ver estado de mi pedido\n        </a>\n    </div>\n            \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.769	2026-04-24 17:13:11.769
-cmod65qhs0002sabwqwaod8pf	password_reset	Recuperar contraseña	Restablecer contraseña - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <h2 style="color: #111827; margin-top: 0;">Restablecer contraseña</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">\n                Recibimos una solicitud para restablecer tu contraseña.\n                Hacé click en el botón de abajo para crear una nueva contraseña.\n            </p>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="#"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Restablecer Contraseña\n        </a>\n    </div>\n            <p style="color: #9ca3af; font-size: 14px;">\n                Este enlace expirará en 1 hora. Si no solicitaste restablecer tu contraseña, podés ignorar este correo.\n            </p>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.776	2026-04-24 17:13:11.776
-cmod65qi00003sabwknzjkpcg	password_changed	Contraseña cambiada	Tu contraseña fue cambiada - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <h2 style="color: #111827; margin-top: 0;">Contraseña actualizada</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">\n                Tu contraseña fue cambiada exitosamente el <strong>20/03/2026 a las 14:30</strong>.\n            </p>\n            <div style="background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #92400e; font-size: 14px; line-height: 1.6;">\n                <p style="margin: 0; font-size: 14px;">\n                    <strong>¿No fuiste vos?</strong> Si no realizaste este cambio, contactá a soporte inmediatamente.\n                </p>\n            </div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/ayuda"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Contactar Soporte\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.784	2026-04-24 17:13:11.784
-cmod65qi80004sabwih00kztc	driver_request_admin	Solicitud repartidor (→ admin)	🚗 Nueva solicitud de repartidor	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <h2 style="color: #111827; margin-top: 0;">Nueva solicitud de repartidor</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Un usuario quiere ser repartidor en MOOVY:</p>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;">\n                <p style="margin: 5px 0; color: #4a5568;"><strong>Nombre:</strong> Carlos Gómez</p>\n                <p style="margin: 5px 0; color: #4a5568;"><strong>Email:</strong> carlos@ejemplo.com</p>\n            </div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/ops/repartidores"\n           style="display: inline-block; background-color: #1a1a1a; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ir al panel OPS\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	system	admin	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.792	2026-04-24 17:13:11.792
-cmod65qiq0005sabwhga96bw0	driver_approved	Repartidor aprobado	🎉 ¡Tu solicitud de repartidor fue aprobada!	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <h2 style="color: #111827; margin-top: 0;">¡Bienvenido al equipo, Carlos Gómez! 🚗</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">\n                Tu solicitud para ser repartidor MOOVY fue <strong style="color: #059669;">aprobada</strong>.\n                Ya podés conectarte desde tu panel y empezar a recibir pedidos.\n            </p>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/repartidor"\n           style="display: inline-block; background-color: #059669; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ir al panel de repartidor\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	repartidor	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.811	2026-04-24 17:13:11.811
-cmod65qiy0006sabwvofgz1ax	merchant_request_received	Solicitud de comercio recibida	📋 Recibimos tu solicitud de comercio - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #dbeafe; color: #1e40af; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Solicitud Recibida</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">¡Hola Juan Pérez!</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">\n                Recibimos tu solicitud para registrar <strong>Panadería Don Juan</strong> en MOOVY.\n                Nuestro equipo va a revisar tu información y documentación en las próximas 24-48 horas hábiles.\n            </p>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;">\n                <h4 style="color: #718096; margin: 0 0 10px 0; font-size: 14px;">¿Qué sigue?</h4>\n                <ol style="color: #4a5568; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">\n                    <li>Verificamos tu documentación fiscal y legal</li>\n                    <li>Revisamos que la información de tu comercio esté completa</li>\n                    <li>Te notificamos por email si tu tienda fue aprobada</li>\n                </ol>\n            </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comercio	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.818	2026-04-24 17:13:11.818
-cmod65qj70007sabwzuxqp906	merchant_approved	Tienda aprobada	🎉 ¡Tu comercio fue aprobado en MOOVY!	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #def7ec; color: #03543f; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">¡Aprobada!</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">¡Felicitaciones, Juan Pérez! 🎉</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">\n                Tu comercio <strong>Panadería Don Juan</strong> fue <strong style="color: #059669;">aprobado</strong> y ya está activo en MOOVY.\n            </p>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/comercios"\n           style="display: inline-block; background-color: #059669; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ir a mi panel de comercio\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comercio	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.828	2026-04-24 17:13:11.828
-cmod65qje0008sabwjg3hsehf	merchant_rejected	Tienda rechazada	📋 Actualización sobre tu solicitud de comercio - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fef2f2; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Solicitud No Aprobada</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Hola Juan Pérez</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Lamentamos informarte que la solicitud de tu comercio <strong>Panadería Don Juan</strong> no pudo ser aprobada en este momento.</p>\n            <div style="background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #92400e; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Motivo:</strong> Documentación fiscal incompleta. Falta constancia de inscripción AFIP.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/ayuda"\n           style="display: inline-block; background-color: #1a1a1a; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Contactar Soporte\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comercio	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.835	2026-04-24 17:13:11.835
-cmod65qjl0009sabwrtb0bwbv	driver_request_received	Solicitud de repartidor recibida	📋 Recibimos tu solicitud de repartidor - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #dbeafe; color: #1e40af; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Solicitud Recibida</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">¡Hola Carlos Gómez!</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Recibimos tu solicitud para ser repartidor MOOVY con <strong>Moto</strong>. Nuestro equipo va a revisar tu documentación en las próximas 24-48 horas hábiles.</p>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;"><ul style="color: #4a5568; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;"><li>DNI (frente y dorso)</li><li>Licencia de conducir</li><li>Seguro del vehículo</li><li>Datos fiscales (CUIT)</li></ul></div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	repartidor	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.842	2026-04-24 17:13:11.842
-cmod65qjs000asabw5mitv12p	driver_rejected	Repartidor rechazado	📋 Actualización sobre tu solicitud de repartidor - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fef2f2; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Solicitud No Aprobada</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Hola Carlos Gómez</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Lamentamos informarte que tu solicitud para ser repartidor en MOOVY no pudo ser aprobada.</p>\n            <div style="background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #92400e; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Motivo:</strong> Licencia de conducir vencida. Por favor renovála y volvé a postularte.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/ayuda"\n           style="display: inline-block; background-color: #1a1a1a; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Contactar Soporte\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	repartidor	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.849	2026-04-24 17:13:11.849
-cmod65qk0000bsabwmkz92peq	payment_pending	Pago pendiente	⏳ Pago pendiente - Pedido #MOV-20260320-001	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fffbeb; color: #92400e; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Pago Pendiente</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Tu pago está en proceso, María López</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Recibimos tu pedido <strong>#MOV-20260320-001</strong> pero el pago aún está pendiente de confirmación.</p>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;"><table style="width: 100%;"><tr><td style="color: #718096; font-size: 14px; padding: 4px 0;">Total</td><td style="text-align: right; color: #e60012; font-weight: bold; font-size: 18px;">$4.500</td></tr></table></div>\n            <div style="background: #f5f5f5; border-left: 3px solid #1a1a1a; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #1a1a1a; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>No te preocupes.</strong> Te avisaremos apenas se acredite.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/mis-pedidos"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ver mi pedido\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.856	2026-04-24 17:13:11.856
-cmod65qk8000csabwmgknacaa	payment_rejected	Pago rechazado	❌ Pago rechazado - Pedido #MOV-20260320-001	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fef2f2; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Pago Rechazado</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Tu pago no pudo ser procesado</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Hola María López, el pago de tu pedido <strong>#MOV-20260320-001</strong> por <strong style="color: #e60012;">$4.500</strong> fue rechazado.</p>\n            <div style="background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #991b1b; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Motivo:</strong> Fondos insuficientes</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/tienda"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Reintentar compra\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.864	2026-04-24 17:13:11.864
-cmod65qkg000dsabwvd8wbol8	order_rejected_merchant	Pedido rechazado por comercio	📋 Tu pedido #MOV-20260320-001 fue rechazado	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fef2f2; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Pedido Rechazado</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Tu pedido fue cancelado por el comercio</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Hola María López, <strong>Panadería Don Juan</strong> no pudo aceptar tu pedido <strong>#MOV-20260320-001</strong>.</p>\n            <div style="background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #92400e; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Motivo:</strong> Producto sin stock temporalmente</p></div>\n            <div style="background: #f0fdf4; border-left: 3px solid #059669; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #166534; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Reembolso:</strong> Se te devolverán <strong>$4.500</strong> automáticamente.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/tienda"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Hacer otro pedido\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.872	2026-04-24 17:13:11.872
-cmod65qkn000esabwowai9ej5	order_delivered	Pedido entregado	✅ ¡Tu pedido #MOV-20260320-001 fue entregado!	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #def7ec; color: #03543f; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">¡Entregado!</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">¡Tu pedido llegó! 🎉</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Tu pedido <strong>#MOV-20260320-001</strong> por <strong>$4.500</strong> fue entregado exitosamente. Tiempo de entrega: <strong>32 minutos</strong>.</p>\n            <div style="background: #f5f5f5; border-left: 3px solid #1a1a1a; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #1a1a1a; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;">⭐ <strong>¿Cómo fue tu experiencia?</strong> Tu calificación nos ayuda a mejorar.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/mis-pedidos"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Calificar pedido\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.879	2026-04-24 17:13:11.879
-cmod65qku000fsabwk9q13irq	order_cancelled_buyer	Pedido cancelado por comprador	Pedido #MOV-20260320-001 cancelado	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #f3f4f6; color: #4b5563; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Pedido Cancelado</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Cancelaste tu pedido</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Confirmamos la cancelación de tu pedido <strong>#MOV-20260320-001</strong>.</p>\n            <div style="background: #f0fdf4; border-left: 3px solid #059669; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #166534; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Reembolso:</strong> $4.500 serán devueltos a tu medio de pago. Puede demorar entre 2 y 10 días hábiles.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/tienda"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Volver a la tienda\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.886	2026-04-24 17:13:11.886
-cmod65ql1000gsabw1zmmr1sa	order_cancelled_merchant	Pedido cancelado por comercio	📋 Tu pedido #MOV-20260320-001 fue cancelado	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fef2f2; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Pedido Cancelado</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Tu pedido fue cancelado</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Panadería Don Juan canceló tu pedido <strong>#MOV-20260320-001</strong>.</p>\n            <div style="background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #92400e; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Motivo:</strong> Local cerrado por emergencia</p></div>\n            <div style="background: #f0fdf4; border-left: 3px solid #059669; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #166534; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Reembolso:</strong> $4.500 serán devueltos.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/tienda"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Hacer otro pedido\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.894	2026-04-24 17:13:11.894
-cmod65ql8000hsabw52wh05sb	order_cancelled_system	Pedido cancelado por sistema	⚠️ Pedido #MOV-20260320-001 cancelado automáticamente	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fef2f2; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Pedido Cancelado</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Tu pedido fue cancelado automáticamente</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Tu pedido <strong>#MOV-20260320-001</strong> fue cancelado automáticamente.</p>\n            <div style="background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #92400e; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Motivo:</strong> El comercio no respondió dentro del tiempo límite.</p></div>\n            <div style="background: #f0fdf4; border-left: 3px solid #059669; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #166534; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Reembolso:</strong> $4.500 serán devueltos.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/tienda"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Reintentar pedido\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.9	2026-04-24 17:13:11.9
-cmod65qlf000isabw7c1fy87k	refund_processed	Reembolso procesado	💸 Reembolso procesado - Pedido #MOV-20260320-001	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #def7ec; color: #03543f; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Reembolso Procesado</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Tu reembolso fue procesado</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Confirmamos el reembolso de tu pedido <strong>#MOV-20260320-001</strong>.</p>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;"><table style="width: 100%;"><tr><td style="color: #718096; font-size: 14px;">Monto</td><td style="text-align: right; color: #059669; font-weight: bold; font-size: 18px;">$4.500</td></tr><tr><td style="color: #718096; font-size: 14px;">Medio</td><td style="text-align: right; color: #2d3748;">MercadoPago</td></tr></table></div>\n            <div style="background: #f5f5f5; border-left: 3px solid #1a1a1a; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #1a1a1a; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;">El reembolso puede demorar entre <strong>2 y 10 días hábiles</strong>.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/mis-pedidos"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ver mis pedidos\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.908	2026-04-24 17:13:11.908
-cmod65qlm000jsabw1i3pxdl8	merchant_new_order	Nuevo pedido recibido (comercio)	🔔 Nuevo pedido #MOV-20260320-001 - $4.500	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #dbeafe; color: #1e40af; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">🔔 Nuevo Pedido</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">¡Tenés un nuevo pedido!</h2>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;"><table style="width: 100%;"><tr><td style="color: #718096; font-size: 14px; padding: 4px 0;">Pedido</td><td style="text-align: right; color: #2d3748; font-weight: bold;">#MOV-20260320-001</td></tr><tr><td style="color: #718096; font-size: 14px; padding: 4px 0;">Cliente</td><td style="text-align: right; color: #2d3748;">María López</td></tr><tr><td style="color: #718096; font-size: 14px; padding: 4px 0;">Productos</td><td style="text-align: right; color: #2d3748;">3 items</td></tr><tr><td style="color: #1a202c; font-weight: bold; font-size: 18px; padding-top: 15px;">Total</td><td style="text-align: right; color: #e60012; font-weight: bold; font-size: 18px; padding-top: 15px;">$4.500</td></tr></table></div>\n            <div style="background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #92400e; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>⏰ Importante:</strong> Aceptá o rechazá el pedido lo antes posible.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/comercios"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ver pedido en mi panel\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comercio	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.914	2026-04-24 17:13:11.914
-cmod65qlt000ksabwvcx42dcb	merchant_order_reminder	Recordatorio pedido sin aceptar	⚠️ ¡Pedido #MOV-20260320-001 esperando tu respuesta!	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fffbeb; color: #92400e; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">⚠️ Pedido Sin Respuesta</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Tenés un pedido pendiente de aceptar</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">El pedido <strong>#MOV-20260320-001</strong> lleva <strong>8 minutos</strong> sin respuesta. Si no lo aceptás en los próximos <strong>7 minutos</strong>, se cancelará automáticamente.</p>\n            <div style="background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #991b1b; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px; font-weight: bold;">⏰ Tiempo restante: 7 minutos</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/comercios"\n           style="display: inline-block; background-color: #059669; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Aceptar pedido ahora\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comercio	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.922	2026-04-24 17:13:11.922
-cmod65qm3000lsabw9tdkvfv3	merchant_payment_received	Pago recibido (comercio)	💰 Pago recibido por pedido #MOV-20260320-001	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #def7ec; color: #03543f; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">💰 Pago Recibido</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">¡Recibiste un pago!</h2>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;"><table style="width: 100%;"><tr><td style="color: #718096; font-size: 14px; padding: 4px 0;">Pedido</td><td style="text-align: right; color: #2d3748; font-weight: 500;">#MOV-20260320-001</td></tr><tr><td style="color: #718096; font-size: 14px; padding: 4px 0;">Monto bruto</td><td style="text-align: right; color: #2d3748;">$4.500</td></tr><tr><td style="color: #718096; font-size: 14px; padding: 4px 0;">Comisión MOOVY</td><td style="text-align: right; color: #ef4444;">-$360</td></tr><tr><td style="color: #1a202c; font-weight: bold; font-size: 18px; padding-top: 15px;">Neto a cobrar</td><td style="text-align: right; color: #059669; font-weight: bold; font-size: 18px; padding-top: 15px;">$3.640</td></tr></table></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/comercios/pagos"\n           style="display: inline-block; background-color: #059669; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ver mis ganancias\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comercio	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.932	2026-04-24 17:13:11.932
-cmod65qma000msabwpjlnasdn	merchant_suspended	Tienda suspendida	⚠️ Tu comercio fue suspendido - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fef2f2; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Tienda Suspendida</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Tu tienda fue suspendida</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Tu comercio <strong>Panadería Don Juan</strong> fue suspendido temporalmente.</p>\n            <div style="background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #991b1b; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Motivo:</strong> Múltiples reclamos sin resolver de clientes.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/ayuda"\n           style="display: inline-block; background-color: #1a1a1a; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Contactar Soporte\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comercio	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.939	2026-04-24 17:13:11.939
-cmod65qmk000nsabw5sj5hv9o	driver_suspended	Cuenta repartidor suspendida	⚠️ Tu cuenta de repartidor fue suspendida - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fef2f2; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Cuenta Suspendida</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Tu cuenta de repartidor fue suspendida</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Tu cuenta de repartidor en MOOVY fue suspendida temporalmente.</p>\n            <div style="background: #fef2f2; border-left: 3px solid #ef4444; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #991b1b; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Motivo:</strong> Documentación vencida (licencia de conducir).</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/ayuda"\n           style="display: inline-block; background-color: #1a1a1a; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Contactar Soporte\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	repartidor	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.949	2026-04-24 17:13:11.949
-cmod65qms000osabwzn50r7yp	account_deletion_request	Solicitud eliminación de cuenta	⚠️ Solicitud de eliminación de cuenta - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Solicitud de eliminación de cuenta</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Hola María López, recibimos tu solicitud para eliminar tu cuenta de MOOVY.</p>\n            <div style="background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #92400e; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Tu cuenta será eliminada permanentemente el 03/04/2026.</strong> Este proceso es irreversible.</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/ayuda"\n           style="display: inline-block; background-color: #1a1a1a; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Contactar Soporte\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.956	2026-04-24 17:13:11.956
-cmod65qn6000psabw0ishlywp	account_deleted	Cuenta eliminada	Confirmación: tu cuenta fue eliminada - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Tu cuenta fue eliminada</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">Confirmamos que tu cuenta y todos tus datos personales fueron eliminados permanentemente, en cumplimiento con la Ley 25.326.</p>\n            <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 20px;">Este es el último correo que recibirás de MOOVY.</p>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.971	2026-04-24 17:13:11.971
-cmod65qne000qsabwzi1daa7y	owner_critical_alert	Alerta crítica (Owner)	[🔴 CRÍTICO] Pasarela de pagos caída - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fef2f2; color: #991b1b; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">🔴 CRÍTICO</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Pasarela de pagos no responde</h2>\n            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">La API de MercadoPago no está respondiendo. Los pagos con tarjeta están fallando.</p>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;"><h4 style="color: #718096; margin: 0 0 10px 0; font-size: 14px;">Detalles técnicos</h4><pre style="background: #f8fafc; padding: 12px; border-radius: 6px; font-size: 12px; color: #334155; margin: 0;">Error: ECONNREFUSED\nEndpoint: https://api.mercadopago.com/v1/payments\nÚltimo intento: 2026-03-20 14:30:00 ART\nFallas consecutivas: 5</pre></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/ops"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ir al panel OPS\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	system	owner	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.978	2026-04-24 17:13:11.978
-cmod65qnl000rsabw78jao9ag	owner_unassigned_orders	Pedidos sin repartidor (Owner)	🟠 3 pedidos sin repartidor - MOOVY	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #fffbeb; color: #92400e; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">🟠 Pedidos Sin Repartidor</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">3 pedidos sin repartidor asignado</h2>\n            <div style="background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #92400e; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>3 pedidos</strong> están esperando repartidor. El más antiguo lleva <strong>12 minutos</strong>.</p></div>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;"><p style="color: #718096; font-size: 14px; margin: 0;"><strong>Pedidos:</strong> #MOV-001, #MOV-002, #MOV-003</p></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/ops/pedidos"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ver pedidos en OPS\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	system	owner	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.986	2026-04-24 17:13:11.986
-cmod65qnt000ssabw53at2mdp	owner_daily_report	Reporte diario (Owner)	📊 Reporte diario MOOVY — 20/03/2026	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <h2 style="color: #111827; margin-top: 0; text-align: center;">📊 Reporte Diario — 20/03/2026</h2>\n            <table style="width: 100%; border-collapse: separate; border-spacing: 8px; margin: 20px 0;">\n                <tr>\n                    <td style="background: #eff6ff; border-radius: 10px; padding: 16px; text-align: center; width: 33%;"><div style="color: #1e40af; font-size: 28px; font-weight: bold;">47</div><div style="color: #3b82f6; font-size: 12px; text-transform: uppercase;">Pedidos</div></td>\n                    <td style="background: #f0fdf4; border-radius: 10px; padding: 16px; text-align: center; width: 33%;"><div style="color: #166534; font-size: 28px; font-weight: bold;">$285.400</div><div style="color: #22c55e; font-size: 12px; text-transform: uppercase;">Facturación</div></td>\n                    <td style="background: #fef3c7; border-radius: 10px; padding: 16px; text-align: center; width: 33%;"><div style="color: #92400e; font-size: 28px; font-weight: bold;">$22.832</div><div style="color: #f59e0b; font-size: 12px; text-transform: uppercase;">Comisión</div></td>\n                </tr>\n            </table>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;"><table style="width: 100%;"><tr><td style="color: #718096; font-size: 14px; padding: 6px 0;">Completados</td><td style="text-align: right; color: #059669; font-weight: 500;">42 (89%)</td></tr><tr><td style="color: #718096; font-size: 14px; padding: 6px 0;">Cancelados</td><td style="text-align: right; color: #ef4444; font-weight: 500;">5</td></tr><tr><td style="color: #718096; font-size: 14px; padding: 6px 0;">Tiempo promedio</td><td style="text-align: right; color: #2d3748; font-weight: 500;">28 min</td></tr><tr><td style="color: #718096; font-size: 14px; padding: 6px 0;">Nuevos usuarios</td><td style="text-align: right; color: #2d3748; font-weight: 500;">12</td></tr><tr><td style="color: #718096; font-size: 14px; padding: 6px 0;">Top comercio</td><td style="text-align: right; color: #2d3748; font-weight: 500;">Don Juan (8 pedidos)</td></tr></table></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/ops/revenue"\n           style="display: inline-block; background-color: #1a1a1a; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ver dashboard completo\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	system	owner	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:11.993	2026-04-24 17:13:11.993
-cmod65qo0000tsabwg81c1kgr	owner_data_deletion_request	Solicitud eliminación datos (Owner)	📋 [COMPLIANCE] Solicitud eliminación de datos	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="text-align: center; margin-bottom: 20px;"><div style="display: inline-block; background-color: #eff6ff; color: #1e40af; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">📋 Solicitud ARCO</div></div>\n            <h2 style="color: #111827; margin-top: 0; text-align: center;">Solicitud de eliminación de datos personales</h2>\n            <div style="background: #fffbeb; border-left: 3px solid #f59e0b; border-radius: 0 8px 8px 0; padding: 16px 20px; margin: 24px 0; color: #92400e; font-size: 14px; line-height: 1.6;"><p style="margin: 0; font-size: 14px;"><strong>Plazo legal:</strong> 10 días hábiles para completar (Ley 25.326, Art. 16).</p></div>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;"><table style="width: 100%;"><tr><td style="color: #718096; font-size: 14px; padding: 4px 0;">Usuario</td><td style="text-align: right; color: #2d3748;">${SAMPLE.buyerName}</td></tr><tr><td style="color: #718096; font-size: 14px; padding: 4px 0;">Email</td><td style="text-align: right; color: #2d3748;">maria@ejemplo.com</td></tr><tr><td style="color: #718096; font-size: 14px; padding: 4px 0;">Roles</td><td style="text-align: right; color: #2d3748;">USER, SELLER</td></tr></table></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/ops/clientes"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Ver en panel OPS\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	system	owner	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:12.001	2026-04-24 17:13:12.001
-cmod65qo7000usabwd6i6r00v	cart_abandonment_1st	Carrito abandonado (1er recordatorio)	${nombre}, dejaste algo en tu carrito 🛒	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="display: inline-block; background-color: #FEF3C7; color: #92400E; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Tu carrito</div>\n            <h2 style="color: #2d3748; font-size: 22px; margin: 0 0 10px;">¿Te olvidaste de algo?</h2>\n            <p style="color: #718096; margin: 0 0 20px;">Guardamos tu carrito para que puedas completar tu pedido cuando quieras.</p>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;"><table style="width: 100%;"><tr><td style="padding: 10px 0; border-bottom: 1px solid #edf2f7;"><strong>Medialunas artesanales x6</strong></td><td style="text-align: right; font-weight: 600;">$3.500</td></tr><tr><td style="padding: 10px 0; border-bottom: 1px solid #edf2f7;"><strong>Café con leche grande</strong> <span style="color: #718096; font-size: 13px;"> × 2</span></td><td style="text-align: right; font-weight: 600;">$5.000</td></tr><tr><td style="padding: 14px 0 0; font-weight: 700; font-size: 16px;">Total</td><td style="text-align: right; font-weight: 700; color: #e60012; font-size: 16px;">$8.500</td></tr></table></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/checkout"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Completar mi pedido\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:12.008	2026-04-24 17:13:12.008
-cmod65qoe000vsabwq906eajk	cart_abandonment_2nd	Carrito abandonado (2do recordatorio)	¡Tu carrito te espera, ${nombre}! 🛒	\n<!DOCTYPE html>\n<html lang="es">\n<head>\n<meta charset="utf-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>MOOVY</title>\n</head>\n<body style="margin: 0; padding: 0; background-color: #ffffff; -webkit-font-smoothing: antialiased;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%" style="background-color: #ffffff;">\n<tr><td align="center" style="padding: 0;">\n<table role="presentation" cellspacing="0" cellpadding="0" border="0" width="600" style="max-width: 600px; width: 100%;">\n\n    <!-- Header -->\n    <tr><td style="padding: 40px 40px 32px 40px; text-align: center;">\n        <img src="https://somosmoovy.com/logo-moovy.svg" alt="MOOVY" style="height: 32px; width: auto;" />\n    </td></tr>\n\n    <!-- Accent line -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 3px; background: #e60012; border-radius: 2px;"></div>\n    </td></tr>\n\n    <!-- Content -->\n    <tr><td style="padding: 32px 40px 40px 40px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; font-size: 16px; line-height: 1.6; color: #1a1a1a;">\n        \n            <div style="display: inline-block; background-color: #FEF3C7; color: #92400E; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; letter-spacing: 0.03em; text-transform: uppercase;">Tu carrito</div>\n            <h2 style="color: #2d3748; font-size: 22px; margin: 0 0 10px;">¡Tus productos siguen esperándote!</h2>\n            <p style="color: #718096; margin: 0 0 20px;">No te quedes sin ellos — otros compradores también los están viendo.</p>\n            <div style="background-color: #fafafa; border-radius: 8px; padding: 24px; margin: 24px 0;"><table style="width: 100%;"><tr><td style="padding: 10px 0; border-bottom: 1px solid #edf2f7;"><strong>Medialunas artesanales x6</strong></td><td style="text-align: right; font-weight: 600;">$3.500</td></tr><tr><td style="padding: 14px 0 0; font-weight: 700; font-size: 16px;">Total</td><td style="text-align: right; font-weight: 700; color: #e60012; font-size: 16px;">$3.500</td></tr></table></div>\n            \n    <div style="text-align: center; margin: 32px 0;">\n        <a href="https://somosmoovy.com/checkout"\n           style="display: inline-block; background-color: #e60012; color: #ffffff; padding: 14px 36px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 15px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; letter-spacing: 0.02em;">\n            Completar mi pedido\n        </a>\n    </div>\n        \n    </td></tr>\n\n    <!-- Footer -->\n    <tr><td style="padding: 0 40px;">\n        <div style="height: 1px; background: #f0f0f0;"></div>\n    </td></tr>\n    <tr><td style="padding: 24px 40px 40px 40px; text-align: center; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">\n        <p style="margin: 0 0 8px 0; color: #999; font-size: 13px;">&copy; 2026 MOOVY. Ushuaia, Tierra del Fuego.</p>\n        <p style="margin: 0; color: #bbb; font-size: 12px;">Este es un correo autom&aacute;tico.</p>\n        \n    </td></tr>\n\n</table>\n</td></tr>\n</table>\n</body>\n</html>	[]	transactional	comprador	t	1	cmnuzx1fg0002zgw8zimoxguz	2026-04-24 17:13:12.014	2026-04-24 17:13:12.014
 \.
 
 
@@ -2353,17 +2252,6 @@ COPY public."Favorite" (id, "userId", "merchantId", "productId", "listingId", "c
 --
 
 COPY public."FeatureFlag" (id, key, label, description, scope, "isActive", "createdAt", "updatedAt", "lastToggledByUserId", "lastToggledAt") FROM stdin;
-cmp9w9vu10000hfbsiyk6vgtt	merchant.publicidad	Publicidad	Permite a los comercios pagar por destacar productos o aparecer en banners. Mientras este OFF, el item 'Publicidad' no aparece en el menu del comercio y la pagina /comercios/publicidad redirige al dashboard.	MERCHANT	f	2026-05-17 14:52:52.969	2026-05-17 14:52:52.969	\N	\N
-cmp9w9vui0002hfbs2bnc7hjm	merchant.tracking-en-vivo	Tracking en vivo del driver	Muestra al comercio el mapa con la ubicacion en tiempo real del repartidor que retiro su pedido. Si esta OFF, el comercio solo ve el estado de texto (DRIVER_ASSIGNED, PICKED_UP, etc.) sin mapa.	MERCHANT	f	2026-05-17 14:52:52.986	2026-05-17 14:52:52.986	\N	\N
-cmp9w9vuc0001hfbsbacg4brf	merchant.paquetes	Paquetes B2B	Permite a los comercios adquirir paquetes pre-armados de productos (combos de proveedores). Mientras este OFF, los items 'Adquirir paquetes' e 'Historial de paquetes' no aparecen en el menu y las paginas correspondientes redirigen al dashboard.	MERCHANT	f	2026-05-17 14:52:52.981	2026-05-17 17:51:57.23	cmnuzx1fg0002zgw8zimoxguz	2026-05-17 17:51:57.228
-cmp9w9vun0003hfbsdpo0djx1	seller.paquetes	Paquetes para vendedores	Permite a los vendedores del marketplace adquirir paquetes B2B. Mientras este OFF, los items relacionados no aparecen en el menu del vendedor.	SELLER	f	2026-05-17 14:52:52.992	2026-05-17 21:31:52	cmnuzx1fg0002zgw8zimoxguz	2026-05-17 21:31:51.997
-cmp9w9vuz0005hfbs40dh1828	buyer.scheduled-delivery	Pedidos programados	Habilita la opcion de programar entregas a una franja horaria futura (ej: 'entregar entre 20:00 y 21:00'). Mientras este OFF, todos los pedidos son entrega inmediata.	BUYER	f	2026-05-17 14:52:53.003	2026-05-18 03:34:45.591	cmnuzx1fg0002zgw8zimoxguz	2026-05-18 03:34:45.59
-cmp9w9vv80006hfbsset0o5kv	buyer.cash-payment	Pago en efectivo	Habilita el pago al driver con efectivo al recibir el pedido. Mientras este OFF, todos los pedidos se pagan online via MercadoPago.	BUYER	t	2026-05-17 14:52:53.013	2026-06-16 21:47:48.353	cmnuzx1fg0002zgw8zimoxguz	2026-06-16 21:47:48.351
-cmqiaeod30000xgingezj9gyh	merchant.doc.cuit	Documento: CUIT	Si esta ON, se le pide el CUIT al comercio y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	t	2026-06-17 16:30:22.936	2026-06-17 16:30:22.936	\N	\N
-cmqiaeoe80002xgin0ro2fsbf	merchant.doc.constancia-afip	Documento: Constancia de Inscripcion AFIP	Si esta ON, se le pide la Constancia de Inscripcion AFIP al comercio y es obligatoria para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	t	2026-06-17 16:30:22.976	2026-06-17 16:30:22.976	\N	\N
-cmqiaeoeg0003xgink0telh49	merchant.doc.habilitacion-municipal	Documento: Habilitacion Municipal	Si esta ON, se le pide la Habilitacion Municipal al comercio y es obligatoria para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	f	2026-06-17 16:30:22.984	2026-06-18 02:12:09.235	cmnuzx1fg0002zgw8zimoxguz	2026-06-18 02:12:09.233
-cmqiaeoeo0004xginfq6e7mz8	merchant.doc.registro-sanitario	Documento: Registro Sanitario / Bromatologico	Si esta ON, se le pide el Registro Sanitario a los comercios gastronomicos y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion. Solo aplica a rubros de comida.	MERCHANT	f	2026-06-17 16:30:22.993	2026-06-18 02:12:10.556	cmnuzx1fg0002zgw8zimoxguz	2026-06-18 02:12:10.553
-cmqiaeodz0001xgin52pe786a	merchant.doc.bank-account	Documento: CBU/Alias bancario	Si esta ON, se le pide el CBU o Alias bancario al comercio y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	t	2026-06-17 16:30:22.967	2026-06-18 02:12:16.57	cmnuzx1fg0002zgw8zimoxguz	2026-06-18 02:12:16.568
 \.
 
 
@@ -2387,8 +2275,27 @@ COPY public."HomeCategorySlot" (id, "categoryId", "order", image, icon, label, "
 -- Data for Name: Listing; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Listing" (id, "sellerId", title, description, price, stock, condition, "weightKg", "lengthCm", "widthCm", "heightCm", "isActive", "categoryId", "listingType", "auctionEndsAt", "auctionDuration", "startingPrice", "bidIncrement", "currentBid", "currentBidderId", "totalBids", "auctionStatus", "auctionWinnerId", "winnerPaymentDeadline", "createdAt", "updatedAt", "deletedAt", "deletedBy", "deletedReason") FROM stdin;
-cmq8jljq9000auxa8wtd8x13l	cmq8jg75w0004uxa8gw9hi4uk	Mantel Navideño rojo	200x200m	10	3	NUEVO	\N	\N	\N	\N	t	cmor6f2sn0000hw6jmjo5byij	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	2026-06-10 20:49:58.304	2026-06-11 12:45:13.087	\N	\N	\N
+COPY public."Listing" (id, "sellerId", title, description, price, stock, condition, "weightKg", "lengthCm", "widthCm", "heightCm", "isActive", "categoryId", "listingType", "auctionEndsAt", "auctionDuration", "startingPrice", "bidIncrement", "currentBid", "currentBidderId", "totalBids", "auctionStatus", "auctionWinnerId", "winnerPaymentDeadline", "deletedAt", "deletedBy", "deletedReason", "createdAt", "updatedAt") FROM stdin;
+cmqz5vu5k00c2xhd8egl3g32w	cmqz5vu5100byxhd8qu8um889	Auriculares Bluetooth	Inalámbricos con estuche de carga.	28000	12	NUEVO	\N	\N	\N	\N	t	cmqz5vqzf000sxhd8ommos2gv	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:50.505	2026-06-29 11:55:50.505
+cmqz5vu6200c6xhd8ync2jxq1	cmqz5vu5100byxhd8qu8um889	Parlante Portátil 20W	Bluetooth, resistente al agua.	35000	8	NUEVO	\N	\N	\N	\N	t	cmqz5vqzf000sxhd8ommos2gv	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:50.522	2026-06-29 11:55:50.522
+cmqz5vu6900caxhd82528y4t5	cmqz5vu5100byxhd8qu8um889	Cargador USB-C 65W	Carga rápida para notebook y celular.	18000	20	NUEVO	\N	\N	\N	\N	t	cmqz5vqzf000sxhd8ommos2gv	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:50.53	2026-06-29 11:55:50.53
+cmqz5vu6i00cexhd811lcfn5h	cmqz5vu5100byxhd8qu8um889	Mouse Gamer RGB	6 botones, sensor óptico.	22000	0	NUEVO	\N	\N	\N	\N	t	cmqz5vqzf000sxhd8ommos2gv	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:50.538	2026-06-29 11:55:50.538
+cmqz5vu6p00cixhd85c8rgrs5	cmqz5vu5100byxhd8qu8um889	Smartwatch Fit	Reloj inteligente con monitor cardíaco.	42000	5	NUEVO	\N	\N	\N	\N	t	cmqz5vqzf000sxhd8ommos2gv	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:50.545	2026-06-29 11:55:50.545
+cmqz5vugv00cwxhd8buchmu4h	cmqz5vugm00csxhd8o0zs72aa	Campera Polar Térmica	Abrigada, ideal para Ushuaia.	48000	10	NUEVO	\N	\N	\N	\N	t	cmqz5vqzl000txhd8b3j5zwws	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:50.911	2026-06-29 11:55:50.911
+cmqz5vuh100d0xhd8trwrmkqw	cmqz5vugm00csxhd8o0zs72aa	Buzo Canguro	Algodón frisado, varios talles.	26000	15	NUEVO	\N	\N	\N	\N	t	cmqz5vqzl000txhd8b3j5zwws	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:50.917	2026-06-29 11:55:50.917
+cmqz5vuh700d4xhd81uccaykr	cmqz5vugm00csxhd8o0zs72aa	Gorro de Lana	Tejido artesanal patagónico.	9500	3	NUEVO	\N	\N	\N	\N	t	cmqz5vqzl000txhd8b3j5zwws	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:50.924	2026-06-29 11:55:50.924
+cmqz5vuhd00d8xhd8kw8xg3qw	cmqz5vugm00csxhd8o0zs72aa	Botas Impermeables	Suela antideslizante para nieve.	62000	6	NUEVO	\N	\N	\N	\N	t	cmqz5vqzl000txhd8b3j5zwws	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:50.929	2026-06-29 11:55:50.929
+cmqz5vuhi00dcxhd814cujpee	cmqz5vugm00csxhd8o0zs72aa	Bufanda de Lana	Bufanda tejida a mano.	8900	0	NUEVO	\N	\N	\N	\N	t	cmqz5vqzl000txhd8b3j5zwws	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:50.935	2026-06-29 11:55:50.935
+cmqz5vuqh00dqxhd8ykj2vlup	cmqz5vuq700dmxhd8ldqyrukh	Lámpara de Mesa LED	Luz cálida regulable.	19000	9	NUEVO	\N	\N	\N	\N	t	cmqz5vqzt000uxhd8ime07uc9	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:51.257	2026-06-29 11:55:51.257
+cmqz5vuqn00duxhd8nkkgkdgq	cmqz5vuq700dmxhd8ldqyrukh	Set de Sábanas Queen	Algodón 200 hilos.	32000	7	NUEVO	\N	\N	\N	\N	t	cmqz5vqzt000uxhd8ime07uc9	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:51.264	2026-06-29 11:55:51.264
+cmqz5vuqt00dyxhd8p3encbq3	cmqz5vuq700dmxhd8ldqyrukh	Termo Acero 1L	Mantiene el calor 12hs.	24000	18	NUEVO	\N	\N	\N	\N	t	cmqz5vqzt000uxhd8ime07uc9	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:51.269	2026-06-29 11:55:51.269
+cmqz5vur000e2xhd86t83s5fq	cmqz5vuq700dmxhd8ldqyrukh	Juego de Mate Completo	Mate, bombilla y yerbera.	21000	2	NUEVO	\N	\N	\N	\N	t	cmqz5vqzt000uxhd8ime07uc9	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:51.277	2026-06-29 11:55:51.277
+cmqz5vur800e6xhd8xgav32xb	cmqz5vuq700dmxhd8ldqyrukh	Manta Polar Doble	Suave y abrigada.	27000	11	NUEVO	\N	\N	\N	\N	t	cmqz5vqzt000uxhd8ime07uc9	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:51.284	2026-06-29 11:55:51.284
+cmqz5vv1a00ekxhd8v0xga0aq	cmqz5vv1200egxhd8raq97j04	Mochila Trekking 40L	Resistente al agua, varios bolsillos.	55000	8	NUEVO	\N	\N	\N	\N	t	cmqz5vr07000vxhd8dvyam1ju	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:51.646	2026-06-29 11:55:51.646
+cmqz5vv1g00eoxhd8pz9qlw7u	cmqz5vv1200egxhd8raq97j04	Bastones de Trekking	Aluminio, regulables. Par.	29000	12	NUEVO	\N	\N	\N	\N	t	cmqz5vr07000vxhd8dvyam1ju	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:51.652	2026-06-29 11:55:51.652
+cmqz5vv1m00esxhd81rd7r5dj	cmqz5vv1200egxhd8raq97j04	Linterna Frontal LED	Recargable, 350 lúmenes.	17000	0	NUEVO	\N	\N	\N	\N	t	cmqz5vr07000vxhd8dvyam1ju	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:51.658	2026-06-29 11:55:51.658
+cmqz5vv1r00ewxhd844ft8rmy	cmqz5vv1200egxhd8raq97j04	Bidón Térmico 750ml	Acero inoxidable para outdoor.	15000	20	NUEVO	\N	\N	\N	\N	t	cmqz5vr07000vxhd8dvyam1ju	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:51.664	2026-06-29 11:55:51.664
+cmqz5vv1x00f0xhd8tlcgjvva	cmqz5vv1200egxhd8raq97j04	Carpa 2 Personas	Liviana, montaje rápido.	89000	4	USADO	\N	\N	\N	\N	t	cmqz5vr07000vxhd8dvyam1ju	DIRECT	\N	\N	\N	\N	\N	\N	0	\N	\N	\N	\N	\N	\N	2026-06-29 11:55:51.669	2026-06-29 11:55:51.669
 \.
 
 
@@ -2397,7 +2304,26 @@ cmq8jljq9000auxa8wtd8x13l	cmq8jg75w0004uxa8gw9hi4uk	Mantel Navideño rojo	200x20
 --
 
 COPY public."ListingImage" (id, "listingId", url, "order") FROM stdin;
-cmq9hq03j000suxa8f6gahoi5	cmq8jljq9000auxa8wtd8x13l	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1781124543237-mantel-liso-rojo-cotillon-mendoza-casa-segal-1-600x600.webp	0
+cmqz5vu5w00c4xhd8n6r9dv5q	cmqz5vu5k00c2xhd8egl3g32w	https://picsum.photos/seed/moovy-auriculares-bt/600/600	0
+cmqz5vu6600c8xhd8ghsr684h	cmqz5vu6200c6xhd8ync2jxq1	https://picsum.photos/seed/moovy-parlante-20w/600/600	0
+cmqz5vu6e00ccxhd8y4kivqgl	cmqz5vu6900caxhd82528y4t5	https://picsum.photos/seed/moovy-cargador-65w/600/600	0
+cmqz5vu6m00cgxhd8cnlsdmoy	cmqz5vu6i00cexhd811lcfn5h	https://picsum.photos/seed/moovy-mouse-gamer/600/600	0
+cmqz5vu6t00ckxhd8gti4w63e	cmqz5vu6p00cixhd85c8rgrs5	https://picsum.photos/seed/moovy-smartwatch/600/600	0
+cmqz5vugy00cyxhd82rn8edx4	cmqz5vugv00cwxhd8buchmu4h	https://picsum.photos/seed/moovy-campera-polar/600/600	0
+cmqz5vuh400d2xhd8ditn82mq	cmqz5vuh100d0xhd8trwrmkqw	https://picsum.photos/seed/moovy-buzo-canguro/600/600	0
+cmqz5vuha00d6xhd80jl2jgcj	cmqz5vuh700d4xhd81uccaykr	https://picsum.photos/seed/moovy-gorro-lana/600/600	0
+cmqz5vuhg00daxhd8d27akbxk	cmqz5vuhd00d8xhd8kw8xg3qw	https://picsum.photos/seed/moovy-botas/600/600	0
+cmqz5vuhl00dexhd8813nnem5	cmqz5vuhi00dcxhd814cujpee	https://picsum.photos/seed/moovy-bufanda/600/600	0
+cmqz5vuqk00dsxhd87ie933m4	cmqz5vuqh00dqxhd8ykj2vlup	https://picsum.photos/seed/moovy-lampara-led/600/600	0
+cmqz5vuqq00dwxhd8uf7gnm8o	cmqz5vuqn00duxhd8nkkgkdgq	https://picsum.photos/seed/moovy-sabanas/600/600	0
+cmqz5vuqx00e0xhd86clec6lz	cmqz5vuqt00dyxhd8p3encbq3	https://picsum.photos/seed/moovy-termo-acero/600/600	0
+cmqz5vur400e4xhd8shuyrm02	cmqz5vur000e2xhd86t83s5fq	https://picsum.photos/seed/moovy-mate-set/600/600	0
+cmqz5vurb00e8xhd8qamvj8m6	cmqz5vur800e6xhd8xgav32xb	https://picsum.photos/seed/moovy-manta-polar/600/600	0
+cmqz5vv1d00emxhd8171iwmux	cmqz5vv1a00ekxhd8v0xga0aq	https://picsum.photos/seed/moovy-mochila-40l/600/600	0
+cmqz5vv1j00eqxhd8cz1jhghe	cmqz5vv1g00eoxhd8pz9qlw7u	https://picsum.photos/seed/moovy-bastones/600/600	0
+cmqz5vv1p00euxhd8xzkovt4w	cmqz5vv1m00esxhd81rd7r5dj	https://picsum.photos/seed/moovy-frontal-led/600/600	0
+cmqz5vv1u00eyxhd8z3jfpo98	cmqz5vv1r00ewxhd844ft8rmy	https://picsum.photos/seed/moovy-bidon/600/600	0
+cmqz5vv2000f2xhd8e86mcah5	cmqz5vv1x00f0xhd8tlcgjvva	https://picsum.photos/seed/moovy-carpa-2p/600/600	0
 \.
 
 
@@ -2405,10 +2331,15 @@ cmq9hq03j000suxa8f6gahoi5	cmq8jljq9000auxa8wtd8x13l	https://pub-8e9cd8ba192646df
 -- Data for Name: Merchant; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Merchant" (id, name, slug, description, image, banner, "isActive", "isOpen", "scheduleEnabled", "scheduleJson", "isVerified", email, phone, address, latitude, longitude, "deliveryRadiusKm", "deliveryTimeMin", "deliveryTimeMax", "deliveryFee", "minOrderAmount", "allowPickup", cuit, "constanciaAfipUrl", "habilitacionMunicipalUrl", "registroSanitarioUrl", "acceptedTermsAt", "acceptedPrivacyAt", category, "ownerId", "createdAt", "updatedAt", rating, "adminNotes", "bankAccount", "businessName", "commissionRate", cuil, "displayOrder", "facebookUrl", "instagramUrl", "isPremium", "ownerBirthDate", "ownerDni", "premiumTier", "premiumUntil", "startedAt", "whatsappNumber", "mpAccessToken", "mpRefreshToken", "mpUserId", "mpEmail", "mpLinkedAt", "approvalStatus", "approvedAt", "rejectionReason", ubicacion, "loyaltyTier", "loyaltyOrderCount", "loyaltyUpdatedAt", "commissionOverride", "commissionOverrideReason", "isSuspended", "loyaltyTierLocked", "suspendedAt", "suspendedUntil", "suspensionReason", "firstOrderWelcomeSentAt", "bankAccountApprovedAt", "bankAccountRejectionReason", "bankAccountStatus", "constanciaAfipApprovedAt", "constanciaAfipRejectionReason", "constanciaAfipStatus", "cuitApprovedAt", "cuitRejectionReason", "cuitStatus", "habilitacionMunicipalApprovedAt", "habilitacionMunicipalRejectionReason", "habilitacionMunicipalStatus", "registroSanitarioApprovedAt", "registroSanitarioRejectionReason", "registroSanitarioStatus", "bankAccountApprovalNote", "bankAccountApprovalSource", "constanciaAfipApprovalNote", "constanciaAfipApprovalSource", "cuitApprovalNote", "cuitApprovalSource", "habilitacionMunicipalApprovalNote", "habilitacionMunicipalApprovalSource", "registroSanitarioApprovalNote", "registroSanitarioApprovalSource", "applicationStatus", "cancelledByUserAt", "cancelledByUserReason", "pausedByUserAt", "pausedByUserReason") FROM stdin;
-cmqfcutsx00039xze96rz3gz0	TEST 2	test-2	Nuevo comercio Moovy	\N	\N	f	t	f	\N	t	bimsads@gmail.com	+5492901652974	Del Recodo 1100	-54.830988	-68.3574893	5	30	45	0	0	f	\N	\N	\N	\N	2026-06-15 15:15:37.174	2026-06-15 15:15:37.174	Restaurante	cmpohhrhn001z5izc9v3rk0e9	2026-06-15 15:15:37.184	2026-06-24 14:20:19.647	\N	\N	\N	TEST 2	8	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-16 21:22:41.584	\N	\N	BRONCE	0	2026-06-15 15:15:37.184	\N	\N	f	f	\N	\N	\N	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	\N	\N	\N	\N
-cmpogk423000c5izcv6er1c6g	MOOVY	9410	Nuevo comercio Moovy	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1779910482835-logo.webp	\N	f	t	t	{"1":[{"open":"09:00","close":"21:00"}],"2":[{"open":"09:00","close":"21:00"}],"3":[{"open":"09:00","close":"21:00"}],"4":[{"open":"09:00","close":"21:00"}],"5":[{"open":"09:00","close":"21:00"}],"6":[{"open":"10:00","close":"14:00"}],"7":null}	t	maugrod@gmail.com	+5492901652974	Paseo de la Plaza 2065	-54.82898400000001	-68.3487997	5	30	45	0	0	f	\N	\N	\N	\N	2026-05-27 19:29:28.957	2026-05-27 19:29:28.957	Kiosco	cmpmpj1yp00025izc1cmefuzm	2026-05-27 19:29:28.967	2026-06-24 14:20:19.647	\N	\N	\N	MOOVY	8	\N	0	\N	@somosmoovy	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-05-27 19:30:10.971	\N	\N	BRONCE	0	2026-05-27 19:29:28.967	\N	\N	f	f	\N	\N	\N	2026-05-27 19:43:55.559	2026-05-27 19:33:57.11	\N	APPROVED	2026-05-27 19:34:00.678	\N	APPROVED	2026-05-27 19:33:53.161	\N	APPROVED	2026-05-27 19:34:05.444	\N	APPROVED	2026-05-27 19:34:09.175	\N	APPROVED	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	RECIBIDO	PHYSICAL	APPROVED	\N	\N	\N	\N
-cmqxvnegy000g127w23e9wewx	Comercio Test Moovy	comercio-test-moovy	Comercio de prueba para smoke testing	\N	\N	t	t	f	\N	f	test-comercio@somosmoovy.com	2901000000	San Martín 500, Ushuaia	-54.8019	-68.303	5	30	45	0	0	f	\N	\N	\N	\N	\N	\N	Almacén/Despensa	cmqxvneex0003127wasyb5v8f	2026-06-28 14:21:34.594	2026-06-28 14:21:34.594	\N	\N	\N	\N	8	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-28 14:21:34.589	\N	\N	BRONCE	0	2026-06-28 14:21:34.594	\N	\N	f	f	\N	\N	\N	\N	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	PENDING	\N	\N	\N	\N	\N	\N	\N	\N	\N	\N	DRAFT	\N	\N	\N	\N
+COPY public."Merchant" (id, name, slug, description, image, banner, "isActive", "isOpen", "scheduleEnabled", "scheduleJson", "isVerified", email, phone, address, latitude, longitude, "deliveryRadiusKm", "deliveryTimeMin", "deliveryTimeMax", "deliveryFee", "minOrderAmount", "allowPickup", cuit, "constanciaAfipUrl", "habilitacionMunicipalUrl", "registroSanitarioUrl", "cuitStatus", "cuitApprovedAt", "cuitRejectionReason", "cuitApprovalSource", "cuitApprovalNote", "bankAccountStatus", "bankAccountApprovedAt", "bankAccountRejectionReason", "bankAccountApprovalSource", "bankAccountApprovalNote", "constanciaAfipStatus", "constanciaAfipApprovedAt", "constanciaAfipRejectionReason", "constanciaAfipApprovalSource", "constanciaAfipApprovalNote", "habilitacionMunicipalStatus", "habilitacionMunicipalApprovedAt", "habilitacionMunicipalRejectionReason", "habilitacionMunicipalApprovalSource", "habilitacionMunicipalApprovalNote", "registroSanitarioStatus", "registroSanitarioApprovedAt", "registroSanitarioRejectionReason", "registroSanitarioApprovalSource", "registroSanitarioApprovalNote", "acceptedTermsAt", "acceptedPrivacyAt", category, "ownerId", "createdAt", "updatedAt", rating, "adminNotes", "bankAccount", "businessName", "commissionRate", cuil, "displayOrder", "facebookUrl", "instagramUrl", "isPremium", "ownerBirthDate", "ownerDni", "premiumTier", "premiumUntil", "startedAt", "whatsappNumber", "mpAccessToken", "mpRefreshToken", "mpUserId", "mpEmail", "mpLinkedAt", "approvalStatus", "approvedAt", "rejectionReason", "applicationStatus", "pausedByUserAt", "pausedByUserReason", "cancelledByUserAt", "cancelledByUserReason", "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "commissionOverride", "commissionOverrideReason", ubicacion, "loyaltyTier", "loyaltyTierLocked", "loyaltyOrderCount", "loyaltyUpdatedAt", "firstOrderWelcomeSentAt") FROM stdin;
+cmqz5vrhh001qxhd80605qjj8	Patagonia Drinks	patagonia-drinks	Las mejores bebidas del fin del mundo. Cervezas, gaseosas y más.	https://picsum.photos/seed/moovy-logo-patagonia-drinks/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio1@somosmoovy.com	+5492901555001	San Martín 456, Ushuaia	-54.8069	-68.3042	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:47.04	2026-06-29 11:55:47.04	Kiosco	cmqz5vrgz001jxhd84w7eneza	2026-06-29 11:55:47.045	2026-06-29 11:55:47.045	4.7	\N	\N	\N	10	\N	0	\N	\N	t	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:47.04	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:47.045	\N
+cmqz5vrwc0030xhd8eqeurj4k	El Falafel Ushuaia	el-falafel-ushuaia	Comida mediterránea en el fin del mundo. Falafel, hummus y sabores únicos.	https://picsum.photos/seed/moovy-logo-el-falafel-ushuaia/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio2@somosmoovy.com	+5492901555002	Gobernador Paz 789, Ushuaia	-54.8085	-68.312	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:47.577	2026-06-29 11:55:47.577	Restaurante	cmqz5vrw1002txhd87zyecnx4	2026-06-29 11:55:47.581	2026-06-29 11:55:47.581	4.9	\N	\N	\N	10	\N	0	\N	\N	t	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:47.577	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:47.581	\N
+cmqz5vs7q004axhd8fyr7ixm3	La Estancia del Sur	la-estancia-del-sur	La mejor parrilla de Ushuaia. Carnes premium y cordero fueguino.	https://picsum.photos/seed/moovy-logo-la-estancia-del-sur/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio3@somosmoovy.com	+5492901555003	Maipú 1234, Ushuaia	-54.801	-68.2985	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:47.987	2026-06-29 11:55:47.987	Parrilla	cmqz5vs7g0043xhd8q2mrshtc	2026-06-29 11:55:47.99	2026-06-29 11:55:47.99	4.8	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:47.987	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:47.99	\N
+cmqz5vsla005kxhd8ax92pmri	Pizzería Cerro Martial	pizzeria-cerro-martial	Pizza a la piedra con masa madre. La favorita del barrio.	https://picsum.photos/seed/moovy-logo-pizzeria-cerro-martial/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio4@somosmoovy.com	+5492901555004	Av. Leandro Alem 350, Ushuaia	-54.8033	-68.321	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:48.475	2026-06-29 11:55:48.475	Pizzería	cmqz5vsl0005dxhd8sst0a1h3	2026-06-29 11:55:48.478	2026-06-29 11:55:48.478	4.6	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:48.475	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:48.478	\N
+cmqz5vswb006uxhd8c5bcq86n	Burger del Fin del Mundo	burger-fin-del-mundo	Hamburguesas smash con ingredientes locales.	https://picsum.photos/seed/moovy-logo-burger-fin-del-mundo/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio5@somosmoovy.com	+5492901555005	9 de Julio 120, Ushuaia	-54.8058	-68.3075	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:48.872	2026-06-29 11:55:48.872	Hamburguesería	cmqz5vsvy006nxhd8cea1yx8k	2026-06-29 11:55:48.876	2026-06-29 11:55:48.876	4.5	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:48.872	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:48.876	\N
+cmqz5vt6v0084xhd80bepwszu	Café Beagle	cafe-beagle	Café de especialidad y pastelería artesanal frente al canal.	https://picsum.photos/seed/moovy-logo-cafe-beagle/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio6@somosmoovy.com	+5492901555006	San Martín 980, Ushuaia	-54.8075	-68.3001	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:49.252	2026-06-29 11:55:49.252	Cafetería	cmqz5vt6i007xxhd8hsy8f7ox	2026-06-29 11:55:49.255	2026-06-29 11:55:49.255	4.9	\N	\N	\N	10	\N	0	\N	\N	t	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:49.252	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:49.255	\N
+cmqz5vtiv009exhd8vvyf8nns	Farmacia del Canal	farmacia-del-canal	Farmacia con delivery rápido. Medicamentos y cuidado personal.	https://picsum.photos/seed/moovy-logo-farmacia-del-canal/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio7@somosmoovy.com	+5492901555007	Av. San Martín 640, Ushuaia	-54.8061	-68.3055	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:49.684	2026-06-29 11:55:49.684	Farmacia	cmqz5vtik0097xhd8n00sds6h	2026-06-29 11:55:49.687	2026-06-29 11:55:49.687	4.4	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:49.684	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:49.687	\N
+cmqz5vttb00aoxhd8gww43etq	Verdulería La Huerta Fueguina	verduleria-la-huerta	Frutas y verduras frescas, selección diaria.	https://picsum.photos/seed/moovy-logo-verduleria-la-huerta/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio8@somosmoovy.com	+5492901555008	Karukinka 210, Ushuaia	-54.7995	-68.3155	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:50.06	2026-06-29 11:55:50.06	Verdulería	cmqz5vtsy00ahxhd807lierxs	2026-06-29 11:55:50.063	2026-06-29 11:55:50.063	4.6	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:50.06	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:50.063	\N
 \.
 
 
@@ -2425,6 +2356,14 @@ COPY public."MerchantAcquiredProduct" (id, "merchantId", "productId", "createdAt
 --
 
 COPY public."MerchantCategory" (id, "merchantId", "categoryId", "createdAt") FROM stdin;
+cmqz5vri2001sxhd8bmae5h7v	cmqz5vrhh001qxhd80605qjj8	cmqz5vqyn000oxhd8fpc7qxgz	2026-06-29 11:55:47.066
+cmqz5vrwj0032xhd8jxorksyp	cmqz5vrwc0030xhd8eqeurj4k	cmqz5vqwu000gxhd8quylpbyn	2026-06-29 11:55:47.587
+cmqz5vs7x004cxhd81favyzca	cmqz5vs7q004axhd8fyr7ixm3	cmqz5vqxu000jxhd856aalwvq	2026-06-29 11:55:47.997
+cmqz5vslg005mxhd8zxc7wzs8	cmqz5vsla005kxhd8ax92pmri	cmqz5vqx1000hxhd86j3rab6t	2026-06-29 11:55:48.485
+cmqz5vswh006wxhd8uc7hzpn1	cmqz5vswb006uxhd8c5bcq86n	cmqz5vqxd000ixhd8e2wu3ki0	2026-06-29 11:55:48.882
+cmqz5vt710086xhd8zlnxwg6j	cmqz5vt6v0084xhd80bepwszu	cmqz5vqxz000kxhd8glc5szfn	2026-06-29 11:55:49.261
+cmqz5vtj2009gxhd89f44s0as	cmqz5vtiv009exhd8vvyf8nns	cmqz5vqy9000mxhd84i6y95uu	2026-06-29 11:55:49.695
+cmqz5vttg00aqxhd8p5u6lem4	cmqz5vttb00aoxhd8gww43etq	cmqz5vqyv000pxhd8lec7u05x	2026-06-29 11:55:50.069
 \.
 
 
@@ -2441,10 +2380,10 @@ COPY public."MerchantDocumentChangeRequest" (id, "merchantId", "documentField", 
 --
 
 COPY public."MerchantLoyaltyConfig" (id, tier, "minOrdersPerMonth", "commissionRate", "badgeText", "badgeColor", "benefitsJson", "displayOrder", "createdAt", "updatedAt") FROM stdin;
-cmnw2pz6c00123ooej2dvusub	BRONCE	0	8	Comercio Verificado	gray	["Comision estandar 8%","Soporte prioritario","Panel de estadisticas basico"]	1	2026-04-12 18:04:52.692	2026-05-04 12:29:15.409
-cmnw2pz6m00133ooembsbszap	PLATA	10	7	Comercio Destacado	blue	["Comision reducida 7%","Badge visible en la tienda","Prioridad en busqueda","Reporte semanal de ventas"]	2	2026-04-12 18:04:52.703	2026-05-04 12:29:15.414
-cmnw2pz6t00143ooeyfb895i9	ORO	25	6	Comercio Popular	yellow	["Comision reducida 6%","Badge dorado visible","Posicion destacada en home","Soporte VIP","1 push notification gratis/mes"]	3	2026-04-12 18:04:52.71	2026-05-04 12:29:15.418
-cmnw2pz6z00153ooeehit12au	DIAMANTE	50	5	Comercio Elite	purple	["Comision minima 5%","Badge diamante exclusivo","Posicion #1 en su categoria","Soporte dedicado","2 push notifications gratis/mes","Acceso anticipado a nuevas funciones"]	4	2026-04-12 18:04:52.716	2026-05-04 12:29:15.422
+cmqz5vr0v0010xhd8ix98ppsa	BRONCE	0	10	Nuevo	gray	[]	1	2026-06-29 11:55:46.448	2026-06-29 11:55:46.448
+cmqz5vr130011xhd811robxcc	PLATA	30	9	Destacado	blue	["Comisión reducida 9%"]	2	2026-06-29 11:55:46.455	2026-06-29 11:55:46.455
+cmqz5vr160012xhd8f9e1ifz4	ORO	80	8	Popular	yellow	["Comisión reducida 8%"]	3	2026-06-29 11:55:46.459	2026-06-29 11:55:46.459
+cmqz5vr190013xhd8806wb7x1	DIAMANTE	200	7	Elite	purple	["Comisión reducida 7%"]	4	2026-06-29 11:55:46.462	2026-06-29 11:55:46.462
 \.
 
 
@@ -2453,37 +2392,23 @@ cmnw2pz6z00153ooeehit12au	DIAMANTE	50	5	Comercio Elite	purple	["Comision minima 
 --
 
 COPY public."MoovyConfig" (id, key, value, description, "updatedAt") FROM stdin;
-cmnw2pz0n00023ooeot4m38v2	default_merchant_commission_pct	8	Comisión MOOVY a comercios (%)	2026-04-12 18:04:52.487
-cmnw2pz0y00033ooeineogqsl	default_seller_commission_pct	12	Comisión MOOVY a vendedores marketplace (%)	2026-04-12 18:04:52.498
-cmnw2pz1v00073ooeg4ma9ph3	points_per_dollar	1	Puntos por peso gastado	2026-04-12 18:04:52.531
-cmnw2pz2500083ooexl552lcf	signup_bonus	100	Puntos bonus por registro	2026-04-12 18:04:52.541
-cmnw2pz2d00093ooeop7ps99n	referral_bonus	200	Puntos bonus por referir	2026-04-12 18:04:52.549
-cmnw2pz2i000a3ooecv55jhbj	min_points_to_redeem	100	Mínimo de puntos para canjear	2026-04-12 18:04:52.554
-cmnw2pz2o000b3ooershwfe58	max_discount_percent	50	Máximo % de descuento con puntos	2026-04-12 18:04:52.56
-cmnw2pz2t000c3ooeu8a58kzz	cart_recovery_enabled	true	Habilitar recuperación de carritos abandonados	2026-04-12 18:04:52.566
-cmnw2pz31000d3ooet00y8eva	cart_recovery_first_reminder_hours	2	Horas hasta 1er recordatorio de carrito	2026-04-12 18:04:52.573
-cmnw2pz36000e3ooelgqtd83s	cart_recovery_second_reminder_hours	24	Horas hasta 2do recordatorio de carrito	2026-04-12 18:04:52.579
-cmnw2pz3b000f3ooevwgrltfn	cart_recovery_max_reminders	2	Máximo de recordatorios por carrito	2026-04-12 18:04:52.584
-cmnw2pz3g000g3ooe3t9sic9i	cart_recovery_min_cart_value	5000	Valor mínimo del carrito para enviar recordatorio (ARS)	2026-04-12 18:04:52.588
-cmo4zfa0o0003a4duqov1p6u9	scheduled_notify_before_minutes	30	Minutos antes de un pedido programado para notificar al comercio	2026-06-04 23:44:26.654
-cmo4zfa150004a4duszp4pudf	scheduled_cancel_if_no_confirm_minutes	10	Minutos para cancelar automáticamente si no hay confirmación de pedido programado	2026-06-04 23:44:26.671
-cmnw2pz1i00053ooeltp8eb0a	driver_response_timeout_seconds	60	Segundos que un repartidor tiene para aceptar/rechazar una oferta	2026-06-04 23:48:33.189
-cmnw2pz1900043ooen0k9livo	merchant_confirm_timeout_seconds	300	Segundos que un comercio tiene para confirmar un pedido nuevo	2026-06-04 23:48:33.204
-cmoqaec2e0006guxlioyoia9e	seller_commission_pct	12	Porcentaje de comisión predeterminado para vendedores	2026-06-08 20:21:18.745
-cmoqaec2l0007guxlb715oswl	driver_commission_pct	20	Porcentaje de comisión predeterminado para repartidores	2026-06-08 20:21:18.756
-cmoqaec2t0008guxlvj7isz20	merchant_commission_pct	0	Comision merchants (0% mes 1 lanzamiento)	2026-05-04 12:29:15.452
-cmoqaec2w0009guxlwp2n6ygp	fuel_price_reference	1658	Precio nafta super YPF Ushuaia - referencia para delivery fee	2026-05-04 12:29:15.455
-cmoqaec30000aguxl3ukd8h95	usd_ars_reference	1400	Cotizacion dolar oficial referencia (cierre abril 2026)	2026-05-04 12:29:15.459
-cmoqaec34000bguxl11vm906z	max_delivery_radius_km	15	Radio maximo de entrega en km	2026-05-04 12:29:15.462
-cmoqaec38000cguxlf6qj2uxu	mp_fee_percent	3.81	Comision real MercadoPago (3.15% + IVA 21%)	2026-05-04 12:29:15.464
-cmoqaec3b000dguxlnnatlugu	launch_boost_active	true	Boost lanzamiento: puntos x2 durante 30 dias	2026-05-04 12:29:15.467
-cmoqaec3e000eguxludoqsrn0	launch_boost_start_date	2026-05-04	Fecha inicio del boost de lanzamiento	2026-05-04 12:29:15.469
-cmoqaec3i000fguxlcdct43xa	merchant_free_month_active	true	Mes gratis para merchants (0% comision)	2026-05-04 12:29:15.472
-cmoqaec3l000gguxl46t1qemg	merchant_free_month_start_date	2026-05-04	Fecha inicio del mes gratis merchants	2026-05-04 12:29:15.474
-cmo4zf9zs0001a4durybs3xkn	max_delivery_distance_km	50	Distancia máxima de entrega en kilómetros	2026-06-04 23:44:26.551
-cmo4zfa0b0002a4duf1n1d2t0	min_order_amount_ars	500	Monto mínimo de pedido en pesos argentinos	2026-06-04 23:44:26.555
-cmnw2pz1o00063ooena45c54c	max_assignment_attempts	5	Intentos máximos para asignar un repartidor antes de escalar a ops	2026-06-04 23:44:26.574
-cmo4zf9yr0000a4dun3xxpm64	assignment_rating_radius_meters	300	Radio en metros para priorizar repartidores por rating	2026-06-04 23:44:26.594
+cmqz5vque0006xhd8utadcukv	default_merchant_commission_pct	10	Comisión MOOVY a comercios (%)	2026-06-29 11:55:46.214
+cmqz5vquo0007xhd8g2kp4h5f	default_seller_commission_pct	12	Comisión MOOVY a vendedores (%)	2026-06-29 11:55:46.224
+cmqz5vqw3000bxhd8f02e3a3a	driver_search_window_minutes	20	Ventana de búsqueda de repartidor	2026-06-29 11:55:46.275
+cmqz5vqw7000cxhd8tx4xxlzl	driver_search_radius_meters	15000	Radio de búsqueda de drivers	2026-06-29 11:55:46.279
+cmqz5vqwc000dxhd86qb6v3y9	points_per_dollar	1	Puntos por peso	2026-06-29 11:55:46.285
+cmqz5vqwj000exhd8dxavtvdw	signup_bonus	100	Bonus registro	2026-06-29 11:55:46.292
+cmqz5vqwn000fxhd8ap5lm932	min_points_to_redeem	100	Mínimo para canjear	2026-06-29 11:55:46.296
+cmqz5vqvn0009xhd8y3mez5lm	driver_response_timeout_seconds	20	Segundos que un repartidor tiene para aceptar/rechazar una oferta	2026-07-01 17:36:59.656
+cmqz5vqur0008xhd8laxp5obt	merchant_confirm_timeout_seconds	180	Segundos que un comercio tiene para confirmar un pedido nuevo	2026-07-01 17:36:59.665
+cmqz9c3jg0001lqdygbjevmud	max_delivery_distance_km	50	Distancia máxima de entrega en kilómetros	2026-07-01 17:36:59.669
+cmqz9c3jm0002lqdylx1bxkuo	min_order_amount_ars	500	Monto mínimo de pedido en pesos argentinos	2026-07-01 17:36:59.673
+cmr2britk000j2uz20oio8ot8	seller_commission_pct	10	Porcentaje de comisión predeterminado para vendedores	2026-07-01 17:36:59.677
+cmr2brits000k2uz2c3vyj8zb	driver_commission_pct	15	Porcentaje de comisión predeterminado para repartidores	2026-07-01 17:36:59.681
+cmqz5vqvy000axhd8s8sn6enu	max_assignment_attempts	5	Intentos máximos para asignar un repartidor antes de escalar a ops	2026-07-01 17:36:59.686
+cmqz9c3j20000lqdyox7kns5z	assignment_rating_radius_meters	300	Radio en metros para priorizar repartidores por rating	2026-07-01 17:36:59.69
+cmqz9c3jr0003lqdy8ra7d5qa	scheduled_notify_before_minutes	30	Minutos antes de un pedido programado para notificar al comercio	2026-07-01 17:36:59.693
+cmqz9c3jw0004lqdyzpla3v7g	scheduled_cancel_if_no_confirm_minutes	10	Minutos para cancelar automáticamente si no hay confirmación de pedido programado	2026-07-01 17:36:59.698
 \.
 
 
@@ -2499,7 +2424,7 @@ COPY public."MpWebhookLog" (id, "eventId", "eventType", "resourceId", processed,
 -- Data for Name: Order; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Order" (id, "orderNumber", "userId", "addressId", "merchantId", status, "paymentId", "paymentStatus", "paymentMethod", subtotal, "deliveryFee", discount, total, "isPickup", "distanceKm", "deliveryNotes", "estimatedTime", "driverId", "deliveryStatus", "deliveredAt", "deliveryPhoto", "customerNotes", "adminNotes", "createdAt", "updatedAt", "cancelReason", "commissionPaid", "driverRating", "merchantPayout", "moovyCommission", "ratedAt", "ratingComment", "merchantRating", "merchantRatingComment", "sellerRating", "sellerRatingComment", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "lastAssignmentAt", "pendingDriverId", "deletedAt", "mpPreferenceId", "mpPaymentId", "mpMerchantOrderId", "mpStatus", "paidAt", "isMultiVendor", "deliveryType", "scheduledSlotStart", "scheduledSlotEnd", "scheduledConfirmedAt", "couponCode", "pointsEarned", "pointsUsed", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "rateReminderSentAt", "driverStatus", "merchantStatus", "noShowFlag", "noShowReportedAt", "payoutHoldUntil", "waitingStartedAt", "driverRatingModerationStatus", "driverRatingReportCount", "driverTipAmount", "driverTipDeclaredAt", "driverTipMethod", "merchantRatingModerationStatus", "merchantRatingReportCount", "sellerRatingModerationStatus", "sellerRatingReportCount", "driverSearchUntil") FROM stdin;
+COPY public."Order" (id, "orderNumber", "userId", "addressId", "merchantId", status, "paymentId", "paymentStatus", "paymentMethod", subtotal, "deliveryFee", discount, total, "isPickup", "distanceKm", "deliveryNotes", "estimatedTime", "driverId", "deliveryStatus", "deliveredAt", "deliveryPhoto", "customerNotes", "adminNotes", "createdAt", "updatedAt", "cancelReason", "commissionPaid", "pointsEarned", "pointsUsed", "pickupPin", "pickupPinVerifiedAt", "pickupPinAttempts", "deliveryPin", "deliveryPinVerifiedAt", "deliveryPinAttempts", "failedDeliveryAt", "failedDeliveryReason", "nearDestinationNotified", "driverRating", "merchantPayout", "moovyCommission", "ratedAt", "rateReminderSentAt", "ratingComment", "merchantRating", "merchantRatingComment", "sellerRating", "sellerRatingComment", "driverRatingModerationStatus", "driverRatingReportCount", "merchantRatingModerationStatus", "merchantRatingReportCount", "sellerRatingModerationStatus", "sellerRatingReportCount", "driverTipMethod", "driverTipAmount", "driverTipDeclaredAt", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "lastAssignmentAt", "pendingDriverId", "driverSearchUntil", "deletedAt", "mpPreferenceId", "mpPaymentId", "mpMerchantOrderId", "mpStatus", "paidAt", "isMultiVendor", "deliveryType", "scheduledSlotStart", "scheduledSlotEnd", "scheduledConfirmedAt", "couponCode", "merchantStatus", "driverStatus", "waitingStartedAt", "noShowReportedAt", "payoutHoldUntil", "noShowFlag") FROM stdin;
 \.
 
 
@@ -2540,12 +2465,11 @@ COPY public."OrderItem" (id, "orderId", "productId", "listingId", name, price, q
 --
 
 COPY public."PackageCategory" (id, name, "maxWeightGrams", "maxLengthCm", "maxWidthCm", "maxHeightCm", "volumeScore", "allowedVehicles", "isActive", "displayOrder", "createdAt", "updatedAt") FROM stdin;
-cmoqaed9h0000a2f0xygyvz4p	FLETE	200000	250	150	150	50	{TRUCK}	t	6	2026-05-03 21:32:53.285	2026-05-03 21:32:53.285
-cmnw2pz7c00163ooeim6ijao4	MICRO	500	20	15	10	1	{BIKE,MOTO,CAR,TRUCK}	t	1	2026-04-12 18:04:52.728	2026-06-04 23:44:26.438
-cmnw2pz7m00173ooelfp0vilx	SMALL	2000	35	25	20	3	{BIKE,MOTO,CAR,TRUCK}	t	2	2026-04-12 18:04:52.739	2026-06-04 23:44:26.461
-cmnw2pz7r00183ooe6a3uhqx2	MEDIUM	5000	50	40	30	6	{MOTO,CAR,TRUCK}	t	3	2026-04-12 18:04:52.744	2026-06-04 23:44:26.467
-cmnw2pz7y00193ooe51d5kek8	LARGE	15000	80	60	50	10	{CAR,TRUCK}	t	4	2026-04-12 18:04:52.751	2026-06-04 23:44:26.472
-cmnw2pz83001a3ooeozrxhvfw	XL	50000	150	100	100	20	{TRUCK}	t	5	2026-04-12 18:04:52.755	2026-06-04 23:44:26.478
+cmqz5vr1f0014xhd83erjqolw	MICRO	500	20	15	10	1	{BIKE,MOTO,CAR,TRUCK}	t	1	2026-06-29 11:55:46.468	2026-07-01 17:36:59.579
+cmqz5vr1z0017xhd8k68fpeuc	SMALL	2000	35	25	20	3	{BIKE,MOTO,CAR,TRUCK}	t	2	2026-06-29 11:55:46.487	2026-07-01 17:36:59.608
+cmqz5vr26001axhd8t5ik06rv	MEDIUM	5000	50	40	30	6	{MOTO,CAR,TRUCK}	t	3	2026-06-29 11:55:46.494	2026-07-01 17:36:59.611
+cmqz5vr2g001dxhd8t1c3c19v	LARGE	15000	80	60	50	10	{CAR,TRUCK}	t	4	2026-06-29 11:55:46.504	2026-07-01 17:36:59.614
+cmqz5vr2o001gxhd8q3y0ks8l	XL	50000	150	100	100	20	{TRUCK}	t	5	2026-06-29 11:55:46.513	2026-07-01 17:36:59.618
 \.
 
 
@@ -2554,9 +2478,6 @@ cmnw2pz83001a3ooeozrxhvfw	XL	50000	150	100	100	20	{TRUCK}	t	5	2026-04-12 18:04:5
 --
 
 COPY public."PackagePricingTier" (id, name, "minItems", "maxItems", "pricePerItem", "totalPrice", "isActive", "order", "createdAt") FROM stdin;
-cmnw2pz9n001l3ooejevvu253	Pack x10	1	10	150	1500	t	1	2026-04-12 18:04:52.811
-cmnw2pz9u001m3ooenn1o69y5	Pack x25	11	25	120	3000	t	2	2026-04-12 18:04:52.818
-cmnw2pz9y001n3ooes66rq93v	Pack x50	26	50	90	4500	t	3	2026-04-12 18:04:52.822
 \.
 
 
@@ -2581,7 +2502,6 @@ COPY public."Payment" (id, "orderId", "mpPaymentId", "mpStatus", "mpStatusDetail
 --
 
 COPY public."PayoutBatch" (id, "batchType", status, "periodStart", "periodEnd", "totalAmount", "itemCount", "csvPath", "generatedBy", "paidBy", "paidAt", notes, "createdAt", "updatedAt") FROM stdin;
-cmpabgu4b003f8eo045n4st94	DRIVER	CANCELLED	2026-05-17 21:00:00.931	2026-05-17 21:58:11.568	907.2	1	\N	cmnuzx1fg0002zgw8zimoxguz	\N	\N	\N	2026-05-17 21:58:11.578	2026-05-17 21:59:46.427
 \.
 
 
@@ -2590,7 +2510,6 @@ cmpabgu4b003f8eo045n4st94	DRIVER	CANCELLED	2026-05-17 21:00:00.931	2026-05-17 21
 --
 
 COPY public."PayoutItem" (id, "batchId", "recipientType", "recipientId", "recipientName", "bankAccount", cuit, amount, "ordersIncluded", notes, "createdAt") FROM stdin;
-cmpabgu4r003h8eo0ng8wn3pz	cmpabgu4b003f8eo045n4st94	DRIVER	cmp60qa3x000ad60sjehyggb3	Marcos Perez	vsolutions.ush	\N	907.2	["cmpa9alo0001o8eo0979z2inr","cmpaarmxl002p8eo06gknvo5w"]	\N	2026-05-17 21:58:11.596
 \.
 
 
@@ -2607,10 +2526,6 @@ COPY public."PendingAssignment" (id, "orderId", "currentDriverId", "attemptNumbe
 --
 
 COPY public."PlaybookChecklist" (id, name, description, category, "isActive", "order", "createdAt", "updatedAt") FROM stdin;
-cmod6z664001tsabwiv6oxc30	Revisión de docs de driver	Validar documentación del repartidor antes de aprobarlo.	approval	t	2	2026-04-24 17:36:05.117	2026-04-24 17:36:05.117
-cmod6z6k1002gsabwf3su5l33	Pedido demorado >30 min	Protocolo de incidente cuando un pedido se queda stuck.	incident	t	3	2026-04-24 17:36:05.618	2026-04-24 17:36:05.618
-cmod6z6y10033sabw3kz5ox27	Reclamo de comercio por pago	Cómo manejar una consulta del comercio sobre un cobro.	escalation	t	4	2026-04-24 17:36:06.121	2026-04-24 17:36:06.121
-cmod6z3110016sabw6q3gycot	Alta de comercio nuevo	Pasos para incorporar un comercio que recién se registró.	onboarding	t	1	2026-04-24 17:36:01.045	2026-04-24 21:58:07.369
 \.
 
 
@@ -2619,26 +2534,6 @@ cmod6z3110016sabw6q3gycot	Alta de comercio nuevo	Pasos para incorporar un comerc
 --
 
 COPY public."PlaybookStep" (id, "checklistId", content, "order", required, "createdAt", "updatedAt") FROM stdin;
-cmod6z5we001asabwb7qvcnej	cmod6z3110016sabw6q3gycot	Contactar al comercio en 24h por WhatsApp o llamada	0	t	2026-04-24 17:36:04.766	2026-04-24 17:36:04.766
-cmod6z5yi001esabw3pi0pmtt	cmod6z3110016sabw6q3gycot	Verificar docs AFIP y habilitación municipal	1	t	2026-04-24 17:36:04.843	2026-04-24 17:36:04.843
-cmod6z60l001isabwlgldi13f	cmod6z3110016sabw6q3gycot	Revisar foto de fachada y del local	2	t	2026-04-24 17:36:04.918	2026-04-24 17:36:04.918
-cmod6z64h001qsabwsgb9sp8n	cmod6z3110016sabw6q3gycot	Enviar email de bienvenida manual si algo no está claro	4	f	2026-04-24 17:36:05.057	2026-04-24 17:36:05.057
-cmod6z683001xsabwgnwjkypl	cmod6z664001tsabwiv6oxc30	Verificar que el DNI coincide con la foto de perfil	0	t	2026-04-24 17:36:05.187	2026-04-24 17:36:05.187
-cmod6z6ab0021sabwurwbzb63	cmod6z664001tsabwiv6oxc30	Chequear que la licencia de conducir esté vigente	1	t	2026-04-24 17:36:05.268	2026-04-24 17:36:05.268
-cmod6z6ca0025sabwp7pecrqw	cmod6z664001tsabwiv6oxc30	Validar que el seguro del vehículo esté al día	2	t	2026-04-24 17:36:05.338	2026-04-24 17:36:05.338
-cmod6z6ex0029sabwvlqgiqpq	cmod6z664001tsabwiv6oxc30	Confirmar CUIT/Monotributo activo en AFIP	3	t	2026-04-24 17:36:05.434	2026-04-24 17:36:05.434
-cmod6z6i8002dsabwnz5yn1d5	cmod6z664001tsabwiv6oxc30	Aprobar cada doc individualmente desde el panel	4	t	2026-04-24 17:36:05.552	2026-04-24 17:36:05.552
-cmod6z6lx002ksabw24vpzetq	cmod6z6k1002gsabwf3su5l33	Abrir el pedido en /ops/pedidos	0	t	2026-04-24 17:36:05.685	2026-04-24 17:36:05.685
-cmod6z6nu002osabw1zktvshu	cmod6z6k1002gsabwf3su5l33	Verificar estado del driver en tiempo real	1	t	2026-04-24 17:36:05.755	2026-04-24 17:36:05.755
-cmod6z6rs002ssabwpgu8av3f	cmod6z6k1002gsabwf3su5l33	Intentar reasignar driver si corresponde	2	t	2026-04-24 17:36:05.896	2026-04-24 17:36:05.896
-cmod6z6tt002wsabw98x6tg78	cmod6z6k1002gsabwf3su5l33	Contactar al buyer por el chat del pedido	3	t	2026-04-24 17:36:05.97	2026-04-24 17:36:05.97
-cmod6z6we0030sabwod16cnvf	cmod6z6k1002gsabwf3su5l33	Si no se puede resolver, cancelar + refund manual	4	f	2026-04-24 17:36:06.062	2026-04-24 17:36:06.062
-cmod6z6zq0037sabw8tkqsdsv	cmod6z6y10033sabw3kz5ox27	Abrir ficha del comercio en /ops/usuarios/[id]	0	t	2026-04-24 17:36:06.182	2026-04-24 17:36:06.182
-cmod6z71e003bsabwz9odcdnw	cmod6z6y10033sabw3kz5ox27	Revisar los últimos pedidos DELIVERED	1	t	2026-04-24 17:36:06.242	2026-04-24 17:36:06.242
-cmod6z734003fsabwdu1dpa1r	cmod6z6y10033sabw3kz5ox27	Consultar el estado de MP en la sección Pagos	2	t	2026-04-24 17:36:06.304	2026-04-24 17:36:06.304
-cmod6z74s003jsabw1t3ppiil	cmod6z6y10033sabw3kz5ox27	Si hay retención legítima, explicarle al comercio por WhatsApp	3	t	2026-04-24 17:36:06.365	2026-04-24 17:36:06.365
-cmod6z76k003nsabwn3jd8sxx	cmod6z6y10033sabw3kz5ox27	Documentar la conversación con una nota interna	4	t	2026-04-24 17:36:06.429	2026-04-24 17:36:06.429
-cmod6z62w001msabw5w00445x	cmod6z3110016sabw6q3gycot	Aprobar en OPS si todo está OK	3	f	2026-04-24 17:36:05.001	2026-04-24 21:57:16.693
 \.
 
 
@@ -2647,7 +2542,7 @@ cmod6z62w001msabw5w00445x	cmod6z3110016sabw6q3gycot	Aprobar en OPS si todo está
 --
 
 COPY public."PointsConfig" (id, "pointsPerDollar", "minPurchaseForPoints", "pointsValue", "minPointsToRedeem", "maxDiscountPercent", "signupBonus", "referralBonus", "reviewBonus", "pointsExpireDays", "refereeBonus", "minPurchaseForBonus", "minReferralPurchase", "tierWindowDays", "tierConfigJson", "updatedAt") FROM stdin;
-points_config	0.01	0	1	500	20	1000	1000	25	180	500	5000	8000	90	{"levels":[{"name":"MOOVER","minOrders":0,"earnMultiplier":1,"ptsPerThousand":10},{"name":"SILVER","minOrders":5,"earnMultiplier":1.25,"ptsPerThousand":12.5},{"name":"GOLD","minOrders":15,"earnMultiplier":1.5,"ptsPerThousand":15},{"name":"BLACK","minOrders":40,"earnMultiplier":2,"ptsPerThousand":20}],"expirationMonthsInactive":6,"launchBoostEnabled":true,"launchBoostMultiplier":2,"launchBoostDays":30}	2026-05-04 12:29:15.401
+points_config	1	0	0.01	100	50	100	200	10	\N	100	5000	8000	90	\N	2026-06-29 11:55:46.208
 \.
 
 
@@ -2664,9 +2559,6 @@ COPY public."PointsTransaction" (id, "userId", "orderId", type, amount, "balance
 --
 
 COPY public."PreLaunchLead" (id, role, name, email, whatsapp, consent, "consentAt", "ipAddress", "userAgent", source, contacted, "createdAt") FROM stdin;
-cmqs9f785000b13aj5yhzctde	COMERCIO	\N	juan@somosmoovy.com	\N	t	2026-06-24 16:06:50.808	192.168.68.113	Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1	landing	f	2026-06-24 16:00:29.526
-cmqs9vo46000d13aj1p3thn4w	COMERCIO	Iyad	ing.iyad@gmail.com	92901611605	t	2026-06-24 16:13:17.907	192.168.68.102	Mozilla/5.0 (iPhone; CPU iPhone OS 18_3_2 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.3.1 Mobile/15E148 Safari/604.1	landing	f	2026-06-24 16:13:17.909
-cmqsbyks4000e13aj7ol75qq7	DRIVER	\N	juan@somosmoovy.com	\N	t	2026-06-24 17:11:32.784	192.168.68.113	Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5 Mobile/15E148 Safari/604.1	landing	f	2026-06-24 17:11:32.785
 \.
 
 
@@ -2674,8 +2566,55 @@ cmqsbyks4000e13aj7ol75qq7	DRIVER	\N	juan@somosmoovy.com	\N	t	2026-06-24 17:11:32
 -- Data for Name: Product; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Product" (id, name, slug, description, "merchantId", price, "costPrice", stock, "minStock", "isActive", "isFeatured", "createdAt", "updatedAt", "packageCategoryId", "deletedAt", "deletedBy", "deletedReason", "volumeMl", "weightGrams") FROM stdin;
-cmpogy8so000y5izcmc18x21a	PRINGLES ORIGINAL	pringles-original-1779910828289	Papas PRINGLES Sabor original 	cmpogk423000c5izcv6er1c6g	1000	700	11	5	t	f	2026-05-27 19:40:28.294	2026-06-11 12:26:49.098	\N	\N	\N	\N	2500	1500
+COPY public."Product" (id, name, slug, description, "merchantId", price, "costPrice", stock, "minStock", "isActive", "isFeatured", "deletedAt", "deletedBy", "deletedReason", "createdAt", "updatedAt", "packageCategoryId", "weightGrams", "volumeMl") FROM stdin;
+cmqz5vric001uxhd8dq3pebwc	Heineken Lata 1L	heineken-1l	Cerveza Heineken lata 1 litro.	cmqz5vrhh001qxhd80605qjj8	3500	2800	50	5	t	t	\N	\N	\N	2026-06-29 11:55:47.075	2026-06-29 11:55:47.075	\N	\N	\N
+cmqz5vriy0020xhd87abgsp11	Patagonia 24.7 IPA	patagonia-247	Session IPA suave y refrescante.	cmqz5vrhh001qxhd80605qjj8	4200	3400	30	5	t	t	\N	\N	\N	2026-06-29 11:55:47.098	2026-06-29 11:55:47.098	\N	\N	\N
+cmqz5vrja0026xhd8qe6xdjlj	Schneider 710ml	schneider-710	Cerveza rubia clásica.	cmqz5vrhh001qxhd80605qjj8	2800	2100	40	5	t	f	\N	\N	\N	2026-06-29 11:55:47.11	2026-06-29 11:55:47.11	\N	\N	\N
+cmqz5vrjl002cxhd833p7o57x	Coca-Cola 2.25L	coca-225	Gaseosa Coca-Cola 2.25 litros.	cmqz5vrhh001qxhd80605qjj8	2900	2000	60	5	t	f	\N	\N	\N	2026-06-29 11:55:47.122	2026-06-29 11:55:47.122	\N	\N	\N
+cmqz5vrjx002ixhd8nhkuh93p	Agua Mineral Eco 2L	agua-eco-2l	Agua mineral sin gas.	cmqz5vrhh001qxhd80605qjj8	1200	700	0	5	t	f	\N	\N	\N	2026-06-29 11:55:47.133	2026-06-29 11:55:47.133	\N	\N	\N
+cmqz5vrk8002oxhd8yvzwazhc	Papas Lays Clásicas	lays-clasicas	Papas fritas 150g.	cmqz5vrhh001qxhd80605qjj8	2500	1600	3	5	t	f	\N	\N	\N	2026-06-29 11:55:47.144	2026-06-29 11:55:47.144	\N	\N	\N
+cmqz5vrwm0034xhd8d4r9d6to	Falafel Clásico (6u)	falafel-clasico	6 falafel caseros con tahini.	cmqz5vrwc0030xhd8eqeurj4k	5500	3200	25	5	t	t	\N	\N	\N	2026-06-29 11:55:47.59	2026-06-29 11:55:47.59	\N	\N	\N
+cmqz5vrwu003axhd81da2tlo4	Hummus con Pan Pita	hummus-pita	Hummus casero con pan pita tibio.	cmqz5vrwc0030xhd8eqeurj4k	4200	2400	20	5	t	t	\N	\N	\N	2026-06-29 11:55:47.599	2026-06-29 11:55:47.599	\N	\N	\N
+cmqz5vrx3003gxhd8ub7noyt3	Shawarma de Pollo	shawarma-pollo	Shawarma de pollo con vegetales y salsa.	cmqz5vrwc0030xhd8eqeurj4k	6800	4000	15	5	t	f	\N	\N	\N	2026-06-29 11:55:47.607	2026-06-29 11:55:47.607	\N	\N	\N
+cmqz5vrxc003mxhd83jyk6h5w	Ensalada Tabbouleh	tabbouleh	Ensalada fresca de perejil, trigo y limón.	cmqz5vrwc0030xhd8eqeurj4k	3900	2100	12	5	t	f	\N	\N	\N	2026-06-29 11:55:47.617	2026-06-29 11:55:47.617	\N	\N	\N
+cmqz5vrxo003sxhd871zld6hg	Baklava (2u)	baklava	Postre de masa filo, nueces y miel.	cmqz5vrwc0030xhd8eqeurj4k	3200	1800	2	5	t	f	\N	\N	\N	2026-06-29 11:55:47.628	2026-06-29 11:55:47.628	\N	\N	\N
+cmqz5vrxy003yxhd877e5bc3x	Limonada de Menta	limonada-menta	Limonada casera con menta.	cmqz5vrwc0030xhd8eqeurj4k	2400	1200	30	5	t	f	\N	\N	\N	2026-06-29 11:55:47.638	2026-06-29 11:55:47.638	\N	\N	\N
+cmqz5vs80004exhd844e7zog3	Cordero Fueguino (1/2)	cordero-fueguino	Medio cordero al asador.	cmqz5vs7q004axhd8fyr7ixm3	28000	19000	8	5	t	t	\N	\N	\N	2026-06-29 11:55:48	2026-06-29 11:55:48	\N	\N	\N
+cmqz5vs8b004kxhd8bi21pzoz	Tabla La Estancia (2p)	tabla-estancia	Fiambres y quesos patagónicos.	cmqz5vs7q004axhd8fyr7ixm3	12500	8000	10	5	t	t	\N	\N	\N	2026-06-29 11:55:48.011	2026-06-29 11:55:48.011	\N	\N	\N
+cmqz5vs8k004qxhd8eap2pdy6	Bife de Chorizo 400g	bife-chorizo	Bife de chorizo a la parrilla.	cmqz5vs7q004axhd8fyr7ixm3	11000	7500	14	5	t	f	\N	\N	\N	2026-06-29 11:55:48.021	2026-06-29 11:55:48.021	\N	\N	\N
+cmqz5vs8v004wxhd89uzvo3ri	Provoleta	provoleta	Provoleta a la parrilla con orégano.	cmqz5vs7q004axhd8fyr7ixm3	5500	3200	18	5	t	f	\N	\N	\N	2026-06-29 11:55:48.032	2026-06-29 11:55:48.032	\N	\N	\N
+cmqz5vs950052xhd8bzz3hc88	Beagle Red Ale	beagle-red-ale	Cerveza artesanal de Ushuaia.	cmqz5vs7q004axhd8fyr7ixm3	4500	3200	0	5	t	f	\N	\N	\N	2026-06-29 11:55:48.041	2026-06-29 11:55:48.041	\N	\N	\N
+cmqz5vs9k0058xhd8go65yynp	Flan Casero	flan-casero	Flan con dulce de leche y crema.	cmqz5vs7q004axhd8fyr7ixm3	3500	1900	16	5	t	f	\N	\N	\N	2026-06-29 11:55:48.057	2026-06-29 11:55:48.057	\N	\N	\N
+cmqz5vslj005oxhd8tkfo0b25	Muzzarella Grande	muzza-grande	Pizza de muzzarella a la piedra.	cmqz5vsla005kxhd8ax92pmri	7800	4200	30	5	t	t	\N	\N	\N	2026-06-29 11:55:48.488	2026-06-29 11:55:48.488	\N	\N	\N
+cmqz5vsls005uxhd8m8x7l5jp	Napolitana	napolitana	Muzza, tomate, ajo y albahaca.	cmqz5vsla005kxhd8ax92pmri	8900	4800	25	5	t	t	\N	\N	\N	2026-06-29 11:55:48.496	2026-06-29 11:55:48.496	\N	\N	\N
+cmqz5vsm10060xhd8o0zr7ojg	Fugazzeta Rellena	fugazzeta	Doble muzza y cebolla.	cmqz5vsla005kxhd8ax92pmri	9800	5400	20	5	t	f	\N	\N	\N	2026-06-29 11:55:48.506	2026-06-29 11:55:48.506	\N	\N	\N
+cmqz5vsm90066xhd8lcqqk1xb	Calabresa	calabresa	Muzza con longaniza calabresa.	cmqz5vsla005kxhd8ax92pmri	9200	5100	4	5	t	f	\N	\N	\N	2026-06-29 11:55:48.514	2026-06-29 11:55:48.514	\N	\N	\N
+cmqz5vsmh006cxhd8mnj4fj2f	Empanada (docena)	empanadas-docena	Docena de empanadas surtidas.	cmqz5vsla005kxhd8ax92pmri	9600	5200	22	5	t	f	\N	\N	\N	2026-06-29 11:55:48.522	2026-06-29 11:55:48.522	\N	\N	\N
+cmqz5vsmp006ixhd8s1clp988	Faina	faina	Faina de garbanzos recién horneada.	cmqz5vsla005kxhd8ax92pmri	1800	900	0	5	t	f	\N	\N	\N	2026-06-29 11:55:48.53	2026-06-29 11:55:48.53	\N	\N	\N
+cmqz5vswk006yxhd85fzl6bjp	Smash Doble	smash-doble	Doble medallón smash, cheddar y salsa.	cmqz5vswb006uxhd8c5bcq86n	8500	4600	40	5	t	t	\N	\N	\N	2026-06-29 11:55:48.885	2026-06-29 11:55:48.885	\N	\N	\N
+cmqz5vsws0074xhd8fu7xje1i	Cheeseburger Clásica	cheeseburger	Medallón, cheddar, pickles.	cmqz5vswb006uxhd8c5bcq86n	6900	3800	35	5	t	t	\N	\N	\N	2026-06-29 11:55:48.892	2026-06-29 11:55:48.892	\N	\N	\N
+cmqz5vsx0007axhd81gi0m5ww	Veggie Burger	veggie-burger	Medallón de garbanzo y remolacha.	cmqz5vswb006uxhd8c5bcq86n	7200	4000	12	5	t	f	\N	\N	\N	2026-06-29 11:55:48.9	2026-06-29 11:55:48.9	\N	\N	\N
+cmqz5vsx8007gxhd8gq8utpws	Papas Cheddar y Bacon	papas-cheddar-bacon	Papas con cheddar y panceta.	cmqz5vswb006uxhd8c5bcq86n	5400	2800	28	5	t	f	\N	\N	\N	2026-06-29 11:55:48.908	2026-06-29 11:55:48.908	\N	\N	\N
+cmqz5vsxg007mxhd8xms5cyyk	Nuggets x10	nuggets-10	10 nuggets crocantes con salsa.	cmqz5vswb006uxhd8c5bcq86n	5800	3100	2	5	t	f	\N	\N	\N	2026-06-29 11:55:48.917	2026-06-29 11:55:48.917	\N	\N	\N
+cmqz5vsxo007sxhd8av6s1rmm	Cerveza Artesanal Pinta	pinta-artesanal	Pinta de cerveza artesanal local.	cmqz5vswb006uxhd8c5bcq86n	3800	2400	24	5	t	f	\N	\N	\N	2026-06-29 11:55:48.924	2026-06-29 11:55:48.924	\N	\N	\N
+cmqz5vt740088xhd8njzv9jaq	Flat White	flat-white	Espresso doble con leche texturada.	cmqz5vt6v0084xhd80bepwszu	2900	1300	100	5	t	t	\N	\N	\N	2026-06-29 11:55:49.265	2026-06-29 11:55:49.265	\N	\N	\N
+cmqz5vt7d008exhd8e225dbgn	Medialunas (3u)	medialunas-3	Tres medialunas de manteca.	cmqz5vt6v0084xhd80bepwszu	2400	1100	50	5	t	t	\N	\N	\N	2026-06-29 11:55:49.273	2026-06-29 11:55:49.273	\N	\N	\N
+cmqz5vt7l008kxhd85l4k8cie	Cheesecake de Frutos Rojos	cheesecake	Porción de cheesecake casero.	cmqz5vt6v0084xhd80bepwszu	4200	2200	14	5	t	f	\N	\N	\N	2026-06-29 11:55:49.281	2026-06-29 11:55:49.281	\N	\N	\N
+cmqz5vt7v008qxhd8wep5yjsd	Tostado Jamón y Queso	tostado-jyq	Tostado en pan de masa madre.	cmqz5vt6v0084xhd80bepwszu	3800	1900	20	5	t	f	\N	\N	\N	2026-06-29 11:55:49.291	2026-06-29 11:55:49.291	\N	\N	\N
+cmqz5vt87008wxhd8i4ruq4dp	Café Filtrado V60	v60	Método filtrado, granos de especialidad.	cmqz5vt6v0084xhd80bepwszu	3200	1400	0	5	t	f	\N	\N	\N	2026-06-29 11:55:49.304	2026-06-29 11:55:49.304	\N	\N	\N
+cmqz5vt8l0092xhd8javeo8kq	Submarino	submarino	Leche caliente con barra de chocolate.	cmqz5vt6v0084xhd80bepwszu	3000	1500	30	5	t	f	\N	\N	\N	2026-06-29 11:55:49.317	2026-06-29 11:55:49.317	\N	\N	\N
+cmqz5vtj5009ixhd8t46zn9wf	Ibuprofeno 400mg x10	ibuprofeno-400	Analgésico y antiinflamatorio.	cmqz5vtiv009exhd8vvyf8nns	2800	1700	80	5	t	t	\N	\N	\N	2026-06-29 11:55:49.698	2026-06-29 11:55:49.698	\N	\N	\N
+cmqz5vtjf009oxhd8c9i4wrzy	Alcohol en Gel 250ml	alcohol-gel	Alcohol en gel sanitizante.	cmqz5vtiv009exhd8vvyf8nns	1900	1000	60	5	t	f	\N	\N	\N	2026-06-29 11:55:49.707	2026-06-29 11:55:49.707	\N	\N	\N
+cmqz5vtjo009uxhd8xkhsizbc	Protector Solar FPS50	protector-fps50	Protección alta para el sur.	cmqz5vtiv009exhd8vvyf8nns	8900	5500	18	5	t	t	\N	\N	\N	2026-06-29 11:55:49.717	2026-06-29 11:55:49.717	\N	\N	\N
+cmqz5vtjy00a0xhd80d91kijs	Termómetro Digital	termometro	Termómetro digital de punta flexible.	cmqz5vtiv009exhd8vvyf8nns	6500	4000	5	5	t	f	\N	\N	\N	2026-06-29 11:55:49.726	2026-06-29 11:55:49.726	\N	\N	\N
+cmqz5vtk800a6xhd80xq981ri	Barbijo x10	barbijo-10	Pack de 10 barbijos tricapa.	cmqz5vtiv009exhd8vvyf8nns	2200	1200	0	5	t	f	\N	\N	\N	2026-06-29 11:55:49.736	2026-06-29 11:55:49.736	\N	\N	\N
+cmqz5vtkk00acxhd86vi289ms	Vitamina C x60	vitamina-c	Suplemento de vitamina C.	cmqz5vtiv009exhd8vvyf8nns	5400	3200	26	5	t	f	\N	\N	\N	2026-06-29 11:55:49.749	2026-06-29 11:55:49.749	\N	\N	\N
+cmqz5vttk00asxhd88mkfnrrz	Banana (kg)	banana-kg	Banana ecuatoriana por kilo.	cmqz5vttb00aoxhd8gww43etq	2200	1300	40	5	t	t	\N	\N	\N	2026-06-29 11:55:50.072	2026-06-29 11:55:50.072	\N	\N	\N
+cmqz5vttr00ayxhd8nnpj4071	Tomate Perita (kg)	tomate-kg	Tomate perita fresco por kilo.	cmqz5vttb00aoxhd8gww43etq	2600	1500	35	5	t	f	\N	\N	\N	2026-06-29 11:55:50.08	2026-06-29 11:55:50.08	\N	\N	\N
+cmqz5vttz00b4xhd8p5x14oeu	Papa Negra (kg)	papa-kg	Papa negra por kilo.	cmqz5vttb00aoxhd8gww43etq	1500	800	80	5	t	t	\N	\N	\N	2026-06-29 11:55:50.087	2026-06-29 11:55:50.087	\N	\N	\N
+cmqz5vtu700baxhd85r80nq4c	Palta Hass (u)	palta	Palta Hass madura, unidad.	cmqz5vttb00aoxhd8gww43etq	1800	1100	3	5	t	f	\N	\N	\N	2026-06-29 11:55:50.095	2026-06-29 11:55:50.095	\N	\N	\N
+cmqz5vtuf00bgxhd8gls84ah6	Lechuga Mantecosa	lechuga	Lechuga mantecosa fresca.	cmqz5vttb00aoxhd8gww43etq	1400	700	22	5	t	f	\N	\N	\N	2026-06-29 11:55:50.103	2026-06-29 11:55:50.103	\N	\N	\N
+cmqz5vtun00bmxhd8ij93bqj4	Frutillas (250g)	frutillas	Caja de frutillas seleccionadas.	cmqz5vttb00aoxhd8gww43etq	3900	2400	0	5	t	f	\N	\N	\N	2026-06-29 11:55:50.111	2026-06-29 11:55:50.111	\N	\N	\N
 \.
 
 
@@ -2684,7 +2623,54 @@ cmpogy8so000y5izcmc18x21a	PRINGLES ORIGINAL	pringles-original-1779910828289	Papa
 --
 
 COPY public."ProductCategory" (id, "productId", "categoryId") FROM stdin;
-cmppixogj000la6ds0ghwwjn2	cmpogy8so000y5izcmc18x21a	cmnw2pz4u000p3ooerlyvtabj
+cmqz5vrij001wxhd87afjwca2	cmqz5vric001uxhd8dq3pebwc	cmqz5vqyn000oxhd8fpc7qxgz
+cmqz5vrj20022xhd8rkwntdut	cmqz5vriy0020xhd87abgsp11	cmqz5vqyn000oxhd8fpc7qxgz
+cmqz5vrjd0028xhd8kgcvvk94	cmqz5vrja0026xhd8qe6xdjlj	cmqz5vqyn000oxhd8fpc7qxgz
+cmqz5vrjq002exhd8akb63gv1	cmqz5vrjl002cxhd833p7o57x	cmqz5vqyn000oxhd8fpc7qxgz
+cmqz5vrk1002kxhd8z1ipazdd	cmqz5vrjx002ixhd8nhkuh93p	cmqz5vqyn000oxhd8fpc7qxgz
+cmqz5vrkb002qxhd8aia97zck	cmqz5vrk8002oxhd8yvzwazhc	cmqz5vqyn000oxhd8fpc7qxgz
+cmqz5vrwp0036xhd82amhwqp3	cmqz5vrwm0034xhd8d4r9d6to	cmqz5vqwu000gxhd8quylpbyn
+cmqz5vrwx003cxhd82300iuac	cmqz5vrwu003axhd81da2tlo4	cmqz5vqwu000gxhd8quylpbyn
+cmqz5vrx6003ixhd81thgfmzd	cmqz5vrx3003gxhd8ub7noyt3	cmqz5vqwu000gxhd8quylpbyn
+cmqz5vrxg003oxhd8prjolhk7	cmqz5vrxc003mxhd83jyk6h5w	cmqz5vqwu000gxhd8quylpbyn
+cmqz5vrxr003uxhd8qagcr4nf	cmqz5vrxo003sxhd871zld6hg	cmqz5vqwu000gxhd8quylpbyn
+cmqz5vry20040xhd8hp96edem	cmqz5vrxy003yxhd877e5bc3x	cmqz5vqwu000gxhd8quylpbyn
+cmqz5vs83004gxhd8gxwgwcce	cmqz5vs80004exhd844e7zog3	cmqz5vqxu000jxhd856aalwvq
+cmqz5vs8e004mxhd8s2829jb1	cmqz5vs8b004kxhd8bi21pzoz	cmqz5vqxu000jxhd856aalwvq
+cmqz5vs8o004sxhd81mj6eroi	cmqz5vs8k004qxhd8eap2pdy6	cmqz5vqxu000jxhd856aalwvq
+cmqz5vs8z004yxhd8qrg79w8m	cmqz5vs8v004wxhd89uzvo3ri	cmqz5vqxu000jxhd856aalwvq
+cmqz5vs980054xhd8mz77sbjg	cmqz5vs950052xhd8bzz3hc88	cmqz5vqxu000jxhd856aalwvq
+cmqz5vs9p005axhd88lgi4nir	cmqz5vs9k0058xhd8go65yynp	cmqz5vqxu000jxhd856aalwvq
+cmqz5vslm005qxhd8aki8als2	cmqz5vslj005oxhd8tkfo0b25	cmqz5vqx1000hxhd86j3rab6t
+cmqz5vslw005wxhd8na940kap	cmqz5vsls005uxhd8m8x7l5jp	cmqz5vqx1000hxhd86j3rab6t
+cmqz5vsm40062xhd8ptaxuxzh	cmqz5vsm10060xhd8o0zr7ojg	cmqz5vqx1000hxhd86j3rab6t
+cmqz5vsmc0068xhd8ehi1io6c	cmqz5vsm90066xhd8lcqqk1xb	cmqz5vqx1000hxhd86j3rab6t
+cmqz5vsmk006exhd8c23g9r14	cmqz5vsmh006cxhd8mnj4fj2f	cmqz5vqx1000hxhd86j3rab6t
+cmqz5vsms006kxhd84g8g6ht5	cmqz5vsmp006ixhd8s1clp988	cmqz5vqx1000hxhd86j3rab6t
+cmqz5vswn0070xhd8g9jmz5q5	cmqz5vswk006yxhd85fzl6bjp	cmqz5vqxd000ixhd8e2wu3ki0
+cmqz5vswv0076xhd8tykppvs8	cmqz5vsws0074xhd8fu7xje1i	cmqz5vqxd000ixhd8e2wu3ki0
+cmqz5vsx3007cxhd8myyocynk	cmqz5vsx0007axhd81gi0m5ww	cmqz5vqxd000ixhd8e2wu3ki0
+cmqz5vsxb007ixhd8u9trjqp0	cmqz5vsx8007gxhd8gq8utpws	cmqz5vqxd000ixhd8e2wu3ki0
+cmqz5vsxj007oxhd8ywk3r7mh	cmqz5vsxg007mxhd8xms5cyyk	cmqz5vqxd000ixhd8e2wu3ki0
+cmqz5vsxr007uxhd8y54rthk8	cmqz5vsxo007sxhd8av6s1rmm	cmqz5vqxd000ixhd8e2wu3ki0
+cmqz5vt77008axhd8jo0ln2r2	cmqz5vt740088xhd8njzv9jaq	cmqz5vqxz000kxhd8glc5szfn
+cmqz5vt7g008gxhd87g7xkfa3	cmqz5vt7d008exhd8e225dbgn	cmqz5vqxz000kxhd8glc5szfn
+cmqz5vt7o008mxhd825423yqy	cmqz5vt7l008kxhd85l4k8cie	cmqz5vqxz000kxhd8glc5szfn
+cmqz5vt7z008sxhd8tjp3a8lb	cmqz5vt7v008qxhd8wep5yjsd	cmqz5vqxz000kxhd8glc5szfn
+cmqz5vt8b008yxhd8xpfmoezi	cmqz5vt87008wxhd8i4ruq4dp	cmqz5vqxz000kxhd8glc5szfn
+cmqz5vt8o0094xhd8wszxaz7x	cmqz5vt8l0092xhd8javeo8kq	cmqz5vqxz000kxhd8glc5szfn
+cmqz5vtj9009kxhd8zyp06afz	cmqz5vtj5009ixhd8t46zn9wf	cmqz5vqy9000mxhd84i6y95uu
+cmqz5vtji009qxhd85v2j1o9n	cmqz5vtjf009oxhd8c9i4wrzy	cmqz5vqy9000mxhd84i6y95uu
+cmqz5vtjr009wxhd8rhgyh8oy	cmqz5vtjo009uxhd8xkhsizbc	cmqz5vqy9000mxhd84i6y95uu
+cmqz5vtk100a2xhd8ij7yqqfm	cmqz5vtjy00a0xhd80d91kijs	cmqz5vqy9000mxhd84i6y95uu
+cmqz5vtkd00a8xhd8vf8qndc1	cmqz5vtk800a6xhd80xq981ri	cmqz5vqy9000mxhd84i6y95uu
+cmqz5vtko00aexhd801ou0lmh	cmqz5vtkk00acxhd86vi289ms	cmqz5vqy9000mxhd84i6y95uu
+cmqz5vttm00auxhd88anne1f8	cmqz5vttk00asxhd88mkfnrrz	cmqz5vqyv000pxhd8lec7u05x
+cmqz5vttu00b0xhd8mz1f0ruh	cmqz5vttr00ayxhd8nnpj4071	cmqz5vqyv000pxhd8lec7u05x
+cmqz5vtu200b6xhd8fs4k4mv1	cmqz5vttz00b4xhd8p5x14oeu	cmqz5vqyv000pxhd8lec7u05x
+cmqz5vtu900bcxhd88a09lxob	cmqz5vtu700baxhd85r80nq4c	cmqz5vqyv000pxhd8lec7u05x
+cmqz5vtuh00bixhd8s133dior	cmqz5vtuf00bgxhd8gls84ah6	cmqz5vqyv000pxhd8lec7u05x
+cmqz5vtup00boxhd8zzcppm7c	cmqz5vtun00bmxhd8ij93bqj4	cmqz5vqyv000pxhd8lec7u05x
 \.
 
 
@@ -2693,7 +2679,54 @@ cmppixogj000la6ds0ghwwjn2	cmpogy8so000y5izcmc18x21a	cmnw2pz4u000p3ooerlyvtabj
 --
 
 COPY public."ProductImage" (id, "productId", url, alt, "order") FROM stdin;
-cmppixog4000ja6dsurgtjg4c	cmpogy8so000y5izcmc18x21a	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1779910756557-Papas-Fritas-Pringles-Original-X104gs-1-1000004.webp	PRINGLES ORIGINAL	0
+cmqz5vris001yxhd8tigpo7kt	cmqz5vric001uxhd8dq3pebwc	https://picsum.photos/seed/moovy-heineken-1l/600/600	Heineken Lata 1L	0
+cmqz5vrj60024xhd8e8akth0c	cmqz5vriy0020xhd87abgsp11	https://picsum.photos/seed/moovy-patagonia-247/600/600	Patagonia 24.7 IPA	0
+cmqz5vrjh002axhd8t3shklay	cmqz5vrja0026xhd8qe6xdjlj	https://picsum.photos/seed/moovy-schneider-710/600/600	Schneider 710ml	0
+cmqz5vrju002gxhd8bznoc7kq	cmqz5vrjl002cxhd833p7o57x	https://picsum.photos/seed/moovy-coca-225/600/600	Coca-Cola 2.25L	0
+cmqz5vrk4002mxhd8a61bjrpa	cmqz5vrjx002ixhd8nhkuh93p	https://picsum.photos/seed/moovy-agua-eco-2l/600/600	Agua Mineral Eco 2L	0
+cmqz5vrkg002sxhd8au0pgcwi	cmqz5vrk8002oxhd8yvzwazhc	https://picsum.photos/seed/moovy-lays-clasicas/600/600	Papas Lays Clásicas	0
+cmqz5vrws0038xhd8w7hm4rh5	cmqz5vrwm0034xhd8d4r9d6to	https://picsum.photos/seed/moovy-falafel-clasico/600/600	Falafel Clásico (6u)	0
+cmqz5vrx0003exhd8avrn0r60	cmqz5vrwu003axhd81da2tlo4	https://picsum.photos/seed/moovy-hummus-pita/600/600	Hummus con Pan Pita	0
+cmqz5vrx9003kxhd8yifpykzn	cmqz5vrx3003gxhd8ub7noyt3	https://picsum.photos/seed/moovy-shawarma-pollo/600/600	Shawarma de Pollo	0
+cmqz5vrxk003qxhd8zgeqt5pp	cmqz5vrxc003mxhd83jyk6h5w	https://picsum.photos/seed/moovy-tabbouleh/600/600	Ensalada Tabbouleh	0
+cmqz5vrxv003wxhd8jtn54661	cmqz5vrxo003sxhd871zld6hg	https://picsum.photos/seed/moovy-baklava/600/600	Baklava (2u)	0
+cmqz5vry60042xhd8i954pq11	cmqz5vrxy003yxhd877e5bc3x	https://picsum.photos/seed/moovy-limonada-menta/600/600	Limonada de Menta	0
+cmqz5vs86004ixhd8h1w0x7ff	cmqz5vs80004exhd844e7zog3	https://picsum.photos/seed/moovy-cordero-fueguino/600/600	Cordero Fueguino (1/2)	0
+cmqz5vs8h004oxhd8d1t924ge	cmqz5vs8b004kxhd8bi21pzoz	https://picsum.photos/seed/moovy-tabla-estancia/600/600	Tabla La Estancia (2p)	0
+cmqz5vs8s004uxhd86lmm7qft	cmqz5vs8k004qxhd8eap2pdy6	https://picsum.photos/seed/moovy-bife-chorizo/600/600	Bife de Chorizo 400g	0
+cmqz5vs920050xhd8f775tf1o	cmqz5vs8v004wxhd89uzvo3ri	https://picsum.photos/seed/moovy-provoleta/600/600	Provoleta	0
+cmqz5vs9g0056xhd8z169kuqf	cmqz5vs950052xhd8bzz3hc88	https://picsum.photos/seed/moovy-beagle-red-ale/600/600	Beagle Red Ale	0
+cmqz5vs9u005cxhd8g8d5t9oz	cmqz5vs9k0058xhd8go65yynp	https://picsum.photos/seed/moovy-flan-casero/600/600	Flan Casero	0
+cmqz5vslp005sxhd88w2fudjp	cmqz5vslj005oxhd8tkfo0b25	https://picsum.photos/seed/moovy-muzza-grande/600/600	Muzzarella Grande	0
+cmqz5vsly005yxhd8cnunvply	cmqz5vsls005uxhd8m8x7l5jp	https://picsum.photos/seed/moovy-napolitana/600/600	Napolitana	0
+cmqz5vsm70064xhd8hyp97lny	cmqz5vsm10060xhd8o0zr7ojg	https://picsum.photos/seed/moovy-fugazzeta/600/600	Fugazzeta Rellena	0
+cmqz5vsmf006axhd8i9v1zv32	cmqz5vsm90066xhd8lcqqk1xb	https://picsum.photos/seed/moovy-calabresa/600/600	Calabresa	0
+cmqz5vsmn006gxhd8f3x3gns8	cmqz5vsmh006cxhd8mnj4fj2f	https://picsum.photos/seed/moovy-empanadas-docena/600/600	Empanada (docena)	0
+cmqz5vsmv006mxhd8p0csp44g	cmqz5vsmp006ixhd8s1clp988	https://picsum.photos/seed/moovy-faina/600/600	Faina	0
+cmqz5vswq0072xhd8axhu5bli	cmqz5vswk006yxhd85fzl6bjp	https://picsum.photos/seed/moovy-smash-doble/600/600	Smash Doble	0
+cmqz5vswx0078xhd8ma5m3cio	cmqz5vsws0074xhd8fu7xje1i	https://picsum.photos/seed/moovy-cheeseburger/600/600	Cheeseburger Clásica	0
+cmqz5vsx5007exhd8kuzipoig	cmqz5vsx0007axhd81gi0m5ww	https://picsum.photos/seed/moovy-veggie-burger/600/600	Veggie Burger	0
+cmqz5vsxe007kxhd8tvhgkkps	cmqz5vsx8007gxhd8gq8utpws	https://picsum.photos/seed/moovy-papas-cheddar-bacon/600/600	Papas Cheddar y Bacon	0
+cmqz5vsxl007qxhd8rbejql3z	cmqz5vsxg007mxhd8xms5cyyk	https://picsum.photos/seed/moovy-nuggets-10/600/600	Nuggets x10	0
+cmqz5vsxt007wxhd8i4s3k276	cmqz5vsxo007sxhd8av6s1rmm	https://picsum.photos/seed/moovy-pinta-artesanal/600/600	Cerveza Artesanal Pinta	0
+cmqz5vt7a008cxhd8rl8y0kpt	cmqz5vt740088xhd8njzv9jaq	https://picsum.photos/seed/moovy-flat-white/600/600	Flat White	0
+cmqz5vt7i008ixhd8dcx2nrbt	cmqz5vt7d008exhd8e225dbgn	https://picsum.photos/seed/moovy-medialunas-3/600/600	Medialunas (3u)	0
+cmqz5vt7r008oxhd8w97q7ow0	cmqz5vt7l008kxhd85l4k8cie	https://picsum.photos/seed/moovy-cheesecake/600/600	Cheesecake de Frutos Rojos	0
+cmqz5vt84008uxhd8vqpl7x55	cmqz5vt7v008qxhd8wep5yjsd	https://picsum.photos/seed/moovy-tostado-jyq/600/600	Tostado Jamón y Queso	0
+cmqz5vt8h0090xhd8sz6e5g2d	cmqz5vt87008wxhd8i4ruq4dp	https://picsum.photos/seed/moovy-v60/600/600	Café Filtrado V60	0
+cmqz5vt8s0096xhd8cbm57or9	cmqz5vt8l0092xhd8javeo8kq	https://picsum.photos/seed/moovy-submarino/600/600	Submarino	0
+cmqz5vtjc009mxhd8nc9yyw3d	cmqz5vtj5009ixhd8t46zn9wf	https://picsum.photos/seed/moovy-ibuprofeno-400/600/600	Ibuprofeno 400mg x10	0
+cmqz5vtjl009sxhd8z8gpvj2s	cmqz5vtjf009oxhd8c9i4wrzy	https://picsum.photos/seed/moovy-alcohol-gel/600/600	Alcohol en Gel 250ml	0
+cmqz5vtju009yxhd8eypz71bs	cmqz5vtjo009uxhd8xkhsizbc	https://picsum.photos/seed/moovy-protector-fps50/600/600	Protector Solar FPS50	0
+cmqz5vtk400a4xhd8xwpdgvu1	cmqz5vtjy00a0xhd80d91kijs	https://picsum.photos/seed/moovy-termometro/600/600	Termómetro Digital	0
+cmqz5vtkg00aaxhd8r58tdcyo	cmqz5vtk800a6xhd80xq981ri	https://picsum.photos/seed/moovy-barbijo-10/600/600	Barbijo x10	0
+cmqz5vtkr00agxhd86u7hm5ld	cmqz5vtkk00acxhd86vi289ms	https://picsum.photos/seed/moovy-vitamina-c/600/600	Vitamina C x60	0
+cmqz5vttp00awxhd8udzvj4vr	cmqz5vttk00asxhd88mkfnrrz	https://picsum.photos/seed/moovy-banana-kg/600/600	Banana (kg)	0
+cmqz5vttw00b2xhd8llxku5av	cmqz5vttr00ayxhd8nnpj4071	https://picsum.photos/seed/moovy-tomate-kg/600/600	Tomate Perita (kg)	0
+cmqz5vtu400b8xhd8lc22lyqg	cmqz5vttz00b4xhd8p5x14oeu	https://picsum.photos/seed/moovy-papa-kg/600/600	Papa Negra (kg)	0
+cmqz5vtuc00bexhd8f2zju172	cmqz5vtu700baxhd85r80nq4c	https://picsum.photos/seed/moovy-palta/600/600	Palta Hass (u)	0
+cmqz5vtuk00bkxhd8856goox3	cmqz5vtuf00bgxhd8gls84ah6	https://picsum.photos/seed/moovy-lechuga/600/600	Lechuga Mantecosa	0
+cmqz5vtur00bqxhd8i9bsb5je	cmqz5vtun00bmxhd8ij93bqj4	https://picsum.photos/seed/moovy-frutillas/600/600	Frutillas (250g)	0
 \.
 
 
@@ -2710,143 +2743,6 @@ COPY public."ProductVariant" (id, "productId", name, price, stock, "isActive") F
 --
 
 COPY public."ProductWeightCache" (id, "nameHash", "nameSample", "weightGrams", "volumeMl", "packageCategoryId", "suggestedVehicle", source, confidence, "hitCount", "createdAt", "updatedAt") FROM stdin;
-cmomajv2p0000f17oy3cauxd5	ad3b80b8ba1aa839b6555b0dfcf5bec22f62419266341d03fd64995c8da056e0	Coca Cola 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.946	2026-05-01 02:26:04.946
-cmomajv340001f17of7d9yn78	f3716ffc2b843eaef3f12d9dfe9e967ea6113d1f3de58a1c578650af49b31124	Coca Cola 2L	2000	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.96	2026-05-01 02:26:04.96
-cmomajv380002f17o4ajxfmxr	d7044978e3d024a672c1381d97f556bad777e0228549e6e58d69b201ec489ae4	Coca Cola 500ml	500	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:04.964	2026-05-01 02:26:04.964
-cmomajv3d0003f17onevbqrsd	1a20e3e3aa2a5b6a5dabfe61896f5329597560ba53298d1347a6ba34dbe5eaba	Coca Cola 1L	1000	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.969	2026-05-01 02:26:04.969
-cmomajv3i0004f17oje76ev3j	8cc17e033c429719d299294d4fa3455570190fffc9d9c2c13503850bed72d991	Coca Cola Zero 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.975	2026-05-01 02:26:04.975
-cmomajv3n0005f17ol1kauaqa	1fe5b78a639073cf230dea67cf2c0196c70202ff9218253e7dec0c84c53f0093	Sprite 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.979	2026-05-01 02:26:04.979
-cmomajv3r0006f17ouxlvv7yz	4245c164599eafd0d2309a4fd4ee231ed21557d5afe71343e00d9894f1843bef	Fanta 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.984	2026-05-01 02:26:04.984
-cmomajv3v0007f17ojx9o3n6d	b2e82834c8cf449bdbe19c40bcf48e396f6dcbd8b54955208e3d76e97597ac05	Manaos 2.25L	2250	2250	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.988	2026-05-01 02:26:04.988
-cmomajv400008f17oocdpykut	c76e295ecca2d02514d6cb5a4e94a6021eb73859b443627de0fc21422eb4cc6a	Pepsi 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:04.992	2026-05-01 02:26:04.992
-cmomajv440009f17oue64ukmw	af2aa77fab2fad29a0e653123a0a79f7e33f5327835245ed9875b250521f2a53	Agua mineral 500ml	500	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:04.996	2026-05-01 02:26:04.996
-cmomajv48000af17o2kqdbz0j	edbee3b4e41289b976f962870db9b2e67c79d3cfffc685f9d827437232500496	Agua mineral 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.001	2026-05-01 02:26:05.001
-cmomajv4c000bf17oe2axdzdg	3a629da5caed88bd4bb33a795748c6c0684cc6853fe5177d7034f5dde9a4b7e6	Agua sin gas 6L	6000	6000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.005	2026-05-01 02:26:05.005
-cmomajv4g000cf17ozofmvbj6	6e0ac6e8c60750fc5c341682c4edc15577601df8eb803503dae590a2571b54a4	Agua con gas 1.5L	1500	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.009	2026-05-01 02:26:05.009
-cmomajv4l000df17ojzehb9vr	c70d1abdf0ffce01c6598c3cacd1a6c2d5a1d221d057f2f22dcae1e3dcbe3e93	Cerveza Quilmes 1L	1000	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.013	2026-05-01 02:26:05.013
-cmomajv4p000ef17og92zojvh	40f15a879f8151df54e7500f38f73629a6edcd2871de3bb8248ebcd43d48a6c8	Cerveza Quilmes 473ml lata	480	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.017	2026-05-01 02:26:05.017
-cmomajv4t000ff17o1vsqqbca	10f635f4286efd7717230a756168c69cc49bcde8f31743a6abdfd282838dfed1	Cerveza Stella Artois 330ml	350	350	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.021	2026-05-01 02:26:05.021
-cmomajv4x000gf17ofui0i62u	0b53aef8e9ec8d9f6b26ced169300cd33d920fb6565c0313b7053f083eb73850	Cerveza Heineken 330ml	350	350	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.025	2026-05-01 02:26:05.025
-cmomajv51000hf17oubnpnpht	1847ac8fce4977fa708ed87f768c39a84208969796aa04037e575c1edf45a14e	Cerveza Brahma 1L	1000	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.03	2026-05-01 02:26:05.03
-cmomajv55000if17o4p8amub7	a28b294e5fe25e1a8670d31282252076c39341240d83d009e882741b8967bcb1	Vino Toro 750ml	1200	750	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.034	2026-05-01 02:26:05.034
-cmomajv59000jf17owpuec34p	1dcbc9917949a6c5e3879a1d61f45708f1bd3846923df226a3bee83f2e7b5a83	Vino Norton Malbec 750ml	1200	750	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.038	2026-05-01 02:26:05.038
-cmomajv5d000kf17o38fzgob0	2a35e9162b22fc8b043f2db8fb4291f3d8f8e10fe74ba5c7348b4d0dfcc55fa7	Fernet Branca 750ml	1100	750	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.042	2026-05-01 02:26:05.042
-cmomajv5i000lf17oh3lhav8y	fa61ffb8074caba82cc1f66d0968ea649e85ff7c5c891f83d0652786167278f6	Fernet Branca 1L	1450	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.046	2026-05-01 02:26:05.046
-cmomajv5m000mf17oepymu0z7	3db5c266a06d5eb9ec9e2fb52a286710f1acebba462f09fe3dabe07962e8bc87	Speed XL 500ml	520	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.05	2026-05-01 02:26:05.05
-cmomajv5q000nf17oyc84mwer	4ddb2bd0c4cbf11e0a79b6d8839fbe9509440a1eb170d366243375227958be4b	Red Bull 250ml	270	250	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.054	2026-05-01 02:26:05.054
-cmomajv5u000of17ozvlriqgk	6e3c48f8c0787624b14e0c58cd5139a0bf90ca666edd72aacfad84166389a754	Yerba Playadito 1kg	1000	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.058	2026-05-01 02:26:05.058
-cmomajv5y000pf17oeekwyj6h	e0abd09d77d60fbe4693cf7be6e02f5a99f4eb6a784fc3a3560be21784575163	Yerba Rosamonte 1kg	1000	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.062	2026-05-01 02:26:05.062
-cmomajv62000qf17oei1bemf7	dd4f8ea1e0cd1d59482e73f00836a3f85d25e7fbe09b3a4ed8d1533581894689	Yerba Taragui 500g	500	1000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.067	2026-05-01 02:26:05.067
-cmomajv66000rf17onwmz5r9b	7cf15cdc3eb4902a175dd4c2c1680f49dcbf6f5a5fbc021e34ffde1172173efe	Yerba CBSe 500g	500	1000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.071	2026-05-01 02:26:05.071
-cmomajv6a000sf17oeiu2pa0r	e01071b2e777661a82d0b3570e1b5ab2150fc6a01a4a9270cc623e0f7383c87f	Mate cocido en saquitos x25	100	300	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.074	2026-05-01 02:26:05.074
-cmomajv6e000tf17orpngkgj3	8ecd326ea152ade5abedd40be2a980c340de1154a8adc0a82eca476d816be14b	Cafe La Virginia 250g	250	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.079	2026-05-01 02:26:05.079
-cmomajv6i000uf17osyn6a6gs	b882c19478ef14827b5371a7fa860a5b78dfdb2f865cd5aeb73095605c2a2a4d	Cafe Bonafide 500g	500	800	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.083	2026-05-01 02:26:05.083
-cmomajv6m000vf17obsd0fys5	f111f15e362cd6db14538ab62dbde954946bbf029a022b7e7245afa2de80100d	Te Green Hills x25	50	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.087	2026-05-01 02:26:05.087
-cmomajv6q000wf17og5kaoyo2	72f402662b0f94bfc31cdc47d89c7a70ee17a6d348a56f6443ceff637fc542ad	Azucar Ledesma 1kg	1000	1200	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.091	2026-05-01 02:26:05.091
-cmomajv6u000xf17of3lf72wp	9be52b7132d3c7a66129f1b3b4ad87c7808beb98bb91412f425458d4209fd442	Harina 0000 Pureza 1kg	1000	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.095	2026-05-01 02:26:05.095
-cmomajv6y000yf17ol5zx1rh0	b437b6225c3a5e4590204b01b69884f50b7eca8b053b5b1caef18587b58ed13f	Aceite girasol Natura 1.5L	1400	1500	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.099	2026-05-01 02:26:05.099
-cmomajv72000zf17o4yispllc	7265cfc2cab1a9b4c184406878783aa03ff0e52c2f960976e5fbca07bb44e8a4	Aceite Cocinero 900ml	850	900	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.103	2026-05-01 02:26:05.103
-cmomajv760010f17oy0wmsor5	373281b437e18f0bdc7333254d61baeeb1d6405159e7927e4fb426264acddc7e	Sal fina Celusal 500g	500	600	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.107	2026-05-01 02:26:05.107
-cmomajv7a0011f17ohz6u8wc0	c7b898f561532fc7dfd43946b56eab69fe35fa41c771e27a15ea3b4e007a6294	Fideos Lucchetti 500g	500	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.111	2026-05-01 02:26:05.111
-cmomajv7e0012f17oj5zt7s90	d6a87b04831a7b94d86adf29768246d68c4b5d11e0e02ac816b33acd446f4891	Fideos Matarazzo 500g	500	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.115	2026-05-01 02:26:05.115
-cmomajv7i0013f17ot6cmr7yo	ef93d58c0a52671dfe65d974eedfa4a213e1d362c9aaa1fbb8d32e710756e326	Arroz Gallo 1kg	1000	1300	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.119	2026-05-01 02:26:05.119
-cmomajv7m0014f17o0ssb2osj	82632183046838664a9e0a6b8ec109b31f2a0935c6fbbfeead5c3caceacb1b40	Lentejas 500g	500	700	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.122	2026-05-01 02:26:05.122
-cmomajv7q0015f17oqebsh0pn	33501c462deceb988999b7b2a47fce1490ee19703cfb14d168724cd6842877ca	Salsa de tomate Arcor 520g	540	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.126	2026-05-01 02:26:05.126
-cmomajv7u0016f17oihtc4y2z	32d237d79e69157adf650a2b132c98b79687f81b1dbb895858b8f86fdac79358	Pure de tomate La Campagnola 520g	540	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.13	2026-05-01 02:26:05.13
-cmomajv7y0017f17ody2v7rm3	726911aecb57289fd9fa23c82edb319965fe71f10472fb92f81e24d06f764203	Mayonesa Hellmanns 500g	520	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.134	2026-05-01 02:26:05.134
-cmomajv820018f17opsxri6ye	9230de594142890a039071deb79ffe987e58dd1c2b7519914359a53e4e522e3a	Ketchup Hellmanns 500g	520	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.138	2026-05-01 02:26:05.138
-cmomajv860019f17ojx3mxmy7	5205d19d327232aeb019fe7a60f514b3c998a0fa5e1a0a89febeae81ab287d62	Mostaza Savora 200g	220	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.143	2026-05-01 02:26:05.143
-cmomajv8a001af17ohs423g8f	abc46fd6d915d5ea30a6887baf84555cf6721db40872fe1e3b7b08a62bad5640	Dulce de leche La Serenisima 400g	420	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.147	2026-05-01 02:26:05.147
-cmomajv8i001bf17oaca2dndo	4b6284c8998acbd8749a5e09b38080ec9e0755cb9b9450c5781693771b8681a3	Mermelada Arcor 454g	470	450	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.155	2026-05-01 02:26:05.155
-cmomajv8n001cf17ojaaudutd	74d2af830f17835330e7a930308e61c38b2fdd95c37e31ffea561cec863c5a72	Leche La Serenisima 1L	1030	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.159	2026-05-01 02:26:05.159
-cmomajv8r001df17o2j5ipdnq	aa74eb560b61a4e0ad217d43196e588cb10f2fd6a20084d3f4b4ec04e4cd54a4	Leche descremada 1L	1030	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.163	2026-05-01 02:26:05.163
-cmomajv8v001ef17ofbkrbb0a	cac750eb8d89c315d5247e5754905846b7b33c4a266ea59cc7b37d053ea02cdd	Yogur Yogurisimo 900g	950	900	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.167	2026-05-01 02:26:05.167
-cmomajv8z001ff17onywom5uz	9f2b62dd99e715312e06fc01288b779cd42666bb02e013c34588b36991c13f9f	Queso cremoso 500g	520	600	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.172	2026-05-01 02:26:05.172
-cmomajv93001gf17ok3wt40m3	f1936a5790c259bdf838cb3e6838c4d2980ebeeaf54f6f70f3b2daf948d9e054	Queso reggianito 250g	270	350	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.175	2026-05-01 02:26:05.175
-cmomajv97001hf17orh9z05am	cba00e44be2f0353a2d4e2bfda01f34ee7a0f8ca021e34835bb3c88b0e22cfa1	Manteca La Serenisima 200g	220	250	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.179	2026-05-01 02:26:05.179
-cmomajv9b001if17oat7eaehn	d2b1e25373d9db63c23b3eda6986c5ae3811c76efcdb183ab03b58036f3d4ac2	Pan lactal Bimbo	600	4000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.183	2026-05-01 02:26:05.183
-cmomajv9e001jf17o5wq8crvd	c4a6511ca243610583c4e040f64cedb2687b9a9314d473563a438c6ac2e56377	Pan frances	800	5000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.187	2026-05-01 02:26:05.187
-cmomajv9i001kf17oiwgx6mvh	33c1175691f39a330d19c6b5b57b9b3c379c23c848f5d17947e4295970fa4278	Galletitas Oreo 118g	130	600	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.191	2026-05-01 02:26:05.191
-cmomajv9m001lf17ok7vaejoq	c57ac581c0e68f9196a78acabb11833e1b4f16776c4a7e713586234597078a2d	Galletitas Pepitos 118g	130	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.195	2026-05-01 02:26:05.195
-cmomajv9q001mf17o4v1tfzqc	ef35ad4cb2efbdfeeed8612e8ca2e604d760426ab8e18d5424c0c229595e4531	Alfajor Havanna	60	100	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.199	2026-05-01 02:26:05.199
-cmomajva1001nf17ooxmj4dcm	38f00c3d45512b7c98febcedaf1c173d780b951ce9de692dddfae370df72eea9	Alfajor Jorgito	50	80	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.21	2026-05-01 02:26:05.21
-cmomajva6001of17ofxks4db3	298c2639bd4fa0d7215f146cd0682a6aca1ac70526784d1938a548c6975929ad	Alfajor Aguila	50	80	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.214	2026-05-01 02:26:05.214
-cmomajvab001pf17oqvm7e6bl	94498c3dbfb191e25666a6173b65b7e500c7c3105bb5f02b945d40f90a676a88	Chocolate Milka 100g	100	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.219	2026-05-01 02:26:05.219
-cmomajvag001qf17o0ihetj7v	e07c195231ae384472f977cbe20762f348dbef10c69115a6c028738515fbd866	Chocolate Cofler 100g	100	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.224	2026-05-01 02:26:05.224
-cmomajval001rf17ozatwgznj	bb164d89cc83da31526af8489dc3a8f29eb04ce0c650250c64f2c626ad9d0bbe	Caramelos Sugus	30	60	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.229	2026-05-01 02:26:05.229
-cmomajvaq001sf17oqpzj3dsi	c21357f92d71f716f8602a17b053348f07628b17cc5daf05594d94d32ae6952e	Papas fritas Lays 130g	140	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.235	2026-05-01 02:26:05.235
-cmomajvaw001tf17ol8pxhuz0	8b14b3b7592e83334b10a1e547f544f9e415232b33966338ad28d72ea5c6d0e1	Doritos 100g	110	1200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.24	2026-05-01 02:26:05.24
-cmomajvb1001uf17o5atvhsal	0573d4d71b62e381ebdf96f2a0029a08f8c64214b96e51b3ac129d2f7b023f47	Hamburguesa simple	280	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.245	2026-05-01 02:26:05.245
-cmomajvb6001vf17o315utrw3	be5b0bd6be38da670c4f1bf0cdaec03ea5c0ecf27d136a9f2cd53a0d67e13e7a	Hamburguesa doble con queso	400	700	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.25	2026-05-01 02:26:05.25
-cmomajvbb001wf17opolkve9a	f9d38e5eccab8413b7643dda0bf18471e1e093eb0f309f3f5d58fb69ab005f74	Hamburguesa completa	450	800	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.255	2026-05-01 02:26:05.255
-cmomajvbg001xf17oa5neo2po	ea421a5f57ba2ef27d6161296eb324727ab8dff31f769ab4467f90ea178d0aaf	Hamburguesa con papas	600	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.26	2026-05-01 02:26:05.26
-cmomajvbl001yf17o5q1dp4ie	ad28575e32e229d48415401aff2a431b86cdd86c9a1f61d300bff6c89014c3fd	Pizza muzzarella grande	900	5000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.266	2026-05-01 02:26:05.266
-cmomajvbq001zf17oysuxn8d9	ed39fa82d2257a6edbf45077114dd55a77effa0e143c315fa1bf1ff630d9380f	Pizza napolitana grande	1000	5000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.271	2026-05-01 02:26:05.271
-cmomajvbx0020f17or9ul0bnt	28fa57f714a56f469438c65cbc1476594faccdde891966973e59e83f60a18883	Pizza especial chica	500	2500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.277	2026-05-01 02:26:05.277
-cmomajvc20021f17o5f0511vh	4987904d867521fbeb8fa014970b094ee000f78d5632fa37eed8861a4447bab5	Empanada	80	150	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.282	2026-05-01 02:26:05.282
-cmomajvc70022f17oz14xl7cq	4c5deb569c0862d878cd8292d1c4604532c3998b0c3302db4e43d09762abfbb4	Docena de empanadas	1000	3000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.288	2026-05-01 02:26:05.288
-cmomajvcd0023f17odmk0cpye	18aea766cdac99b334cf68987200c389f6c600fa7ebe7341bcdaa6035d6ff4e4	Sandwich de miga jamon y queso	200	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.294	2026-05-01 02:26:05.294
-cmomajvci0024f17ow7l7ck24	7d1cc6ab7f70cabba7d05a41be0c621a0db052f9f45c4def0593c8a04f4afdd6	Sandwich tostado	250	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.298	2026-05-01 02:26:05.298
-cmomajvcn0025f17ohhu0j574	f0982c0cff4872b2331267d21abeec9d81adc6b260a07a0d20046de61d91b71f	Lomito completo	450	700	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.304	2026-05-01 02:26:05.304
-cmomajvcu0026f17oyo6v8ap0	f6f278962b1af85d48348d0a655dcc55d92b8ec503d1b19437f63c18bebc5601	Milanesa con pure	500	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.311	2026-05-01 02:26:05.311
-cmomajvd20027f17o5mgloshi	6d518f07806f0c4bf7eab37b3409e4bf93b24984b4f9c381c1353d6054d902b7	Pollo al spiedo entero	1500	4000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.318	2026-05-01 02:26:05.318
-cmomajvd80028f17otqand55u	ee189a6c243d2ae1c89c192dfee7247d50c31eb0b79b3ca009ac96db0e008880	Medio pollo al spiedo	800	2500	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.324	2026-05-01 02:26:05.324
-cmomajvdl0029f17osslqw4yn	b9d4e2c4d1e5df6d673a06bcdd181e64015a6611f947dfcb7d1f5bedf7f9c305	Sushi 12 piezas	350	1200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.338	2026-05-01 02:26:05.338
-cmomajvdr002af17oeolfabr5	a7d2f2bc620b94b2f72a4dfc98a464c31aa9b9f1e41801bfaee393c8ba7e0ad0	Helado 1kg	1100	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.344	2026-05-01 02:26:05.344
-cmomajvdy002bf17o04k1nq8y	15b9b1e9915b8e5735d727bb437707875b1855ed88c1ed7ea907184000995578	Helado 1/4 kg	280	600	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.35	2026-05-01 02:26:05.35
-cmomajve4002cf17ody5gu213	f9d6151898e86a89b2410fa4d46f713e1378d03bfcdc79d01cf63990959bd0d6	Cucurucho de helado	150	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.356	2026-05-01 02:26:05.356
-cmomajvea002df17oyopg2eov	85341eed0158b081066c9eb7c2a05a28058ba73fbcee9a46b33fb38b49c60bb9	Detergente Magistral 750ml	800	750	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.362	2026-05-01 02:26:05.362
-cmomajveg002ef17o4qpdbtj4	fa86585091bd67baa136c0d7ddeb18bcdc710c64aaabe1660e38268181aff864	Lavandina Ayudin 1L	1100	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.369	2026-05-01 02:26:05.369
-cmomajvem002ff17olvmxh33t	98750a964a8f3ab163076d5dc36f54374a1ee72372286097edef89b8d5a1b95d	Suavizante Vivere 900ml	950	900	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.375	2026-05-01 02:26:05.375
-cmomajver002gf17ohfgo4s7n	e4845ea291671141eeaf82e1c904f4c5600ac8b5053ff6712f3e05d59745f6cd	Jabon en polvo Skip 800g	850	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.38	2026-05-01 02:26:05.38
-cmomajvex002hf17okdyh079p	35a10a5487fd265085dbd88f70cab73eee09826d2df16cc1d6a3a3df057a90f0	Papel higienico Higienol x4	600	8000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.385	2026-05-01 02:26:05.385
-cmomajvf2002if17ort01nnly	cf52a5d20d4a76c6f6d9a8f6c48fbe0c25fb2a750fd422b27e71690aac0feba9	Servilletas x100	200	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.391	2026-05-01 02:26:05.391
-cmomajvf7002jf17o86od33ck	099cbfac71fe56f2e2a2982184c9f8c309c4868af8a337093b5753dd02bc5ef4	Shampoo Sedal 350ml	380	350	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.396	2026-05-01 02:26:05.396
-cmomajvfd002kf17optebrm1f	3c022a5e958a35b76ed50a36dd0cbfdbf2263f21755681dddad5008604cbdfab	Acondicionador 350ml	380	350	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.401	2026-05-01 02:26:05.401
-cmomajvfi002lf17oweqndy1o	55c629004885d17a2b8e20751c4d9d2cec46210c127060afb2e4916313ba1040	Jabon de tocador Lux	130	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.406	2026-05-01 02:26:05.406
-cmomajvfo002mf17oob2sx2zg	8c7c73052984bc59e7fe38654dc12e10bbea082f6e97da0d6e2b3a05e2c6a5e8	Pasta dental Colgate 90g	100	100	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.412	2026-05-01 02:26:05.412
-cmomajvfu002nf17ox8r73rty	75e11bb184b9fb33b0d811d396243a624a4e5b6aee73dbb081d438cc4e80e79e	Cepillo de dientes	30	100	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.418	2026-05-01 02:26:05.418
-cmomajvg0002of17oqs41ybxr	5c153a55f8449d1593ac9e81c2dc674ffbe3e354cd8aa777b0c4c443f253ca87	Desodorante Axe 150ml	200	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.424	2026-05-01 02:26:05.424
-cmomajvg4002pf17oktks5uk8	e9451579728018f0b1ea4ab0b041a9f95503d12c5fe3a7b591879ff9022c95c9	Paracetamol x16	30	80	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.429	2026-05-01 02:26:05.429
-cmomajvga002qf17otgm3iy42	d4cae3ac0bea1e152aefffca29c9ccec67c65e9c2c7a9231731d2a1ffd1e7f70	Ibuprofeno 400 x10	30	80	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.434	2026-05-01 02:26:05.434
-cmomajvge002rf17ol682bsfl	e8edda4aa500e8f05b2058190478302a8e0f1e32e0c9b348df4bdd82d90dc89a	Aspirina x20	30	80	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.439	2026-05-01 02:26:05.439
-cmomajvgj002sf17o2ssy3fg2	153ef0daa034309be5a50b96ab7ef777ed87de80b7c00e23b647ac7e5d7f0207	Alcohol en gel 250ml	280	250	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.444	2026-05-01 02:26:05.444
-cmomajvgo002tf17opjv14yh2	8018173032d7637d5f15d377092ad253a62b2ff35f334483a0cfae99c6118880	Alcohol etilico 500ml	500	500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.449	2026-05-01 02:26:05.449
-cmomajvgu002uf17ogcsmtyfz	f9136d44865d2d5471a2256918a13164097d776635858759ff3b912dede342c9	Algodon 100g	110	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.454	2026-05-01 02:26:05.454
-cmomajvgz002vf17olhjbswjr	131a1223d4eda02b92a354382ac1f038f86e6f95438a4ee13fc08740609feda0	Curitas x20	30	100	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.46	2026-05-01 02:26:05.46
-cmomajvh5002wf17oopvi1sqx	062fb43a950d911a78a02196ab7797bfe76108d14af76080d22406382c558930	Termometro digital	60	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.466	2026-05-01 02:26:05.466
-cmomajvhb002xf17om3erenyo	e731f9649005665736157c62cad3c4f1c77a7314b1d6e97a7ae1ab266c4e665a	Tornillos hex 1/4 x100	500	800	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.471	2026-05-01 02:26:05.471
-cmomajvhg002yf17opvx54rpv	99bf5ffb7860dca4690cd7e834143007b05da560f59c7dd45cf619fd7edca10c	Tornillos para madera x50	200	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.477	2026-05-01 02:26:05.477
-cmomajvhm002zf17okgee3qg2	dce9d57b6e9125ef20c946109d4bd1886c2be3fe56483db8bbaaff096c5c3cbf	Clavos surtidos 250g	250	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.482	2026-05-01 02:26:05.482
-cmomajvhs0030f17ocmgjn03n	e9d4425b1bebac581d00371624893b4fcf1a34e4fdd44f194b3865234975d67d	Martillo de carpintero	600	800	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.488	2026-05-01 02:26:05.488
-cmomajvhx0031f17orh5220ts	99f51bc4539c0cb8dfef75572bfa19b677416e1ba0de52265f7cf2421bd9d5cd	Destornillador Phillips	200	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.493	2026-05-01 02:26:05.493
-cmomajvi20032f17oocjyy0j2	2b98b4ea5123aaee83ed47791f3ee19d55faa5165b8d69719599df42a067678e	Set de destornilladores 6 piezas	800	2000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.499	2026-05-01 02:26:05.499
-cmomajvi70033f17o2eza527y	2849dd95405cae2b9c3e4d991673ee7c7ab2a0cb75a0c44858923c73cffe3f18	Llave francesa	400	600	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.503	2026-05-01 02:26:05.503
-cmomajvic0034f17oeu2q6asu	dd6f2346742223609fdc6eb4e5a01b61db094aea37c21686f04108d08e508374	Cinta aisladora	80	200	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.508	2026-05-01 02:26:05.508
-cmomajvig0035f17o89szqz9c	80c951d3f9a8f916fc4910ff4b2cf89413f3856b4df23983e8f8c82f3f678e44	Pintura latex 4L	5000	4000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.513	2026-05-01 02:26:05.513
-cmomajvil0036f17o3nczwfv6	431115daa6a833ebfcb442498db7ac030eb0ca51615b96eac1207afcf4bcbdc2	Pintura latex 1L	1300	1000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.517	2026-05-01 02:26:05.517
-cmomajviq0037f17o4ubr1hj2	03a3ce78125d05910501c9f042940eb95ab79da535fe0792fec0f9da803515c0	Bolsa de cemento 25kg	25000	30000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.522	2026-05-01 02:26:05.522
-cmomajviv0038f17osh7r704v	ae151960f2a7646a303a8ebd533017f64366e07310f46f134d11cd805a85cb69	Bolsa de cal 25kg	25000	30000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.527	2026-05-01 02:26:05.527
-cmomajvj00039f17oab09ieat	f4a7817de116912d0f13618373492e8f1fb5590bfcb7850b359497d21d890216	Remera basica de algodon	200	1500	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.533	2026-05-01 02:26:05.533
-cmomajvj6003af17o75zu1foz	ef2fa686dd1f0c327d167933dc26b36d8f242b9f21d24a8cb862901f753ed04a	Buzo con capucha	500	5000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.538	2026-05-01 02:26:05.538
-cmomajvja003bf17o8on4ngo0	7e3b180920808eafdd1270edc0674833a4f8e4f840f86e3aff91cc971619ba93	Campera de invierno	900	8000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.543	2026-05-01 02:26:05.543
-cmomajvjg003cf17ohc0zk0yr	a3fd7be1e5f2e685fa9ebfd1b9a9a59935dac2fb03784fe5459343b3545ebdcb	Pantalon de jean	600	4000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.548	2026-05-01 02:26:05.548
-cmomajvjl003df17o15bpvnil	4ec64e34f22aee25addbc0e84a0fe76c3e58c29c9c682a3975f587ec4a8f6a79	Zapatillas deportivas	800	5000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.553	2026-05-01 02:26:05.553
-cmomajvjq003ef17o4gj3ea42	56ebf53887fd7e4d8334409e231d204beefb3b411fbea5b7ac36b44b24155537	Medias x3 pares	200	1000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.558	2026-05-01 02:26:05.558
-cmomajvjv003ff17oegiwrtsd	4aa08403157ba0196e06518426fb2cc66154a1f224e97dd1413f4856f10e69cc	Silla plastica de jardin	3000	50000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.564	2026-05-01 02:26:05.564
-cmomajvk1003gf17olj91umni	78b2aa45035b1559c092189db41d9993d0b28a75be51466a65fedc28ee19bbc4	Silla de madera de comedor	6000	80000	\N	CAR	SEED	100	0	2026-05-01 02:26:05.569	2026-05-01 02:26:05.569
-cmomajvk6003hf17o9h8a7ur2	33d3e47b1b2d1d64342989d9ebaa1436cb34758e686b9179e35e176a076644fa	Mesa de comedor 4 personas	25000	200000	\N	TRUCK	SEED	100	0	2026-05-01 02:26:05.574	2026-05-01 02:26:05.574
-cmomajvkb003if17o0w8jbdyn	4e693170056b6c9b330973b46f30fc33af78d2020098d7208c67e2dd6ba51049	Sillon 3 cuerpos	35000	400000	\N	TRUCK	SEED	100	0	2026-05-01 02:26:05.58	2026-05-01 02:26:05.58
-cmomajvkh003jf17o89a6522x	51902b2148ccaf414612e105c38dacf51b7614f1db269c6d2284cae4bbcf2831	Colchon 2 plazas	25000	350000	\N	TRUCK	SEED	100	0	2026-05-01 02:26:05.585	2026-05-01 02:26:05.585
-cmomajvkm003kf17oqyj0zhk1	f1d18aea3ba42e257d729059c4abeb2a57dd5ba7a8b68e0ebd9da9f2b4644198	Almohada	800	30000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.591	2026-05-01 02:26:05.591
-cmomajvks003lf17oq098ukkb	fec12934e6bc873edb4537d4548746fed03da366f4657a2aac6664a99e4486d1	Sabanas matrimoniales	1500	8000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.597	2026-05-01 02:26:05.597
-cmomajvky003mf17ops464haz	eebeed3b7c14e15c6acb9bb5b66b48dfb7e80f03655f5076451f0130db478db7	Toalla de bano	600	8000	\N	MOTO	SEED	100	0	2026-05-01 02:26:05.602	2026-05-01 02:26:05.602
-cmomajvl4003nf17on6hhjw3a	19d6684555f562c65d7583a0beed6ef2bc4d376d3dee976c8cfbe4c2a2022297	Auriculares bluetooth	250	800	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.608	2026-05-01 02:26:05.608
-cmomajvl9003of17oawslz2fs	1b0df58fffbc4dd15eaade4fcce9a27e08f4d44326cbe4a6877999c01061621f	Cargador USB-C 1m	80	250	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.614	2026-05-01 02:26:05.614
-cmomajvlf003pf17obwolesto	038194d942f993fde7a79bc55acff62dc79da69cb002a20d861d7aec036e1905	Pen drive 32GB	20	60	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.619	2026-05-01 02:26:05.619
-cmomajvlk003qf17ow88ds6h1	204c1f28e6ba30dca3b43f7114b4527eb0b5864625befa64cf487e2e433b5313	Mouse inalambrico	120	300	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.625	2026-05-01 02:26:05.625
-cmomajvlq003rf17o01cz0z57	4ec890eec7af1512c26c30ce217c1ef65f25835de1b26ceb5fa094cf41a451fc	Teclado USB	600	2000	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.63	2026-05-01 02:26:05.63
-cmomajvlv003sf17ougcw0am8	27b478f280d13af7c24257a2be5aba5f8a128534953035c5791b96b0e31f06c0	Power bank 10000mah	250	400	\N	BIKE	SEED	100	0	2026-05-01 02:26:05.636	2026-05-01 02:26:05.636
 \.
 
 
@@ -2871,7 +2767,6 @@ COPY public."RatingReport" (id, "orderId", "reporterUserId", target, reason, "cr
 --
 
 COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoints", "refereePoints", status, "createdAt") FROM stdin;
-cmpohhri000215izcv5cos8sa	cmpmpj1yp00025izc1cmefuzm	cmpohhrhn001z5izc9v3rk0e9	MOV-2WVN	500	250	PENDING	2026-05-27 19:55:38.998
 \.
 
 
@@ -2879,9 +2774,7 @@ cmpohhri000215izcv5cos8sa	cmpmpj1yp00025izc1cmefuzm	cmpohhrhn001z5izc9v3rk0e9	MO
 -- Data for Name: SavedCart; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."SavedCart" (id, "userId", items, "merchantId", "createdAt", "updatedAt", "cartValue", "lastRemindedAt", "recoveredAt", "reminderCount") FROM stdin;
-cmqh69kcb000emvt39a26mk64	cmpohhrhn001z5izc9v3rk0e9	[{"id": "cmpogy8so000y5izcmc18x21a-default-1781646398738", "name": "PRINGLES ORIGINAL", "type": "product", "image": "https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1779910756557-Papas-Fritas-Pringles-Original-X104gs-1-1000004.webp", "price": 1000, "quantity": 1, "productId": "cmpogy8so000y5izcmc18x21a", "merchantId": "cmpogk423000c5izcv6er1c6g"}]	\N	2026-06-16 21:46:39.802	2026-06-16 21:46:39.802	1000	\N	\N	0
-cmpoh0ckk00125izcuqt2htii	cmnuzx1fg0002zgw8zimoxguz	[{"id": "cmpogy8so000y5izcmc18x21a-default-1779910925112", "name": "PRINGLES ORIGINAL", "type": "product", "image": "https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1779910756557-Papas-Fritas-Pringles-Original-X104gs-1-1000004.webp", "price": 1000, "quantity": 1, "productId": "cmpogy8so000y5izcmc18x21a", "merchantId": "cmpogk423000c5izcv6er1c6g"}]	\N	2026-05-27 19:42:06.498	2026-06-28 13:55:40.408	1000	\N	\N	0
+COPY public."SavedCart" (id, "userId", items, "merchantId", "reminderCount", "lastRemindedAt", "recoveredAt", "cartValue", "createdAt", "updatedAt") FROM stdin;
 \.
 
 
@@ -2890,7 +2783,10 @@ cmpoh0ckk00125izcuqt2htii	cmnuzx1fg0002zgw8zimoxguz	[{"id": "cmpogy8so000y5izcmc
 --
 
 COPY public."SellerAvailability" (id, "sellerId", "isOnline", "isPaused", "pauseEndsAt", "preparationMinutes", "scheduleEnabled", "scheduleJson", "createdAt", "updatedAt") FROM stdin;
-cmq9hpdw9000ouxa8c9kbi4jj	cmpmpj1yp00025izc1cmefuzm	f	f	\N	15	f	\N	2026-06-11 12:44:44.313	2026-06-11 12:44:44.313
+cmqz5vu5a00c0xhd8uo6y4aqt	cmqz5vu4q00brxhd81ch7zi9a	t	f	\N	20	f	\N	2026-06-29 11:55:50.494	2026-06-29 11:55:50.494
+cmqz5vugq00cuxhd8qhyf0ech	cmqz5vugc00clxhd8gg7ilj46	t	f	\N	20	f	\N	2026-06-29 11:55:50.906	2026-06-29 11:55:50.906
+cmqz5vuqb00doxhd892snclpd	cmqz5vupu00dfxhd81e9l3ck7	t	f	\N	20	f	\N	2026-06-29 11:55:51.252	2026-06-29 11:55:51.252
+cmqz5vv1500eixhd8796i7qg6	cmqz5vv0p00e9xhd8vtohx0lr	t	f	\N	20	f	\N	2026-06-29 11:55:51.642	2026-06-29 11:55:51.642
 \.
 
 
@@ -2898,9 +2794,11 @@ cmq9hpdw9000ouxa8c9kbi4jj	cmpmpj1yp00025izc1cmefuzm	f	f	\N	15	f	\N	2026-06-11 12
 -- Data for Name: SellerProfile; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."SellerProfile" (id, "userId", "displayName", bio, avatar, cuit, "acceptedTermsAt", "bankAlias", "bankCbu", "isActive", "isVerified", "totalSales", rating, "commissionRate", "mpAccessToken", "mpRefreshToken", "mpUserId", "mpEmail", "mpLinkedAt", "isOnline", "isPaused", "pauseEndsAt", "preparationMinutes", "scheduleEnabled", "scheduleJson", "createdAt", "updatedAt", "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "acceptedPrivacyAt", "applicationStatus", "approvedAt", "cancelledByUserAt", "cancelledByUserReason", "pausedByUserAt", "pausedByUserReason", "rejectionReason") FROM stdin;
-cmq8jg75w0004uxa8gw9hi4uk	cmpmpj1yp00025izc1cmefuzm	Tienda de Mau	Venta de articulos usados	\N	d851e9ef38595bac206faadf31281620:cbf4017fb4ac577074c40fc905b875db:b34e9c040420bf774a331fe68d	2026-06-10 20:45:48.73	\N	\N	f	f	0	\N	12	\N	\N	\N	\N	\N	f	f	\N	15	f	\N	2026-06-10 20:45:48.737	2026-06-24 14:20:19.681	f	\N	\N	\N	2026-06-10 20:45:48.73	DRAFT	\N	\N	\N	\N	\N	\N
-cmqxvnein000k127wk3siwpel	cmqxvnefz000c127w6nnj0uo4	Laura Vendedora	Vendedora de prueba para smoke testing	\N	\N	\N	\N	\N	t	f	0	5	12	\N	\N	\N	\N	\N	f	f	\N	15	f	\N	2026-06-28 14:21:34.656	2026-06-28 14:21:34.656	f	\N	\N	\N	\N	DRAFT	\N	\N	\N	\N	\N	\N
+COPY public."SellerProfile" (id, "userId", "displayName", bio, avatar, cuit, "acceptedTermsAt", "acceptedPrivacyAt", "bankAlias", "bankCbu", "isActive", "isVerified", "applicationStatus", "approvedAt", "rejectionReason", "pausedByUserAt", "pausedByUserReason", "cancelledByUserAt", "cancelledByUserReason", "totalSales", rating, "commissionRate", "mpAccessToken", "mpRefreshToken", "mpUserId", "mpEmail", "mpLinkedAt", "isOnline", "isPaused", "pauseEndsAt", "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "preparationMinutes", "scheduleEnabled", "scheduleJson", "createdAt", "updatedAt") FROM stdin;
+cmqz5vu5100byxhd8qu8um889	cmqz5vu4q00brxhd81ch7zi9a	TecnoSur	Electrónica y gadgets en Ushuaia. Envíos rápidos.	https://picsum.photos/seed/moovy-seller-vendedor1@somosmoovy.com/600/600	\N	2026-06-29 11:55:50.482	2026-06-29 11:55:50.482	\N	\N	t	t	APPROVED	2026-06-29 11:55:50.482	\N	\N	\N	\N	\N	0	4.7	12	\N	\N	\N	\N	\N	t	f	\N	f	\N	\N	\N	15	f	\N	2026-06-29 11:55:50.485	2026-06-29 11:55:50.485
+cmqz5vugm00csxhd8o0zs72aa	cmqz5vugc00clxhd8gg7ilj46	Moda Austral	Indumentaria para el frío fueguino.	https://picsum.photos/seed/moovy-seller-vendedor2@somosmoovy.com/600/600	\N	2026-06-29 11:55:50.9	2026-06-29 11:55:50.9	\N	\N	t	t	APPROVED	2026-06-29 11:55:50.9	\N	\N	\N	\N	\N	0	4.8	12	\N	\N	\N	\N	\N	t	f	\N	f	\N	\N	\N	15	f	\N	2026-06-29 11:55:50.903	2026-06-29 11:55:50.903
+cmqz5vuq700dmxhd8ldqyrukh	cmqz5vupu00dfxhd81e9l3ck7	Hogar Beagle	Todo para tu casa, con estilo del sur.	https://picsum.photos/seed/moovy-seller-vendedor3@somosmoovy.com/600/600	\N	2026-06-29 11:55:51.244	2026-06-29 11:55:51.244	\N	\N	t	t	APPROVED	2026-06-29 11:55:51.244	\N	\N	\N	\N	\N	0	4.5	12	\N	\N	\N	\N	\N	t	f	\N	f	\N	\N	\N	15	f	\N	2026-06-29 11:55:51.247	2026-06-29 11:55:51.247
+cmqz5vv1200egxhd8raq97j04	cmqz5vv0p00e9xhd8vtohx0lr	Patagonia Outdoor	Equipamiento para aventura y montaña.	https://picsum.photos/seed/moovy-seller-vendedor4@somosmoovy.com/600/600	\N	2026-06-29 11:55:51.635	2026-06-29 11:55:51.635	\N	\N	t	t	APPROVED	2026-06-29 11:55:51.635	\N	\N	\N	\N	\N	0	4.9	12	\N	\N	\N	\N	\N	t	f	\N	f	\N	\N	\N	15	f	\N	2026-06-29 11:55:51.638	2026-06-29 11:55:51.638
 \.
 
 
@@ -2908,8 +2806,8 @@ cmqxvnein000k127wk3siwpel	cmqxvnefz000c127w6nnj0uo4	Laura Vendedora	Vendedora de
 -- Data for Name: StoreSettings; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome", "heroSliderEnabled", "heroSliderInterval", "heroSliderShowArrows", "promoBannerButtonLink", "promoBannerButtonText", "promoBannerEnabled", "promoBannerImage", "promoBannerSubtitle", "promoBannerTitle", "promoBannerCtaPosition", "promoSlidesJson", "riderCommissionPercent", "zoneMultipliersJson", "climateMultipliersJson", "activeClimateCondition", "operationalCostPercent", "defaultMerchantCommission", "defaultSellerCommission", "cashMpOnlyDeliveries", "cashLimitL1", "cashLimitL2", "cashLimitL3", "maxOrdersPerSlot", "slotDurationMinutes", "minAnticipationHours", "maxAnticipationHours", "operatingHoursStart", "operatingHoursEnd", "merchantConfirmTimeoutSec", "driverResponseTimeoutSec", "adPricePlatino", "adPriceDestacado", "adPricePremium", "adPriceHeroBanner", "adPriceBannerPromo", "adPriceProducto", "adLaunchDiscountPercent", "adMaxHeroBannerSlots", "adMaxDestacadosSlots", "adMaxProductosSlots", "adMinDurationDays", "adDiscount3Months", "adDiscount6Months", "adPaymentMethods", "adCancellation48hFullRefund", "adCancellationAdminFeePercent", "heroBackgroundsJson", "bankName", "bankAccountHolder", "bankCbu", "bankAlias", "bankCuit", "supportChatEnabled", "excludedZonesJson", "activeDemandCondition", "demandMultipliersJson", "mpReservePercent") FROM stdin;
-settings	t	Volvemos pronto	f	Estamos preparando todo para vos. MOOVY llega pronto a Ushuaia.	1680	0.06	1500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-06-08 20:21:18.73	Ver mas	t	f					t	t	f	6	t	5000	t	/productos?categoria=pizzas	Ver locales	f	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	abajo-izquierda	[]	80	{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35}	{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3}	normal	5	10	12	10	15000	25000	40000	15	120	1.5	48	09:00	22:00	300	60	150000	50000	100000	250000	180000	25000	50	3	8	12	7	10	20	["mercadopago","transferencia"]	t	10	{}						f	[]	normal	{"normal":1.0,"alta":1.20,"pico":1.40}	8
+COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome", "heroSliderEnabled", "heroSliderInterval", "heroSliderShowArrows", "supportChatEnabled", "promoBannerButtonLink", "promoBannerButtonText", "promoBannerEnabled", "promoBannerImage", "promoBannerSubtitle", "promoBannerTitle", "promoBannerCtaPosition", "promoSlidesJson", "riderCommissionPercent", "zoneMultipliersJson", "climateMultipliersJson", "activeClimateCondition", "demandMultipliersJson", "activeDemandCondition", "operationalCostPercent", "excludedZonesJson", "defaultMerchantCommission", "defaultSellerCommission", "mpReservePercent", "cashMpOnlyDeliveries", "cashLimitL1", "cashLimitL2", "cashLimitL3", "maxOrdersPerSlot", "slotDurationMinutes", "minAnticipationHours", "maxAnticipationHours", "operatingHoursStart", "operatingHoursEnd", "merchantConfirmTimeoutSec", "driverResponseTimeoutSec", "adPricePlatino", "adPriceDestacado", "adPricePremium", "adPriceHeroBanner", "adPriceBannerPromo", "adPriceProducto", "adLaunchDiscountPercent", "adMaxHeroBannerSlots", "adMaxDestacadosSlots", "adMaxProductosSlots", "adMinDurationDays", "adDiscount3Months", "adDiscount6Months", "adPaymentMethods", "adCancellation48hFullRefund", "adCancellationAdminFeePercent", "heroBackgroundsJson", "bankName", "bankAccountHolder", "bankCbu", "bankAlias", "bankCuit") FROM stdin;
+settings	t	Volvemos pronto	f	Próximamente en Ushuaia.	1591	0.06	500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-06-29 11:55:46.2	Ver m??s	t	f	\N	\N	\N	\N	t	t	f	6	t	5000	t	t	/productos?categoria=pizzas	Ver locales	f	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	abajo-izquierda	[]	80	{"ZONA_A":1.0,"ZONA_B":1.15,"ZONA_C":1.35}	{"normal":1.0,"lluvia_leve":1.15,"temporal_fuerte":1.30}	normal	{"normal":1.0,"alta":1.20,"pico":1.40}	normal	5	[]	10	12	8	10	15000	25000	40000	15	120	1.5	48	09:00	22:00	300	60	150000	95000	55000	250000	180000	25000	50	3	8	12	7	10	20	["mercadopago","transferencia"]	t	10	{}					
 \.
 
 
@@ -2917,7 +2815,7 @@ settings	t	Volvemos pronto	f	Estamos preparando todo para vos. MOOVY llega pront
 -- Data for Name: SubOrder; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtotal, "deliveryFee", discount, total, "driverId", "moovyCommission", "sellerPayout", "paymentStatus", "deliveryStatus", "deliveredAt", "deliveryPhoto", "driverRating", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "pendingDriverId", "createdAt", "updatedAt", "mpTransferId", "payoutStatus", "paidOutAt", "deliveryPin", "deliveryPinAttempts", "deliveryPinVerifiedAt", "failedDeliveryAt", "failedDeliveryReason", "pickupPin", "pickupPinAttempts", "pickupPinVerifiedAt", "nearDestinationNotified", "driverPayoutAmount", "merchantCommissionRate", "merchantCommissionSource", "operationalCost", "tripCost", "zoneCode", "zoneDriverBonus", "zoneMultiplier", "driverStatus", "merchantStatus", "noShowFlag", "noShowReportedAt", "payoutHoldUntil", "waitingStartedAt") FROM stdin;
+COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtotal, "deliveryFee", discount, total, "driverId", "moovyCommission", "sellerPayout", "tripCost", "operationalCost", "driverPayoutAmount", "merchantCommissionRate", "merchantCommissionSource", "zoneCode", "zoneMultiplier", "zoneDriverBonus", "paymentStatus", "deliveryStatus", "deliveredAt", "deliveryPhoto", "driverRating", "assignmentAttempts", "assignmentExpiresAt", "attemptedDriverIds", "pendingDriverId", "createdAt", "updatedAt", "mpTransferId", "payoutStatus", "paidOutAt", "pickupPin", "pickupPinVerifiedAt", "pickupPinAttempts", "deliveryPin", "deliveryPinVerifiedAt", "deliveryPinAttempts", "failedDeliveryAt", "failedDeliveryReason", "nearDestinationNotified", "merchantStatus", "driverStatus", "waitingStartedAt", "noShowReportedAt", "payoutHoldUntil", "noShowFlag") FROM stdin;
 \.
 
 
@@ -2926,7 +2824,6 @@ COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtota
 --
 
 COPY public."SupportChat" (id, "userId", "merchantId", "operatorId", subject, category, status, priority, rating, "ratingComment", "lastMessageAt", "resolvedAt", "createdAt", "updatedAt") FROM stdin;
-cmpolmvg3003e5izcrpkouqpe	cmpohhrhn001z5izc9v3rk0e9	\N	cmpolj37500345izcyx5jokcd	No me llega el pedido	pedido	closed	normal	5	\N	2026-05-27 21:52:24.662	2026-05-27 21:52:30.89	2026-05-27 21:51:35.858	2026-05-27 21:52:43.832
 \.
 
 
@@ -2935,10 +2832,6 @@ cmpolmvg3003e5izcrpkouqpe	cmpohhrhn001z5izc9v3rk0e9	\N	cmpolj37500345izcyx5jokcd
 --
 
 COPY public."SupportMessage" (id, "chatId", "senderId", content, "isFromAdmin", "isSystem", "isRead", "attachmentUrl", "attachmentType", "createdAt") FROM stdin;
-cmpolmvg3003h5izclarw9yl6	cmpolmvg3003e5izcrpkouqpe	cmpolj36c00305izc7gc617lp	Facu es tu operador asignado. En un momento te atiende, Juan Perez.	t	t	t	\N	\N	2026-05-27 21:51:35.858
-cmpolmvg3003g5izcnlvvq6of	cmpolmvg3003e5izcrpkouqpe	cmpohhrhn001z5izc9v3rk0e9	No me llega el pedido	f	f	t	\N	\N	2026-05-27 21:51:35.858
-cmpolnp8q003j5izcfcxmwlg1	cmpolmvg3003e5izcrpkouqpe	cmpolj36c00305izc7gc617lp	/cierre	t	f	t	\N	\N	2026-05-27 21:52:14.473
-cmpolnx35003l5izcfht3ts9r	cmpolmvg3003e5izcrpkouqpe	cmpolj36c00305izc7gc617lp	¡Listo! ¿Hay algo más en lo que pueda ayudarte? Si no, cierro el chat. ¡Que tengas un excelente día!	t	f	t	\N	\N	2026-05-27 21:52:24.641
 \.
 
 
@@ -2947,7 +2840,6 @@ cmpolnx35003l5izcfht3ts9r	cmpolmvg3003e5izcrpkouqpe	cmpolj36c00305izc7gc617lp	¡
 --
 
 COPY public."SupportOperator" (id, "userId", "displayName", "isActive", "isOnline", "maxChats", "lastSeenAt", "createdAt", "updatedAt") FROM stdin;
-cmpolj37500345izcyx5jokcd	cmpolj36c00305izc7gc617lp	Facu	t	t	5	2026-05-27 21:51:05.03	2026-05-27 21:48:39.28	2026-05-27 21:53:46.349
 \.
 
 
@@ -2955,18 +2847,28 @@ cmpolj37500345izcyx5jokcd	cmpolj36c00305izc7gc617lp	Facu	t	t	5	2026-05-27 21:51:
 -- Data for Name: User; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."User" (id, email, password, name, "firstName", "lastName", phone, role, "emailVerified", image, "pointsBalance", "pendingBonusPoints", "bonusActivated", "referralCode", "referredById", "createdAt", "updatedAt", "privacyConsentAt", "termsConsentAt", "resetToken", "resetTokenExpiry", "deletedAt", "archivedAt", "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "onboardingCompletedAt", "age18Confirmed", "cookiesConsent", "cookiesConsentAt", "marketingConsent", "marketingConsentAt", "marketingConsentRevokedAt", "privacyConsentVersion", "termsConsentVersion", "pointsExpiryNotifiedAt", "failedLoginAttempts", "loginLockedUntil") FROM stdin;
-cmpoh5mvw001e5izcyrgkd0ts	buyer1@somosmoovy.com	$2b$10$jYTBPvs74dqSBpTUNYOiE.0.YKeUutLrRxcy6MmYAJf0IHMvIeEG2	Juan Perez	Juan	Perez	\N	USER	\N	\N	0	0	f	cmpoh5mvw001f5izcakhckvw6	\N	2026-05-27 19:46:13.148	2026-05-27 19:46:31.816	\N	\N	c09eb78dad615bbcbde4b4fc1f25e48dc827686e1a1fc615beccb481c233143a	2026-05-28 19:46:13.016	2026-05-27 19:46:31.814	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmpoh719b001m5izc10mntdbv	getinnerdrop@gmail.com	$2b$10$Y/KRt7jaMTT7rvkWqk92Auz3VOcBQ7d5e4Jg2w7XZGm6pTnNFM0cC	Juan Perez	Juan	Perez	\N	USER	\N	\N	0	0	f	cmpoh719b001n5izcol2u7htw	\N	2026-05-27 19:47:18.431	2026-05-27 19:48:09.061	\N	\N	76824853e87089af56d3347441903041c4867fdc5ea806b2e0cd93af16cc65d2	2026-05-28 19:47:18.284	2026-05-27 19:48:09.059	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmqxvnefa0006127wa7pqn7t4	test-driver@somosmoovy.com	$2b$10$vdO3ht8WDgL86Lv0lVOtc.ye4v28klrB05WTngBOQL2SZoG3rMxle	Pablo Repartidor	Pablo	Repartidor	\N	USER	\N	\N	0	0	f	cmqxvnefa0007127wkpkenptz	\N	2026-06-28 14:21:34.534	2026-06-28 14:23:14.189	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	2026-06-28 14:23:14.187	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmqxvnefm0009127w2od9xv70	test-buyer@somosmoovy.com	$2b$10$vdO3ht8WDgL86Lv0lVOtc.ye4v28klrB05WTngBOQL2SZoG3rMxle	María Compradora	María	Compradora	\N	USER	\N	\N	0	0	f	cmqxvnefm000a127wagc2egxd	\N	2026-06-28 14:21:34.546	2026-06-28 14:24:27.637	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	2026-06-28 14:24:27.631	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmpolj36c00305izc7gc617lp	facundotdf@gmail.com	$2b$12$PJfSJKI84teea.YzWbh8euyJIStohd70rtdUwHAyOQTcBQvzbGteq	Facu	\N	\N	\N	USER	\N	\N	0	0	f	cmpolj36c00315izciap0wmx1	\N	2026-05-27 21:48:39.251	2026-05-28 13:12:49.452	\N	\N	\N	\N	2026-05-28 13:12:49.411	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmpmpj1yp00025izc1cmefuzm	maugrod@gmail.com	$2b$10$hYH2q0XYbGOGz5h5b9s9.eiKK3lzWN5QAtVTkpAXJItsh.fEcO3my	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	USER	\N	\N	0	1000	f	MOV-2WVN	\N	2026-05-26 14:05:03.788	2026-06-24 14:20:19.619	2026-05-26 14:05:03.779	2026-05-26 14:05:03.779	\N	\N	2026-06-24 14:20:19.617	\N	f	\N	\N	\N	2026-05-26 14:05:10.706	t	\N	\N	t	2026-05-26 14:05:03.779	\N	2.0	1.2	\N	0	\N
-cmpohhrhn001z5izc9v3rk0e9	bimsads@gmail.com	$2b$10$DiC1m.tCZs8jl/z7XQuF6ebC7QCIntTAlFsuf7izDZhtQ6oUYIUGy	Juan Perez	Juan	Perez	+54 29011234567	USER	\N	\N	0	1000	f	MOV-Z4RL	cmpmpj1yp00025izc1cmefuzm	2026-05-27 19:55:38.986	2026-06-24 14:20:19.619	2026-05-27 19:55:38.984	2026-05-27 19:55:38.984	\N	\N	2026-06-24 14:20:19.617	\N	f	\N	\N	\N	2026-05-27 19:55:42.638	t	\N	\N	t	2026-05-27 19:55:38.984	\N	2.0	1.2	\N	0	\N
-cmnuzx1fg0002zgw8zimoxguz	maurod@me.com	$2b$12$FijqPkncB5DpHpVapSXAreoQ8sHEfdII1lIzSFI6D/xvr7JWsg8i2	Mauro Rodriguez	Mauro	Rodriguez	+54 2901652974	ADMIN	\N	\N	0	0	f	MOV-54Z4	\N	2026-04-11 23:58:37.179	2026-06-28 14:15:56.671	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmqxvnee90000127w6yl0mw2t	admin@somosmoovy.com	$2b$10$vdO3ht8WDgL86Lv0lVOtc.ye4v28klrB05WTngBOQL2SZoG3rMxle	Admin Moovy	Admin	Moovy	\N	USER	\N	\N	0	0	f	cmqxvnee90001127wvoant339	\N	2026-06-28 14:21:34.498	2026-06-28 14:21:34.498	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmqxvneex0003127wasyb5v8f	test-comercio@somosmoovy.com	$2b$10$vdO3ht8WDgL86Lv0lVOtc.ye4v28klrB05WTngBOQL2SZoG3rMxle	Carlos Comercio	Carlos	Comercio	\N	USER	\N	\N	0	0	f	cmqxvneex0004127whv5nssnc	\N	2026-06-28 14:21:34.521	2026-06-28 14:21:34.521	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
-cmqxvnefz000c127w6nnj0uo4	test-seller@somosmoovy.com	$2b$10$vdO3ht8WDgL86Lv0lVOtc.ye4v28klrB05WTngBOQL2SZoG3rMxle	Laura Vendedora	Laura	Vendedora	\N	USER	\N	\N	0	0	f	cmqxvnefz000d127w6xtxkhui	\N	2026-06-28 14:21:34.559	2026-06-28 14:21:34.559	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	f	\N	\N	f	\N	\N	\N	\N	\N	0	\N
+COPY public."User" (id, email, password, name, "firstName", "lastName", phone, role, "emailVerified", image, "pointsBalance", "pendingBonusPoints", "bonusActivated", "referralCode", "referredById", "createdAt", "updatedAt", "privacyConsentAt", "termsConsentAt", "privacyConsentVersion", "termsConsentVersion", "age18Confirmed", "marketingConsent", "marketingConsentAt", "marketingConsentRevokedAt", "cookiesConsent", "cookiesConsentAt", "resetToken", "resetTokenExpiry", "deletedAt", "isSuspended", "suspendedAt", "suspendedUntil", "suspensionReason", "archivedAt", "failedLoginAttempts", "loginLockedUntil", "onboardingCompletedAt", "pointsExpiryNotifiedAt") FROM stdin;
+cmqz5vrgz001jxhd84w7eneza	comercio1@somosmoovy.com	$2b$12$yF6/4feNZrmKkGW/zI752eg44jwODi1JejVllozBQ6DuoL3r0r.vm	Carlos Patagonia	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vrgz001kxhd8fe0upbjz	\N	2026-06-29 11:55:47.028	2026-06-29 11:55:47.028	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vrw1002txhd87zyecnx4	comercio2@somosmoovy.com	$2b$12$oVMqCC2ghpHlJwVoXN6qhuXqtDCso2C7/AN3noGM2QEuHvAA9Unfi	Ana Falafel	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vrw1002uxhd8iip6q3hu	\N	2026-06-29 11:55:47.57	2026-06-29 11:55:47.57	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vs7g0043xhd8q2mrshtc	comercio3@somosmoovy.com	$2b$12$H5R6Tq23xOLGjA8RWik86u8y3wHOjhOjvWynZf/HYuNYYgglxZ4WK	Pedro Estancia	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vs7g0044xhd8kmxpsmub	\N	2026-06-29 11:55:47.98	2026-06-29 11:55:47.98	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vsl0005dxhd8sst0a1h3	comercio4@somosmoovy.com	$2b$12$gnL2yWnNJfz5eGCeXpo3g.RqX/2xlYjkg3knsYE5Y9.lkkq.IpMlq	Lucía Martial	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vsl0005exhd8t29yq40f	\N	2026-06-29 11:55:48.468	2026-06-29 11:55:48.468	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.37Whxp97s8kSiR7D.jXmok.DPmVC8uu	Diego Beagle	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vsvy006oxhd85im89bep	\N	2026-06-29 11:55:48.862	2026-06-29 11:55:48.862	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vt6i007xxhd8hsy8f7ox	comercio6@somosmoovy.com	$2b$12$M4.hnnEzjeOiZTOVTMi4E.fiwP.XSwXnfLH/4eEdszeqyN8CD8ZwO	Sofía Canal	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vt6i007yxhd8wx7qpv3a	\N	2026-06-29 11:55:49.243	2026-06-29 11:55:49.243	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vtik0097xhd8n00sds6h	comercio7@somosmoovy.com	$2b$12$JPYQMexHSzqOJOUcSVM2uu60CULV393WGSrsTD6iGE7.K4dbg/VgS	Farm. Roberto Sur	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vtik0098xhd8m0fzihsw	\N	2026-06-29 11:55:49.677	2026-06-29 11:55:49.677	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vtsy00ahxhd807lierxs	comercio8@somosmoovy.com	$2b$12$qLlUdPL1uxoYk5lk6UHtBemD4aGWdaBEDTWLME.TWukwovQIqMvPi	Marta Huerta	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vtsy00aixhd8f83wb28t	\N	2026-06-29 11:55:50.05	2026-06-29 11:55:50.05	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vu4q00brxhd81ch7zi9a	vendedor1@somosmoovy.com	$2b$12$T3YorJnX93jXZPBU0P1AreBj8aAP7FHF43TLYmumvciEtzD7OV7TK	Martín Tecno	\N	\N	\N	SELLER	\N	\N	0	0	f	cmqz5vu4r00bsxhd8t29i5q44	\N	2026-06-29 11:55:50.475	2026-06-29 11:55:50.475	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vugc00clxhd8gg7ilj46	vendedor2@somosmoovy.com	$2b$12$bGkY7KH4he7DysDh5UsS6O9BYl9FP1eAX/hB6oYujKcX6diJ53HHq	Caro Austral	\N	\N	\N	SELLER	\N	\N	0	0	f	cmqz5vugc00cmxhd85gi8ehfm	\N	2026-06-29 11:55:50.893	2026-06-29 11:55:50.893	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vupu00dfxhd81e9l3ck7	vendedor3@somosmoovy.com	$2b$12$ncmIYyp9Y9sm3s4glc6OIu20cAWrTiN3DmC5K8vWKm63akVegBQzi	Hernán Hogar	\N	\N	\N	SELLER	\N	\N	0	0	f	cmqz5vupu00dgxhd8baswgebt	\N	2026-06-29 11:55:51.234	2026-06-29 11:55:51.234	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vv0p00e9xhd8vtohx0lr	vendedor4@somosmoovy.com	$2b$12$rDe18.JZZyCFHKCeNU4aCeNVdMmTqG5H/DWa2wjwIleQ1rqQuWnKK	Vale Outdoor	\N	\N	\N	SELLER	\N	\N	0	0	f	cmqz5vv0p00eaxhd8awgcnsw6	\N	2026-06-29 11:55:51.626	2026-06-29 11:55:51.626	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vvmh00fbxhd84xtx2cxu	repartidor2@somosmoovy.com	$2b$12$r4yJqua1ydau1GZ534KwD..lHnb95szoStw65//XLI.4/A9wPOmD2	Lucas Delivery	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vvmh00fcxhd8epk923ku	\N	2026-06-29 11:55:52.409	2026-06-29 11:55:52.409	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vvwa00fjxhd8xtqudcev	repartidor3@somosmoovy.com	$2b$12$yl/hOmdNw3z0SofyaiHfDOPhvNTplD/eNxXBp.aW8DyFghiFLJWyy	Brian Express	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vvwa00fkxhd8tiegd01w	\N	2026-06-29 11:55:52.762	2026-06-29 11:55:52.762	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vw6e00frxhd8xzbnhvi3	repartidor4@somosmoovy.com	$2b$12$SCzlk3i5xewt6sCl6HzMlOzi6FTj2nomvuW61Jn149v/QANGQt5Ua	Nico Veloz	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vw6e00fsxhd8fi2f7iwm	\N	2026-06-29 11:55:53.127	2026-06-29 11:55:53.127	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vwfh00fzxhd8bchmmyw5	cliente1@somosmoovy.com	$2b$12$7ZFsSIglT1XVS/UewQDNYO4T.UjlCul7h9mv6sCYTJ4N.xVVgJYNO	Juana Cliente	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwfh00g0xhd8w7w3k570	\N	2026-06-29 11:55:53.453	2026-06-29 11:55:53.453	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-06-29 11:55:53.763	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vwws00gbxhd8xdblt14z	cliente3@somosmoovy.com	$2b$12$9q91L9dMys9zsNJgBBKjgO3rmqK5OFExmfJJEbUojP7g8AJLw4Ufa	Lucía Test	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwws00gcxhd8ifwc7bkh	\N	2026-06-29 11:55:54.076	2026-06-29 11:55:54.076	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vx5l00ghxhd8xnar59ix	cliente4@somosmoovy.com	$2b$12$EfMi32tg/BNF9KGFede11OJs3dScKvyk3ted7lL7Ds5MFgBQ80Hve	Marco Demo	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vx5l00gixhd8lk39samr	\N	2026-06-29 11:55:54.393	2026-06-29 11:55:54.393	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-06-29 12:10:58.965	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vva600f3xhd89zcsytov	repartidor1@somosmoovy.com	$2b$12$wM6iMD5E3RXXdUr5GYnjc.ywxwzoF08aXzL.JKLJSHm0NzMKtQ3RW	Mateo Rider	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vva600f4xhd8q48id7j2	\N	2026-06-29 11:55:51.966	2026-06-29 12:11:39.124	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 \.
 
 
@@ -2975,39 +2877,8 @@ cmqxvnefz000c127w6nnj0uo4	test-seller@somosmoovy.com	$2b$10$vdO3ht8WDgL86Lv0lVOt
 --
 
 COPY public."UserActivityLog" (id, "userId", action, "entityType", "entityId", metadata, "ipAddress", "userAgent", "createdAt") FROM stdin;
-cmpgywbdf000111e8bqolspfw	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-05-22 13:40:41.996
-cmpmpj2al000a5izc4bsynj05	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-05-26 14:05:04.221
-cmpogmdsc000h5izc6dcdm3o2	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-05-27 19:31:14.892
-cmpoh61b7001i5izce8cg83a2	cmpoh5mvw001e5izcyrgkd0ts	ADMIN_USER_DELETED	User	cmpoh5mvw001e5izcyrgkd0ts	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"buyer1@somosmoovy.com","name":"Juan Perez","roles":["USER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36	2026-05-27 19:46:31.842
-cmpoh84h8001q5izcmzsjro98	cmpoh719b001m5izc10mntdbv	ADMIN_USER_DELETED	User	cmpoh719b001m5izc10mntdbv	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"getinnerdrop@gmail.com","name":"Juan Perez","roles":["USER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36	2026-05-27 19:48:09.26
-cmpohfaih001u5izchox15x29	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-05-27 19:53:43.673
-cmpohhrw600295izc6e57kioa	cmpohhrhn001z5izc9v3rk0e9	LOGIN	User	cmpohhrhn001z5izc9v3rk0e9	{"method":"credentials"}	\N	\N	2026-05-27 19:55:39.511
-cmpohvmku002o5izcgos0dwxf	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-05-27 20:06:25.806
-cmpojll2g002q5izcusv9r2db	cmpohhrhn001z5izc9v3rk0e9	LOGIN	User	cmpohhrhn001z5izc9v3rk0e9	{"method":"credentials"}	\N	\N	2026-05-27 20:54:36.52
-cmpoljpym00385izci2lfb1sf	cmpolj36c00305izc7gc617lp	LOGIN	User	cmpolj36c00305izc7gc617lp	{"method":"credentials"}	\N	\N	2026-05-27 21:49:08.782
-cmpoll1qc003a5izc3xcq5he2	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-05-27 21:50:10.692
-cmpollvef003c5izceu3gr0s5	cmpolj36c00305izc7gc617lp	LOGIN	User	cmpolj36c00305izc7gc617lp	{"method":"credentials"}	\N	\N	2026-05-27 21:50:49.143
-cmppijkuc0006a6dsc4m891a1	cmpolj36c00305izc7gc617lp	ADMIN_USER_DELETED	User	cmpolj36c00305izc7gc617lp	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"facundotdf@gmail.com","name":"Facu","roles":["USER"]}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36	2026-05-28 13:12:49.476
-cmppim4vm000aa6ds4btj1ked	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-05-28 13:14:48.754
-cmq5nja150001uewyvkc6rh21	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-06-08 20:16:52.36
-cmq63zzkz0001fm492ul98qo4	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-06-09 03:57:45.826
-cmq8ad5m20001uxa8fug08qp3	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-06-10 16:31:30.217
-cmq8jljr1000duxa89j3j3c65	cmpmpj1yp00025izc1cmefuzm	LISTING_ADDED	Listing	cmq8jljq9000auxa8wtd8x13l	{"title":"Mantel Navideño rojo","price":10,"listingType":"DIRECT"}	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	2026-06-10 20:49:58.331
-cmq9h2cag000fuxa8vsjjcnrq	cmpmpj1yp00025izc1cmefuzm	ORDER_REJECTED	Order	cmppizrji000sa6dsy4qp8i38	{"orderNumber":"MOV-N3DT","reason":"Varios"}	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	2026-06-11 12:26:49.143
-cmq9hl4yy000kuxa890bhqi2p	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-06-11 12:41:26.123
-cmqa5ingr000aa4mwga781r0t	cmpohhrhn001z5izc9v3rk0e9	LOGIN	User	cmpohhrhn001z5izc9v3rk0e9	{"method":"credentials"}	\N	\N	2026-06-11 23:51:20.906
-cmqfctp5d00019xzern13ib9i	cmpohhrhn001z5izc9v3rk0e9	LOGIN	User	cmpohhrhn001z5izc9v3rk0e9	{"method":"credentials"}	\N	\N	2026-06-15 15:14:44.494
-cmqh4zaay0001mvt38w4crmuc	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-06-16 21:10:40.616
-cmqh547co0006mvt3jswhw0id	cmpohhrhn001z5izc9v3rk0e9	LOGIN	User	cmpohhrhn001z5izc9v3rk0e9	{"method":"credentials"}	\N	\N	2026-06-16 21:14:30.072
-cmqh5q192000bmvt32695e96s	cmpmpj1yp00025izc1cmefuzm	LOGIN	User	cmpmpj1yp00025izc1cmefuzm	{"method":"credentials"}	\N	\N	2026-06-16 21:31:28.597
-cmqh66oec000dmvt3ue82diw4	cmpohhrhn001z5izc9v3rk0e9	LOGIN	User	cmpohhrhn001z5izc9v3rk0e9	{"method":"credentials"}	\N	\N	2026-06-16 21:44:25.092
-cmqs5u5540003a6psm7quuj6g	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-06-24 14:20:08.198
-cmqs5ue0d0006a6ps60jffy9d	cmpmpj1yp00025izc1cmefuzm	ADMIN_USER_DELETED	User	cmpmpj1yp00025izc1cmefuzm	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"maugrod@gmail.com","name":"Mauro Rodriguez","roles":["USER","COMERCIO","DRIVER","SELLER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36	2026-06-24 14:20:19.693
-cmqs5ue1r000aa6psavb6oigs	cmpohhrhn001z5izc9v3rk0e9	ADMIN_USER_DELETED	User	cmpohhrhn001z5izc9v3rk0e9	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"bimsads@gmail.com","name":"Juan Perez","roles":["USER","COMERCIO","DRIVER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36	2026-06-24 14:20:19.744
-cmqs5ue21000ea6psi0mszagi	cmnuzx1fg0002zgw8zimoxguz	ADMIN_USER_DELETED	User	cmnuzx1fg0002zgw8zimoxguz	{"adminUserId":"cmnuzx1fg0002zgw8zimoxguz","email":"maurod@me.com","name":"Mauro Rodriguez","roles":["USER"],"bulkOperation":true}	127.0.0.1	Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/149.0.0.0 Safari/537.36	2026-06-24 14:20:19.753
-cmqxvg5s700022i40td4jev0z	cmnuzx1fg0002zgw8zimoxguz	LOGIN	User	cmnuzx1fg0002zgw8zimoxguz	{"method":"credentials"}	\N	\N	2026-06-28 14:15:56.744
-cmqxvpf4100042i40wuybtg2q	cmqxvnefa0006127wa7pqn7t4	LOGIN	User	cmqxvnefa0006127wa7pqn7t4	{"method":"credentials"}	\N	\N	2026-06-28 14:23:08.737
-cmqxvr1zv00062i40mbl436un	cmqxvnefm0009127w2od9xv70	LOGIN	User	cmqxvnefm0009127w2od9xv70	{"method":"credentials"}	\N	\N	2026-06-28 14:24:25.052
+cmqz6fb5e0001hf7e3liafkb8	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd86fq6wm5d	{"method":"credentials"}	\N	\N	2026-06-29 12:10:58.993
+cmqz6g65q0003hf7e2t569gbl	cmqz5vva600f3xhd89zcsytov	LOGIN	User	cmqz5vva600f3xhd89zcsytov	{"method":"credentials"}	\N	\N	2026-06-29 12:11:39.182
 \.
 
 
@@ -3016,13 +2887,44 @@ cmqxvr1zv00062i40mbl436un	cmqxvnefm0009127w2od9xv70	LOGIN	User	cmqxvnefm0009127w
 --
 
 COPY public."UserRole" (id, "userId", role, "isActive", "activatedAt") FROM stdin;
-cmnw2pyz700013ooek0ybrew9	cmnuzx1fg0002zgw8zimoxguz	ADMIN	t	2026-04-12 18:04:52.434
-cmpolj36c00325izc67y9pzfb	cmpolj36c00305izc7gc617lp	ADMIN	t	2026-05-27 21:48:39.251
-cmqxvneea0002127wto1l3zjj	cmqxvnee90000127w6yl0mw2t	ADMIN	t	2026-06-28 14:21:34.498
-cmqxvneex0005127wvcbfmq1z	cmqxvneex0003127wasyb5v8f	COMERCIO	t	2026-06-28 14:21:34.521
-cmqxvnefa0008127w1namqwra	cmqxvnefa0006127wa7pqn7t4	DRIVER	t	2026-06-28 14:21:34.534
-cmqxvnefm000b127w5hvup5au	cmqxvnefm0009127w2od9xv70	USER	t	2026-06-28 14:21:34.546
-cmqxvnefz000e127wm5bah6pm	cmqxvnefz000c127w6nnj0uo4	SELLER	t	2026-06-28 14:21:34.559
+cmqz5vqtl0003xhd8g1cn12bv	cmqz5vqsx0000xhd86fq6wm5d	ADMIN	t	2026-06-29 11:55:46.185
+cmqz5vqtu0005xhd8b2sa3dyi	cmqz5vqsx0000xhd86fq6wm5d	USER	t	2026-06-29 11:55:46.194
+cmqz5vrh5001mxhd8hvf3py0o	cmqz5vrgz001jxhd84w7eneza	COMERCIO	t	2026-06-29 11:55:47.033
+cmqz5vrha001oxhd84wxlgdme	cmqz5vrgz001jxhd84w7eneza	USER	t	2026-06-29 11:55:47.038
+cmqz5vrw5002wxhd8bhyh3qnw	cmqz5vrw1002txhd87zyecnx4	COMERCIO	t	2026-06-29 11:55:47.573
+cmqz5vrw8002yxhd8lhflp840	cmqz5vrw1002txhd87zyecnx4	USER	t	2026-06-29 11:55:47.577
+cmqz5vs7k0046xhd8h2ad7aa2	cmqz5vs7g0043xhd8q2mrshtc	COMERCIO	t	2026-06-29 11:55:47.984
+cmqz5vs7m0048xhd88tkodkkh	cmqz5vs7g0043xhd8q2mrshtc	USER	t	2026-06-29 11:55:47.987
+cmqz5vsl3005gxhd8eo1ktixt	cmqz5vsl0005dxhd8sst0a1h3	COMERCIO	t	2026-06-29 11:55:48.472
+cmqz5vsl6005ixhd8rlxr8qep	cmqz5vsl0005dxhd8sst0a1h3	USER	t	2026-06-29 11:55:48.475
+cmqz5vsw4006qxhd862y1ylal	cmqz5vsvy006nxhd8cea1yx8k	COMERCIO	t	2026-06-29 11:55:48.869
+cmqz5vsw8006sxhd8hzm8eim5	cmqz5vsvy006nxhd8cea1yx8k	USER	t	2026-06-29 11:55:48.872
+cmqz5vt6p0080xhd8kz4krmno	cmqz5vt6i007xxhd8hsy8f7ox	COMERCIO	t	2026-06-29 11:55:49.249
+cmqz5vt6s0082xhd86zwryjal	cmqz5vt6i007xxhd8hsy8f7ox	USER	t	2026-06-29 11:55:49.252
+cmqz5vtio009axhd8sv699c0w	cmqz5vtik0097xhd8n00sds6h	COMERCIO	t	2026-06-29 11:55:49.68
+cmqz5vtir009cxhd8u4gt8w6k	cmqz5vtik0097xhd8n00sds6h	USER	t	2026-06-29 11:55:49.684
+cmqz5vtt400akxhd855c765fs	cmqz5vtsy00ahxhd807lierxs	COMERCIO	t	2026-06-29 11:55:50.057
+cmqz5vtt700amxhd8z6fcmxas	cmqz5vtsy00ahxhd807lierxs	USER	t	2026-06-29 11:55:50.06
+cmqz5vu4u00buxhd8xrpvkex7	cmqz5vu4q00brxhd81ch7zi9a	SELLER	t	2026-06-29 11:55:50.479
+cmqz5vu4x00bwxhd8uf49q7ob	cmqz5vu4q00brxhd81ch7zi9a	USER	t	2026-06-29 11:55:50.482
+cmqz5vugg00coxhd8zudwbhft	cmqz5vugc00clxhd8gg7ilj46	SELLER	t	2026-06-29 11:55:50.896
+cmqz5vugj00cqxhd8c9asrarb	cmqz5vugc00clxhd8gg7ilj46	USER	t	2026-06-29 11:55:50.899
+cmqz5vupy00dixhd8idh8o857	cmqz5vupu00dfxhd81e9l3ck7	SELLER	t	2026-06-29 11:55:51.238
+cmqz5vuq100dkxhd8ouihob5x	cmqz5vupu00dfxhd81e9l3ck7	USER	t	2026-06-29 11:55:51.242
+cmqz5vv0w00ecxhd8gmrhjja2	cmqz5vv0p00e9xhd8vtohx0lr	SELLER	t	2026-06-29 11:55:51.632
+cmqz5vv0y00eexhd8c4m7i63o	cmqz5vv0p00e9xhd8vtohx0lr	USER	t	2026-06-29 11:55:51.635
+cmqz5vvaf00f6xhd8emx3biwj	cmqz5vva600f3xhd89zcsytov	DRIVER	t	2026-06-29 11:55:51.975
+cmqz5vvah00f8xhd8q4j60ejy	cmqz5vva600f3xhd89zcsytov	USER	t	2026-06-29 11:55:51.978
+cmqz5vvml00fexhd8p9gmuj3y	cmqz5vvmh00fbxhd84xtx2cxu	DRIVER	t	2026-06-29 11:55:52.413
+cmqz5vvmn00fgxhd8jslf5w8l	cmqz5vvmh00fbxhd84xtx2cxu	USER	t	2026-06-29 11:55:52.416
+cmqz5vvwi00fmxhd8x0vghv34	cmqz5vvwa00fjxhd8xtqudcev	DRIVER	t	2026-06-29 11:55:52.77
+cmqz5vvwl00foxhd8999s79ua	cmqz5vvwa00fjxhd8xtqudcev	USER	t	2026-06-29 11:55:52.773
+cmqz5vw6l00fuxhd8kzhzjvre	cmqz5vw6e00frxhd8xzbnhvi3	DRIVER	t	2026-06-29 11:55:53.134
+cmqz5vw6o00fwxhd8nw15cku1	cmqz5vw6e00frxhd8xzbnhvi3	USER	t	2026-06-29 11:55:53.136
+cmqz5vwfk00g2xhd875ymccnx	cmqz5vwfh00fzxhd8bchmmyw5	USER	t	2026-06-29 11:55:53.457
+cmqz5vwo900g8xhd8pptdg54p	cmqz5vwo300g5xhd8ok66ryk2	USER	t	2026-06-29 11:55:53.77
+cmqz5vwwv00gexhd8exzdddxf	cmqz5vwws00gbxhd8xdblt14z	USER	t	2026-06-29 11:55:54.079
+cmqz5vx5s00gkxhd89scbuylg	cmqz5vx5l00ghxhd8xnar59ix	USER	t	2026-06-29 11:55:54.4
 \.
 
 

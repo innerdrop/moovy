@@ -74,21 +74,18 @@ prisma/schema.prisma    ~30 modelos con PostGIS
 
 ### Motor Logístico (pricing del viaje + asignación)
 
-Fórmula maestra (delivery clásico):
+Fórmula aditiva (Plan Maestro v1 — el envío es solo logística, sin operativo):
 \`\`\`
-fee_visible = max(MIN_VEHICULO, costo_km × distancia × 2.2) × zona × clima + (subtotal × 0.05)
-costo_viaje = fee_visible − (subtotal × 0.05) // sin operativo
+costo_viaje = (base_vehículo + costo_km × distancia) × zona × clima × demanda
 \`\`\`
 
-- Factor distancia ×2.2 (ida + vuelta + maniobras)
-- Vehículos: Bici ($15/km, min $800) | Moto ($73/km, min $1.500) | Auto chico ($193/km, min $2.200) | Auto mediano ($222/km, min $2.500) | Pickup/SUV ($269/km, min $3.000) | Flete ($329/km, min $3.800)
+- Vehículos (base + costo_km): Bici ($1.600 + $90/km) | Moto ($1.800 + $130/km) | Auto ($2.600 + $190/km) | Pickup/SUV ($6.500 + $300/km) | Flete ($18.000 + $450/km)
 - Zonas: A (×1.0) | B (×1.15, +$150 driver) | C (×1.35, +$350 driver)
 - Zonas excluidas: configurables desde `/ops/zonas-excluidas` (NO hardcoded)
 - Clima: normal ×1.0 | lluvia ×1.15 | temporal ×1.30
 - Demanda: normal ×1.0 | alta ×1.20 | pico ×1.40
-- Marketplace categorías peso: SOBRE 0-2kg $800 | PEQUEÑO 2-5kg $1.200 | MEDIANO 5-15kg $2.500 | GRANDE 15-30kg $3.500 | XL 30-70kg $5.000 | FLETE 70+kg $8.000
 - Peso cobrable: max(real, largo×ancho×alto/5000)
-- Nafta super Ushuaia: $1.591/litro
+- Nafta super Ushuaia: $1.702/litro
 - Asignación: PendingAssignment + AssignmentLog, smart batching <3km, geofence PIN 100m
 
 Tamaños de producto canónicos (selector Glovo-style en `/comercios`):
@@ -101,11 +98,11 @@ Mapping a vehículo en `src/lib/product-weight.ts` (`SIZE_METADATA`).
 
 - Comercio MES 1: **0%** (30 días desde `Merchant.createdAt`)
 - Comercio MES 2+: **10%** base, dinámico por tier (BRONCE 10% → PLATA 9% → ORO 8% → DIAMANTE 7%)
-- Seller marketplace: **12%** desde día 1 (sin first-month-free)
+- Seller marketplace: **10%** desde día 1 (sin first-month-free)
 - Service fee al comprador: 0% (precio limpio)
-- Costo operativo embebido: **5%** del subtotal en delivery fee (cubre el ~7.6% de MP sobre la porción de Moovy + margen)
-- Repartidor: **80%** del costo del viaje (NO incluye 5% operativo)
-- Moovy delivery: 20% del viaje + 5% operativo
+- Costo operativo: **ELIMINADO** (Plan Maestro v1). El envío es solo logística; el margen de Moovy vive en la comisión, no embebido en el envío
+- Repartidor: **80%** del costo del viaje. En envío gratis el cliente paga $0 pero el repartidor cobra igual (lo absorbe Moovy)
+- Moovy delivery: 20% del costo del viaje (sin operativo)
 - MP real: 7.6% (acreditación AL INSTANTE — es la que usamos). El 3.81% es la tarifa con acreditación diferida, que NO aplica a Moovy.
 - Gastos fijos: ~$440K ARS/mes
 
