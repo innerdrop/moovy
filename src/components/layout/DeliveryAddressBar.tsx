@@ -1,15 +1,19 @@
 "use client";
 
-// Chip "Entregar en" del header (feat/direcciones-limite-y-chip-header).
+// Barra "Entregar en" bajo el header (feat/direcciones-limite-y-chip-header).
 //
-// Patrón estándar de apps de delivery: la dirección de entrega activa siempre
-// a la vista. Tocarla abre un dropdown con las direcciones guardadas; elegir
-// una la marca como principal (isDefault) vía PATCH — el checkout ya
-// preselecciona la principal, así todo queda consistente.
+// Patrón estándar de apps de delivery: una barra fina, ancho completo, con la
+// dirección de entrega activa ("Entregar en: Av. Maipú 263 ▾"). Tocarla abre
+// un selector con las direcciones guardadas; elegir una la marca como
+// principal (isDefault) vía PATCH — el checkout preselecciona la principal,
+// así todo queda consistente.
 //
-// Mismo espíritu que PointsBalanceChip: solo se monta para logueados (lo
-// decide AppHeader), UN fetch al montar, y se auto-oculta si el usuario no
-// tiene direcciones o si el fetch falla (nunca un chip roto en el header).
+// Se monta en el layout de la tienda DENTRO del contenido scrolleable (no en
+// el header fijo): así no hay que recalcular el padding-top global y la barra
+// acompaña el scroll, como en las apps grandes.
+//
+// Mismo espíritu que PointsBalanceChip: UN fetch al montar, y se auto-oculta
+// si el usuario no tiene direcciones o si el fetch falla (nunca una barra rota).
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
@@ -24,12 +28,7 @@ type AddressItem = {
     isDefault: boolean;
 };
 
-export default function DeliveryAddressChip({
-    align = "left",
-}: {
-    /** De qué lado se ancla el dropdown (según dónde esté montado el chip). */
-    align?: "left" | "right";
-}) {
+export default function DeliveryAddressBar() {
     const [addresses, setAddresses] = useState<AddressItem[] | null>(null);
     const [open, setOpen] = useState(false);
     const [switchingId, setSwitchingId] = useState<string | null>(null);
@@ -43,7 +42,7 @@ export default function DeliveryAddressChip({
                 if (!cancelled && Array.isArray(d)) setAddresses(d);
             })
             .catch(() => {
-                /* silent: el chip simplemente no aparece si falla */
+                /* silent: la barra simplemente no aparece si falla */
             });
         return () => {
             cancelled = true;
@@ -62,7 +61,7 @@ export default function DeliveryAddressChip({
         return () => document.removeEventListener("mousedown", onDown);
     }, [open]);
 
-    // Oculto mientras carga, si falló, o si no hay direcciones guardadas.
+    // Oculta mientras carga, si falló, o si no hay direcciones guardadas.
     if (!addresses || addresses.length === 0) return null;
 
     const active = addresses.find((a) => a.isDefault) ?? addresses[0];
@@ -85,7 +84,7 @@ export default function DeliveryAddressChip({
                 );
             }
         } catch {
-            /* silent: si falla, el chip queda como estaba */
+            /* silent: si falla, la barra queda como estaba */
         } finally {
             setSwitchingId(null);
             setOpen(false);
@@ -93,27 +92,28 @@ export default function DeliveryAddressChip({
     };
 
     return (
-        <div ref={rootRef} className="relative min-w-0">
-            <button
-                onClick={() => setOpen((v) => !v)}
-                aria-label={`Dirección de entrega: ${formatAddressShort(active)}. Tocá para cambiarla`}
-                aria-expanded={open}
-                className="flex items-center gap-1 h-9 px-2 rounded-full hover:bg-gray-50 text-gray-700 transition active:scale-95 min-w-0 max-w-[34vw] sm:max-w-[220px]"
-                title="Cambiar dirección de entrega"
-            >
-                <MapPin className="w-4 h-4 text-[#e60012] flex-shrink-0" />
-                <span className="text-xs font-semibold truncate">
-                    {formatAddressShort(active)}
-                </span>
-                <ChevronDown
-                    className={`w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
-                />
-            </button>
+        <div ref={rootRef} className="relative bg-white border-b border-gray-100">
+            <div className="max-w-7xl mx-auto px-4 lg:px-6">
+                <button
+                    onClick={() => setOpen((v) => !v)}
+                    aria-label={`Dirección de entrega: ${formatAddressShort(active)}. Tocá para cambiarla`}
+                    aria-expanded={open}
+                    className="flex items-center gap-1.5 h-10 w-full text-left active:opacity-70 transition"
+                    title="Cambiar dirección de entrega"
+                >
+                    <MapPin className="w-4 h-4 text-[#e60012] flex-shrink-0" />
+                    <span className="text-xs text-gray-500 flex-shrink-0">Entregar en:</span>
+                    <span className="text-xs font-bold text-gray-900 truncate">
+                        {formatAddressShort(active)}
+                    </span>
+                    <ChevronDown
+                        className={`w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform ${open ? "rotate-180" : ""}`}
+                    />
+                </button>
+            </div>
 
             {open && (
-                <div
-                    className={`absolute top-full mt-2 w-72 max-w-[88vw] bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden z-[70] ${align === "right" ? "right-0" : "left-0"}`}
-                >
+                <div className="absolute top-full left-4 lg:left-6 mt-1 w-80 max-w-[90vw] bg-white border border-gray-100 rounded-2xl shadow-xl overflow-hidden z-[70]">
                     <p className="px-4 pt-3 pb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">
                         Entregar en
                     </p>

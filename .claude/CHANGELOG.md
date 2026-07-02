@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-07-02 (rama `fix/direcciones-barra-entregar-en`)
+
+fix: barra "Entregar en" propia bajo el header (reemplaza el chip en el header de la rama anterior)
+
+**Archivos:** src/app/(store)/layout.tsx, src/components/layout/AppHeader.tsx, src/components/layout/DeliveryAddressBar.tsx
+
 ## 2026-07-02 (rama `feat/direcciones-limite-y-chip-header`)
 
 feat: límite de 2 direcciones guardadas (defensa server-side) + chip "Entregar en" en el header con cambio rápido de dirección
@@ -29,14 +35,20 @@ Límite (decisión founder: máximo 2, los que ya tienen 3+ conservan pero no su
 - Checkout y Mi Perfil > Direcciones: botón "+ Nueva Dirección"/"Agregar otra
   ubicación" desaparece al llegar a 2, con texto que explica el límite.
 
-Chip "Entregar en" (patrón apps de delivery, espejo de PointsBalanceChip):
-- `DeliveryAddressChip` nuevo: muestra la dirección default en el header (mobile
-  junto al avatar, desktop junto al chip de puntos), dropdown para cambiar entre
-  guardadas (marca isDefault vía PATCH existente → el checkout la preselecciona),
-  link "Administrar direcciones". Solo logueados, 1 fetch, se auto-oculta si no
-  hay direcciones o falla el fetch. Sin schema, sin polling.
+Barra "Entregar en" (patrón apps de delivery, decisión founder: barra propia bajo
+el header, no chip):
+- `DeliveryAddressBar` nueva: barra fina ancho completo con "Entregar en:
+  Av. Maipú 263 ▾", montada en el layout de (store) DENTRO del contenido
+  scrolleable (no en el header fijo — así no se recalcula el padding-top global
+  y scrollea con la página). Dropdown para cambiar entre guardadas (marca
+  isDefault vía PATCH existente → el checkout la preselecciona), link
+  "Administrar direcciones". Solo logueados, 1 fetch, se auto-oculta si no hay
+  direcciones o falla el fetch. Sin schema, sin polling.
+- NOTA QA: el 500 al crear dirección que apareció probando en local era ambiente
+  (sesión JWT viva apuntando a un usuario borrado de la DB local → FK violation
+  P2003), no un bug del código. Se resuelve re-logueando.
 
-**Archivos:** src/lib/addresses.ts (nuevo), src/components/layout/DeliveryAddressChip.tsx (nuevo), src/components/layout/AppHeader.tsx, src/app/api/profile/addresses/route.ts, src/app/(store)/checkout/page.tsx, src/app/(store)/mi-perfil/direcciones/page.tsx
+**Archivos:** src/lib/addresses.ts (nuevo), src/components/layout/DeliveryAddressBar.tsx (nuevo), src/app/(store)/layout.tsx, src/app/api/profile/addresses/route.ts, src/app/(store)/checkout/page.tsx, src/app/(store)/mi-perfil/direcciones/page.tsx
 
 ---
 

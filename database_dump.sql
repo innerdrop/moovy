@@ -2035,10 +2035,11 @@ COPY public."AdPlacement" (id, "merchantId", type, status, "startsAt", "endsAt",
 --
 
 COPY public."Address" (id, "userId", label, street, number, apartment, neighborhood, city, province, "zipCode", latitude, longitude, "isDefault", "createdAt", "updatedAt", "deletedAt") FROM stdin;
-cmqz5vwfn00g4xhd871muduw0	cmqz5vwfh00fzxhd8bchmmyw5	Casa	Kuanip	100	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8055	-68.3045	t	2026-06-29 11:55:53.459	2026-06-29 11:55:53.459	\N
 cmqz5vwoc00gaxhd8v0vglrcm	cmqz5vwo300g5xhd8ok66ryk2	Casa	Onas	250	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8078	-68.3098	t	2026-06-29 11:55:53.772	2026-06-29 11:55:53.772	\N
 cmqz5vwwy00ggxhd88dx3zolb	cmqz5vwws00gbxhd8xdblt14z	Casa	Deloqui	500	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8035	-68.3012	t	2026-06-29 11:55:54.082	2026-06-29 11:55:54.082	\N
 cmqz5vx5w00gmxhd8vmbf5m8b	cmqz5vx5l00ghxhd8xnar59ix	Casa	Yaganes	300	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8092	-68.307	t	2026-06-29 11:55:54.404	2026-06-29 11:55:54.404	\N
+cmr40aqu3000cmh52en2nv1mx	cmqz5vwfh00fzxhd8bchmmyw5	Prueba Comprador	Paseo de la Plaza	2065	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.82898400000001	-68.3487997	f	2026-07-02 21:18:19.227	2026-07-02 21:30:39.295	2026-07-02 21:30:39.294
+cmqz5vwfn00g4xhd871muduw0	cmqz5vwfh00fzxhd8bchmmyw5	Casa	Paseo de la Plaza	2065		\N	Ushuaia	Tierra del Fuego	\N	-54.82898400000001	-68.3487997	f	2026-06-29 11:55:53.459	2026-07-02 21:30:54.653	\N
 \.
 
 
@@ -2338,6 +2339,8 @@ COPY public."HeroSlide" (id, title, subtitle, "buttonText", "buttonLink", gradie
 --
 
 COPY public."HomeCategorySlot" (id, "categoryId", "order", image, icon, label, "isActive", "createdAt", "updatedAt") FROM stdin;
+cmr40tjso000gmh523yajlmub	cmqz5vqx1000hxhd86j3rab6t	1	\N	\N	\N	t	2026-07-02 21:32:56.567	2026-07-02 21:32:56.567
+cmr40tsjg000imh52rtffmtzg	cmqz5vqy3000lxhd8hcaqu9dk	2	\N	\N	\N	t	2026-07-02 21:33:07.901	2026-07-02 21:33:07.901
 \.
 
 
@@ -2845,6 +2848,8 @@ COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoin
 --
 
 COPY public."SavedCart" (id, "userId", items, "merchantId", "reminderCount", "lastRemindedAt", "recoveredAt", "cartValue", "createdAt", "updatedAt") FROM stdin;
+cmr3yq4hg0000mh52b79k92y7	cmqxvnefm0009127w2od9xv70	[{"id": "cmqz5vt740088xhd8njzv9jaq-default-1783024456446", "name": "Flat White", "type": "product", "image": "https://picsum.photos/seed/moovy-flat-white/600/600", "price": 2900, "quantity": 1, "productId": "cmqz5vt740088xhd8njzv9jaq", "merchantId": "cmqz5vt6v0084xhd80bepwszu"}]	\N	0	\N	\N	2900	2026-07-02 20:34:17.519	2026-07-02 20:34:17.519
+cmr409v240009mh52ne6xbyhf	cmqz5vwfh00fzxhd8bchmmyw5	[{"id": "cmqz5vt740088xhd8njzv9jaq-default-1783027056955", "name": "Flat White", "type": "product", "image": "https://picsum.photos/seed/moovy-flat-white/600/600", "price": 2900, "quantity": 1, "productId": "cmqz5vt740088xhd8njzv9jaq", "merchantId": "cmqz5vt6v0084xhd80bepwszu"}]	\N	0	\N	\N	2900	2026-07-02 21:17:38.044	2026-07-02 21:17:38.044
 \.
 
 
@@ -2933,12 +2938,12 @@ cmqz5vv0p00e9xhd8vtohx0lr	vendedor4@somosmoovy.com	$2b$12$rDe18.JZZyCFHKCeNU4aCe
 cmqz5vvmh00fbxhd84xtx2cxu	repartidor2@somosmoovy.com	$2b$12$r4yJqua1ydau1GZ534KwD..lHnb95szoStw65//XLI.4/A9wPOmD2	Lucas Delivery	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vvmh00fcxhd8epk923ku	\N	2026-06-29 11:55:52.409	2026-06-29 11:55:52.409	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vvwa00fjxhd8xtqudcev	repartidor3@somosmoovy.com	$2b$12$yl/hOmdNw3z0SofyaiHfDOPhvNTplD/eNxXBp.aW8DyFghiFLJWyy	Brian Express	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vvwa00fkxhd8tiegd01w	\N	2026-06-29 11:55:52.762	2026-06-29 11:55:52.762	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vw6e00frxhd8xzbnhvi3	repartidor4@somosmoovy.com	$2b$12$SCzlk3i5xewt6sCl6HzMlOzi6FTj2nomvuW61Jn149v/QANGQt5Ua	Nico Veloz	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vw6e00fsxhd8fi2f7iwm	\N	2026-06-29 11:55:53.127	2026-06-29 11:55:53.127	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
-cmqz5vwfh00fzxhd8bchmmyw5	cliente1@somosmoovy.com	$2b$12$7ZFsSIglT1XVS/UewQDNYO4T.UjlCul7h9mv6sCYTJ4N.xVVgJYNO	Juana Cliente	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwfh00g0xhd8w7w3k570	\N	2026-06-29 11:55:53.453	2026-06-29 11:55:53.453	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-06-29 11:55:53.763	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vwws00gbxhd8xdblt14z	cliente3@somosmoovy.com	$2b$12$9q91L9dMys9zsNJgBBKjgO3rmqK5OFExmfJJEbUojP7g8AJLw4Ufa	Lucía Test	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwws00gcxhd8ifwc7bkh	\N	2026-06-29 11:55:54.076	2026-06-29 11:55:54.076	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vx5l00ghxhd8xnar59ix	cliente4@somosmoovy.com	$2b$12$EfMi32tg/BNF9KGFede11OJs3dScKvyk3ted7lL7Ds5MFgBQ80Hve	Marco Demo	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vx5l00gixhd8lk39samr	\N	2026-06-29 11:55:54.393	2026-06-29 11:55:54.393	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-06-29 12:10:58.965	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vva600f3xhd89zcsytov	repartidor1@somosmoovy.com	$2b$12$wM6iMD5E3RXXdUr5GYnjc.ywxwzoF08aXzL.JKLJSHm0NzMKtQ3RW	Mateo Rider	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vva600f4xhd8q48id7j2	\N	2026-06-29 11:55:51.966	2026-06-29 12:11:39.124	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vwfh00fzxhd8bchmmyw5	cliente1@somosmoovy.com	$2b$12$7ZFsSIglT1XVS/UewQDNYO4T.UjlCul7h9mv6sCYTJ4N.xVVgJYNO	Juana Cliente	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwfh00g0xhd8w7w3k570	\N	2026-06-29 11:55:53.453	2026-07-02 21:17:16.559	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-02 21:17:16.557	\N
 \.
 
 
@@ -2949,6 +2954,7 @@ cmqz5vva600f3xhd89zcsytov	repartidor1@somosmoovy.com	$2b$12$wM6iMD5E3RXXdUr5GYnj
 COPY public."UserActivityLog" (id, "userId", action, "entityType", "entityId", metadata, "ipAddress", "userAgent", "createdAt") FROM stdin;
 cmqz6fb5e0001hf7e3liafkb8	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd86fq6wm5d	{"method":"credentials"}	\N	\N	2026-06-29 12:10:58.993
 cmqz6g65q0003hf7e2t569gbl	cmqz5vva600f3xhd89zcsytov	LOGIN	User	cmqz5vva600f3xhd89zcsytov	{"method":"credentials"}	\N	\N	2026-06-29 12:11:39.182
+cmr409ans0008mh52hvpalfde	cmqz5vwfh00fzxhd8bchmmyw5	LOGIN	User	cmqz5vwfh00fzxhd8bchmmyw5	{"method":"credentials"}	\N	\N	2026-07-02 21:17:11.601
 \.
 
 

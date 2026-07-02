@@ -10,7 +10,6 @@ import { useRouter, usePathname } from "next/navigation";
 import UploadImage from "@/components/ui/UploadImage";
 import UserAvatarMenu from "@/components/layout/UserAvatarMenu";
 import PointsBalanceChip from "@/components/layout/PointsBalanceChip";
-import DeliveryAddressChip from "@/components/layout/DeliveryAddressChip";
 
 interface AppHeaderProps {
     isLoggedIn?: boolean;
@@ -233,13 +232,7 @@ export default function AppHeader({
                     {/* Left: Location or Greeting */}
                     <div className="flex items-center gap-2">
                         {isLoggedIn && firstName ? (
-                            <>
-                                <UserAvatarMenu firstName={firstName} isMarketplace={isMarketplace} size="sm" />
-                                {/* Chip "Entregar en" — dirección activa siempre a la vista
-                                    (feat/direcciones-limite-y-chip-header). Se auto-oculta
-                                    si el usuario no tiene direcciones guardadas. */}
-                                <DeliveryAddressChip align="left" />
-                            </>
+                            <UserAvatarMenu firstName={firstName} isMarketplace={isMarketplace} size="sm" />
                         ) : (
                             <div className="flex items-center gap-1 text-gray-600">
                                 <MapPin className={`w-4 h-4 ${isMarketplace ? "text-[#7C3AED]" : "text-[#e60012]"}`} />
@@ -477,7 +470,6 @@ export default function AppHeader({
 
                     {/* Right */}
                     <div className="flex items-center gap-3 flex-shrink-0">
-                        {isLoggedIn && <DeliveryAddressChip align="right" />}
                         {isLoggedIn && <PointsBalanceChip />}
                         {isLoggedIn && (
                             <Link

@@ -7,6 +7,7 @@ import CartSidebar from "@/components/layout/CartSidebar";
 // FloatingCartButton removed — cart badge in header is sufficient
 import BottomNav from "@/components/layout/BottomNav";
 import AppHeader from "@/components/layout/AppHeader";
+import DeliveryAddressBar from "@/components/layout/DeliveryAddressBar";
 import PromoPopup from "@/components/store/PromoPopup";
 import ScrollToTop from "@/components/ScrollToTop";
 import { ChatWidget } from "@/components/support/ChatWidget";
@@ -157,6 +158,11 @@ export default function StoreLayout({
 
             {/* Contenido scrollable — solo esta zona se mueve */}
             <main className="flex-1 pt-14 lg:pt-[6.75rem] pb-20 lg:pb-0">
+                {/* Barra "Entregar en" (feat/direcciones-limite-y-chip-header):
+                    dirección de entrega activa, patrón apps de delivery. Va DENTRO
+                    del contenido (no en el header fijo) así el padding-top global
+                    no cambia; scrollea con la página. Se auto-oculta sin direcciones. */}
+                {isLoggedIn && <DeliveryAddressBar />}
                 <PullToRefresh>
                     {children}
                 </PullToRefresh>
