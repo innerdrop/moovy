@@ -292,7 +292,7 @@ export async function sendOrderConfirmationEmail(orderData: {
 
     return sendEmail({
         to: orderData.email,
-        subject: `Pedido #${orderData.orderNumber} confirmado`,
+        subject: `Tu pedido #${orderData.orderNumber} está confirmado 🛍️`,
         html,
         tag: 'order_confirmation',
     });

@@ -10,6 +10,34 @@
 
 ---
 
+## 2026-07-02 (rama `chore/emails-redaccion-catalogo`)
+
+chore: redaccion de emails + reorganizacion del catalogo
+
+Contenido (no toca logica de pagos):
+- PIN de entrega fuera del asunto del email "va en camino" (queda solo en el cuerpo)
+- Reporte de revenue al owner: "comisiones + operativo" -> "comisiones + margen de
+  envio" (el operativo se elimino en el Plan Maestro)
+- Anglicismo "no-show" -> espanol en el asunto al comercio ("vuelve a tu comercio")
+
+Pulido de redaccion:
+- Asuntos redundantes/agresivos corregidos: pedido confirmado, pago rechazado (sin el
+  X), rechazo por comercio, cancelacion por sistema
+- Quitada la presion artificial ("otros lo estan viendo" / "antes de que suba la
+  demanda") en carrito abandonado 2do y "hay repartidor en tu zona"
+- "Tienda aprobada" ahora menciona el primer mes sin comision (0%)
+
+Catalogo:
+- 18 categorias inconsistentes -> 8 limpias (Onboarding y Aprobacion, Pedido, Pago,
+  Entrega, Fidelizacion, Cuenta/Seguridad/Legal, Alertas Operativas, Reportes).
+  69 emails reasignados.
+- Borrada la entrada duplicada "admin_new_change_request" (marcada como no conectada,
+  ya hay versiones especificas). Array de 70 -> 69.
+
+Sin cambio de schema.
+
+**Archivos:** src/lib/email-admin-ops.ts, src/lib/email-legal-ux.ts, src/lib/email-p0.ts, src/lib/email-registry.ts, src/lib/email.ts
+
 ## 2026-07-01 (rama `fix/emails-triggers-ciclo`)
 
 feat: cablear emails transaccionales del ciclo de pedido/pago

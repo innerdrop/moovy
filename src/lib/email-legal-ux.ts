@@ -411,7 +411,7 @@ export async function sendOrderOnTheWayEmail(data: {
 
     return sendEmail({
         to: data.buyerEmail,
-        subject: `\ud83d\udee5\ufe0f Tu pedido ${data.orderNumber} va en camino \u2014 c\u00f3digo ${pinDisplay}`,
+        subject: `\ud83d\udee5\ufe0f Tu pedido ${data.orderNumber} va en camino`,
         html,
         tag: "order_on_the_way",
     });
@@ -477,7 +477,7 @@ export async function sendDriverAvailableEmail(data: {
     const html = emailLayout(`
         <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">¡Ya hay repartidor en tu zona! 🏍️</h2>
         <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
-            ${saludo}se conectó un repartidor cerca tuyo. Entrá ahora y completá tu pedido antes de que vuelva a subir la demanda.
+            ${saludo}se conectó un repartidor cerca tuyo, así que ya podés completar tu pedido y recibirlo donde estés.
         </p>
         ${emailButton("Completar mi pedido", `${baseUrl}/checkout`, "red")}
     `);
@@ -920,7 +920,7 @@ export async function sendMerchantOrderReturnedEmail(data: {
 
     return sendEmail({
         to: data.merchantEmail,
-        subject: `Pedido ${data.orderNumber} vuelve por no-show del cliente`,
+        subject: `El pedido ${data.orderNumber} vuelve a tu comercio`,
         html,
         tag: "merchant_order_returned",
     });

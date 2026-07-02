@@ -71,6 +71,8 @@ export async function sendMerchantApprovedEmail(data: {
             Te recomendamos configurar tus horarios de atenci&oacute;n, agregar tus productos al cat&aacute;logo, vincular tu cuenta de MercadoPago para recibir pagos, y activar las notificaciones push para no perderte pedidos.
         </p>
 
+        ${emailAlertBox('<strong>Tu primer mes es sin comisi&oacute;n (0%).</strong> Empez&aacute; a vender y qued&aacute;te con todo lo que factur&aacute;s durante los primeros 30 d&iacute;as.', 'success')}
+
         ${emailButton('Ir a mi panel', `${baseUrl}/comercios`, 'green')}
     `);
 
@@ -249,7 +251,7 @@ export async function sendPaymentRejectedEmail(data: {
 
     return sendEmail({
         to: data.email,
-        subject: `Pago rechazado \u2014 Pedido #${data.orderNumber}`,
+        subject: `Tu pago no se pudo procesar \u2014 Pedido #${data.orderNumber}`,
         html,
         tag: 'payment_rejected',
     });
@@ -286,7 +288,7 @@ export async function sendOrderRejectedByMerchantEmail(data: {
 
     return sendEmail({
         to: data.email,
-        subject: `Pedido #${data.orderNumber} cancelado por el comercio`,
+        subject: `No pudimos completar tu pedido #${data.orderNumber}`,
         html,
         tag: 'order_rejected_merchant',
     });
@@ -426,11 +428,10 @@ export async function sendOrderCancelledBySystemEmail(data: {
             ${emailBadge('Pedido Cancelado', '#fef2f2', '#991b1b')}
         </div>
         <h2 style="color: #111827; margin-top: 0; text-align: center;">
-            Tu pedido fue cancelado autom&aacute;ticamente
+            Cancelamos tu pedido
         </h2>
         <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-            Hola ${data.customerName}, lamentamos informarte que tu pedido <strong>#${data.orderNumber}</strong>
-            fue cancelado autom&aacute;ticamente.
+            Hola ${data.customerName}, lamentamos avisarte que tuvimos que cancelar tu pedido <strong>#${data.orderNumber}</strong>.
         </p>
 
         ${emailAlertBox(`
@@ -453,7 +454,7 @@ export async function sendOrderCancelledBySystemEmail(data: {
 
     return sendEmail({
         to: data.email,
-        subject: `⚠️ Pedido #${data.orderNumber} cancelado automáticamente`,
+        subject: `Cancelamos tu pedido #${data.orderNumber}`,
         html,
         tag: 'order_cancelled_system',
     });
@@ -1175,7 +1176,7 @@ export async function sendCartAbandonmentEmail(data: {
 
     const heading = data.isSecondReminder
         ? `<h2 style="color: #2d3748; font-size: 22px; margin: 0 0 10px;">¡Tus productos siguen esperándote!</h2>
-           <p style="color: #718096; margin: 0 0 20px;">No te quedes sin ellos — otros compradores también los están viendo.</p>`
+           <p style="color: #718096; margin: 0 0 20px;">Guardamos tu carrito tal cual lo dejaste. Cuando quieras, completás tu pedido en un toque.</p>`
         : `<h2 style="color: #2d3748; font-size: 22px; margin: 0 0 10px;">¿Te olvidaste de algo?</h2>
            <p style="color: #718096; margin: 0 0 20px;">Guardamos tu carrito para que puedas completar tu pedido cuando quieras.</p>`;
 

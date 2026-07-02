@@ -543,7 +543,7 @@ export async function sendDailyRevenueSummaryEmail(
                 <div style="display: table-cell; padding: 16px; background: #fef2f2; border-radius: 12px; text-align: center; width: 50%;">
                     <p style="margin: 0; color: #991b1b; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Revenue Moovy</p>
                     <p style="margin: 8px 0 4px 0; color: #e60012; font-size: 32px; font-weight: 700;">${fmt(data.moovyRevenue)}</p>
-                    <p style="margin: 0; color: #6b7280; font-size: 12px;">comisiones + operativo</p>
+                    <p style="margin: 0; color: #6b7280; font-size: 12px;">comisiones + margen de envío</p>
                 </div>
             </div>
         </div>
