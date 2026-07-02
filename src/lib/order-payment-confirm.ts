@@ -402,6 +402,12 @@ export async function confirmOrderPaymentFromMp(
         paymentLogger.error({ orderId, error: err?.message }, "[order-payment-confirm] email failed");
     });
 
+    // Email al comercio: "pago recibido". Va DENTRO del bloque idempotente (count>0),
+    // así que solo el primer caller (webhook o polling) lo dispara — nunca se dobla.
+    sendMerchantPaymentReceivedSafe(order).catch((err) => {
+        paymentLogger.error({ orderId, error: err?.message }, "[order-payment-confirm] merchant payment-received email failed");
+    });
+
     paymentLogger.info({ orderId, orderNumber: order.orderNumber, mpPaymentId, amount: mpAmount }, "[order-payment-confirm] payment confirmed");
 
     return {
@@ -464,4 +470,39 @@ async function sendConfirmationEmailSafe(order: OrderForConfirm) {
         address: addressString,
         isPickup: order.isPickup,
     });
+}
+
+// Email al comercio: "pago recibido" con desglose (bruto, comisión, neto). Un email
+// por comercio del pedido (multi-vendor). Los números salen del snapshot inmutable
+// del SubOrder. Fire-and-forget por comercio; nunca rompe la confirmación.
+async function sendMerchantPaymentReceivedSafe(order: OrderForConfirm) {
+    for (const sub of order.subOrders) {
+        if (!sub.merchantId) continue;
+        try {
+            const so = await prisma.subOrder.findUnique({
+                where: { id: sub.id },
+                select: {
+                    subtotal: true,
+                    moovyCommission: true,
+                    sellerPayout: true,
+                    merchant: { select: { name: true, email: true, owner: { select: { email: true } } } },
+                },
+            });
+            if (!so?.merchant) continue;
+            const to = so.merchant.email ?? so.merchant.owner?.email;
+            if (!to) continue;
+            const { sendMerchantPaymentReceivedEmail } = await import("@/lib/email-p0");
+            await sendMerchantPaymentReceivedEmail({
+                email: to,
+                merchantName: so.merchant.name,
+                orderNumber: order.orderNumber,
+                amount: so.subtotal,
+                commission: so.moovyCommission ?? 0,
+                netAmount: so.sellerPayout ?? 0,
+                paymentMethod: order.paymentMethod || "mercadopago",
+            });
+        } catch (err) {
+            paymentLogger.error({ orderId: order.id, subOrderId: sub.id, error: err }, "[order-payment-confirm] merchant payment-received email failed");
+        }
+    }
 }

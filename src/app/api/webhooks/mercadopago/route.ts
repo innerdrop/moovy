@@ -298,6 +298,23 @@ async function handleRejected(
     } catch (notifError) {
         paymentLogger.error({ orderId: order.id, error: notifError }, "Error attempting to notify buyer of payment rejection");
     }
+
+    // Email al comprador: pago rechazado. Fire-and-forget: NUNCA hace throw dentro del
+    // webhook (un throw haría que MP reintente). Idempotente por eventId aguas arriba.
+    (async () => {
+        try {
+            if (!order.user.email) return;
+            const { sendPaymentRejectedEmail } = await import("@/lib/email-p0");
+            await sendPaymentRejectedEmail({
+                email: order.user.email,
+                customerName: order.user.name ?? "Cliente",
+                orderNumber: order.orderNumber,
+                total: order.total,
+            });
+        } catch (err) {
+            paymentLogger.error({ orderId: order.id, error: err }, "Failed to send payment-rejected email");
+        }
+    })();
 }
 
 // ─── Socket Helper ───────────────────────────────────────────────────────────

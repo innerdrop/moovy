@@ -60,6 +60,10 @@ export async function POST(req: NextRequest) {
                     userId: true,
                     orderNumber: true,
                     merchantId: true,
+                    total: true,
+                    paymentMethod: true,
+                    paymentStatus: true,
+                    user: { select: { email: true, name: true } },
                 },
             });
 
@@ -98,6 +102,28 @@ export async function POST(req: NextRequest) {
                 }).catch(() => { /* import safety */ });
 
                 notifyBuyer(order.userId, "CANCELLED", order.orderNumber, { orderId: order.id }).catch(console.error);
+
+                // Email al comprador: cancelación por sistema. Solo para pedidos NO pagados
+                // con MP (los pagados reciben el email de reembolso vía refundOrderIfPaid,
+                // no duplicamos). Estado pagado canónico = "PAID". Fire-and-forget.
+                (async () => {
+                    try {
+                        if (!order.user.email) return;
+                        const isPaidMp = order.paymentMethod === "mercadopago" && order.paymentStatus === "PAID";
+                        if (isPaidMp) return;
+                        const { sendOrderCancelledBySystemEmail } = await import("@/lib/email-p0");
+                        await sendOrderCancelledBySystemEmail({
+                            email: order.user.email,
+                            customerName: order.user.name ?? "Cliente",
+                            orderNumber: order.orderNumber,
+                            total: order.total,
+                            reason: cancelReason,
+                            willRefund: false,
+                        });
+                    } catch (err) {
+                        console.error("[merchant-timeout] Failed to send system-cancel email:", err);
+                    }
+                })();
 
                 // Socket notifications
                 const socketData = { orderId: order.id, orderNumber: order.orderNumber };

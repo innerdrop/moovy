@@ -10,6 +10,37 @@
 
 ---
 
+## 2026-07-01 (rama `fix/emails-triggers-ciclo`)
+
+feat: cablear emails transaccionales del ciclo de pedido/pago
+
+Conecta los disparadores de 8 emails que estaban definidos y registrados en
+EMAIL_REGISTRY pero nunca se enviaban. Todos fire-and-forget (si el email falla,
+NUNCA rompe el pedido ni el pago) y verificados con cross-check (2 rondas).
+
+- Pedido entregado -> al pasar a DELIVERED (driver/orders/[id]/status)
+- Nuevo pedido al comercio -> al crear el pedido (orders POST, por comercio)
+- Pago rechazado -> webhook MP rejected (idempotente por eventId, no throwea)
+- Rechazo del comercio -> merchant/orders/[id]/reject
+- Cancelacion del comprador -> orders/[id]/cancel (solo NO pagados con MP; los
+  pagados reciben el email de reembolso via refundOrderIfPaid -> sin duplicar)
+- Cancelacion por sistema -> cron merchant-timeout (misma logica anti-duplicado)
+- Suspension de comercio/repartidor -> admin/users/[id]/suspend
+- Pago recibido al comercio -> order-payment-confirm, DENTRO del bloque idempotente
+  count>0 (una sola vez aunque confirmen webhook y polling), con desglose
+  bruto/comision/neto por SubOrder (sellerPayout = subtotal - moovyCommission)
+
+Se difieren (sin evento propio o redundantes): pago pendiente (idempotencia
+requeriria un campo nuevo de schema), cancelado-por-comercio (redundante con
+rechazo), refund_processed (se usa order_refunded ya existente), recordatorio
+pre-timeout (falta el cron), emails de owner (falta cron/evento), y el 2do trigger
+de cancelacion por sistema en assignment-engine (escenario UNASSIGNABLE, ya cubierto
+por el flujo de "buscando repartidor").
+
+Sin cambio de schema (no requiere prisma db push).
+
+**Archivos:** knip.json, src/app/api/admin/users/[id]/suspend/route.ts, src/app/api/cron/merchant-timeout/route.ts, src/app/api/driver/orders/[id]/status/route.ts, src/app/api/merchant/orders/[id]/reject/route.ts, src/app/api/orders/[id]/cancel/route.ts, src/app/api/orders/route.ts, src/app/api/webhooks/mercadopago/route.ts (+1 mas)
+
 ## 2026-07-01 (rama `fix/motor-envio-aditivo-y-pago-repartidor`)
 
 fix: motor de envío aditivo (Plan Maestro v1) + repartidor siempre pago

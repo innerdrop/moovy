@@ -1650,12 +1650,37 @@ export async function POST(request: Request) {
         // --- PUSH: Notify merchants/sellers about new order ---
         try {
             const buyerName = session.user.name || undefined;
+            // Email al comercio: nuevo pedido recibido. Busca el email del comercio (o
+            // el de su dueño como respaldo). Fire-and-forget: nunca rompe el pedido.
+            const emailNewOrderToMerchant = async (mid: string, itemCount: number) => {
+                try {
+                    const m = await prisma.merchant.findUnique({
+                        where: { id: mid },
+                        select: { name: true, email: true, owner: { select: { email: true } } },
+                    });
+                    const to = m?.email ?? m?.owner?.email;
+                    if (!m || !to) return;
+                    const { sendMerchantNewOrderEmail } = await import("@/lib/email-p0");
+                    await sendMerchantNewOrderEmail({
+                        email: to,
+                        merchantName: m.name,
+                        orderNumber: order.orderNumber,
+                        customerName: buyerName ?? "Cliente",
+                        total: order.total,
+                        itemCount,
+                        isPickup: isPickup || false,
+                    });
+                } catch (err) {
+                    orderLogger.error({ error: err, merchantId: mid }, "Failed to send merchant new-order email");
+                }
+            };
             if (groups && groups.length > 0) {
                 for (const group of groups) {
                     if (group.merchantId) {
                         notifyMerchant(group.merchantId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify merchant"));
                         // ISSUE-031: bienvenida one-shot al primer pedido de este merchant.
                         tryNotifyMerchantFirstOrderWelcome(group.merchantId, order.orderNumber, order.total);
+                        void emailNewOrderToMerchant(group.merchantId, group.items.length);
                     }
                     if (group.sellerId) {
                         notifySeller(group.sellerId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify seller"));
@@ -1665,6 +1690,7 @@ export async function POST(request: Request) {
                 notifyMerchant(merchantId, order.orderNumber, order.total, buyerName).catch((err) => orderLogger.error({ error: err }, "Failed to notify merchant"));
                 // ISSUE-031: bienvenida one-shot al primer pedido de este merchant.
                 tryNotifyMerchantFirstOrderWelcome(merchantId, order.orderNumber, order.total);
+                void emailNewOrderToMerchant(merchantId, 1);
             }
         } catch (e) {
             orderLogger.error({ orderId: order.id, error: e }, "Failed to notify vendor");

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "scripts/**/*.{ts,js,mjs,cjs}",
+    "prisma/seed*.{ts,mjs}",
+    "prisma/socket-server.ts",
+    "instrumentation.ts",
+    "sentry.*.config.ts",
+    "src/proxy.ts",
+    "public/sw.js"
+  ],
+  "ignore": ["load-testing/**"]
+}

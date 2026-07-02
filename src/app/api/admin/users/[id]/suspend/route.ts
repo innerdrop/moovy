@@ -59,7 +59,7 @@ export async function POST(
       where: { id },
       include: {
         driver: { select: { id: true } },
-        ownedMerchants: { select: { id: true } },
+        ownedMerchants: { select: { id: true, name: true, email: true } },
         sellerProfile: { select: { id: true } },
       },
     });
@@ -218,6 +218,33 @@ export async function POST(
       { userId: id, adminId: admin.userId, reason, until, role: role || "FULL_USER" },
       "Usuario suspendido"
     );
+
+    // Email de suspensión al afectado (comercio y/o repartidor, según lo suspendido).
+    // Fire-and-forget: nunca rompe la respuesta.
+    (async () => {
+      try {
+        const { sendMerchantSuspendedEmail, sendDriverSuspendedEmail } = await import("@/lib/email-p0");
+        if ((!role || role === "COMERCIO") && user.ownedMerchants.length > 0) {
+          for (const m of user.ownedMerchants) {
+            await sendMerchantSuspendedEmail({
+              email: m.email ?? user.email,
+              businessName: m.name,
+              contactName: user.firstName ?? m.name,
+              reason,
+            });
+          }
+        }
+        if ((!role || role === "DRIVER") && user.driver) {
+          await sendDriverSuspendedEmail({
+            email: user.email,
+            driverName: user.firstName ?? "Repartidor",
+            reason,
+          });
+        }
+      } catch (err) {
+        adminLogger.error({ err, userId: id }, "Failed to send suspension email");
+      }
+    })();
 
     return NextResponse.json({
       success: true,

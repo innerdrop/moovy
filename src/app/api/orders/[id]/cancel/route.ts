@@ -33,6 +33,7 @@ export async function POST(
             items: { select: { productId: true, listingId: true, quantity: true } },
             merchant: { select: { id: true, ownerId: true, name: true } },
             subOrders: { select: { merchantId: true, sellerId: true } },
+            user: { select: { email: true, name: true } },
         },
     });
 
@@ -132,6 +133,29 @@ export async function POST(
         orderId: order.id,
         merchantName: order.merchant?.name,
     }).catch(console.error);
+
+    // Email al comprador: confirmación de cancelación. SOLO para pedidos NO pagados
+    // online (efectivo o sin pagar). En los pagados con MP, refundOrderIfPaid ya manda
+    // el email de reembolso (order_refunded), así que acá salimos para no duplicar.
+    // Estado pagado canónico = "PAID" (order-payment-confirm.ts). Fire-and-forget.
+    (async () => {
+        try {
+            if (!order.user.email) return;
+            const isPaidMp = order.paymentMethod === "mercadopago" && order.paymentStatus === "PAID";
+            if (isPaidMp) return; // el email de reembolso lo manda refundOrderIfPaid
+            const { sendOrderCancelledByBuyerEmail } = await import("@/lib/email-p0");
+            await sendOrderCancelledByBuyerEmail({
+                email: order.user.email,
+                customerName: order.user.name ?? "Cliente",
+                orderNumber: order.orderNumber,
+                total: order.total,
+                willRefund: false,
+                paymentMethod: order.paymentMethod ?? "efectivo",
+            });
+        } catch (err) {
+            console.error("[buyer-cancel] Failed to send cancellation email:", err);
+        }
+    })();
 
     // Notify via socket (non-blocking)
     try {

@@ -190,6 +190,30 @@ export async function PATCH(
             }
         }
 
+        // Email: confirmación de pedido entregado al comprador. Siempre al pasar a
+        // DELIVERED (no depende de los puntos). Fire-and-forget: si el email falla,
+        // NUNCA rompe la transición del pedido.
+        if (deliveryStatus === "DELIVERED") {
+            (async () => {
+                try {
+                    const buyer = await prisma.user.findUnique({
+                        where: { id: order.userId },
+                        select: { email: true, firstName: true },
+                    });
+                    if (!buyer?.email) return;
+                    const { sendOrderDeliveredEmail } = await import("@/lib/email-p0");
+                    await sendOrderDeliveredEmail({
+                        email: buyer.email,
+                        customerName: buyer.firstName ?? "Cliente",
+                        orderNumber: order.orderNumber,
+                        total: order.total,
+                    });
+                } catch (err) {
+                    statusLogger.error({ err, orderId }, "Error sending order-delivered email");
+                }
+            })();
+        }
+
         // Notify buyer of status change
         if (deliveryStatus === "DELIVERED") {
             notifyBuyer(order.userId, "DELIVERED", order.orderNumber, { orderId: order.id })

@@ -54,6 +54,9 @@ export async function POST(
                 paymentMethod: true,
                 paymentStatus: true,
                 mpPaymentId: true,
+                total: true,
+                user: { select: { email: true, name: true } },
+                merchant: { select: { name: true } },
             },
         });
 
@@ -85,6 +88,28 @@ export async function POST(
 
         // Notify buyer
         notifyBuyer(order.userId, "CANCELLED", order.orderNumber, { orderId: order.id }).catch(console.error);
+
+        // Email al comprador: el comercio no pudo aceptar el pedido. Comunica el
+        // reembolso vía willRefund (el refund se hace inline en este endpoint).
+        // Fire-and-forget: nunca rompe el rechazo.
+        (async () => {
+            try {
+                if (!order.user.email) return;
+                const willRefund = order.paymentMethod === "mercadopago" && order.paymentStatus === "PAID";
+                const { sendOrderRejectedByMerchantEmail } = await import("@/lib/email-p0");
+                await sendOrderRejectedByMerchantEmail({
+                    email: order.user.email,
+                    customerName: order.user.name ?? "Cliente",
+                    orderNumber: order.orderNumber,
+                    merchantName: order.merchant?.name ?? "el comercio",
+                    reason,
+                    willRefund,
+                    total: order.total,
+                });
+            } catch (err) {
+                console.error("Failed to send order-rejected-by-merchant email", err);
+            }
+        })();
 
         // Socket notifications
         const socketData = { orderId, orderNumber: order.orderNumber };
