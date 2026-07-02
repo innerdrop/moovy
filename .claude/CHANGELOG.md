@@ -10,6 +10,43 @@
 
 ---
 
+## 2026-07-02 (rama `fix/cortina-identidad-ushuaia`)
+
+fix: cortina con identidad local — "Hecha en Ushuaia, para Ushuaia", foto de Ushuaia en duotono rojo y fuegos artificiales en canvas con física real (laterales, cadencia pro)
+
+**Archivos:** public/ushuaia-bg.jpg, src/app/proximamente/Fireworks.tsx, src/app/proximamente/PreLaunchForm.tsx, src/app/proximamente/page.tsx
+
+## 2026-07-02 (rama `fix/cortina-identidad-ushuaia`)
+
+fix: cortina "Próximamente" con identidad local
+
+- Titular "Está por llegar a Ushuaia" -> "Hecha en Ushuaia, para Ushuaia" (decisión del
+  founder: Moovy se creó en Ushuaia, para Ushuaia; la cortina debe decirlo).
+- Párrafo nuevo: "Moovy nace acá, en el fin del mundo..." (framing positivo, sin
+  comparaciones implícitas con apps de afuera, regla de marca).
+- Tarjeta social (OG title/description/alt) y mensaje pre-escrito de WhatsApp del
+  formulario alineados al mismo copy.
+- Solo copy en esa parte, sin lógica ni schema. NOTA: la imagen `public/og-moovy.png`
+  puede tener el texto viejo horneado — revisar si hay que regenerarla.
+- Fuegos artificiales hiperrealistas: reemplazada la animación CSS (estallidos fijos
+  en loop) por canvas con física real en `Fireworks.tsx` (client, sin librerías):
+  cohetes que suben con estela de brasas, destello de explosión, gravedad + arrastre
+  del aire, chispas que titilan y crepitan al apagarse. Misma paleta celeste/blanco.
+  Respeta prefers-reduced-motion, pausa con pestaña oculta, menos partículas en
+  mobile, cap global de chispas. Calibrado con el founder: explosiones grandes
+  (radio 22-38% del lado menor, variable), SOLO en los laterales (bandas 4-20% y
+  80-96% del ancho — el centro queda para el branding), altura aleatoria (5-50% del
+  alto), cadencia de show profesional (ritmo irregular 2,5-7s + dobletes ocasionales).
+- Foto de Ushuaia de fondo (`public/ushuaia-bg.jpg`, panorama puerto+ciudad+Martial,
+  Unsplash de Caio Portela, licencia libre comercial sin atribución): va debajo de un
+  velo rojo Moovy en duotono (`mix-blend-multiply` + 45% rojo extra) — se reconoce el
+  paisaje, la identidad sigue roja y el texto mantiene contraste. Si el archivo falta,
+  la página cae al rojo plano (no rompe).
+
+**Archivos:** src/app/proximamente/page.tsx, src/app/proximamente/PreLaunchForm.tsx, src/app/proximamente/Fireworks.tsx (nuevo), public/ushuaia-bg.jpg (nuevo)
+
+---
+
 ## 2026-07-02 (rama `chore/emails-redaccion-catalogo`)
 
 chore: redaccion de emails + reorganizacion del catalogo

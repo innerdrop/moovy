@@ -63,7 +63,7 @@ export default function PreLaunchForm() {
     const shareWhatsApp = () => {
         // Mensaje pre-escrito que llega listo para enviar.
         const message =
-            `Mirá esto: Moovy está por llegar a Ushuaia. ` +
+            `Mirá esto: llega Moovy, hecha en Ushuaia para Ushuaia. ` +
             `Si tenés un comercio o querés repartir, anotate ahora y sé de los primeros en ser parte: ` +
             `${shareUrl()}`;
         const msg = encodeURIComponent(message);
