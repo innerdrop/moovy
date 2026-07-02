@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ArrowLeft, MapPin, Loader2, Plus, Trash2, Pencil, Home, Briefcase, Map as MapIcon, CheckCircle } from "lucide-react";
+import { MAX_SAVED_ADDRESSES } from "@/lib/addresses";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import { toast } from "@/store/toast";
 import { confirm } from "@/store/confirm";
@@ -183,7 +184,7 @@ export default function DireccionesPage() {
                         </Link>
                         <h1 className="font-bold text-lg text-gray-900">Mis Direcciones</h1>
                     </div>
-                    {addresses.length > 0 && !showForm && (
+                    {addresses.length > 0 && addresses.length < MAX_SAVED_ADDRESSES && !showForm && (
                         <button
                             onClick={startAdd}
                             className="bg-red-50 text-moovy p-2 rounded-full hover:bg-red-100 transition"
@@ -333,13 +334,23 @@ export default function DireccionesPage() {
                                     </div>
                                 ))}
 
-                                <button
-                                    onClick={startAdd}
-                                    className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-medium hover:border-moovy hover:text-moovy hover:bg-red-50/30 transition flex items-center justify-center gap-2 mt-4"
-                                >
-                                    <Plus className="w-5 h-5" />
-                                    Agregar otra ubicación
-                                </button>
+                                {/* Límite de direcciones (feat/direcciones-limite-y-chip-header):
+                                    al llegar al máximo, el botón se reemplaza por la explicación.
+                                    La defensa real está en el POST del endpoint. */}
+                                {addresses.length < MAX_SAVED_ADDRESSES ? (
+                                    <button
+                                        onClick={startAdd}
+                                        className="w-full py-4 border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 font-medium hover:border-moovy hover:text-moovy hover:bg-red-50/30 transition flex items-center justify-center gap-2 mt-4"
+                                    >
+                                        <Plus className="w-5 h-5" />
+                                        Agregar otra ubicación
+                                    </button>
+                                ) : (
+                                    <p className="text-center text-sm text-gray-400 py-4 mt-2">
+                                        Podés tener hasta {MAX_SAVED_ADDRESSES} direcciones guardadas.
+                                        Para agregar otra, eliminá una primero.
+                                    </p>
+                                )}
                             </div>
                         )}
                     </div>

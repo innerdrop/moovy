@@ -8,6 +8,7 @@ import Link from "next/link";
 import { useCartStore, type CartItem } from "@/store/cart";
 import { usePointsCelebration } from "@/store/pointsCelebration";
 import { formatPrice } from "@/lib/delivery";
+import { MAX_SAVED_ADDRESSES } from "@/lib/addresses";
 import PointsWidget from "@/components/checkout/PointsWidget";
 import {
     MapPin,
@@ -915,17 +916,27 @@ export default function CheckoutPage() {
                                                             </button>
                                                         ))}
 
-                                                        {/* New Address Button in Grid */}
-                                                        <button
-                                                            onClick={handleNewAddress}
-                                                            className={`text-left p-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition ${isNewAddress
-                                                                ? "border-moovy bg-gray-50 text-moovy"
-                                                                : "border-gray-300 text-gray-500 hover:border-gray-400"
-                                                                }`}
-                                                        >
-                                                            <span className="font-semibold text-sm">+ Nueva Dirección</span>
-                                                        </button>
+                                                        {/* New Address Button in Grid — oculto al llegar al límite
+                                                            (feat/direcciones-limite-y-chip-header). La defensa real
+                                                            está en el POST del endpoint. */}
+                                                        {savedAddresses.length < MAX_SAVED_ADDRESSES && (
+                                                            <button
+                                                                onClick={handleNewAddress}
+                                                                className={`text-left p-3 rounded-xl border-2 border-dashed flex items-center justify-center gap-2 transition ${isNewAddress
+                                                                    ? "border-moovy bg-gray-50 text-moovy"
+                                                                    : "border-gray-300 text-gray-500 hover:border-gray-400"
+                                                                    }`}
+                                                            >
+                                                                <span className="font-semibold text-sm">+ Nueva Dirección</span>
+                                                            </button>
+                                                        )}
                                                     </div>
+                                                    {savedAddresses.length >= MAX_SAVED_ADDRESSES && (
+                                                        <p className="text-xs text-gray-400">
+                                                            Podés tener hasta {MAX_SAVED_ADDRESSES} direcciones guardadas.
+                                                            Administralas desde tu perfil.
+                                                        </p>
+                                                    )}
                                                 </div>
                                             )}
 

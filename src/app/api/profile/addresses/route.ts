@@ -8,6 +8,9 @@ import { prisma } from "@/lib/prisma";
 // texto crudo del cliente (que quedaba con lat/lng null si el user tipeaba sin
 // elegir una sugerencia → envío sin distancia y sin gate de cobertura).
 import { geocodeAddress, buildAddressQuery } from "@/lib/geocoding";
+// Rama feat/direcciones-limite-y-chip-header: límite de direcciones guardadas.
+// Helper compartido client+server (regla #7); la defensa real es este endpoint.
+import { MAX_SAVED_ADDRESSES, MAX_ADDRESSES_MESSAGE } from "@/lib/addresses";
 
 export const dynamic = "force-dynamic";
 
@@ -167,8 +170,18 @@ export async function POST(request: Request) {
             }
         }
 
-        // Use transaction if setting default
+        // Transacción Serializable: el count + create son atómicos para que dos
+        // requests simultáneos no puedan superar el límite (QA: doble click / race).
+        const MAX_REACHED = "MAX_SAVED_ADDRESSES_REACHED";
         const result = await prisma.$transaction(async (tx) => {
+            // ── Límite de direcciones guardadas (solo activas, soft delete afuera) ──
+            const activeCount = await tx.address.count({
+                where: { userId: session.user.id, deletedAt: null },
+            });
+            if (activeCount >= MAX_SAVED_ADDRESSES) {
+                throw new Error(MAX_REACHED);
+            }
+
             if (data.isDefault) {
                 // Unset other defaults
                 await tx.address.updateMany({
@@ -195,11 +208,17 @@ export async function POST(request: Request) {
                     isDefault: data.isDefault || false
                 }
             });
-        });
+        }, { isolationLevel: "Serializable" });
 
         return NextResponse.json(result, { status: 201 });
 
     } catch (error) {
+        if (error instanceof Error && error.message === "MAX_SAVED_ADDRESSES_REACHED") {
+            return NextResponse.json(
+                { error: MAX_ADDRESSES_MESSAGE, code: "MAX_ADDRESSES" },
+                { status: 409 }
+            );
+        }
         console.error("Error creating address:", error);
         return NextResponse.json({ error: "Error al crear dirección" }, { status: 500 });
     }

@@ -10,6 +10,36 @@
 
 ---
 
+## 2026-07-02 (rama `feat/direcciones-limite-y-chip-header`)
+
+feat: límite de 2 direcciones guardadas (defensa server-side) + chip "Entregar en" en el header con cambio rápido de dirección
+
+**Archivos:** src/app/(store)/checkout/page.tsx, src/app/(store)/mi-perfil/direcciones/page.tsx, src/app/api/profile/addresses/route.ts, src/components/layout/AppHeader.tsx, src/components/layout/DeliveryAddressChip.tsx, src/lib/addresses.ts
+
+## 2026-07-02 (rama `feat/direcciones-limite-y-chip-header`)
+
+feat: límite de 2 direcciones guardadas + chip "Entregar en" en el header
+
+Límite (decisión founder: máximo 2, los que ya tienen 3+ conservan pero no suman):
+- `src/lib/addresses.ts` nuevo: `MAX_SAVED_ADDRESSES = 2` + mensaje compartido
+  client+server (regla #7) + `formatAddressShort`.
+- POST `/api/profile/addresses`: count + create atómicos en transacción Serializable
+  (a prueba de doble click); al llegar al límite → 409 con mensaje claro y
+  `code: MAX_ADDRESSES`. La UI esconde el botón pero la defensa es server (regla #1).
+- Checkout y Mi Perfil > Direcciones: botón "+ Nueva Dirección"/"Agregar otra
+  ubicación" desaparece al llegar a 2, con texto que explica el límite.
+
+Chip "Entregar en" (patrón apps de delivery, espejo de PointsBalanceChip):
+- `DeliveryAddressChip` nuevo: muestra la dirección default en el header (mobile
+  junto al avatar, desktop junto al chip de puntos), dropdown para cambiar entre
+  guardadas (marca isDefault vía PATCH existente → el checkout la preselecciona),
+  link "Administrar direcciones". Solo logueados, 1 fetch, se auto-oculta si no
+  hay direcciones o falla el fetch. Sin schema, sin polling.
+
+**Archivos:** src/lib/addresses.ts (nuevo), src/components/layout/DeliveryAddressChip.tsx (nuevo), src/components/layout/AppHeader.tsx, src/app/api/profile/addresses/route.ts, src/app/(store)/checkout/page.tsx, src/app/(store)/mi-perfil/direcciones/page.tsx
+
+---
+
 ## 2026-07-02 (rama `fix/cortina-identidad-ushuaia`)
 
 fix: cortina con identidad local — "Hecha en Ushuaia, para Ushuaia", foto de Ushuaia en duotono rojo y fuegos artificiales en canvas con física real (laterales, cadencia pro)
