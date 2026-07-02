@@ -3,7 +3,26 @@
 > Punto de retome para la próxima sesión. Generado al pausar el trabajo del checklist pre-launch.
 > Leé este archivo al volver para reconstruir el contexto.
 
-## Dónde estamos (actualizado 2026-06-18)
+## Dónde estamos (actualizado 2026-07-02)
+
+**En `develop`.** Esta sesión cerró 3 ramas (todas mergeadas a develop, NINGUNA deployada a prod todavía):
+- `fix/motor-envio-aditivo-y-pago-repartidor` — motor de envío reescrito al modelo **ADITIVO** (`base_vehículo + costo_km × distancia`, operativo eliminado, valores Ushuaia por vehículo, envío gratis controlado por Moovy con el repartidor siempre pago, arreglo del fallback de payout). CLAUDE.md actualizado a mano. Simulación `scripts/simular-envios.ts`.
+- `fix/emails-triggers-ciclo` — **8 emails del ciclo cableados** (estaban definidos pero nunca disparaban: entregado, nuevo pedido al comercio, pago rechazado, rechazo/cancelación, cancelación por sistema, suspensiones, pago recibido al comercio). Todos fire-and-forget. 2 rondas de cross-check (cazaron un bug de dinero antes de prod).
+- `chore/emails-redaccion-catalogo` — redacción de emails (PIN fuera del asunto, "operativo"→"margen de envío", asuntos pulidos, "mes 1 gratis") + catálogo **18→8 categorías** + duplicado borrado (70→69).
+
+**Modelo financiero cerrado (Plan Maestro v1):** comisión comercio 10% / vendedor 10% / repartidor 80%; envío = solo logística; MP 7,6% transparente, cada parte paga lo suyo.
+
+**Auditoría pre-launch arrancada:** capa 1 (knip con `knip.json`) hecha → lista limpia de código muerto. El hallazgo real (emails sin trigger) ya se resolvió.
+
+**Lo próximo (crítico):** **deployar el batch** (`devmain.ps1` MODO SCHEMA + re-seed `DeliveryRate` + `cerrar-tienda.ps1`) y probar en prod (buscando-repartidor + motor de envío nuevo). Después seguir la auditoría dominio por dominio.
+
+**Pendientes chicos anotados como tareas:** comisión vendedor 10% en código (#17), fusiones de emails + "nivel MOOVER" + owner emails (necesitan crons), organización de documentos, docs por parámetro de OPS (#13), repartidor cancela pedido aceptado (#12).
+
+**Documentos de esta sesión (en el scratchpad de Cowork → mover a `docs/` en la reorg):** `Plan_Maestro_Financiero_Moovy` (md+pdf), `Auditoria_PreLaunch_Moovy.md`, `Revision_Emails_Moovy.md`, `Moovy_Indice_Documentacion.md`, `moovy_flujo_pago.png/svg`.
+
+---
+
+## Dónde estamos (histórico — 2026-06-18)
 
 - **En `develop`. El batch YA ESTÁ DEPLOYADO a producción** (2026-06-18, 19 commits, modo schema). Las 6 ramas de la sesión + las previas están en prod.
 - **Sitio privado**: cortina `LAUNCH_GATE=closed` confirmada. Público ve "Próximamente". Entrás con `https://somosmoovy.com/?preview=moovy2026preview`.

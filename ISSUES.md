@@ -1,5 +1,5 @@
 # Moovy — Issues
-Última actualización: 2026-06-18
+Última actualización: 2026-07-02
 
 > **Fuente única de tareas pendientes.** Para histórico completo de issues resueltos en sprints anteriores → `.claude/CHANGELOG.md`.
 
@@ -33,6 +33,17 @@
 - **A re-probar** (sin bug conocido, solo verificar): s2-2a-11 (bonus bienvenida pendiente), s2-2b-01 (email "registro recibido" al comercio), s3-3c-01 (errores OPS en toast no genérico), s4-4c-04 (variantes de producto), s7-7a-02 (bloqueo de pedido fuera de zona).
 - **500 en `/api/comercios/soporte/notificaciones`** — re-verificar ahora que el batch está deployado; si persiste, abrir rama.
 - **Configurar qué docs pedir al inicio** — decisión del founder: en `/ops/feature-flags`, apagar los `merchant.doc.*` que NO se pidan en el lanzamiento (el seed ya corrió en prod, los 5 flags existen en ON).
+
+### Sesión 2026-07-02 — motor de envío + emails + auditoría pre-launch
+> Detalle vivo en `PROJECT_STATUS.md` y `docs/HANDOFF_PENDIENTES.md`. Registro de auditoría: `Auditoria_PreLaunch_Moovy` (mover a docs/).
+
+- **Deployar el batch de esta sesión** (motor de envío aditivo + emails cableados, todo en develop sin deployar). `devmain.ps1` MODO SCHEMA + re-seed `DeliveryRate` en el VPS + `cerrar-tienda.ps1`. Después: prueba real en prod (buscando-repartidor + motor de envío nuevo con distintas distancias).
+- **Auditoría pre-launch del código (depuración total antes de main)** — EN CURSO. Capa 1 (knip) hecha; seguir dominio por dominio: pagos → motor logístico → comisiones/puntos → config OPS → auth → estados → crons. Cada dominio: hallazgos al registro; críticos se arreglan, el resto se archiva o difiere.
+- **Comisión vendedor marketplace 10% en el código** — CLAUDE.md dice 10% pero el código tiene 12% en `defaultSellerCommission` y en `sendSellerActivatedEmail`. Alinear (rama chica).
+- **Config de OPS: verificar que cada parámetro funcione (no fantasma)** + ficha de documentación por parámetro accesible desde el ⓘ del panel.
+- **Seguimientos de emails** — fusionar redundantes (3 reembolsos, 2 reportes diarios, 2 avisos de nuevo repartidor); crear "subiste de nivel MOOVER"; cablear los de owner (necesitan sus crons).
+- **Repartidor cancela pedido aceptado** + motivo obligatorio + reasignación instantánea (estudiar bien antes de implementar).
+- **Organización de documentos** — reorg de `docs/` (8 carpetas), mover los docs de esta sesión, jubilar las 3 biblias viejas, actualizar `Moovy_Biblia_Financiera_v4.docx` al Plan Maestro.
 
 
 ---
