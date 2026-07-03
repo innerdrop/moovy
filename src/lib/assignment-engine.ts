@@ -12,7 +12,7 @@ import { calculateDistance, estimateTravelTime } from "./geo";
 import { sendNewOfferNotification, sendPushToUser } from "./push";
 import { notifyBuyer, notifyMerchantOrderUnassignable } from "./notifications";
 import { normalizeVehicleType } from "./vehicle-type-mapping";
-import { getCompatibleVehicles, getShipmentType, autoDetectShipmentType, driverMeetsEquipmentRequirements, type ShipmentTypeCode } from "./shipment-types";
+import { getCompatibleVehicles, getShipmentType, autoDetectShipmentType, driverMeetsEquipmentRequirements, EQUIPMENT_FILTERS_ENABLED, type ShipmentTypeCode } from "./shipment-types";
 import { prioritizeOrders, type OrderForPriority } from "./order-priority";
 import { deliveryLogger } from "./logger";
 import { sendDriverAssignedEmail } from "./email-legal-ux";
@@ -250,8 +250,11 @@ export async function findNextEligibleDriver(
     // PostGIS aplicamos los flags como AND directos (mas eficiente que traer todos
     // y filtrar en JS); en el fallback Haversine usamos el helper.
     const shipment = getShipmentType(shipmentTypeCode);
-    const requireThermalBag = shipment.requiresThermalBag;
-    const requireColdStorage = shipment.requiresColdChain;
+    // fix/asignacion-sin-filtro-equipamiento: con el interruptor apagado, estos
+    // quedan SIEMPRE en false y el filtro de equipamiento de la query no excluye
+    // a nadie (decisión founder para el lanzamiento).
+    const requireThermalBag = EQUIPMENT_FILTERS_ENABLED && shipment.requiresThermalBag;
+    const requireColdStorage = EQUIPMENT_FILTERS_ENABLED && shipment.requiresColdChain;
 
     // Ensure excludeDriverIds is never empty for SQL ANY() — use a dummy value
     const excludeIds = excludeDriverIds.length > 0 ? excludeDriverIds : ["none"];
@@ -530,7 +533,8 @@ export async function startAssignmentCycle(
             shipmentTypeCode: orderCategory.shipmentTypeCode,
             shipmentTypeName: shipmentType.name,
             shipmentTypeIcon: shipmentType.icon,
-            requiresThermalBag: shipmentType.requiresThermalBag,
+            // Con el filtro apagado, no mostrarle al driver un requisito que no aplica.
+            requiresThermalBag: EQUIPMENT_FILTERS_ENABLED && shipmentType.requiresThermalBag,
             maxDeliveryMinutes: shipmentType.maxDeliveryMinutes,
             distanceToMerchant: Math.round(distanceToMerchant * 10) / 10,
             distanceToCustomer: distanceToCustomer != null ? Math.round(distanceToCustomer * 10) / 10 : null,
@@ -877,7 +881,8 @@ export async function startSubOrderAssignmentCycle(
             shipmentTypeCode: subOrderCategory.shipmentTypeCode,
             shipmentTypeName: shipmentType.name,
             shipmentTypeIcon: shipmentType.icon,
-            requiresThermalBag: shipmentType.requiresThermalBag,
+            // Con el filtro apagado, no mostrarle al driver un requisito que no aplica.
+            requiresThermalBag: EQUIPMENT_FILTERS_ENABLED && shipmentType.requiresThermalBag,
             maxDeliveryMinutes: shipmentType.maxDeliveryMinutes,
             distanceToMerchant: Math.round(distanceToMerchant * 10) / 10,
             distanceToCustomer: distanceToCustomer != null ? Math.round(distanceToCustomer * 10) / 10 : null,

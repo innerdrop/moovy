@@ -104,6 +104,17 @@ export const SHIPMENT_TYPE_LIST: ShipmentTypeDefinition[] = Object.values(SHIPME
   (a, b) => b.priorityWeight - a.priorityWeight
 );
 
+// ─── Interruptor de lanzamiento ─────────────────────────────────────────────────
+//
+// Rama fix/asignacion-sin-filtro-equipamiento (2026-07-02) — decisión del founder:
+// para el lanzamiento, la naturaleza del envío (caliente/frío/frágil) NO restringe
+// ni vehículos ni equipamiento del repartidor. El tamaño/peso del producto sigue
+// mandando (PackageCategory → vehículo, motor de envío → precio). Con pocos
+// repartidores conectados, cada filtro invisible es un pedido que se queda sin
+// asignar. El sistema queda dormido: para reactivarlo, poner esta constante en
+// true (los SLA, prioridades e íconos informativos siguen funcionando igual).
+export const EQUIPMENT_FILTERS_ENABLED = false;
+
 // ─── Helpers ────────────────────────────────────────────────────────────────────
 
 /**
@@ -123,6 +134,8 @@ export function isVehicleCompatibleWithShipment(
   vehicleType: string,
   shipmentTypeCode: string
 ): boolean {
+  // Lanzamiento simple: la naturaleza del envío no restringe vehículos.
+  if (!EQUIPMENT_FILTERS_ENABLED) return true;
   const shipment = getShipmentType(shipmentTypeCode);
   return shipment.allowedVehicles.includes(vehicleType.toUpperCase());
 }
@@ -135,6 +148,8 @@ export function getCompatibleVehicles(
   packageCategoryVehicles: string[],
   shipmentTypeCode: string
 ): string[] {
+  // Lanzamiento simple: solo el tamaño (PackageCategory) decide el vehículo.
+  if (!EQUIPMENT_FILTERS_ENABLED) return packageCategoryVehicles;
   const shipment = getShipmentType(shipmentTypeCode);
   const shipmentSet = new Set(shipment.allowedVehicles);
   return packageCategoryVehicles.filter((v) => shipmentSet.has(v));
@@ -151,6 +166,8 @@ export function driverMeetsEquipmentRequirements(
     hasColdStorage?: boolean;
   }
 ): boolean {
+  // Lanzamiento simple: sin requisitos de equipamiento para repartir.
+  if (!EQUIPMENT_FILTERS_ENABLED) return true;
   const shipment = getShipmentType(shipmentTypeCode);
 
   if (shipment.requiresThermalBag && !driverEquipment.hasThermalBag) {

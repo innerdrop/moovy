@@ -45,6 +45,16 @@
 - **Repartidor cancela pedido aceptado** + motivo obligatorio + reasignación instantánea (estudiar bien antes de implementar).
 - **Organización de documentos** — reorg de `docs/` (8 carpetas), mover los docs de esta sesión, jubilar las 3 biblias viejas, actualizar `Moovy_Biblia_Financiera_v4.docx` al Plan Maestro.
 
+### Sesión 2026-07-03 — prueba real en prod
+
+- **Unificar criterios de elegibilidad checkout vs motor** (post-launch, no bloquea): el banner "hay repartidor" del checkout (`/api/delivery/availability`) y el motor de asignación calculan disponibilidad con criterios distintos (el banner ignora vehículo/tamaño; el motor ignora `approvalStatus`/`availabilityStatus`). Con el filtro de equipamiento apagado la brecha se achicó mucho, pero el caso "producto XL con solo una bici online" todavía deja pagar un pedido inasignable. Extraer criterio canónico único a `src/lib/`.
+
+## ✅ Resueltos esta sesión (2026-07-03)
+
+| Tema | Rama | Resumen |
+|---|---|---|
+| Driver online nunca recibía el aviso de viaje (prod) | `fix/asignacion-sin-filtro-equipamiento` | Cazado en prueba real: el pedido (auto-detectado comida caliente) exigía mochila térmica y el único driver online tenía `hasThermalBag=false` → excluido en silencio → SEARCHING_DRIVER → reembolso. Decisión founder: la naturaleza del envío (caliente/frío/frágil) ya no restringe ni vehículos ni equipamiento; el tamaño/peso sigue mandando. Interruptor único `EQUIPMENT_FILTERS_ENABLED=false` (sistema dormido, reversible), sección Equipamiento oculta en el perfil del driver, script `verify-asignacion-sin-equipamiento.ts` contra DB real. |
+| Cortina con identidad + direcciones | `fix/cortina-identidad-ushuaia` / `feat/direcciones-limite-y-chip-header` / `fix/direcciones-barra-entregar-en` | "Hecha en Ushuaia, para Ushuaia" + foto local en duotono + fuegos canvas con física real. Límite de 2 direcciones (defensa server) + barra "Entregar en" bajo el header. Deployado a prod. |
 
 ---
 

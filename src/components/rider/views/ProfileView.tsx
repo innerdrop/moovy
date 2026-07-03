@@ -28,6 +28,7 @@ import ImageUpload from "@/components/ui/ImageUpload";
 import DriverBankAccountForm from "@/components/rider/DriverBankAccountForm";
 import ReviewsList from "@/components/ui/ReviewsList";
 import { PortalSwitcherDark } from "@/components/ui/PortalSwitcher";
+import { EQUIPMENT_FILTERS_ENABLED } from "@/lib/shipment-types";
 
 interface ProfileViewProps {
     onBack: () => void;
@@ -657,9 +658,12 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                         </div>
 
                         {/* fix/asignacion-y-logistica (2026-06-05): equipamiento de frio.
-                            Declarar la bolsa termica habilita ofertas de comida caliente
-                            (HOT); la conservadora de frio habilita perecederos (FRESH).
-                            En modo lectura mostramos chips; en edicion, toggles. */}
+                            fix/asignacion-sin-filtro-equipamiento (2026-07-02): la sección
+                            queda OCULTA mientras el filtro esté apagado (EQUIPMENT_FILTERS_ENABLED
+                            en src/lib/shipment-types.ts) — el equipamiento ya no afecta la
+                            asignación y mostrar la config solo confunde. Se reactiva sola
+                            al prender el interruptor. */}
+                        {EQUIPMENT_FILTERS_ENABLED && (
                         <div className="pt-4 mt-1 border-t dark:border-white/10 space-y-3">
                             <p className="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500">
                                 Equipamiento
@@ -715,6 +719,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                                 </div>
                             )}
                         </div>
+                        )}
                     </div>
                 </div>
 

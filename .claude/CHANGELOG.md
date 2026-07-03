@@ -10,6 +10,42 @@
 
 ---
 
+## 2026-07-03 (rama `fix/asignacion-sin-filtro-equipamiento`)
+
+fix: la naturaleza del envío (caliente/frío) ya no excluye repartidores ni restringe vehículos — interruptor EQUIPMENT_FILTERS_ENABLED, tamaño/peso sigue mandando
+
+**Archivos:** ISSUES.md, scripts/verify-asignacion-sin-equipamiento.ts, src/components/rider/views/ProfileView.tsx, src/lib/assignment-engine.ts, src/lib/shipment-types.ts
+
+## 2026-07-03 (rama `fix/asignacion-sin-filtro-equipamiento`)
+
+fix: la naturaleza del envío ya no excluye repartidores (decisión founder)
+
+BUG cazado en prueba real de prod: pedido pagado quedó en SEARCHING_DRIVER con
+un driver online, con GPS y a 2km — lo excluía el filtro de mochila térmica
+(pedido auto-detectado HOT, driver con hasThermalBag=false). Además el banner
+del checkout no aplica esos filtros, así que dejó pagar ("1 disponible") un
+pedido que el motor nunca iba a poder asignar.
+
+Decisión founder: para el lanzamiento, caliente/frío/frágil NO restringe ni
+vehículo ni equipamiento. El tamaño/peso (PackageCategory) sigue mandando
+(precio del envío + vehículo mínimo).
+
+- Interruptor único `EQUIPMENT_FILTERS_ENABLED = false` en `src/lib/shipment-types.ts`.
+  Neutraliza: `driverMeetsEquipmentRequirements` (query PostGIS + fallback Haversine +
+  re-validación en accept), `getCompatibleVehicles` e `isVehicleCompatibleWithShipment`.
+  Sistema dormido, se reactiva poniendo true.
+- Oferta al driver: `requiresThermalBag` sale false (no mostrar un requisito que no aplica).
+- Perfil del driver: sección "Equipamiento" oculta tras el mismo interruptor.
+- Verificación: `scripts/verify-asignacion-sin-equipamiento.ts` (DB real, 9+ checks:
+  HOT/FRESH sin equipamiento pasa, tamaño XL sigue excluyendo BIKE, búsqueda real
+  encuentra al driver sin mochila).
+- PENDIENTE post-launch (ISSUES): unificar criterios de elegibilidad entre el banner
+  de disponibilidad del checkout y el motor (hoy difieren en vehículo/tamaño).
+
+**Archivos:** src/lib/shipment-types.ts, src/lib/assignment-engine.ts, src/components/rider/views/ProfileView.tsx, scripts/verify-asignacion-sin-equipamiento.ts (nuevo)
+
+---
+
 ## 2026-07-02 (rama `fix/direcciones-barra-entregar-en`)
 
 fix: barra "Entregar en" propia bajo el header (reemplaza el chip en el header de la rama anterior)
