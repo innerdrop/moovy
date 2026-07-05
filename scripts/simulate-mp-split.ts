@@ -1,6 +1,10 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Simulación del reparto financiero del pago con Mercado Pago.
 // Rama: fix/split-mp-reserva-y-operativo
+// Rama: fix/split-mp-cada-parte-paga-lo-suyo (2026-07-03): la fórmula ahora es
+//   marketplace_fee = (comisión + envío − desc) × (1 − r)  →  cada parte paga
+//   SU porción del costo de MP (Plan Maestro v1). Ver src/lib/finance/mp-split.ts
+//   y el barrido de verificación en scripts/verify-split-cada-parte.ts.
 //
 // Corré:  npx tsx scripts/simulate-mp-split.ts
 //         npx tsx scripts/simulate-mp-split.ts 9      (probar con 9% de reserva)

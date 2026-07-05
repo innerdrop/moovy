@@ -1,24 +1,32 @@
 // ─────────────────────────────────────────────────────────────────────────────
 // Reparto financiero del pago con Mercado Pago (split / marketplace_fee)
 // Rama: fix/split-mp-reserva-y-operativo
+// Rama: fix/split-mp-cada-parte-paga-lo-suyo (2026-07-03) — Plan Maestro v1
 //
-// PROBLEMA QUE RESUELVE:
-// En el split de MP, el comercio es el que COBRA y Moovy se lleva su parte como
-// `marketplace_fee`. MP descuenta SU comisión PRIMERO (del comercio) y recién
-// después saca el marketplace_fee. Si Moovy se llevaba "comisión + envío completo",
-// cuando el envío era grande frente al producto NO quedaba plata para la comisión
-// de MP → al comercio le daba negativo → MP rechazaba ("Algo salió mal / CPT01").
+// CÓMO FUNCIONA EL SPLIT DE MP:
+// El comercio es el que COBRA y Moovy se lleva su parte como `marketplace_fee`.
+// MP cobra su comisión (7,6% al instante) UNA sola vez y TODA al comercio,
+// sobre el TOTAL de la operación. El marketplace_fee le llega a Moovy intacto.
 //
-// SOLUCIÓN (toda la matemática vive acá, en una función pura y testeable):
-//   1. El comprador cubre la comisión de MP: al envío se le suma un "buffer"
-//      (gross-up) para que, después de que MP cobre lo suyo, queden intactos el
-//      producto del comercio y el envío de Moovy.
-//   2. Tope de seguridad: el marketplace_fee nunca deja al comercio sin su producto
-//      → MP nunca rechaza (si pasara, Moovy cobra un poco menos: es el amortiguador).
-//   3. El % de comisión de MP es CONFIGURABLE (Biblia/OPS): el día que MP suba,
-//      se ajusta sin deploy.
+// REGLA CANÓNICA (Plan Maestro v1): "MP 7,6% transparente — cada parte paga lo
+// suyo". Como MP no puede cobrarle a Moovy directamente, Moovy se auto-descuenta
+// su porción: pide un fee más chico, y esa plata que queda en manos del comercio
+// compensa exactamente la parte del costo de MP que corresponde a Moovy.
+//
+//   marketplace_fee = (comisión + envío − descuento) × (1 − r)
+//
+// Resultado (algebraicamente exacto para CUALQUIER monto):
+//   comercio recibe  (subtotal − comisión) × (1 − r)   → paga SU 7,6% y nada más
+//   Moovy recibe     (comisión + envío − desc) × (1 − r) → paga SU 7,6% vía fee reducido
+//   Además: el neto del comercio nunca puede dar negativo → el rechazo de MP
+//   ("Algo salió mal / CPT01") es imposible por construcción.
+//
+// Si el comercio configura liberación diferida (MP le cobra menos que r), el
+// ahorro es TODO para el comercio; lo de Moovy no cambia. r es CONFIGURABLE
+// (Biblia/OPS): el día que MP cambie la tarifa, se ajusta sin deploy.
 //
 // Reglas: montos redondeados a centavos (Math.round(x*100)/100), nunca negativos.
+// Verificación: scripts/verify-split-cada-parte.ts (barrido de montos extremos).
 // ─────────────────────────────────────────────────────────────────────────────
 
 const round2 = (n: number): number => Math.round(n * 100) / 100;
@@ -53,11 +61,11 @@ export interface MpSplitResult {
     buyerBuffer: number;
     /** Total que paga el comprador = subtotal + deliveryFee + buyerBuffer. */
     chargedTotal: number;
-    /** Monto que MP aparta para Moovy (su comisión + el envío). Es el `marketplace_fee` de la preferencia. */
+    /** Monto que MP aparta para Moovy: (comisión + envío − desc) × (1 − r). Es el `marketplace_fee` de la preferencia. */
     marketplaceFee: number;
-    /** Lo que DEBERÍA quedarle al comercio si MP cobra ~la reserva: subtotal - comisión. */
+    /** Lo que le queda al comercio con MP cobrando r: (subtotal − comisión) × (1 − r). */
     expectedMerchantNet: number;
-    /** Lo que DEBERÍA recibir Moovy: comisión + envío. */
+    /** Parte BRUTA de Moovy antes de su porción de MP: comisión + envío − descuento. */
     expectedMoovyGross: number;
     /** Avisos (ej. si se activó el tope y Moovy cobra menos de lo ideal). */
     notes: string[];
@@ -88,25 +96,37 @@ export function computeMpSplit(input: MpSplitInput): MpSplitResult {
     const chargedTotal = grossUp && r < 1 ? round2(netTarget / (1 - r)) : netTarget;
     const buyerBuffer = round2(chargedTotal - netTarget);
 
-    // 2) Parte ideal de Moovy: su comisión + el envío, MENOS el descuento que absorbe.
-    const idealMoovyFee = Math.max(0, round2(commission + deliveryFee - discount));
+    // 2) Parte BRUTA de Moovy: su comisión + el envío, MENOS el descuento que absorbe.
+    const moovyGross = Math.max(0, round2(commission + deliveryFee - discount));
 
-    // 3) Moovy cobra SU parte completa (comisión + envío). El comercio es el que
-    //    cobra, así que banca su propia comisión de MP según cómo configure su cuenta
-    //    (al instante o a X días) — eso escapa de Moovy. ÚNICO tope: que al comercio no
-    //    le quede negativo después de la comisión de MP (sino MP rechaza el pago). Usamos
-    //    la reserva `r` como estimación máxima de esa comisión. En pedidos normales el
-    //    tope no se activa: Moovy se lleva su comisión + envío enteros.
-    const merchantFloor = round2(subtotal - commission); // informativo (ver expectedMerchantNet)
+    // 3) Plan Maestro v1 — cada parte paga lo suyo: MP le cobra r sobre el TOTAL
+    //    al comercio (que es quien cobra), así que Moovy se auto-descuenta SU
+    //    porción pidiendo un fee reducido: parteBrutaMoovy × (1 − r). Con esto el
+    //    comercio termina pagando exactamente r sobre SU parte, para cualquier
+    //    monto. Nota: si el comercio configura liberación diferida y MP le cobra
+    //    menos que r, el ahorro es todo del comercio (lo de Moovy no cambia).
+    const idealFee = round2(moovyGross * (1 - r));
+
+    //    Tope de seguridad histórico (CPT01): con la fórmula nueva el neto del
+    //    comercio no puede dar negativo, así que el tope es matemáticamente
+    //    inalcanzable — queda como defensa en profundidad por si la fórmula
+    //    cambia el día de mañana.
+    const merchantFloor = round2(Math.max(0, (subtotal - commission)) * (1 - r));
     const maxFee = round2(chargedTotal * (1 - r));
-    const marketplaceFee = Math.max(0, round2(Math.min(idealMoovyFee, maxFee)));
+    const marketplaceFee = Math.max(0, round2(Math.min(idealFee, maxFee)));
 
     const notes: string[] = [];
-    if (marketplaceFee + 0.01 < idealMoovyFee) {
+    if (discount > commission + deliveryFee) {
         notes.push(
-            `Tope de seguridad activado: Moovy recibe $${marketplaceFee} en vez de $${idealMoovyFee} ` +
-            `para que al comercio no le quede negativo tras la comisión de MP (sino MP rechaza el pago). ` +
-            `Pasa solo cuando el envío es enorme frente al producto.`
+            `Descuento ($${discount}) mayor que la parte de Moovy ($${round2(commission + deliveryFee)}): ` +
+            `el fee toca piso en $0 y el excedente del cupón recae en el comercio. ` +
+            `Revisar la configuración de cupones — no deberían superar comisión + envío.`
+        );
+    }
+    if (marketplaceFee + 0.01 < idealFee) {
+        notes.push(
+            `Tope de seguridad activado: Moovy recibe $${marketplaceFee} en vez de $${idealFee} ` +
+            `para que al comercio no le quede negativo tras la comisión de MP (sino MP rechaza el pago).`
         );
     }
 
@@ -115,7 +135,7 @@ export function computeMpSplit(input: MpSplitInput): MpSplitResult {
         chargedTotal,
         marketplaceFee,
         expectedMerchantNet: merchantFloor,
-        expectedMoovyGross: idealMoovyFee,
+        expectedMoovyGross: moovyGross,
         notes,
     };
 }

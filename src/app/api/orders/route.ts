@@ -1455,12 +1455,15 @@ export async function POST(request: Request) {
                 );
                 const mpReservePercent = await getMpReservePercent();
                 // Rama fix/split-mp-grossup-comprador: el comprador NO paga la comisión de
-                // MP (sin gross-up). El que cobra es el comercio, que banca su propia
-                // comisión de MP según cómo tenga configurada su cuenta; Moovy se lleva su
-                // comisión + envío COMPLETOS (computeMpSplit, con tope de seguridad solo
-                // para casos extremos). El descuento (cupón/puntos) ya viene aplicado en
+                // MP (sin gross-up). El descuento (cupón/puntos) ya viene aplicado en
                 // order.total, y buildPreferenceBody totaliza order.total → el cobro
                 // respeta el descuento y el webhook valida sin amount_mismatch.
+                // Rama fix/split-mp-cada-parte-paga-lo-suyo (Plan Maestro v1): Moovy ya NO
+                // se lleva comisión + envío completos. computeMpSplit auto-descuenta la
+                // porción de MP que corresponde a la parte de Moovy:
+                //   marketplace_fee = (comisión + envío − desc) × (1 − 7,6%)
+                // → el comercio paga el 7,6% solo sobre SU parte y Moovy sobre la suya.
+                // Verificación: scripts/verify-split-cada-parte.ts.
                 const mpSplit = computeMpSplit({
                     subtotal: orderForPref.subtotal,
                     deliveryFee: orderForPref.deliveryFee || 0,
@@ -1472,7 +1475,7 @@ export async function POST(request: Request) {
                 if (vendorAccessToken && mpSplit.notes.length > 0) {
                     orderLogger.warn(
                         { orderId: order.id, mpReservePercent, notes: mpSplit.notes },
-                        "MP split: tope de seguridad activado (envío grande vs producto)"
+                        "MP split: aviso del reparto (tope de seguridad o cupón excedido)"
                     );
                 }
                 const prefBody = buildPreferenceBody(orderForPref, baseUrl, marketplaceFee);

@@ -49,10 +49,15 @@
 
 - **Unificar criterios de elegibilidad checkout vs motor** (post-launch, no bloquea): el banner "hay repartidor" del checkout (`/api/delivery/availability`) y el motor de asignación calculan disponibilidad con criterios distintos (el banner ignora vehículo/tamaño; el motor ignora `approvalStatus`/`availabilityStatus`). Con el filtro de equipamiento apagado la brecha se achicó mucho, pero el caso "producto XL con solo una bici online" todavía deja pagar un pedido inasignable. Extraer criterio canónico único a `src/lib/`.
 
+### Sesión 2026-07-03 — hallazgos menores
+
+- **`driverPayoutAmount` redondea a pesos enteros** (`Math.round(tripCost * 0.80)` en assignment-engine): con tripCost $12 guardó $10 en vez de $9,60. Con montos reales la diferencia es de centavos, pero el canon dice redondeo a centavos. Rama chica cuando haya aire.
+
 ## ✅ Resueltos esta sesión (2026-07-03)
 
 | Tema | Rama | Resumen |
 |---|---|---|
+| Split MP: el comercio pagaba el 7,6% de la parte de Moovy | `fix/split-mp-cada-parte-paga-lo-suyo` | Cazado con pago real (MOV-W3G2): MP cobra todo su fee al comercio sobre el total, y Moovy se llevaba su parte completa → al comercio le quedó $0,73 en vez de ~$1,66. Fix en `computeMpSplit`: `marketplace_fee = (comisión + envío − desc) × (1 − 7,6%)` — cada parte paga su porción, exacto para cualquier monto, rechazo CPT01 imposible por construcción. 34 checks verdes (`verify-split-cada-parte.ts`). **Pendiente: prueba real en prod post-deploy.** |
 | Driver online nunca recibía el aviso de viaje (prod) | `fix/asignacion-sin-filtro-equipamiento` | Cazado en prueba real: el pedido (auto-detectado comida caliente) exigía mochila térmica y el único driver online tenía `hasThermalBag=false` → excluido en silencio → SEARCHING_DRIVER → reembolso. Decisión founder: la naturaleza del envío (caliente/frío/frágil) ya no restringe ni vehículos ni equipamiento; el tamaño/peso sigue mandando. Interruptor único `EQUIPMENT_FILTERS_ENABLED=false` (sistema dormido, reversible), sección Equipamiento oculta en el perfil del driver, script `verify-asignacion-sin-equipamiento.ts` contra DB real. |
 | Cortina con identidad + direcciones | `fix/cortina-identidad-ushuaia` / `feat/direcciones-limite-y-chip-header` / `fix/direcciones-barra-entregar-en` | "Hecha en Ushuaia, para Ushuaia" + foto local en duotono + fuegos canvas con física real. Límite de 2 direcciones (defensa server) + barra "Entregar en" bajo el header. Deployado a prod. |
 

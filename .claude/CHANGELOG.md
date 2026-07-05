@@ -10,6 +10,42 @@
 
 ---
 
+## 2026-07-05 (rama `fix/split-mp-cada-parte-paga-lo-suyo`)
+
+fix(pagos): split MP cada parte paga su 7,6% — marketplace_fee = (comisión + envío − desc) × (1 − r), comercio ya no banca el costo de MP sobre la parte de Moovy
+
+**Archivos:** ISSUES.md, scripts/simulate-mp-split.ts, scripts/verify-split-cada-parte.ts, src/app/api/orders/route.ts, src/lib/finance/mp-split.ts
+
+## 2026-07-03 (rama `fix/split-mp-cada-parte-paga-lo-suyo`)
+
+fix(pagos): split MP alineado al Plan Maestro — cada parte paga SU 7,6%
+
+BUG cazado en pago real de prod (MOV-W3G2, $2 producto + $12 envío): MP cobra
+su comisión UNA vez y TODA al comercio (el cobrador) sobre el TOTAL, y Moovy se
+llevaba su parte completa → el comercio pagaba también el 7,6% de la plata de
+Moovy (recibió $0,73 en vez de ~$1,66). Violaba el "MP 7,6% transparente" del
+Plan Maestro v1.
+
+Fix en la función pura `computeMpSplit` (src/lib/finance/mp-split.ts):
+  marketplace_fee = (comisión + envío − descuento) × (1 − r)
+Moovy se auto-descuenta su porción del costo de MP; el comercio termina pagando
+r solo sobre SU parte. Propiedades (verificadas con barrido):
+- Exacto para cualquier monto (proporcional, sin escalones).
+- El neto del comercio no puede dar negativo → rechazo CPT01 imposible.
+- Liberación diferida del comercio (MP le cobra 3,81%): Moovy cobra igual,
+  el ahorro es todo del comercio.
+- Cupón > parte de Moovy: fee piso $0 + note de warning (logueada en el endpoint).
+
+Verificación: `scripts/verify-split-cada-parte.ts` (34 checks, corrido OK:
+típico, mes 1, MOV-W3G2 real, chico, $520K, envío gratis, cupones, diferida).
+`scripts/simulate-mp-split.ts` sigue compatible (comentarios actualizados).
+PENDIENTE regla 3: prueba real en prod post-deploy (trío comprador→comercio→Moovy,
+verificar los 3 comprobantes contra la fórmula).
+
+**Archivos:** src/lib/finance/mp-split.ts, src/app/api/orders/route.ts (comentario+log), scripts/simulate-mp-split.ts (comentario), scripts/verify-split-cada-parte.ts (nuevo)
+
+---
+
 ## 2026-07-03 (rama `fix/asignacion-sin-filtro-equipamiento`)
 
 fix: la naturaleza del envío (caliente/frío) ya no excluye repartidores ni restringe vehículos — interruptor EQUIPMENT_FILTERS_ENABLED, tamaño/peso sigue mandando
