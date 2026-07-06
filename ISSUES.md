@@ -1,5 +1,5 @@
 # Moovy — Issues
-Última actualización: 2026-07-02
+Última actualización: 2026-07-06
 
 > **Fuente única de tareas pendientes.** Para histórico completo de issues resueltos en sprints anteriores → `.claude/CHANGELOG.md`.
 
@@ -37,7 +37,7 @@
 ### Sesión 2026-07-02 — motor de envío + emails + auditoría pre-launch
 > Detalle vivo en `PROJECT_STATUS.md` y `docs/HANDOFF_PENDIENTES.md`. Registro de auditoría: `Auditoria_PreLaunch_Moovy` (mover a docs/).
 
-- **Deployar el batch de esta sesión** (motor de envío aditivo + emails cableados, todo en develop sin deployar). `devmain.ps1` MODO SCHEMA + re-seed `DeliveryRate` en el VPS + `cerrar-tienda.ps1`. Después: prueba real en prod (buscando-repartidor + motor de envío nuevo con distintas distancias).
+- ✅ **Deployar el batch** — HECHO 2026-07-02 (+ 2 batches más el 07-05/06: cortina+direcciones y equipamiento+split). Re-seed `DeliveryRate` ✓, cleanups ✓, `fix-ops-config` en local y prod ✓ (timeouts re-sincronizados), cortina ✓.
 - **Auditoría pre-launch del código (depuración total antes de main)** — EN CURSO. Capa 1 (knip) hecha; seguir dominio por dominio: pagos → motor logístico → comisiones/puntos → config OPS → auth → estados → crons. Cada dominio: hallazgos al registro; críticos se arreglan, el resto se archiva o difiere.
 - **Comisión vendedor marketplace 10% en el código** — CLAUDE.md dice 10% pero el código tiene 12% en `defaultSellerCommission` y en `sendSellerActivatedEmail`. Alinear (rama chica).
 - **Config de OPS: verificar que cada parámetro funcione (no fantasma)** + ficha de documentación por parámetro accesible desde el ⓘ del panel.
@@ -49,15 +49,19 @@
 
 - **Unificar criterios de elegibilidad checkout vs motor** (post-launch, no bloquea): el banner "hay repartidor" del checkout (`/api/delivery/availability`) y el motor de asignación calculan disponibilidad con criterios distintos (el banner ignora vehículo/tamaño; el motor ignora `approvalStatus`/`availabilityStatus`). Con el filtro de equipamiento apagado la brecha se achicó mucho, pero el caso "producto XL con solo una bici online" todavía deja pagar un pedido inasignable. Extraer criterio canónico único a `src/lib/`.
 
-### Sesión 2026-07-03 — hallazgos menores
+### Sesión 2026-07-03 → 06 — pendientes nuevos (de las pruebas reales en prod)
 
+- **Bajar reserva MP a 7,6% en la Biblia (OPS)** — en prod está en 8%: Moovy se auto-descuenta de más y le regala ~0,4% de su parte al comercio en cada pedido. 1 minuto, sin deploy.
+- **Liberación del `marketplace_fee` retenida por MP** — la comisión de marketplace queda en "dinero a liquidar" con calendario propio a nivel aplicación (la config "al instante" de la cuenta NO aplica). Gestionar el plazo con el ejecutivo comercial de MP. Mientras: dimensionar capital de trabajo para payouts de drivers.
+- **Re-probar el ciclo logístico completo en prod** (post-fix equipamiento): aviso de viaje al driver AUTO → aceptar → PIN retiro → PIN entrega. + Motor de envío a distintas distancias + buscando-repartidor con reembolso (tarea #8).
+- **Verificar tarjeta social de WhatsApp** — `public/og-moovy.png` puede tener horneado el texto viejo ("Está por llegar"); si es así, regenerarla (la cortina nueva dice "Hecha en Ushuaia, para Ushuaia").
 - **`driverPayoutAmount` redondea a pesos enteros** (`Math.round(tripCost * 0.80)` en assignment-engine): con tripCost $12 guardó $10 en vez de $9,60. Con montos reales la diferencia es de centavos, pero el canon dice redondeo a centavos. Rama chica cuando haya aire.
 
 ## ✅ Resueltos esta sesión (2026-07-03)
 
 | Tema | Rama | Resumen |
 |---|---|---|
-| Split MP: el comercio pagaba el 7,6% de la parte de Moovy | `fix/split-mp-cada-parte-paga-lo-suyo` | Cazado con pago real (MOV-W3G2): MP cobra todo su fee al comercio sobre el total, y Moovy se llevaba su parte completa → al comercio le quedó $0,73 en vez de ~$1,66. Fix en `computeMpSplit`: `marketplace_fee = (comisión + envío − desc) × (1 − 7,6%)` — cada parte paga su porción, exacto para cualquier monto, rechazo CPT01 imposible por construcción. 34 checks verdes (`verify-split-cada-parte.ts`). **Pendiente: prueba real en prod post-deploy.** |
+| Split MP: el comercio pagaba el 7,6% de la parte de Moovy | `fix/split-mp-cada-parte-paga-lo-suyo` | Cazado con pago real (MOV-W3G2): MP cobra todo su fee al comercio sobre el total, y Moovy se llevaba su parte completa → al comercio le quedó $0,73 en vez de ~$1,66. Fix en `computeMpSplit`: `marketplace_fee = (comisión + envío − desc) × (1 − 7,6%)` — cada parte paga su porción, exacto para cualquier monto, rechazo CPT01 imposible por construcción. 34 checks verdes (`verify-split-cada-parte.ts`). **✓ VERIFICADO con pago real en prod (2026-07-05)**: sobre $24 → Moovy $20,42 / comercio $1,75 / MP $1,83, exacto contra la fórmula (con reserva 8% de la Biblia — bajar a 7,6). |
 | Driver online nunca recibía el aviso de viaje (prod) | `fix/asignacion-sin-filtro-equipamiento` | Cazado en prueba real: el pedido (auto-detectado comida caliente) exigía mochila térmica y el único driver online tenía `hasThermalBag=false` → excluido en silencio → SEARCHING_DRIVER → reembolso. Decisión founder: la naturaleza del envío (caliente/frío/frágil) ya no restringe ni vehículos ni equipamiento; el tamaño/peso sigue mandando. Interruptor único `EQUIPMENT_FILTERS_ENABLED=false` (sistema dormido, reversible), sección Equipamiento oculta en el perfil del driver, script `verify-asignacion-sin-equipamiento.ts` contra DB real. |
 | Cortina con identidad + direcciones | `fix/cortina-identidad-ushuaia` / `feat/direcciones-limite-y-chip-header` / `fix/direcciones-barra-entregar-en` | "Hecha en Ushuaia, para Ushuaia" + foto local en duotono + fuegos canvas con física real. Límite de 2 direcciones (defensa server) + barra "Entregar en" bajo el header. Deployado a prod. |
 

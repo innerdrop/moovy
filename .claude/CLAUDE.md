@@ -1,6 +1,6 @@
 # MOOVY — CLAUDE.md
 
-Última actualización: 2026-06-26
+Última actualización: 2026-07-06
 
 > **Este archivo contiene SOLO información canónica y perdurable.**
 >
@@ -104,6 +104,8 @@ Mapping a vehículo en `src/lib/product-weight.ts` (`SIZE_METADATA`).
 - Repartidor: **80%** del costo del viaje. En envío gratis el cliente paga $0 pero el repartidor cobra igual (lo absorbe Moovy)
 - Moovy delivery: 20% del costo del viaje (sin operativo)
 - MP real: 7.6% (acreditación AL INSTANTE — es la que usamos). El 3.81% es la tarifa con acreditación diferida, que NO aplica a Moovy.
+- **Split MP — cada parte paga lo suyo** (rama `fix/split-mp-cada-parte-paga-lo-suyo`, verificado con pago real en prod 2026-07-05): MP cobra su comisión UNA vez y TODA al comercio (el cobrador) sobre el TOTAL; el `marketplace_fee` le llega a Moovy intacto. Para que cada parte pague SU porción, Moovy se auto-descuenta: `marketplace_fee = (comisión + envío − descuento) × (1 − r)`, con `r` = reserva MP configurable en la Biblia (usar 7.6; en prod estaba en 8 → bajar). Función pura canónica `computeMpSplit` en `src/lib/finance/mp-split.ts` (única fuente de verdad del reparto MP). Propiedades: exacto para cualquier monto, rechazo CPT01 imposible por construcción, liberación diferida del comercio = ahorro todo del comercio (Moovy no cambia), cupón > parte Moovy = fee piso $0 + warning logueado. Verificación: `scripts/verify-split-cada-parte.ts`.
+- **Liberación del `marketplace_fee`**: la config "al instante" de la cuenta aplica a ventas propias; la comisión de marketplace tiene calendario de liberación PROPIO a nivel aplicación (queda en "dinero a liquidar"). Se gestiona con el ejecutivo comercial de MP. Impacto: capital de trabajo para cubrir payouts de drivers durante el plazo de retención.
 - Gastos fijos: ~$440K ARS/mes
 
 Helper canónico: `getEffectiveCommissionWithSource(merchantId)` con precedencia
@@ -157,7 +159,7 @@ Helper canónico: `getEffectiveCommissionWithSource(merchantId)` con precedencia
 - **proxy.ts no chequea roles JWT** para `/comercios/*` ni `/repartidor/*`. Solo sesión. Layout protegido decide vía DB. ADMIN sí en proxy para `/ops/*`
 - **Zonas de delivery con polígonos** (rama `feat/zonas-delivery-multiplicador`): la fuente de verdad de multiplicadores y bonus driver por zona es la tabla `DeliveryZone` (PostGIS Polygon SRID 4326 + GiST index), editable desde `/ops/zonas-delivery` con drawing UX pro (click-by-click / pintar freehand / edit inline). Helper canónico `getZoneSnapshotForLocation(lat, lng)` con cache invalidable. Snapshot inmutable persistido en `SubOrder.zoneCode/zoneMultiplier/zoneDriverBonus` al crear pedido (NUNCA recalcular retroactivo). El campo `StoreSettings.zoneMultipliersJson` queda como legacy del simulador en `/ops/config-biblia` y NO afecta el cobro real. Detección de overlaps con `ST_Intersects` al guardar zona — informativo, gana displayOrder mayor.
 
-## Reglas acumuladas (#1-#29)
+## Reglas acumuladas (#1-#32)
 
 > Lista numerada que crece con cada sprint. Antes de empezar una rama, escanear las que apliquen al dominio.
 
@@ -190,7 +192,9 @@ Helper canónico: `getEffectiveCommissionWithSource(merchantId)` con precedencia
 27. **UI multi-rol** — minimizar clicks al panel principal. Si rol activo requiere >2 clicks desde la home, hay un detour
 28. **proxy.ts y JWT roles[]** — chequeos en proxy son cache, no autorización. Layouts protegidos usan `computeUserAccess` contra DB
 29. **Pedido pagado nunca queda sin asignar** (`feat/asignacion-reintento-y-reembolso`): si al confirmar no hay repartidor elegible, el pedido entra en `SEARCHING_DRIVER` con ventana configurable (`driver_search_window_minutes`, default 20 min). El cron `assignment-tick` y el hook de driver-online reintentan vía `retrySearchingOrder`/`retryAllSearchingOrders`; al vencer sin repartidor → `refundOrderIfPaid` automático. `onNoEligibleDriver` es el punto único (reemplaza las llamadas directas a `handleNoDriverFound`). El checkout bloquea el pago sin repartidor y ofrece "Retirar en local" / "Avisame cuando haya repartidor" (con email, no solo push). Campo `Order.driverSearchUntil`. Sin "pagar y esperar".
-30. **Emails del ciclo — disparo fire-and-forget + dedup cancelación/reembolso**: los emails transaccionales del ciclo (pedido entregado, nuevo pedido al comercio, pagos, cancelaciones, suspensión, pago recibido) se disparan con patrón **fire-and-forget** (IIFE async + try/catch o `.catch`, import dinámico) que NUNCA rompe el flujo del pedido/pago si el email falla. En el webhook de MP el email NO puede throwear hacia afuera (haría que MP reintente). Los emails de dinero van DENTRO del bloque idempotente (el `count>0` de la confirmación de pago / el `eventId` del webhook) para no doblarse. **DEDUP**: en una cancelación de pedido pagado con MP sale SOLO el email de reembolso (`order_refunded` vía `refundOrderIfPaid`), NO el de cancelación; el de cancelación solo se manda para pedidos NO pagados online. Estado pagado canónico = `"PAID"` (nunca `"APPROVED"`).
+30. **La naturaleza del envío NO restringe la asignación** (`fix/asignacion-sin-filtro-equipamiento`, decisión founder para el lanzamiento): caliente/frío/frágil no filtra ni vehículos ni equipamiento del repartidor — solo TAMAÑO/PESO (PackageCategory → vehículo) y distancia mandan. Interruptor único `EQUIPMENT_FILTERS_ENABLED = false` en `src/lib/shipment-types.ts` (sistema dormido: SLA/prioridades siguen; se reactiva poniendo true y la sección Equipamiento del perfil driver reaparece sola). Cazado en prod: un driver online con GPS quedaba excluido en silencio por no declarar mochila térmica.
+31. **Direcciones del comprador**: máximo 2 guardadas (`MAX_SAVED_ADDRESSES` en `src/lib/addresses.ts`, defensa server-side en tx Serializable + UI que esconde el botón). La dirección activa se muestra en la barra "Entregar en" (`DeliveryAddressBar`, montada en el layout de (store) DENTRO del contenido scrolleable, no en el header fijo).
+32. **Emails del ciclo — disparo fire-and-forget + dedup cancelación/reembolso**: los emails transaccionales del ciclo (pedido entregado, nuevo pedido al comercio, pagos, cancelaciones, suspensión, pago recibido) se disparan con patrón **fire-and-forget** (IIFE async + try/catch o `.catch`, import dinámico) que NUNCA rompe el flujo del pedido/pago si el email falla. En el webhook de MP el email NO puede throwear hacia afuera (haría que MP reintente). Los emails de dinero van DENTRO del bloque idempotente (el `count>0` de la confirmación de pago / el `eventId` del webhook) para no doblarse. **DEDUP**: en una cancelación de pedido pagado con MP sale SOLO el email de reembolso (`order_refunded` vía `refundOrderIfPaid`), NO el de cancelación; el de cancelación solo se manda para pedidos NO pagados online. Estado pagado canónico = `"PAID"` (nunca `"APPROVED"`).
 
 ## Variables de entorno
 

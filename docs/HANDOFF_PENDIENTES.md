@@ -3,7 +3,31 @@
 > Punto de retome para la próxima sesión. Generado al pausar el trabajo del checklist pre-launch.
 > Leé este archivo al volver para reconstruir el contexto.
 
-## Dónde estamos (actualizado 2026-07-02)
+## Dónde estamos (actualizado 2026-07-06)
+
+**En `develop`, limpio. TODO deployado a prod** (3 batches: motor+emails el 07-02; cortina+direcciones y equipamiento+split el 07-05/06). 5 ramas cerradas esta sesión.
+
+**Lo grande de la sesión — pruebas reales en prod cazaron 2 bugs de dinero/logística, ambos arreglados, deployados y (el split) re-verificado:**
+
+1. `fix/asignacion-sin-filtro-equipamiento` — el pedido de prueba (auto-detectado "comida caliente") exigía mochila térmica y el único driver online (AUTO, con GPS, a 2km) quedaba excluido EN SILENCIO → SEARCHING_DRIVER → reembolso. Decisión founder: la naturaleza del envío (caliente/frío/frágil) NO restringe más ni vehículos ni equipamiento; solo tamaño/peso y distancia. Interruptor `EQUIPMENT_FILTERS_ENABLED=false` en `src/lib/shipment-types.ts` (reversible).
+2. `fix/split-mp-cada-parte-paga-lo-suyo` — MP cobra su 7,6% UNA vez y TODO al comercio (cobrador) sobre el TOTAL; Moovy se llevaba su parte completa → el comercio bancaba el costo de MP de la plata de Moovy (recibió $0,73 en vez de ~$1,66 en la prueba). Fórmula nueva: `marketplace_fee = (comisión + envío − desc) × (1 − r)` en `computeMpSplit`. **Verificado con 2º pago real (07-05): Moovy $20,42 / comercio $1,75 / MP $1,83 sobre $24 ✓.**
+
+**También deployado**: cortina "Hecha en Ushuaia, para Ushuaia" (foto local duotono + fuegos canvas física real, solo laterales) · direcciones (máx 2, defensa server + barra "Entregar en" bajo el header).
+
+**Pendientes NUEVOS (detalle en ISSUES.md, sección 2026-07-03 → 06):**
+- Bajar reserva MP 8% → **7,6%** en la Biblia (OPS, 1 min).
+- **Liberación del `marketplace_fee`**: MP la retiene en "dinero a liquidar" con calendario propio a nivel app (el "al instante" de la cuenta no aplica) → gestionar con ejecutivo comercial MP + dimensionar caja para payouts.
+- **Re-probar ciclo logístico en prod**: aviso de viaje al driver (post-fix) → PIN retiro → PIN entrega + motor a distintas distancias + buscando-repartidor (tarea #8). ES LO PRÓXIMO.
+- Verificar `og-moovy.png` (tarjeta WhatsApp puede tener texto viejo horneado).
+- Menores: unificar elegibilidad checkout vs motor (post-launch) · `driverPayoutAmount` redondea a pesos.
+
+**CLAUDE.md**: actualizado DIRECTO esta sesión (split MP, liberación fondos, reglas #30-#31, header #1-#32) — `.claude/` resultó editable desde Cowork, ya no hace falta pegado a mano.
+
+**Después de eso, el camino sigue igual**: auditoría pre-launch dominio por dominio → comisión vendedor 10% (#17) → organización de docs → checklist (296 items).
+
+---
+
+## Dónde estamos (histórico — 2026-07-02)
 
 **En `develop`.** Esta sesión cerró 3 ramas (todas mergeadas a develop, NINGUNA deployada a prod todavía):
 - `fix/motor-envio-aditivo-y-pago-repartidor` — motor de envío reescrito al modelo **ADITIVO** (`base_vehículo + costo_km × distancia`, operativo eliminado, valores Ushuaia por vehículo, envío gratis controlado por Moovy con el repartidor siempre pago, arreglo del fallback de payout). CLAUDE.md actualizado a mano. Simulación `scripts/simular-envios.ts`.
