@@ -10,6 +10,36 @@
 
 ---
 
+## 2026-07-06 (rama `fix/merchant-reject-atomico`)
+
+fix(pagos): rechazo del comercio atómico e idempotente — claim + stock en tx Serializable, doble click o carrera ya no duplica reposición
+
+**Archivos:** ISSUES.md, src/app/api/merchant/orders/[id]/reject/route.ts
+
+## 2026-07-06 (rama `fix/merchant-reject-atomico`)
+
+fix(pagos/estados): rechazo del comercio atómico e idempotente
+
+Hallazgo 🟡 de la auditoría de estados. El reject hacía: UPDATE incondicional →
+refund → stock → puntos, cada paso suelto. Dos requests simultáneos (doble click,
+o carrera con la cancelación del comprador / el cron de timeout) duplicaban la
+reposición de stock; y si el restore fallaba, quedaba un pedido cancelado sin
+stock repuesto (error tragado con console.error).
+
+- Claim atómico: `updateMany WHERE id + status IN [PENDING, CONFIRMED, PREPARING]`
+  + `count === 1` dentro de tx Serializable — solo un proceso gana la transición.
+  El perdedor recibe 409 "El pedido ya fue procesado".
+- Reposición de stock DENTRO de la misma tx: o se cancela con stock repuesto, o
+  no se cancela (y el comercio reintenta).
+- Refund MP (API externa, alerta a admin si falla) y reversión de puntos
+  (idempotente) quedan después, igual que antes. Emails sin cambios (el de
+  "rechazado" comunica el reembolso vía willRefund — decisión de la rama de
+  emails, no se toca).
+
+**Archivos:** src/app/api/merchant/orders/[id]/reject/route.ts
+
+---
+
 ## 2026-07-06 (rama `fix/carrito-un-solo-comercio`)
 
 fix: un pedido = un solo comercio — modal de conflicto en carrito + rechazo server-side autoritativo contra DB (multi-vendor queda dormido)

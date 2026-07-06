@@ -77,14 +77,60 @@ export async function POST(
             );
         }
 
-        // Update order to CANCELLED with reason
-        await prisma.order.update({
-            where: { id: orderId },
-            data: {
-                status: "CANCELLED",
-                cancelReason: reason,
-            },
-        });
+        // fix/merchant-reject-atomico: transición + reposición de stock en UNA
+        // transacción Serializable con "claim" (regla #12 aplicada a endpoint):
+        //   - updateMany condicionado al estado actual → si el comercio hace doble
+        //     click, o el rechazo corre a la vez que una cancelación del comprador
+        //     o del cron, solo UNO gana (count === 1). Antes, cada request duplicaba
+        //     la reposición de stock.
+        //   - El stock vuelve DENTRO de la misma transacción → ya no puede quedar
+        //     un pedido cancelado sin stock repuesto (antes el error se tragaba con
+        //     un console.error). Si el restore falla, se revierte todo y el comercio
+        //     reintenta.
+        // El refund MP (API externa) y la reversión de puntos quedan fuera de la tx:
+        // ambos tienen sus propias defensas (alerta a admin si falla / idempotente).
+        const REJECT_NOT_CLAIMED = "REJECT_NOT_CLAIMED";
+        try {
+            await prisma.$transaction(async (tx) => {
+                const claim = await tx.order.updateMany({
+                    where: { id: orderId, status: { in: rejectableStatuses } },
+                    data: {
+                        status: "CANCELLED",
+                        cancelReason: reason,
+                    },
+                });
+                if (claim.count !== 1) {
+                    throw new Error(REJECT_NOT_CLAIMED);
+                }
+
+                const orderItems = await tx.orderItem.findMany({
+                    where: { orderId },
+                    select: { productId: true, listingId: true, quantity: true },
+                });
+
+                for (const item of orderItems) {
+                    if (item.listingId) {
+                        await tx.listing.update({
+                            where: { id: item.listingId },
+                            data: { stock: { increment: item.quantity } },
+                        });
+                    } else if (item.productId) {
+                        await tx.product.update({
+                            where: { id: item.productId },
+                            data: { stock: { increment: item.quantity } },
+                        });
+                    }
+                }
+            }, { isolationLevel: "Serializable" });
+        } catch (txError) {
+            if (txError instanceof Error && txError.message === REJECT_NOT_CLAIMED) {
+                return NextResponse.json(
+                    { error: "El pedido ya fue procesado (cancelado o avanzó de estado). Actualizá la pantalla." },
+                    { status: 409 }
+                );
+            }
+            throw txError;
+        }
 
         // Notify buyer
         notifyBuyer(order.userId, "CANCELLED", order.orderNumber, { orderId: order.id }).catch(console.error);
@@ -169,29 +215,8 @@ export async function POST(
             }
         }
 
-        // AUDIT FIX: Restore stock when merchant rejects
-        try {
-            const orderItems = await prisma.orderItem.findMany({
-                where: { orderId },
-                select: { productId: true, listingId: true, quantity: true },
-            });
-
-            for (const item of orderItems) {
-                if (item.listingId) {
-                    await prisma.listing.update({
-                        where: { id: item.listingId },
-                        data: { stock: { increment: item.quantity } },
-                    });
-                } else if (item.productId) {
-                    await prisma.product.update({
-                        where: { id: item.productId },
-                        data: { stock: { increment: item.quantity } },
-                    });
-                }
-            }
-        } catch (stockError) {
-            console.error(`[Merchant Reject] Stock restore error for order ${order.orderNumber}:`, stockError);
-        }
+        // fix/merchant-reject-atomico: la reposición de stock ahora vive DENTRO de
+        // la transacción del claim (arriba). Este bloque se movió allá.
 
         // FIX 2026-04-15: revertir puntos (earn si lleg\u00f3 a DELIVERED, redeem si el buyer us\u00f3 puntos al crear)
         try {
