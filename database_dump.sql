@@ -2943,9 +2943,9 @@ cmqz5vw6e00frxhd8xzbnhvi3	repartidor4@somosmoovy.com	$2b$12$SCzlk3i5xewt6sCl6HzM
 cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-06-29 11:55:53.763	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vwws00gbxhd8xdblt14z	cliente3@somosmoovy.com	$2b$12$9q91L9dMys9zsNJgBBKjgO3rmqK5OFExmfJJEbUojP7g8AJLw4Ufa	Lucía Test	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwws00gcxhd8ifwc7bkh	\N	2026-06-29 11:55:54.076	2026-06-29 11:55:54.076	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vx5l00ghxhd8xnar59ix	cliente4@somosmoovy.com	$2b$12$EfMi32tg/BNF9KGFede11OJs3dScKvyk3ted7lL7Ds5MFgBQ80Hve	Marco Demo	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vx5l00gixhd8lk39samr	\N	2026-06-29 11:55:54.393	2026-06-29 11:55:54.393	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
-cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-06-29 12:10:58.965	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vva600f3xhd89zcsytov	repartidor1@somosmoovy.com	$2b$12$wM6iMD5E3RXXdUr5GYnjc.ywxwzoF08aXzL.JKLJSHm0NzMKtQ3RW	Mateo Rider	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vva600f4xhd8q48id7j2	\N	2026-06-29 11:55:51.966	2026-06-29 12:11:39.124	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vwfh00fzxhd8bchmmyw5	cliente1@somosmoovy.com	$2b$12$7ZFsSIglT1XVS/UewQDNYO4T.UjlCul7h9mv6sCYTJ4N.xVVgJYNO	Juana Cliente	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwfh00g0xhd8w7w3k570	\N	2026-06-29 11:55:53.453	2026-07-02 21:17:16.559	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-02 21:17:16.557	\N
+cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-07-06 17:01:28.941	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 \.
 
 
@@ -2957,6 +2957,7 @@ COPY public."UserActivityLog" (id, "userId", action, "entityType", "entityId", m
 cmqz6fb5e0001hf7e3liafkb8	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd86fq6wm5d	{"method":"credentials"}	\N	\N	2026-06-29 12:10:58.993
 cmqz6g65q0003hf7e2t569gbl	cmqz5vva600f3xhd89zcsytov	LOGIN	User	cmqz5vva600f3xhd89zcsytov	{"method":"credentials"}	\N	\N	2026-06-29 12:11:39.182
 cmr409ans0008mh52hvpalfde	cmqz5vwfh00fzxhd8bchmmyw5	LOGIN	User	cmqz5vwfh00fzxhd8bchmmyw5	{"method":"credentials"}	\N	\N	2026-07-02 21:17:11.601
+cmr9gvuyi0001pygohno5fzyn	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd86fq6wm5d	{"method":"credentials"}	\N	\N	2026-07-06 17:01:29.081
 \.
 
 

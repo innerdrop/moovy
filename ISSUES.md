@@ -49,6 +49,25 @@
 
 - **Unificar criterios de elegibilidad checkout vs motor** (post-launch, no bloquea): el banner "hay repartidor" del checkout (`/api/delivery/availability`) y el motor de asignación calculan disponibilidad con criterios distintos (el banner ignora vehículo/tamaño; el motor ignora `approvalStatus`/`availabilityStatus`). Con el filtro de equipamiento apagado la brecha se achicó mucho, pero el caso "producto XL con solo una bici online" todavía deja pagar un pedido inasignable. Extraer criterio canónico único a `src/lib/`.
 
+### Auditoría pre-launch auth/estados/crons (2026-07-06) — hallazgos CONFIRMADOS
+
+**🔴 Críticos:**
+
+1. ✅ **`paymentStatus === "APPROVED"` (estado inexistente, canon = "PAID")** — RESUELTO (rama `fix/auditoria-estados-crons`). El barrido encontró MÁS lugares que los 2 de la auditoría: cancelación (contabilidad de refund), **stats del comercio** (el dashboard sumaba $0 de revenue pagado) y **página de pedido en OPS** (mostraba "Pendiente" para pedidos pagados y escondía el botón de reembolso). 5 lugares corregidos a "PAID".
+2. **3 endpoints de seller autorizan solo con JWT cache** (`seller/availability`, `seller/orders/[id]/confirm`, `confirm-scheduled` — usan `hasAnyRole`): un seller suspendido/borrado con JWT vivo (7 días) puede seguir confirmando pedidos. Viola reglas #13/#28. Fix: helper `requireSellerApi` (espejo de `requireMerchantApi`) + migrar los 3 (+ 3 GETs de admin con el mismo patrón viejo → `requireApiAdmin`). **← PRÓXIMA RAMA (B)**
+3. ✅ **Cron `merchant-timeout` sin idempotencia** — RESUELTO (misma rama): `updateMany WHERE status=PENDING + count===1` antes de los side effects (regla #12); corridas solapadas ya no duplican refund/emails.
+4. ✅ **Admin forzaba DELIVERED sin PIN y sin rastro** — RESUELTO (misma rama): el bypass sigue (emergencias) pero ahora deja `AuditLog ADMIN_PIN_OVERRIDE` (admin, pedido, qué PIN salteó) + warn en logs (regla #26).
+
+**🟡 Importantes (no bloquean, a ISSUES):**
+
+5. **No existe cron de expiración de puntos** — el canon dice "expiran a los 6 meses" y el cron `points-expiring-reminder` AVISA que van a expirar… pero nada los expira. Sin usuarios todavía hay ~6 meses de margen; hacerlo post-launch (junto con el email "subiste de nivel").
+6. **`merchant reject` no es atómico**: refund + stock + puntos van después del UPDATE sin transacción ni retry queue (asimétrico con buyer cancel).
+7. **Multi-vendor: derivación del status del Order padre desde SubOrders** — el auditor no encontró la lógica de agregación; VERIFICAR si existe antes de asumir bug.
+8. Chequeos defensivos de `"COMPLETED"` que persisten en 4 endpoints de rating/tip — limpiar cuando haya aire.
+9. `docs/RUNBOOK_CRONS.md` sin commitear.
+
+**✅ Verificados OK**: PIN doble (flujo normal), refund automático idempotente, reversal de puntos, transiciones estrictas del driver, CRON_SECRET timing-safe en 18/18 crons, recordCronRun 18/18, IDOR (muestreo), Zod (muestreo), resurrección bloqueada, rate limit en auth, proxy.ts según canon.
+
 ### Sesión 2026-07-03 → 06 — pendientes nuevos (de las pruebas reales en prod)
 
 - **Bajar reserva MP a 7,6% en la Biblia (OPS)** — en prod está en 8%: Moovy se auto-descuenta de más y le regala ~0,4% de su parte al comercio en cada pedido. 1 minuto, sin deploy.

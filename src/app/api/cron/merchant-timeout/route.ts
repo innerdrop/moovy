@@ -76,15 +76,22 @@ export async function POST(req: NextRequest) {
 
             // Cancel each expired order
             const cancelReason = "El comercio no confirmó el pedido a tiempo";
+            let cancelledCount = 0;
 
             for (const order of expiredOrders) {
-                await prisma.order.update({
-                    where: { id: order.id },
+                // fix/auditoria-estados-crons: guard de idempotencia (regla #12).
+                // updateMany condicionado a que SIGA en PENDING: si dos corridas del
+                // cron se solapan, solo UNA gana la transición (count === 1) y dispara
+                // los side effects (refund, emails, sockets). La otra saltea el pedido.
+                const claim = await prisma.order.updateMany({
+                    where: { id: order.id, status: "PENDING" },
                     data: {
                         status: "CANCELLED",
                         cancelReason,
                     },
                 });
+                if (claim.count !== 1) continue; // otra corrida ya lo canceló
+                cancelledCount++;
 
                 // Notify buyer
                 // fix/refund-automatico: refund + reversión de puntos cuando el cron auto-cancela.
@@ -136,10 +143,10 @@ export async function POST(req: NextRequest) {
                 }
             }
 
-            console.log(`[MerchantTimeout] Cancelled ${expiredOrders.length} expired orders`);
+            console.log(`[MerchantTimeout] Cancelled ${cancelledCount} expired orders (${expiredOrders.length} candidates)`);
             return {
-                result: NextResponse.json({ cancelled: expiredOrders.length }) as NextResponse,
-                itemsProcessed: expiredOrders.length,
+                result: NextResponse.json({ cancelled: cancelledCount }) as NextResponse,
+                itemsProcessed: cancelledCount,
             };
         });
     } catch (error) {

@@ -47,12 +47,14 @@ export async function GET() {
           deletedAt: null,
         },
       }),
-      // Today's revenue (approved payments only)
+      // Today's revenue (paid orders only)
+      // fix/auditoria-estados-crons: estado pagado canónico = "PAID" (regla #32).
+      // Con "APPROVED" (estado inexistente) el dashboard del comercio sumaba $0.
       prisma.order.aggregate({
         where: {
           merchantId: merchant.id,
           createdAt: { gte: today },
-          paymentStatus: "APPROVED",
+          paymentStatus: "PAID",
           deletedAt: null,
         },
         _sum: { total: true },
@@ -78,7 +80,7 @@ export async function GET() {
         where: {
           merchantId: merchant.id,
           createdAt: { gte: weekAgo },
-          paymentStatus: "APPROVED",
+          paymentStatus: "PAID",
           deletedAt: null,
         },
         _sum: { total: true },

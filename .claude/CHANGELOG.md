@@ -10,6 +10,40 @@
 
 ---
 
+## 2026-07-06 (rama `fix/auditoria-estados-crons`)
+
+fix: estado pagado canónico PAID en 5 lugares (contabilidad de cancelación, stats del comercio, OPS), idempotencia del cron merchant-timeout y audit log del bypass admin de PIN
+
+**Archivos:** ISSUES.md, src/app/api/cron/merchant-timeout/route.ts, src/app/api/driver/orders/[id]/status/route.ts, src/app/api/merchant/stats/route.ts, src/app/api/orders/[id]/cancel/route.ts, src/app/ops/(protected)/pedidos/[id]/page.tsx
+
+## 2026-07-06 (rama `fix/auditoria-estados-crons`)
+
+fix: 3 críticos de la auditoría pre-launch de estados/crons (+2 hallazgos extra)
+
+1. **Estado pagado canónico "PAID"** (regla #32): 5 lugares comparaban contra
+   "APPROVED" (estado que NO existe en Moovy) —
+   - `orders/[id]/cancel` (x2): pedidos pagados cancelados no quedaban REFUNDED
+     en la contabilidad.
+   - `merchant/stats` (x2): el dashboard del comercio sumaba $0 de revenue pagado
+     (hallazgo extra del barrido — hubiera sido un golpe de confianza en el launch).
+   - `ops/pedidos/[id]` (x3): mostraba "Pendiente" para pedidos pagados y escondía
+     el botón de reembolso (hallazgo extra).
+2. **Idempotencia de `merchant-timeout`** (regla #12): `updateMany WHERE
+   status=PENDING` + `count === 1` ANTES de refund/emails/sockets — corridas
+   solapadas del cron ya no pueden duplicar side effects. itemsProcessed ahora
+   cuenta solo los realmente cancelados.
+3. **Audit del bypass admin de PIN** (regla #26): cuando un admin fuerza
+   PICKED_UP/DELIVERED salteando un PIN no verificado, queda `AuditLog
+   ADMIN_PIN_OVERRIDE` (admin, pedido, qué PIN, driver) + warn en Pino. El bypass
+   sigue permitido para emergencias; ahora es visible.
+
+Sin schema. Origen: auditoría por dominios auth/estados/crons (ver ISSUES 2026-07-06).
+Queda la Rama B pendiente: `requireSellerApi` (3 endpoints de seller con JWT cache).
+
+**Archivos:** src/app/api/orders/[id]/cancel/route.ts, src/app/api/merchant/stats/route.ts, src/app/ops/(protected)/pedidos/[id]/page.tsx, src/app/api/cron/merchant-timeout/route.ts, src/app/api/driver/orders/[id]/status/route.ts
+
+---
+
 ## 2026-07-06 (rama `feat/moover-boost-lanzamiento-y-defaults`)
 
 feat(puntos): boost de lanzamiento configurable desde OPS (multiplicador + fecha, se apaga solo) + defaults canónicos del endpoint público y wording de /moover

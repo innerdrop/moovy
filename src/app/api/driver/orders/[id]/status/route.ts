@@ -19,7 +19,7 @@ export async function PATCH(
     try {
         const authResult = await requireDriverApi({ allowAdmin: true });
         if (authResult instanceof NextResponse) return authResult;
-        const { driver, isAdmin } = authResult;
+        const { userId, driver, isAdmin } = authResult;
 
         const { id: orderId } = await params;
         const { deliveryStatus } = await request.json();
@@ -73,6 +73,42 @@ export async function PATCH(
                     },
                     { status: 409 }
                 );
+            }
+        }
+
+        // fix/auditoria-estados-crons: si el admin usa el bypass para saltar un PIN
+        // NO verificado, queda registrado en el audit log (regla #26: acciones
+        // irreversibles con rastro — quién, qué pedido, qué PIN salteó, cuándo).
+        // El bypass sigue permitido (emergencias operativas), solo que ahora se ve.
+        if (isAdminOverride && !order.isPickup) {
+            const bypassedPin =
+                deliveryStatus === "PICKED_UP" && order.pickupPin && !order.pickupPinVerifiedAt
+                    ? "pickup"
+                    : deliveryStatus === "DELIVERED" && order.deliveryPin && !order.deliveryPinVerifiedAt
+                        ? "delivery"
+                        : null;
+            if (bypassedPin) {
+                statusLogger.warn(
+                    { orderId, adminUserId: userId, bypassedPin, deliveryStatus },
+                    "ADMIN PIN OVERRIDE: transición forzada sin PIN verificado"
+                );
+                await prisma.auditLog.create({
+                    data: {
+                        action: "ADMIN_PIN_OVERRIDE",
+                        entityType: "Order",
+                        entityId: orderId,
+                        userId,
+                        details: JSON.stringify({
+                            orderNumber: order.orderNumber,
+                            deliveryStatus,
+                            bypassedPin,
+                            driverId: order.driverId,
+                        }),
+                    },
+                }).catch((err) => {
+                    // El audit no debe romper la operación de emergencia, pero sí gritar.
+                    statusLogger.error({ err, orderId }, "ADMIN_PIN_OVERRIDE audit log failed");
+                });
             }
         }
 

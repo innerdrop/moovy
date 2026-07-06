@@ -582,12 +582,15 @@ export default function AdminOrderDetailPage() {
                             </p>
                             <p className="text-sm">
                                 <span className="text-gray-600">Estado:</span>{" "}
-                                <span className={`font-medium ${order.paymentStatus === "REFUNDED" ? "text-red-600" : order.paymentStatus === "APPROVED" ? "text-green-600" : "text-yellow-600"
+                                {/* fix/auditoria-estados-crons: estado pagado canónico = "PAID"
+                                    (regla #32). Con "APPROVED" esta pantalla mostraba "Pendiente"
+                                    para pedidos pagados y escondía el botón de reembolso. */}
+                                <span className={`font-medium ${order.paymentStatus === "REFUNDED" ? "text-red-600" : order.paymentStatus === "PAID" ? "text-green-600" : "text-yellow-600"
                                     }`}>
-                                    {order.paymentStatus === "REFUNDED" ? "Reembolsado" : order.paymentStatus === "APPROVED" ? "Pagado" : "Pendiente"}
+                                    {order.paymentStatus === "REFUNDED" ? "Reembolsado" : order.paymentStatus === "PAID" ? "Pagado" : "Pendiente"}
                                 </span>
                             </p>
-                            {order.paymentStatus !== "REFUNDED" && (order.status === "CANCELLED" || order.paymentStatus === "APPROVED") && (
+                            {order.paymentStatus !== "REFUNDED" && (order.status === "CANCELLED" || order.paymentStatus === "PAID") && (
                                 <button
                                     onClick={() => setShowRefund(true)}
                                     className="mt-3 w-full py-2 text-sm font-medium text-red-700 bg-red-50 border border-red-200 rounded-lg hover:bg-red-100 transition flex items-center justify-center gap-2"

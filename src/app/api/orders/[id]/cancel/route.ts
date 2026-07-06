@@ -65,7 +65,11 @@ export async function POST(
             data: {
                 status: "CANCELLED",
                 cancelReason,
-                paymentStatus: order.paymentStatus === "APPROVED" ? "REFUNDED" : order.paymentStatus,
+                // fix/auditoria-estados-crons: el estado pagado canónico es "PAID"
+                // (regla #32). Antes comparaba contra "APPROVED" (estado que no
+                // existe en Moovy) → los pedidos pagados cancelados nunca quedaban
+                // marcados REFUNDED en la contabilidad.
+                paymentStatus: order.paymentStatus === "PAID" ? "REFUNDED" : order.paymentStatus,
                 adminNotes: isAdmin
                     ? `${order.adminNotes || ""}\n[${new Date().toISOString()}] Cancelado por admin: ${cancelReason}`.trim()
                     : order.adminNotes,
@@ -193,7 +197,7 @@ export async function POST(
     return NextResponse.json({
         success: true,
         message: "Pedido cancelado exitosamente",
-        refundNote: order.paymentStatus === "APPROVED"
+        refundNote: order.paymentStatus === "PAID"
             ? "El reembolso será procesado en las próximas 48hs"
             : undefined,
     });
