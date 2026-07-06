@@ -10,6 +10,41 @@
 
 ---
 
+## 2026-07-06 (rama `fix/seller-api-db-auth`)
+
+fix(auth): requireSellerApi canónico contra DB — seller suspendido/desactivado con JWT vivo ya no puede operar (availability + confirm + confirm-scheduled)
+
+**Archivos:** ISSUES.md, src/app/api/seller/availability/route.ts, src/app/api/seller/orders/[id]/confirm-scheduled/route.ts, src/app/api/seller/orders/[id]/confirm/route.ts, src/lib/seller-auth.ts
+
+## 2026-07-06 (rama `fix/seller-api-db-auth`)
+
+fix(auth): requireSellerApi — endpoints de seller autorizan contra DB, no JWT cache
+
+Último 🔴 de la auditoría pre-launch de auth. Los 3 endpoints operativos del
+seller usaban `hasAnyRole(session, ["SELLER"])` (JWT = cache, stale hasta 7
+días): un seller suspendido o desactivado con sesión viva podía seguir
+poniéndose online y confirmando pedidos.
+
+- Helper canónico `requireSellerApi` en `src/lib/seller-auth.ts`: usa
+  `computeUserAccess` (la MISMA derivación que los layouts protegidos, reglas
+  #13/#28) → exige perfil existente + isActive + sin suspensión (propia o global
+  del usuario). Espejo de `requireMerchantApi`/`requireDriverApi`. Soporta
+  `{ allowAdmin: true }`.
+- Migrados: `seller/availability` (GET+POST), `seller/orders/[id]/confirm`,
+  `seller/orders/[id]/confirm-scheduled`. De paso se eliminó el findUnique
+  duplicado del perfil (el helper ya trae sellerId).
+- Mensajes 403 diferenciados (suspendido / desactivado / sin perfil), wording
+  "el equipo de Moovy" (regla #22).
+- Los "3 GETs de admin con hasAnyRole" señalados por el auditor son los GET
+  multi-rol ADMIN+MERCHANT por diseño (decisión C-1, 2026-06-24) — sin cambios.
+
+Sin schema. Con esto, los 4 críticos de la auditoría auth/estados/crons quedan
+cerrados.
+
+**Archivos:** src/lib/seller-auth.ts (nuevo), src/app/api/seller/availability/route.ts, src/app/api/seller/orders/[id]/confirm/route.ts, src/app/api/seller/orders/[id]/confirm-scheduled/route.ts
+
+---
+
 ## 2026-07-06 (rama `fix/auditoria-estados-crons`)
 
 fix: estado pagado canónico PAID en 5 lugares (contabilidad de cancelación, stats del comercio, OPS), idempotencia del cron merchant-timeout y audit log del bypass admin de PIN

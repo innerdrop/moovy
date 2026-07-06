@@ -2,9 +2,10 @@
 // POST /api/seller/orders/[id]/confirm
 // Protected: requires SELLER role
 
+// fix/seller-api-db-auth: auth contra DB (requireSellerApi), no contra el JWT
+// cache — un seller suspendido/desactivado con sesión viva ya no puede confirmar.
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireSellerApi } from "@/lib/seller-auth";
 import { prisma } from "@/lib/prisma";
 import { notifyBuyer } from "@/lib/notifications";
 import { startAssignmentCycle, startSubOrderAssignmentCycle } from "@/lib/assignment-engine";
@@ -27,32 +28,17 @@ export async function POST(
     { params }: { params: Promise<{ id: string }> }
 ) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["SELLER"])) {
-            return NextResponse.json({ error: "Se requiere rol SELLER" }, { status: 403 });
-        }
+        const authResult = await requireSellerApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { sellerId } = authResult;
 
         const { id: subOrderId } = await params;
-
-        // Find seller profile
-        const sellerProfile = await prisma.sellerProfile.findUnique({
-            where: { userId: session.user.id },
-            select: { id: true },
-        });
-
-        if (!sellerProfile) {
-            return NextResponse.json({ error: "Perfil de vendedor no encontrado" }, { status: 404 });
-        }
 
         // Find the SubOrder and verify ownership
         const subOrder = await prisma.subOrder.findFirst({
             where: {
                 id: subOrderId,
-                sellerId: sellerProfile.id,
+                sellerId: sellerId!,
             },
             include: {
                 order: {

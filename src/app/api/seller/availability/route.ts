@@ -1,9 +1,10 @@
 // API Route: Seller Availability Management
 // GET  - Returns current availability status
 // POST - Update availability (online/offline/pause/prepTime/schedule)
+// fix/seller-api-db-auth: auth contra DB (requireSellerApi), no contra el JWT
+// cache — un seller suspendido/desactivado con sesión viva ya no puede operar.
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireSellerApi } from "@/lib/seller-auth";
 import {
     getSellerStatus,
     setSellerOnline,
@@ -15,24 +16,13 @@ import {
 
 export async function GET() {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
+        const authResult = await requireSellerApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { userId, sellerId } = authResult;
 
-        if (!hasAnyRole(session, ["SELLER"])) {
-            return NextResponse.json({ error: "Solo vendedores" }, { status: 403 });
-        }
+        const status = await getSellerStatus(userId);
 
-        const status = await getSellerStatus(session.user.id);
-
-        // Include sellerProfile id for use by other features (e.g. reviews)
-        const sellerProfile = await (await import("@/lib/prisma")).prisma.sellerProfile.findUnique({
-            where: { userId: session.user.id },
-            select: { id: true },
-        });
-
-        return NextResponse.json({ ...status, sellerId: sellerProfile?.id || null });
+        return NextResponse.json({ ...status, sellerId });
     } catch (error) {
         console.error("Error getting seller availability:", error);
         return NextResponse.json({ error: "Error interno" }, { status: 500 });
@@ -41,14 +31,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
-        const session = await auth();
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        if (!hasAnyRole(session, ["SELLER"])) {
-            return NextResponse.json({ error: "Solo vendedores" }, { status: 403 });
-        }
+        const authResult = await requireSellerApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { userId } = authResult;
 
         const body = await request.json();
         const { action, pauseMinutes, preparationMinutes: prepMinutes, scheduleEnabled, scheduleJson } = body;
@@ -57,10 +42,10 @@ export async function POST(request: Request) {
 
         switch (action) {
             case "online":
-                status = await setSellerOnline(session.user.id);
+                status = await setSellerOnline(userId);
                 break;
             case "offline":
-                status = await setSellerOffline(session.user.id);
+                status = await setSellerOffline(userId);
                 break;
             case "pause":
                 if (![15, 30, 60].includes(pauseMinutes)) {
@@ -69,7 +54,7 @@ export async function POST(request: Request) {
                         { status: 400 }
                     );
                 }
-                status = await pauseSeller(session.user.id, pauseMinutes);
+                status = await pauseSeller(userId, pauseMinutes);
                 break;
             case "prepTime":
                 if (![5, 10, 15, 30].includes(prepMinutes)) {
@@ -78,11 +63,11 @@ export async function POST(request: Request) {
                         { status: 400 }
                     );
                 }
-                status = await updatePreparationMinutes(session.user.id, prepMinutes);
+                status = await updatePreparationMinutes(userId, prepMinutes);
                 break;
             case "schedule":
                 status = await updateSchedule(
-                    session.user.id,
+                    userId,
                     !!scheduleEnabled,
                     scheduleJson || null
                 );
