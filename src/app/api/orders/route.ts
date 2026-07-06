@@ -201,6 +201,21 @@ export async function POST(request: Request) {
 
         const isMultiVendor = (groups && groups.length > 1) || false;
 
+        // ─── fix/carrito-un-solo-comercio (decisión founder, 2026-07-06) ─────────
+        // UN pedido = UN solo comercio o vendedor. La UI ya bloquea mezclar locales
+        // en el carrito, pero la defensa real es esta (regla #1: la UI nunca es
+        // defensa). El código multi-vendor (SubOrders múltiples, batching) queda
+        // dormido: para reactivarlo, quitar este guard.
+        if (isMultiVendor) {
+            return NextResponse.json(
+                {
+                    error:
+                        "Los pedidos son de un solo comercio. Vaciá el carrito y armá un pedido por local.",
+                },
+                { status: 400 },
+            );
+        }
+
         // Load OPS config from Biblia Financiera (StoreSettings) — single DB read for all config
         const opsSettings = await getOpsSettings();
 
@@ -236,20 +251,45 @@ export async function POST(request: Request) {
                       select: {
                           id: true,
                           weightGrams: true,
+                          // fix/carrito-un-solo-comercio: merchantId para la verificación
+                          // autoritativa de "un pedido = un solo local" (ver abajo).
+                          merchantId: true,
                           packageCategory: { select: { name: true } },
                       },
                   })
                 : Promise.resolve(
-                      [] as Array<{ id: string; weightGrams: number | null; packageCategory: { name: string } | null }>
+                      [] as Array<{ id: string; weightGrams: number | null; merchantId: string | null; packageCategory: { name: string } | null }>
                   ),
             // Listing usa weightKg (Float, kilogramos), no weightGrams ni packageCategory.
             listingIds.length > 0
                 ? prisma.listing.findMany({
                       where: { id: { in: listingIds } },
-                      select: { id: true, weightKg: true },
+                      select: { id: true, weightKg: true, sellerId: true },
                   })
-                : Promise.resolve([] as Array<{ id: string; weightKg: number | null }>),
+                : Promise.resolve([] as Array<{ id: string; weightKg: number | null; sellerId: string | null }>),
         ]);
+
+        // ─── fix/carrito-un-solo-comercio: verificación AUTORITATIVA ─────────────
+        // Derivamos los locales desde la DB (no desde `groups`, que viene del
+        // cliente y es falsificable). Si los items del carrito pertenecen a más de
+        // un comercio/vendedor, el pedido se rechaza acá aunque la UI haya sido
+        // esquivada.
+        const vendorKeySet = new Set<string>();
+        for (const p of productCats) vendorKeySet.add(`merchant_${p.merchantId ?? "unknown"}`);
+        for (const l of listingCats) vendorKeySet.add(`seller_${l.sellerId ?? "unknown"}`);
+        if (vendorKeySet.size > 1) {
+            orderLogger.warn(
+                { userId: session.user.id, vendors: Array.from(vendorKeySet) },
+                "Pedido multi-local rechazado (server-side, un pedido = un solo comercio)"
+            );
+            return NextResponse.json(
+                {
+                    error:
+                        "Los pedidos son de un solo comercio. Vaciá el carrito y armá un pedido por local.",
+                },
+                { status: 400 },
+            );
+        }
 
         const packageCategoryNameById = new Map<string, string>();
         for (const p of productCats) {

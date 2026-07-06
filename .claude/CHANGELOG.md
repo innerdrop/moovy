@@ -10,6 +10,42 @@
 
 ---
 
+## 2026-07-06 (rama `fix/carrito-un-solo-comercio`)
+
+fix: un pedido = un solo comercio — modal de conflicto en carrito + rechazo server-side autoritativo contra DB (multi-vendor queda dormido)
+
+**Archivos:** ISSUES.md, src/app/(store)/layout.tsx, src/app/api/orders/route.ts, src/components/store/VendorSwitchModal.tsx, src/store/cart.ts
+
+## 2026-07-06 (rama `fix/carrito-un-solo-comercio`)
+
+fix: un pedido = un solo comercio/vendedor (decisión founder — multi-vendor OFF)
+
+Contexto: el founder decidió eliminar la compra multi-comercio para el
+lanzamiento. La auditoría del mismo día confirmó que era la decisión correcta:
+la cadena multi-vendor estaba INCOMPLETA de fondo (las SubOrders nunca pasaban
+a DELIVERED, el Order padre nunca cerraba, puntos/email de entrega jamás
+disparaban, y el split de MP no aplicaba — cobraba Moovy central). Un pedido
+multi-comercio real nunca podía terminar bien.
+
+- Carrito (src/store/cart.ts): al agregar un producto de OTRO local, NO se
+  agrega — se expone `vendorConflict` y el modal `VendorSwitchModal` (diseño
+  Moovy, regla #24) ofrece "Vaciar y agregar este producto" / "Conservar mi
+  carrito". Se eliminó el toast informativo multi-vendor.
+- Servidor (POST /api/orders), DOBLE guard (regla #1): (a) fail-fast si
+  `groups.length > 1`; (b) verificación AUTORITATIVA contra DB — se derivan los
+  locales de los items reales (Product.merchantId / Listing.sellerId, sin
+  queries extra: se sumaron al select existente) y se rechaza con 400 + warn si
+  hay más de uno. `groups` viene del cliente y es falsificable; esta no.
+- El código multi-vendor (SubOrders múltiples, batching, PINs por SubOrder)
+  queda DORMIDO, no se borra — para reactivarlo: quitar los guards y COMPLETAR
+  la derivación de estados (SubOrder→DELIVERED→Order padre) que hoy no existe.
+- Hallazgo de la derivación rota documentado en ISSUES como "no aplica mientras
+  multi-vendor esté deshabilitado".
+
+**Archivos:** src/store/cart.ts, src/components/store/VendorSwitchModal.tsx (nuevo), src/app/(store)/layout.tsx, src/app/api/orders/route.ts
+
+---
+
 ## 2026-07-06 (rama `fix/seller-api-db-auth`)
 
 fix(auth): requireSellerApi canónico contra DB — seller suspendido/desactivado con JWT vivo ya no puede operar (availability + confirm + confirm-scheduled)

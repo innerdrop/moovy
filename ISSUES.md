@@ -62,7 +62,7 @@
 
 5. **No existe cron de expiración de puntos** — el canon dice "expiran a los 6 meses" y el cron `points-expiring-reminder` AVISA que van a expirar… pero nada los expira. Sin usuarios todavía hay ~6 meses de margen; hacerlo post-launch (junto con el email "subiste de nivel").
 6. **`merchant reject` no es atómico**: refund + stock + puntos van después del UPDATE sin transacción ni retry queue (asimétrico con buyer cancel).
-7. **Multi-vendor: derivación del status del Order padre desde SubOrders** — el auditor no encontró la lógica de agregación; VERIFICAR si existe antes de asumir bug.
+7. ✅→😴 **Multi-vendor: la derivación de estados NO EXISTE** (verificado a fondo): las SubOrders nunca pasan a DELIVERED, el Order padre nunca cierra, puntos/email de entrega jamás disparan y el split MP no aplica. RESUELTO POR DECISIÓN DE PRODUCTO (rama `fix/carrito-un-solo-comercio`): un pedido = un solo local, bloqueado en carrito (modal) + servidor (verificación autoritativa contra DB). El código multi-vendor queda dormido; si algún día se reactiva, ANTES hay que construir la derivación completa (SubOrder→DELIVERED→Order padre→efectos post-entrega).
 8. Chequeos defensivos de `"COMPLETED"` que persisten en 4 endpoints de rating/tip — limpiar cuando haya aire.
 9. `docs/RUNBOOK_CRONS.md` sin commitear.
 

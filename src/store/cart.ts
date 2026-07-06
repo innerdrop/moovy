@@ -1,9 +1,14 @@
-// Zustand Store for Shopping Cart - Multi-vendor support
+// Zustand Store for Shopping Cart
+// fix/carrito-un-solo-comercio (2026-07-06, decisión founder): UN pedido = UN solo
+// comercio o vendedor. Al intentar agregar un producto de otro local, el carrito
+// BLOQUEA y expone `vendorConflict` para que la UI ofrezca "Vaciar y agregar" /
+// "Cancelar" (patrón estándar de apps de delivery). El código multi-vendor
+// (SubOrders, batching) queda dormido en el backend — la defensa real está
+// también server-side en /api/orders.
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 const SESSION_STORAGE_KEY = "moovy_cart_session";
-const MULTI_VENDOR_WARNED_KEY = "moovy_multi_vendor_warned";
 
 export interface CartItem {
     id: string;
@@ -29,15 +34,30 @@ export interface VendorGroup {
     subtotal: number;
 }
 
+export interface VendorConflict {
+    /** Item que se intentó agregar (queda en espera de la decisión del usuario). */
+    pendingItem: Omit<CartItem, "id">;
+    /** Nombre del local que ya está en el carrito. */
+    currentVendorName: string;
+    /** Nombre del local del producto nuevo. */
+    newVendorName: string;
+}
+
 interface CartStore {
     items: CartItem[];
     isOpen: boolean;
+    /** No-nulo cuando el usuario intentó mezclar locales (la UI muestra el modal). */
+    vendorConflict: VendorConflict | null;
 
     // Actions
     addItem: (item: Omit<CartItem, "id">) => void;
     removeItem: (productId: string, variantId?: string) => void;
     updateQuantity: (productId: string, quantity: number, variantId?: string) => void;
     clearCart: () => void;
+    /** "Vaciar y agregar": vacía el carrito y agrega el item pendiente del conflicto. */
+    confirmVendorSwitch: () => void;
+    /** "Cancelar": descarta el intento y conserva el carrito actual. */
+    dismissVendorConflict: () => void;
     toggleCart: () => void;
     openCart: () => void;
     closeCart: () => void;
@@ -66,11 +86,13 @@ export const useCartStore = create<CartStore>()(
         (set, get) => ({
             items: [],
             isOpen: false,
+            vendorConflict: null,
 
             addItem: (item) => {
                 const { items } = get();
 
-                // Detect if adding from a NEW vendor (multi-vendor order)
+                // UN pedido = UN local: si el producto viene de otro comercio/vendedor,
+                // NO se agrega — se expone el conflicto y la UI decide (vaciar o cancelar).
                 const newVendorKey = item.type === "listing" && item.sellerId
                     ? `seller_${item.sellerId}`
                     : `merchant_${item.merchantId || "unknown"}`;
@@ -84,6 +106,20 @@ export const useCartStore = create<CartStore>()(
                 );
 
                 const isNewVendor = items.length > 0 && !existingVendors.has(newVendorKey);
+
+                if (isNewVendor) {
+                    const current = items[0];
+                    const currentVendorName =
+                        current.type === "listing" && current.sellerId
+                            ? current.sellerName || "otro vendedor"
+                            : current.merchantName || "otro comercio";
+                    const newVendorName =
+                        item.type === "listing" && item.sellerId
+                            ? item.sellerName || "este vendedor"
+                            : item.merchantName || "este comercio";
+                    set({ vendorConflict: { pendingItem: item, currentVendorName, newVendorName } });
+                    return;
+                }
 
                 const existingIndex = items.findIndex(
                     (i) => i.productId === item.productId && i.variantId === item.variantId
@@ -103,24 +139,23 @@ export const useCartStore = create<CartStore>()(
                     };
                     set({ items: [...items, newItem] });
                 }
-
-                // Show multi-vendor info toast once per session
-                if (isNewVendor) {
-                    try {
-                        const warned = sessionStorage.getItem(MULTI_VENDOR_WARNED_KEY);
-                        if (!warned) {
-                            sessionStorage.setItem(MULTI_VENDOR_WARNED_KEY, "1");
-                            // Lazy import toast to avoid circular deps
-                            import("@/store/toast").then(({ toast }) => {
-                                toast.info(
-                                    "Tu pedido incluye productos de distintos comercios. Cada uno tiene su propio envío.",
-                                    6000
-                                );
-                            });
-                        }
-                    } catch {}
-                }
             },
+
+            confirmVendorSwitch: () => {
+                const { vendorConflict } = get();
+                if (!vendorConflict) return;
+                const item = vendorConflict.pendingItem;
+                set({
+                    items: [{
+                        ...item,
+                        type: item.type || "product",
+                        id: `${item.productId}-${item.variantId || "default"}-${Date.now()}`,
+                    }],
+                    vendorConflict: null,
+                });
+            },
+
+            dismissVendorConflict: () => set({ vendorConflict: null }),
 
             removeItem: (productId, variantId) => {
                 const { items } = get();

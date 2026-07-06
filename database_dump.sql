@@ -2851,7 +2851,6 @@ COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoin
 
 COPY public."SavedCart" (id, "userId", items, "merchantId", "reminderCount", "lastRemindedAt", "recoveredAt", "cartValue", "createdAt", "updatedAt") FROM stdin;
 cmr3yq4hg0000mh52b79k92y7	cmqxvnefm0009127w2od9xv70	[{"id": "cmqz5vt740088xhd8njzv9jaq-default-1783024456446", "name": "Flat White", "type": "product", "image": "https://picsum.photos/seed/moovy-flat-white/600/600", "price": 2900, "quantity": 1, "productId": "cmqz5vt740088xhd8njzv9jaq", "merchantId": "cmqz5vt6v0084xhd80bepwszu"}]	\N	0	\N	\N	2900	2026-07-02 20:34:17.519	2026-07-02 20:34:17.519
-cmr409v240009mh52ne6xbyhf	cmqz5vwfh00fzxhd8bchmmyw5	[{"id": "cmqz5vt740088xhd8njzv9jaq-default-1783027056955", "name": "Flat White", "type": "product", "image": "https://picsum.photos/seed/moovy-flat-white/600/600", "price": 2900, "quantity": 1, "productId": "cmqz5vt740088xhd8njzv9jaq", "merchantId": "cmqz5vt6v0084xhd80bepwszu"}]	\N	0	\N	\N	2900	2026-07-02 21:17:38.044	2026-07-02 21:17:38.044
 \.
 
 

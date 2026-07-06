@@ -8,6 +8,7 @@ import CartSidebar from "@/components/layout/CartSidebar";
 import BottomNav from "@/components/layout/BottomNav";
 import AppHeader from "@/components/layout/AppHeader";
 import DeliveryAddressBar from "@/components/layout/DeliveryAddressBar";
+import VendorSwitchModal from "@/components/store/VendorSwitchModal";
 import PromoPopup from "@/components/store/PromoPopup";
 import ScrollToTop from "@/components/ScrollToTop";
 import { ChatWidget } from "@/components/support/ChatWidget";
@@ -167,6 +168,10 @@ export default function StoreLayout({
                     {children}
                 </PullToRefresh>
             </main>
+
+            {/* Modal "un pedido = un solo local" (fix/carrito-un-solo-comercio):
+                aparece cuando se intenta mezclar comercios en el carrito. */}
+            <VendorSwitchModal />
 
             {/* Bottom Navigation siempre visible — fijo abajo */}
             <BottomNav isLoggedIn={!!isLoggedIn} />
