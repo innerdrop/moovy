@@ -10,6 +10,44 @@
 
 ---
 
+## 2026-07-06 (rama `feat/moover-boost-lanzamiento-y-defaults`)
+
+feat(puntos): boost de lanzamiento configurable desde OPS (multiplicador + fecha, se apaga solo) + defaults canónicos del endpoint público y wording de /moover
+
+**Archivos:** prisma/schema.prisma, scripts/verify-moover-boost.ts, src/app/api/config/points/route.ts, src/app/moover/page.tsx, src/app/ops/(protected)/config-biblia/BibliaConfigClient.tsx, src/lib/ops-config.ts, src/lib/points.ts
+
+## 2026-07-06 (rama `feat/moover-boost-lanzamiento-y-defaults`)
+
+feat(puntos): boost de lanzamiento configurable + defaults canónicos del endpoint público
+
+Salidos de la auditoría anti-fantasma del programa MOOVER (dominio puntos):
+
+Boost de lanzamiento (canon lo prometía, nunca se implementó):
+- Schema PointsConfig: `earnBoostMultiplier Float @default(1)` + `earnBoostUntil DateTime?`.
+  Default 1 = apagado (regla #15). DEPLOY EN MODO SCHEMA.
+- `getActiveEarnBoost(config)` en points.ts; se aplica DENTRO de `calculatePointsEarned`
+  (único punto de cálculo del earn → todos los caminos lo respetan). Compone con el
+  multiplicador de nivel y NO puentea el mínimo de compra.
+- Biblia OPS (sección Programa MOOVER): inputs "Multiplicador del boost" (1-5, clamp
+  server-side) y "Boost hasta" (date, vacío = apagado, fin de día ART). El día del
+  launch: poner 2 + fecha a 30 días, arranca sin deploy y se apaga solo al vencer.
+- Endpoint público expone `earnBoostActive/Multiplier/Until` para que la UI pueda
+  mostrar "puntos ×2" cuando esté activo.
+
+Defaults canónicos:
+- `/api/config/points` (consume /moover) tenía defaults inventados (1 pt/$ = 100× el
+  rate real, bono 250, tope 15%): reescrito sobre `getPointsConfig()` — única fuente
+  de verdad, cae a defaults de Biblia si la DB falla.
+- Página `/moover`: fallbacks corregidos + wording "Ganá 0.01 punto por cada $1" →
+  "Ganá 10 puntos por cada $1.000" (helper ptsPerMil).
+
+Verificación: `scripts/verify-moover-boost.ts` (lógica pura + earn + roundtrip contra
+DB real con restauración + defaults canónicos).
+
+**Archivos:** prisma/schema.prisma, src/lib/points.ts, src/lib/ops-config.ts, src/app/api/config/points/route.ts, src/app/moover/page.tsx, src/app/ops/(protected)/config-biblia/BibliaConfigClient.tsx, scripts/verify-moover-boost.ts (nuevo)
+
+---
+
 ## 2026-07-06 (rama `fix/comision-vendedor-10`)
 
 fix(finanzas): comisiones al Plan Maestro — vendedor 10% y comercio 10% (tiers 10/9/8/7) en schema, seeds, fallbacks, emails, T&C y páginas públicas

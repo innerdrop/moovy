@@ -1415,7 +1415,9 @@ CREATE TABLE public."PointsConfig" (
     "minReferralPurchase" double precision DEFAULT 8000 NOT NULL,
     "tierWindowDays" integer DEFAULT 90 NOT NULL,
     "tierConfigJson" text,
-    "updatedAt" timestamp(3) without time zone NOT NULL
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "earnBoostMultiplier" double precision DEFAULT 1 NOT NULL,
+    "earnBoostUntil" timestamp(3) without time zone
 );
 
 
@@ -1755,8 +1757,8 @@ Pizza & Pelis'::text NOT NULL,
     "activeDemandCondition" text DEFAULT 'normal'::text NOT NULL,
     "operationalCostPercent" double precision DEFAULT 5 NOT NULL,
     "excludedZonesJson" text DEFAULT '[]'::text NOT NULL,
-    "defaultMerchantCommission" double precision DEFAULT 8 NOT NULL,
-    "defaultSellerCommission" double precision DEFAULT 12 NOT NULL,
+    "defaultMerchantCommission" double precision DEFAULT 10 NOT NULL,
+    "defaultSellerCommission" double precision DEFAULT 10 NOT NULL,
     "mpReservePercent" double precision DEFAULT 8 NOT NULL,
     "cashMpOnlyDeliveries" integer DEFAULT 10 NOT NULL,
     "cashLimitL1" double precision DEFAULT 15000 NOT NULL,
@@ -2614,8 +2616,8 @@ COPY public."PlaybookStep" (id, "checklistId", content, "order", required, "crea
 -- Data for Name: PointsConfig; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."PointsConfig" (id, "pointsPerDollar", "minPurchaseForPoints", "pointsValue", "minPointsToRedeem", "maxDiscountPercent", "signupBonus", "referralBonus", "reviewBonus", "pointsExpireDays", "refereeBonus", "minPurchaseForBonus", "minReferralPurchase", "tierWindowDays", "tierConfigJson", "updatedAt") FROM stdin;
-points_config	1	0	0.01	100	50	100	200	10	\N	100	5000	8000	90	\N	2026-06-29 11:55:46.208
+COPY public."PointsConfig" (id, "pointsPerDollar", "minPurchaseForPoints", "pointsValue", "minPointsToRedeem", "maxDiscountPercent", "signupBonus", "referralBonus", "reviewBonus", "pointsExpireDays", "refereeBonus", "minPurchaseForBonus", "minReferralPurchase", "tierWindowDays", "tierConfigJson", "updatedAt", "earnBoostMultiplier", "earnBoostUntil") FROM stdin;
+points_config	1	0	0.01	100	50	100	200	10	\N	100	5000	8000	90	\N	2026-07-06 16:54:18.925	1	\N
 \.
 
 

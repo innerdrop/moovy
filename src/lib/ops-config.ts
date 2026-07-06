@@ -48,6 +48,10 @@ export interface PointsMooverConfig {
   minReferralPurchase: number;
   tierWindowDays: number;
   tierConfigJson: string | null;
+  // feat/moover-boost-lanzamiento: boost de earn por tiempo limitado.
+  // 1 = apagado. Activo mientras earnBoostUntil (ISO string) sea futuro.
+  earnBoostMultiplier: number;
+  earnBoostUntil: string | null;
 }
 
 // chore/biblia-limpieza-fantasmas (2026-06-06): CashProtocolConfig removido.
@@ -192,6 +196,10 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
       minReferralPurchase: (pointsConfig as any)?.minReferralPurchase ?? 8000,
       tierWindowDays: (pointsConfig as any)?.tierWindowDays ?? 90,
       tierConfigJson: (pointsConfig as any)?.tierConfigJson ?? null,
+      earnBoostMultiplier: (pointsConfig as any)?.earnBoostMultiplier ?? 1,
+      earnBoostUntil: (pointsConfig as any)?.earnBoostUntil
+        ? new Date((pointsConfig as any).earnBoostUntil).toISOString().slice(0, 10)
+        : null,
     },
     // chore/biblia-limpieza-fantasmas: bloque cashProtocol removido (electrónico-only)
     scheduledDelivery: {
@@ -353,6 +361,14 @@ export async function updatePointsConfig(
     updateData.tierWindowDays = data.tierWindowDays;
   if (data.tierConfigJson !== undefined)
     updateData.tierConfigJson = data.tierConfigJson;
+  // feat/moover-boost-lanzamiento: multiplicador acotado [1, 5] defensivo;
+  // la fecha llega como "YYYY-MM-DD" del input date (vacío = apagar boost).
+  if (data.earnBoostMultiplier !== undefined)
+    updateData.earnBoostMultiplier = Math.min(Math.max(data.earnBoostMultiplier, 1), 5);
+  if (data.earnBoostUntil !== undefined)
+    updateData.earnBoostUntil = data.earnBoostUntil
+      ? new Date(`${data.earnBoostUntil}T23:59:59-03:00`)
+      : null;
 
   await prisma.pointsConfig.upsert({
     where: { id: "points_config" },

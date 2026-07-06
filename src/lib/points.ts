@@ -19,6 +19,10 @@ interface PointsConfig {
     // el schema), solo dejamos de exponerla/usarla.
     minPurchaseForBonus: number;      // Min 1st purchase to activate bonuses
     minReferralPurchase: number;      // Min purchase for referral to count
+    // feat/moover-boost-lanzamiento: boost de earn por tiempo limitado (ej. ×2
+    // los primeros 30 días del launch). Activo solo mientras now < earnBoostUntil.
+    earnBoostMultiplier: number;
+    earnBoostUntil: Date | null;
 }
 
 // Biblia Financiera v3 defaults
@@ -34,7 +38,19 @@ const defaultConfig: PointsConfig = {
     // chore/biblia-limpieza-fantasmas: reviewBonus removido (feature dormido)
     minPurchaseForBonus: 5000,        // $5,000 min 1st purchase to activate
     minReferralPurchase: 8000,        // $8,000 min for referral to count
+    earnBoostMultiplier: 1,           // 1 = boost apagado (conservador)
+    earnBoostUntil: null,             // sin fecha = apagado
 };
+
+/**
+ * Multiplicador de boost vigente: earnBoostMultiplier si la fecha límite existe
+ * y no pasó; 1 en cualquier otro caso (apagado, vencido o valor inválido).
+ */
+export function getActiveEarnBoost(config: PointsConfig, now: Date = new Date()): number {
+    if (!config.earnBoostUntil) return 1;
+    if (now >= config.earnBoostUntil) return 1;
+    return config.earnBoostMultiplier > 0 ? config.earnBoostMultiplier : 1;
+}
 
 // ─── User Levels (Biblia v3) ─────────────────────────────────────────────────
 
@@ -138,7 +154,11 @@ export function calculatePointsEarned(
     if (orderTotal < config.minPurchaseForPoints) {
         return 0;
     }
-    return Math.floor(orderTotal * config.pointsPerDollar * earnMultiplier);
+    // feat/moover-boost-lanzamiento: el boost por tiempo limitado se aplica acá,
+    // el único punto de cálculo del earn — TODOS los caminos que acreditan puntos
+    // pasan por esta función, así que el boost nunca queda a medias.
+    const boost = getActiveEarnBoost(config);
+    return Math.floor(orderTotal * config.pointsPerDollar * earnMultiplier * boost);
 }
 
 /**
@@ -198,6 +218,10 @@ export async function getPointsConfig(): Promise<PointsConfig> {
             // chore/biblia-limpieza-fantasmas: reviewBonus ya no se expone
             minPurchaseForBonus: (config as any).minPurchaseForBonus ?? defaultConfig.minPurchaseForBonus,
             minReferralPurchase: (config as any).minReferralPurchase ?? defaultConfig.minReferralPurchase,
+            // feat/moover-boost-lanzamiento: `as any` para sobrevivir a un Prisma
+            // client sin regenerar (mismo patrón que los campos de arriba).
+            earnBoostMultiplier: (config as any).earnBoostMultiplier ?? defaultConfig.earnBoostMultiplier,
+            earnBoostUntil: (config as any).earnBoostUntil ?? defaultConfig.earnBoostUntil,
         };
     } catch (error) {
         console.error("[Points] Error loading config:", error);
@@ -692,6 +716,8 @@ export async function updatePointsConfig(newConfig: Partial<PointsConfig>): Prom
             // chore/biblia-limpieza-fantasmas: reviewBonus ya no se expone
             minPurchaseForBonus: (config as any).minPurchaseForBonus ?? defaultConfig.minPurchaseForBonus,
             minReferralPurchase: (config as any).minReferralPurchase ?? defaultConfig.minReferralPurchase,
+            earnBoostMultiplier: (config as any).earnBoostMultiplier ?? defaultConfig.earnBoostMultiplier,
+            earnBoostUntil: (config as any).earnBoostUntil ?? defaultConfig.earnBoostUntil,
         };
     } catch (error) {
         console.error("[Points] Error updating config:", error);

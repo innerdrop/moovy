@@ -663,6 +663,34 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
             info="Monto mínimo de compra del referido para que cuente el referral." />
         </div>
 
+        {/* feat/moover-boost-lanzamiento: boost de earn por tiempo limitado.
+            El día del launch: multiplicador 2 + fecha a 30 días → arranca solo,
+            sin deploy. Al vencer la fecha se apaga solo. Multiplicador 1 o fecha
+            vacía = apagado. */}
+        <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Boost de lanzamiento</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <NumInput label="Multiplicador del boost" name="earnBoostMultiplier" value={config.points.earnBoostMultiplier}
+            onChange={(n, v) => updateField("points", n, v)} min={1} max={5} step={0.5} unit="×"
+            info="Multiplica los puntos ganados mientras el boost está activo. 1 = apagado, 2 = puntos dobles." />
+          <div>
+            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wide mb-1.5">
+              Boost hasta (inclusive)
+              <span className="ml-1 font-normal normal-case text-slate-400" title="Última fecha con boost activo. Vacío = boost apagado. Se apaga solo al vencer.">ⓘ</span>
+            </label>
+            <input
+              type="date"
+              value={config.points.earnBoostUntil ?? ""}
+              onChange={(e) => updateField("points", "earnBoostUntil", e.target.value)}
+              className="w-full px-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-violet-400 transition"
+            />
+            <p className="mt-1 text-[11px] text-slate-400">
+              {config.points.earnBoostUntil && config.points.earnBoostMultiplier > 1
+                ? `Boost ×${config.points.earnBoostMultiplier} activo hasta el ${config.points.earnBoostUntil} inclusive.`
+                : "Boost apagado (multiplicador 1 o sin fecha)."}
+            </p>
+          </div>
+        </div>
+
         {/* Points Simulator */}
         <div className="bg-violet-50 rounded-2xl p-4 border border-violet-100">
           <h3 className="text-sm font-black text-violet-700 flex items-center gap-2 mb-2">

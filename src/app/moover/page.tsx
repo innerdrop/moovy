@@ -27,12 +27,17 @@ interface PointsConfig {
     signupBonus: number;
     referralBonus: number;
     refereeBonus: number;
-    reviewBonus: number;
     minPointsToRedeem: number;
     maxDiscountPercent: number;
     pointsValue: number;
     pointsExpire: boolean;
 }
+
+// feat/moover-boost-lanzamiento-y-defaults: helper de display — el rate se guarda
+// como pts/$1 (0.01) pero al usuario se le habla en "puntos por $1.000" (10),
+// nunca "0.01 puntos por $1".
+const ptsPerMil = (config: PointsConfig | null) =>
+    Math.round((config?.pointsPerDollar ?? 0.01) * 1000);
 
 interface Level {
     name: string;
@@ -72,16 +77,17 @@ export default function MooverPage() {
             } catch (error) {
                 console.error("Failed to fetch configs:", error);
                 // Fall back to defaults on error
+                // Defaults canónicos de la Biblia (feat/moover-boost-lanzamiento-y-defaults:
+                // antes había valores inventados — 1 pt/$ era 100× el rate real).
                 setConfig({
-                    pointsPerDollar: 1,
-                    signupBonus: 250,
-                    referralBonus: 500,
-                    refereeBonus: 250,
-                    reviewBonus: 25,
+                    pointsPerDollar: 0.01,
+                    signupBonus: 1000,
+                    referralBonus: 1000,
+                    refereeBonus: 500,
                     minPointsToRedeem: 500,
-                    maxDiscountPercent: 15,
-                    pointsValue: 0.015,
-                    pointsExpire: false
+                    maxDiscountPercent: 20,
+                    pointsValue: 1,
+                    pointsExpire: true
                 });
                 setLevels(MOOVER_LEVELS.map(l => ({
                     ...l,
@@ -183,7 +189,7 @@ export default function MooverPage() {
                                     <div className="w-10 h-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 font-black">2</div>
                                     <h3 className="font-bold text-gray-900 text-lg">Acumulá</h3>
                                 </div>
-                                <p className="text-sm text-gray-500">Ganá {config?.pointsPerDollar ?? 1} punto{config?.pointsPerDollar !== 1 ? 's' : ''} por cada $1 gastado. También sumás puntos invitando amigos.</p>
+                                <p className="text-sm text-gray-500">Ganá {ptsPerMil(config)} puntos por cada $1.000 gastados. También sumás puntos invitando amigos.</p>
                                 <div className="hidden md:block absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10">
                                     <ChevronRight className="w-6 h-6 text-gray-300" />
                                 </div>
@@ -218,8 +224,8 @@ export default function MooverPage() {
                                 <TrendingUp className="w-6 h-6 text-green-600" />
                             </div>
                             <h3 className="font-bold text-gray-900 text-lg mb-2">Comprando</h3>
-                            <p className="text-gray-500 text-sm mb-3">Ganá {config?.pointsPerDollar ?? 1} punto{config?.pointsPerDollar !== 1 ? 's' : ''} por cada $1 gastado en cualquier pedido.</p>
-                            <span className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full">+{config?.pointsPerDollar ?? 1} punto{config?.pointsPerDollar !== 1 ? 's' : ''} / $1</span>
+                            <p className="text-gray-500 text-sm mb-3">Ganá {ptsPerMil(config)} puntos por cada $1.000 gastados en cualquier pedido.</p>
+                            <span className="text-xs font-bold text-green-600 bg-green-50 px-3 py-1 rounded-full">+{ptsPerMil(config)} puntos / $1.000</span>
                         </div>
 
                         <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
@@ -237,7 +243,7 @@ export default function MooverPage() {
                             </div>
                             <h3 className="font-bold text-gray-900 text-lg mb-2">Bono de Bienvenida</h3>
                             <p className="text-gray-500 text-sm mb-3">Al registrarte y hacer tu primera compra, recibís puntos extra.</p>
-                            <span className="text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full">+{config?.signupBonus ?? 250} puntos</span>
+                            <span className="text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full">+{config?.signupBonus ?? 1000} puntos</span>
                         </div>
                     </div>
                 </div>
@@ -322,7 +328,7 @@ export default function MooverPage() {
                             </div>
                             <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100">
                                 <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                                <span className="text-sm text-gray-700">Máximo {config?.maxDiscountPercent ?? 15}% de descuento por pedido</span>
+                                <span className="text-sm text-gray-700">Máximo {config?.maxDiscountPercent ?? 20}% de descuento por pedido</span>
                             </div>
                             <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100">
                                 <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />

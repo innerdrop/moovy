@@ -1284,6 +1284,11 @@ model PointsConfig {
   minReferralPurchase  Float    @default(8000)
   tierWindowDays       Int      @default(90)
   tierConfigJson       String?
+  // feat/moover-boost-lanzamiento: boost de earn por tiempo limitado (ej. ×2 los
+  // primeros 30 días). Activo solo si earnBoostUntil > now. Default 1 = apagado
+  // (regla #15: defaults conservadores). Editable desde /ops/config-biblia.
+  earnBoostMultiplier  Float    @default(1)
+  earnBoostUntil       DateTime?
   updatedAt            DateTime @updatedAt
 }
 
