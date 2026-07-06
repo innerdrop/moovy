@@ -1243,7 +1243,7 @@ export async function sendSellerActivatedEmail(data: {
                 <li>Publicá tu primera publicación con foto, precio y descripción</li>
                 <li>Configurá tu disponibilidad y horarios</li>
                 <li>Cargá tu CBU o alias bancario para recibir los pagos</li>
-                <li>Revisá los Términos para Vendedores para conocer comisiones (12%) y políticas</li>
+                <li>Revisá los Términos para Vendedores para conocer comisiones (10%) y políticas</li>
             </ol>
         `)}
 

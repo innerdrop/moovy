@@ -359,7 +359,7 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
                     <li>Publicá tu primera publicación con foto, precio y descripción</li>
                     <li>Configurá tu disponibilidad y horarios</li>
                     <li>Cargá tu CBU o alias bancario para recibir los pagos</li>
-                    <li>Revisá los Términos para Vendedores (comisión 12%)</li>
+                    <li>Revisá los Términos para Vendedores (comisión 10%)</li>
                 </ol>
             `)}
             ${emailButton('Ir al panel de vendedor', `${baseUrl}/vendedor`, 'blue')}

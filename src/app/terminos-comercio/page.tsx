@@ -114,15 +114,15 @@ export default function TerminosComercioPage() {
 
                         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
                             <p className="text-gray-800 font-medium mb-3">
-                                💰 <strong>Comisión base: 8% sobre el subtotal de cada venta</strong>
+                                💰 <strong>Comisión base: 10% sobre el subtotal de cada venta</strong>
                                 {" "}(sin incluir el costo de envío). La tasa puede reducirse según el
                                 nivel de tier alcanzado por el Comercio:
                             </p>
                             <ul className="list-disc list-inside space-y-1 text-sm text-gray-700">
-                                <li><strong>BRONCE</strong> (default): 8%</li>
-                                <li><strong>PLATA</strong>: 7%</li>
-                                <li><strong>ORO</strong>: 6%</li>
-                                <li><strong>DIAMANTE</strong>: 5%</li>
+                                <li><strong>BRONCE</strong> (default): 10%</li>
+                                <li><strong>PLATA</strong>: 9%</li>
+                                <li><strong>ORO</strong>: 8%</li>
+                                <li><strong>DIAMANTE</strong>: 7%</li>
                             </ul>
                             <p className="text-xs text-gray-600 mt-2">
                                 Los criterios para subir de nivel se basan en volumen de ventas

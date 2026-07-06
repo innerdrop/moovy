@@ -10,6 +10,44 @@
 
 ---
 
+## 2026-07-06 (rama `fix/comision-vendedor-10`)
+
+fix(finanzas): comisiones al Plan Maestro — vendedor 10% y comercio 10% (tiers 10/9/8/7) en schema, seeds, fallbacks, emails, T&C y páginas públicas
+
+**Archivos:** ISSUES.md, prisma/schema.prisma, prisma/seed-local-reset.ts, prisma/seed-production.ts, src/app/api/orders/route.ts, src/app/comisiones/page.tsx, src/app/nosotros/page.tsx, src/app/terminos-comercio/page.tsx (+5 mas)
+
+## 2026-07-06 (rama `fix/comision-vendedor-10`)
+
+fix(finanzas): comisiones alineadas al Plan Maestro en código Y textos (tarea #17)
+
+La tarea era "vendedor 12% → 10% en el código", pero el barrido encontró textos
+públicos y legales con el modelo viejo. Todo alineado al canon (comercio 10% base
+con tiers 10/9/8/7, mes 1 gratis; vendedor 10% desde día 1):
+
+- Schema: `defaultSellerCommission @default(12→10)` y `defaultMerchantCommission
+  @default(8→10)`. OJO deploy: MODO SCHEMA (cambia defaults de columna, sin
+  migración de datos).
+- Seeds (local-reset + production): seller 12 → 10.
+- Fallbacks de código: `ops-config.ts` y `orders/route.ts` (`?? 12` → `?? 10`).
+- Emails seller activado (email-p0 + registry): "comisión 12%" → 10%.
+- T&C vendedor: 12% → 10% (2 menciones).
+- T&C comercio: base 8% → 10% + tiers BRONCE 10 / PLATA 9 / ORO 8 / DIAMANTE 7
+  (decía 8/7/6/5, modelo viejo).
+- `/nosotros`: "8% comercios, 12% marketplace, delivery fee" → "10% (primer mes
+  gratis), 10%, envío".
+- `/comisiones`: la card del vendedor PROMETÍA "0% en el lanzamiento, escala a 12%"
+  — contradecía el canon (vendedor paga 10% desde el día 1). Card y 2 FAQs
+  reescritas al modelo real. REVISAR FOUNDER: era una promesa pública.
+- Comentario en vendedor/pedidos actualizado.
+
+POST-DEPLOY OPERATIVO: el valor VIVO está en StoreSettings de la DB (prod tiene 12).
+Cambiarlo desde /ops/config-biblia a 10 (local y prod) — el schema default solo
+aplica a instalaciones nuevas.
+
+**Archivos:** prisma/schema.prisma, prisma/seed-local-reset.ts, prisma/seed-production.ts, src/lib/ops-config.ts, src/app/api/orders/route.ts, src/lib/email-p0.ts, src/lib/email-registry.ts, src/app/terminos-vendedor/page.tsx, src/app/terminos-comercio/page.tsx, src/app/nosotros/page.tsx, src/app/comisiones/page.tsx, src/app/vendedor/(protected)/pedidos/page.tsx
+
+---
+
 ## 2026-07-05 (rama `fix/split-mp-cada-parte-paga-lo-suyo`)
 
 fix(pagos): split MP cada parte paga su 7,6% — marketplace_fee = (comisión + envío − desc) × (1 − r), comercio ya no banca el costo de MP sobre la parte de Moovy

@@ -39,7 +39,7 @@
 
 - ✅ **Deployar el batch** — HECHO 2026-07-02 (+ 2 batches más el 07-05/06: cortina+direcciones y equipamiento+split). Re-seed `DeliveryRate` ✓, cleanups ✓, `fix-ops-config` en local y prod ✓ (timeouts re-sincronizados), cortina ✓.
 - **Auditoría pre-launch del código (depuración total antes de main)** — EN CURSO. Capa 1 (knip) hecha; seguir dominio por dominio: pagos → motor logístico → comisiones/puntos → config OPS → auth → estados → crons. Cada dominio: hallazgos al registro; críticos se arreglan, el resto se archiva o difiere.
-- **Comisión vendedor marketplace 10% en el código** — CLAUDE.md dice 10% pero el código tiene 12% en `defaultSellerCommission` y en `sendSellerActivatedEmail`. Alinear (rama chica).
+- ✅ **Comisión vendedor marketplace 10%** — HECHO (rama `fix/comision-vendedor-10`, 2026-07-06). Alcance ampliado: también comercio 10% + tiers 10/9/8/7 en T&C, `/nosotros` y `/comisiones` (que prometía "0% lanzamiento" — REVISAR FOUNDER). **Pendiente post-deploy: setear 10 en `/ops/config-biblia` (el valor vivo en StoreSettings de prod sigue en 12) + deploy MODO SCHEMA.**
 - **Config de OPS: verificar que cada parámetro funcione (no fantasma)** + ficha de documentación por parámetro accesible desde el ⓘ del panel.
 - **Seguimientos de emails** — fusionar redundantes (3 reembolsos, 2 reportes diarios, 2 avisos de nuevo repartidor); crear "subiste de nivel MOOVER"; cablear los de owner (necesitan sus crons).
 - **Repartidor cancela pedido aceptado** + motivo obligatorio + reasignación instantánea (estudiar bien antes de implementar).

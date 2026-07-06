@@ -1211,8 +1211,10 @@ model StoreSettings {
   excludedZonesJson        String  @default("[]")
 
   // === OPS CONFIG: Commission defaults ===
-  defaultMerchantCommission Float  @default(8)
-  defaultSellerCommission   Float  @default(12)
+  // Rama fix/comision-vendedor-10 (Plan Maestro v1): comercio 10% base (tiers
+  // BRONCE 10 → DIAMANTE 7), vendedor marketplace 10% desde día 1.
+  defaultMerchantCommission Float  @default(10)
+  defaultSellerCommission   Float  @default(10)
   // Rama fix/split-mp-reserva-y-operativo: % que el split aparta para cubrir la
   // comisión que MP le cobra al comercio (el cobrador). Evita que MP rechace cuando
   // el envío es grande. Editable desde OPS; si MP sube su comisión, se sube acá.

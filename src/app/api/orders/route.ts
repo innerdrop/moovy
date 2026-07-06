@@ -52,7 +52,7 @@ async function getOpsSettings() {
     const s = settings as any;
     return {
         defaultMerchantCommission: s?.defaultMerchantCommission ?? 10,
-        defaultSellerCommission: s?.defaultSellerCommission ?? 12,
+        defaultSellerCommission: s?.defaultSellerCommission ?? 10,
         riderCommissionPercent: settings?.riderCommissionPercent ?? 80,
         maxOrdersPerSlot: s?.maxOrdersPerSlot ?? 15,
         slotDurationMinutes: s?.slotDurationMinutes ?? 120,

@@ -174,7 +174,7 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
     },
     commissions: {
       defaultMerchantCommission: (settings as any)?.defaultMerchantCommission ?? 10,
-      defaultSellerCommission: (settings as any)?.defaultSellerCommission ?? 12,
+      defaultSellerCommission: (settings as any)?.defaultSellerCommission ?? 10,
       riderCommissionPercent: settings?.riderCommissionPercent ?? 80,
       mpReservePercent: (settings as any)?.mpReservePercent ?? 8,
     },

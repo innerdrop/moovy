@@ -360,7 +360,7 @@ export default function VendedorPedidosPage() {
                                 {/* Totals
                                     Rama feat/comercio-ux-guardar-y-totales: el seller ve "Tu venta"
                                     (subtotal de sus productos, no el total que incluye envío) y
-                                    debajo "Cobrás" (subtotal − 12% comisión Moovy). NUNCA mostrar
+                                    debajo "Cobrás" (subtotal − 10% comisión Moovy). NUNCA mostrar
                                     order.total acá: contiene el delivery fee y confunde al vendedor. */}
                                 <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                                     <div className="text-sm">

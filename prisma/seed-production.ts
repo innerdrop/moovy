@@ -76,7 +76,7 @@ async function main() {
             maxDeliveryDistance: 15,
             riderCommissionPercent: 80,
             defaultMerchantCommission: 10,
-            defaultSellerCommission: 12,
+            defaultSellerCommission: 10,
             heroSliderEnabled: true,
             heroSliderInterval: 5000,
             heroSliderShowArrows: true,

@@ -222,7 +222,7 @@ export default function QuienesSomosPage() {
                             <DiffCard
                                 icon={<Scale className="h-8 w-8" strokeWidth={1.5} />}
                                 title="Comisiones justas"
-                                body="8% para comercios. 12% para marketplace. 80% del delivery fee para repartidores. Números públicos, sin letra chica."
+                                body="10% para comercios (y el primer mes es gratis). 10% para marketplace. 80% del envío para repartidores. Números públicos, sin letra chica."
                             />
                             <DiffCard
                                 icon={

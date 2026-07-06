@@ -55,11 +55,11 @@ const pricingCards = [
   {
     role: "Vendedores Marketplace",
     icon: <MoovyIconCart className="w-8 h-8" />,
-    mainPrice: "0%",
-    description: "Comisión de lanzamiento",
+    mainPrice: "10%",
+    description: "Comisión por venta",
     details: [
-      "Comisión 0% en el lanzamiento",
-      "Escala gradual después (12% máx)",
+      "Comisión fija del 10% por venta",
+      "Sin costos fijos ni de publicación",
       "Alcance a 80.000 personas en Ushuaia",
       "Pago automático a tu MP",
       "Herramientas de análisis",
@@ -153,12 +153,12 @@ const faqSections = [
     title: "Vendedores Marketplace",
     items: [
       {
-        q: "¿Por qué 0% de comisión al principio?",
-        a: "Queremos que los vendedores crezcan con MOOVY. Comisión 0% en el lanzamiento te permite generar historial y reputación sin fricción. La comisión se introduce gradualmente después.",
+        q: "¿Cuánto es la comisión para vendedores?",
+        a: "10% sobre el valor de cada venta, desde la primera. Sin costos fijos, sin costos de publicación, sin sorpresas: solo pagás cuando vendés.",
       },
       {
-        q: "¿Cuándo aumenta la comisión a 12%?",
-        a: "Después del período de lanzamiento (a determinar), escala gradualmente. Te avisamos con 30 días de anticipación.",
+        q: "¿La comisión puede cambiar?",
+        a: "Cualquier cambio en las comisiones se avisa con 30 días de anticipación. Los números de MOOVY son públicos, sin letra chica.",
       },
       {
         q: "¿Cómo recibo mis ganancias?",

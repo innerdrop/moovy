@@ -79,7 +79,7 @@ export default function TerminosVendedorPage() {
                         <h2 className="text-xl font-bold text-gray-900 mb-4">4. Comisiones y Pagos</h2>
                         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
                             <p className="text-gray-800 font-medium">
-                                💰 <strong>Comisión base: 12% sobre el valor de cada venta</strong> realizada
+                                💰 <strong>Comisión base: 10% sobre el valor de cada venta</strong> realizada
                                 a través del marketplace. Este porcentaje es el aplicable por defecto y
                                 podrá ser modificado para condiciones especiales que MOOVY informará al
                                 Vendedor por escrito antes de la activación.
@@ -88,7 +88,7 @@ export default function TerminosVendedorPage() {
                         <p className="text-gray-600 mb-4">
                             Aclaración importante: el período de bonificación &quot;Mes 1 = 0%&quot; aplicable
                             a comercios gastronómicos y tiendas físicas <strong>NO aplica al marketplace</strong>.
-                            La comisión del 12% rige desde la primera venta del Vendedor.
+                            La comisión del 10% rige desde la primera venta del Vendedor.
                         </p>
                         <ul className="list-disc list-inside space-y-2 text-gray-600 mb-4">
                             <li>La comisión se calcula sobre el precio de venta (sin incluir el costo de envío)</li>
