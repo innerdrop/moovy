@@ -53,7 +53,7 @@
 
 - **Bajar reserva MP a 7,6% en la Biblia (OPS)** — en prod está en 8%: Moovy se auto-descuenta de más y le regala ~0,4% de su parte al comercio en cada pedido. 1 minuto, sin deploy.
 - **Liberación del `marketplace_fee` retenida por MP** — la comisión de marketplace queda en "dinero a liquidar" con calendario propio a nivel aplicación (la config "al instante" de la cuenta NO aplica). Gestionar el plazo con el ejecutivo comercial de MP. Mientras: dimensionar capital de trabajo para payouts de drivers.
-- **Re-probar el ciclo logístico completo en prod** (post-fix equipamiento): aviso de viaje al driver AUTO → aceptar → PIN retiro → PIN entrega. + Motor de envío a distintas distancias + buscando-repartidor con reembolso (tarea #8).
+- ✅ **Ciclo logístico completo en prod** — VERIFICADO 2026-07-06: aviso de viaje al driver (post-fix equipamiento) → PIN retiro → PIN entrega → DELIVERED → earn de puntos corrió idempotente (`pointsEarned=0`, correcto para montos de prueba; con $1.000+ acredita visible). Quedan como verificaciones menores: motor de envío a distintas distancias + reembolso automático al vencer la ventana de búsqueda (tarea #8).
 - **Verificar tarjeta social de WhatsApp** — `public/og-moovy.png` puede tener horneado el texto viejo ("Está por llegar"); si es así, regenerarla (la cortina nueva dice "Hecha en Ushuaia, para Ushuaia").
 - **`driverPayoutAmount` redondea a pesos enteros** (`Math.round(tripCost * 0.80)` en assignment-engine): con tripCost $12 guardó $10 en vez de $9,60. Con montos reales la diferencia es de centavos, pero el canon dice redondeo a centavos. Rama chica cuando haya aire.
 
