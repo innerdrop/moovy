@@ -10,6 +10,29 @@
 
 ---
 
+## 2026-07-07 (rama `chore/pwa-icono-m-blanca`)
+
+chore: icono PWA — ficha roja con M blanca centrada (zona segura maskable), cubre Android e iOS sin cambios de codigo
+
+**Archivos:** public/icons/icon-192x192.png, public/icons/icon-512x512.png
+
+## 2026-07-07 (rama `chore/pwa-icono-m-blanca`)
+
+chore: ícono de la webapp — ficha roja con M blanca centrada
+
+Pedido founder: el ícono al instalar la PWA era la M roja sobre transparente,
+borde a borde (se veía como logo flotante gigante). Regenerados los dos íconos
+del manifest (`icons/icon-512x512.png` y `icon-192x192.png`): ficha roja plena
+#e60012 con la M BLANCA centrada al 58% del lienzo (zona segura maskable — el
+squircle de Android no la corta). Sin cambios de código: el manifest y el
+apple-touch-icon ya apuntaban a esos archivos, así que Android e iOS quedan
+cubiertos con el reemplazo. NOTA de prueba: los teléfonos cachean el ícono —
+desinstalar la PWA de prueba y re-agregarla post-deploy para ver el nuevo.
+
+**Archivos:** public/icons/icon-512x512.png, public/icons/icon-192x192.png
+
+---
+
 ## 2026-07-07 (rama `chore/og-card-hecha-en-ushuaia`)
 
 chore: tarjeta social og-moovy.png actualizada al lema "Hecha en Ushuaia, para Ushuaia" + cache-busting ?v=2 para forzar re-scrape de WhatsApp
