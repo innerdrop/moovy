@@ -170,11 +170,14 @@ export async function buildSubOrderFinancialSnapshot(
     // ── Reparto Financiero — Driver ─────────────────────────────────────────
     // Repartidor cobra riderSharePercent% del costo del viaje SIN operativo +
     // bonus de zona si aplica (Biblia v3: zona B +$150, zona C +$350).
-    // Math.round para evitar centavos fraccionarios (regla PAGOS).
+    // fix/driver-payout-centavos: redondeo a CENTAVOS (Math.round(x*100)/100,
+    // regla PAGOS del canon). Antes redondeaba a pesos enteros: con tripCost $12
+    // guardaba $10 en vez de $9,60 — el snapshot es inmutable y esa diferencia
+    // quedaba para siempre en la contabilidad.
     const zoneCode = zoneSnapshot?.zoneCode ?? null;
     const zoneMultiplier = zoneSnapshot?.zoneMultiplier ?? 1.0;
     const zoneDriverBonus = zoneSnapshot?.zoneDriverBonus ?? 0;
-    const driverPayoutAmount = Math.round(tripCost * (riderSharePercent / 100)) + zoneDriverBonus;
+    const driverPayoutAmount = Math.round(tripCost * (riderSharePercent / 100) * 100) / 100 + zoneDriverBonus;
 
     // ── Reparto Financiero — Merchant / Seller ──────────────────────────────
     // Solo merchant pasa por la cascada de getEffectiveCommissionWithSource

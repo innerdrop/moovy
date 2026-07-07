@@ -10,6 +10,35 @@
 
 ---
 
+## 2026-07-06 (rama `fix/driver-payout-centavos`)
+
+fix(pagos): payout del repartidor a centavos (snapshot + oferta + preview) + invariante del simulador actualizado al redondeo exacto
+
+**Archivos:** ISSUES.md, scripts/simular-envios.ts, src/lib/assignment-engine.ts, src/lib/delivery.ts, src/lib/orders/order-totals.ts
+
+## 2026-07-06 (rama `fix/driver-payout-centavos`)
+
+fix(pagos): payout del repartidor redondea a centavos, no a pesos enteros
+
+Hallazgo menor de la sesión de pruebas en prod (tripCost $12 → guardaba $10 en
+vez de $9,60). Regla PAGOS del canon: `Math.round(x*100)/100`.
+
+- `order-totals.ts` (driverPayoutAmount, el SNAPSHOT inmutable — la plata real).
+- `assignment-engine.ts` calculateEstimatedEarnings ×2 (estimación de la oferta).
+- `delivery.ts` riderEarnings (preview del quote). El tripCost que paga el
+  cliente sigue en pesos enteros (precio prolijo, deliberado).
+
+Verificación: `npx tsx scripts/simular-envios.ts` — los valores canónicos con
+enteros exactos (moto 3km = $2.190 → rider $1.752) no cambian; solo los casos
+con fracción real (zonas ×1.15/×1.35) dejan de regalar/quitar centavos. El
+script se actualizó: su invariante replicaba el redondeo viejo (por eso daba 28
+"❌" falsos tras el fix) → ahora exige exactitud al centavo, que es el invariante
+verdadero. `moovyDeliveryEarnings` con round2 defensivo (residuos de float).
+
+**Archivos:** src/lib/orders/order-totals.ts, src/lib/assignment-engine.ts, src/lib/delivery.ts, scripts/simular-envios.ts
+
+---
+
 ## 2026-07-06 (rama `fix/merchant-reject-atomico`)
 
 fix(pagos): rechazo del comercio atómico e idempotente — claim + stock en tx Serializable, doble click o carrera ya no duplica reposición

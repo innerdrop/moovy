@@ -129,15 +129,17 @@ async function calculateEstimatedEarnings(
         const perKm = deliveryRate?.pricePerKmArs ?? (FALLBACK_RATES[packageCategory.toUpperCase()]?.perKm ?? 73);
 
         // Trip cost × factor 2.2 (ida + vuelta + espera) × 80% para el driver
+        // fix/driver-payout-centavos: redondeo a centavos (regla PAGOS), alineado
+        // con el snapshot real de order-totals.ts.
         const tripCost = Math.max(base, perKm * totalDistanceKm * 2.2);
-        const driverEarnings = Math.round(tripCost * 0.80);
+        const driverEarnings = Math.round(tripCost * 0.80 * 100) / 100;
 
         return driverEarnings;
     } catch (err) {
         deliveryLogger.warn({ packageCategory, totalDistanceKm, error: err }, "Error calculating earnings, using fallback");
         const fallback = FALLBACK_RATES[packageCategory.toUpperCase()] ?? FALLBACK_RATES.MEDIUM;
         const tripCost = Math.max(fallback.base, fallback.perKm * totalDistanceKm * 2.2);
-        return Math.round(tripCost * 0.80);
+        return Math.round(tripCost * 0.80 * 100) / 100;
     }
 }
 

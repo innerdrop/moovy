@@ -73,8 +73,11 @@ for (const v of VEHICULOS) {
       check(r.tripCost === esperadoTrip, `${v.nombre} ${d}km z${zona}: tripCost ${r.tripCost} != ${esperadoTrip}`);
       check(r.totalCost === r.tripCost, `${v.nombre} ${d}km z${zona}: cliente paga != viaje (op debería ser 0)`);
       check(r.operationalCost === 0, `${v.nombre} ${d}km z${zona}: operativo != 0`);
-      check(r.riderEarnings === Math.round(r.tripCost * 0.8), `${v.nombre} ${d}km z${zona}: repartidor != 80%`);
-      check(r.moovyDeliveryEarnings === r.totalCost - r.riderEarnings, `${v.nombre} ${d}km z${zona}: Moovy != total - repartidor`);
+      // fix/driver-payout-centavos: el 80% del rider ahora se redondea a CENTAVOS
+      // (regla PAGOS), no a pesos enteros. El invariante correcto es exactitud
+      // al centavo contra el 80% matemático.
+      check(r.riderEarnings === Math.round(r.tripCost * 0.8 * 100) / 100, `${v.nombre} ${d}km z${zona}: repartidor != 80%`);
+      check(Math.abs(r.moovyDeliveryEarnings - (r.totalCost - r.riderEarnings)) < 0.01, `${v.nombre} ${d}km z${zona}: Moovy != total - repartidor`);
       check(r.moovyDeliveryEarnings >= 0, `${v.nombre} ${d}km z${zona}: Moovy NEGATIVO (${r.moovyDeliveryEarnings})`);
     }
   }

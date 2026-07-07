@@ -206,7 +206,10 @@ export function calculateDeliveryCost(
 
     // El repartidor SIEMPRE cobra su parte del viaje — incluso en envío gratis
     // (lo absorbe Moovy). Nunca el repartidor trabaja gratis.
-    const riderEarnings = Math.max(0, Math.round(tripCost * (riderShare / 100)));
+    // fix/driver-payout-centavos: redondeo a centavos (regla PAGOS). El tripCost
+    // que paga el cliente sigue en pesos enteros (precio prolijo, deliberado);
+    // la parte del rider se calcula exacta.
+    const riderEarnings = Math.max(0, Math.round(tripCost * (riderShare / 100) * 100) / 100);
 
     // Envío gratis controlado por Moovy: el cliente NO paga el envío, pero el viaje
     // se calcula igual y el repartidor cobra. Moovy absorbe el costo del viaje.
@@ -219,7 +222,9 @@ export function calculateDeliveryCost(
 
     // Ganancia Moovy del delivery = lo cobrado al cliente − lo pagado al repartidor.
     // En envío gratis da negativo (Moovy pone la diferencia de su bolsillo).
-    const moovyDeliveryEarnings = totalCost - riderEarnings;
+    // fix/driver-payout-centavos: round2 defensivo — la resta de floats puede dejar
+    // residuos binarios (430.20000000000005) que rompen igualdades estrictas.
+    const moovyDeliveryEarnings = Math.round((totalCost - riderEarnings) * 100) / 100;
 
     return {
         distanceKm: safeDistance,

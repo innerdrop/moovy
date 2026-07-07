@@ -74,7 +74,7 @@
 - **Liberación del `marketplace_fee` retenida por MP** — la comisión de marketplace queda en "dinero a liquidar" con calendario propio a nivel aplicación (la config "al instante" de la cuenta NO aplica). Gestionar el plazo con el ejecutivo comercial de MP. Mientras: dimensionar capital de trabajo para payouts de drivers.
 - ✅ **Ciclo logístico completo en prod** — VERIFICADO 2026-07-06: aviso de viaje al driver (post-fix equipamiento) → PIN retiro → PIN entrega → DELIVERED → earn de puntos corrió idempotente (`pointsEarned=0`, correcto para montos de prueba; con $1.000+ acredita visible). Quedan como verificaciones menores: motor de envío a distintas distancias + reembolso automático al vencer la ventana de búsqueda (tarea #8).
 - **Verificar tarjeta social de WhatsApp** — `public/og-moovy.png` puede tener horneado el texto viejo ("Está por llegar"); si es así, regenerarla (la cortina nueva dice "Hecha en Ushuaia, para Ushuaia").
-- **`driverPayoutAmount` redondea a pesos enteros** (`Math.round(tripCost * 0.80)` en assignment-engine): con tripCost $12 guardó $10 en vez de $9,60. Con montos reales la diferencia es de centavos, pero el canon dice redondeo a centavos. Rama chica cuando haya aire.
+- ✅ **`driverPayoutAmount` redondeaba a pesos enteros** — RESUELTO (rama `fix/driver-payout-centavos`): snapshot inmutable (order-totals), estimación de la oferta (assignment-engine) y preview del quote (delivery.ts) ahora redondean a centavos (regla PAGOS). El precio del envío al cliente sigue en pesos enteros (deliberado).
 
 ## ✅ Resueltos esta sesión (2026-07-03)
 
