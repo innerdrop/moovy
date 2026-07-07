@@ -3,9 +3,14 @@ import { auth } from "@/lib/auth";
 import Link from "next/link";
 import { Plus, XCircle } from "lucide-react";
 import ProductsSearchContainer from "@/components/comercios/ProductsSearchContainer";
+import { isFeatureEnabled } from "@/lib/feature-flags";
 
 export default async function ProductosPage() {
     const session = await auth();
+
+    // fix/panel-comercio-auditoria: el botón "Mis Paquetes" solo si el sistema
+    // de Paquetes B2B está prendido (flag merchant.paquetes, hoy OFF).
+    const paquetesEnabled = await isFeatureEnabled("merchant.paquetes");
 
     // Find merchant
     const merchant = await prisma.merchant.findFirst({
@@ -50,12 +55,14 @@ export default async function ProductosPage() {
                     <p className="text-gray-500 mt-2 text-lg font-medium">Gestiona tu inventario, precios y visibilidad</p>
                 </div>
                 <div className="flex items-center gap-3 w-full md:w-auto">
-                    <Link
-                        href="/comercios/productos/desde-paquetes"
-                        className="flex-1 md:flex-none py-4 px-6 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all font-bold text-sm text-center"
-                    >
-                        Mis Paquetes
-                    </Link>
+                    {paquetesEnabled && (
+                        <Link
+                            href="/comercios/productos/desde-paquetes"
+                            className="flex-1 md:flex-none py-4 px-6 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all font-bold text-sm text-center"
+                        >
+                            Mis Paquetes
+                        </Link>
+                    )}
                     <Link
                         href="/comercios/productos/nuevo"
                         className="flex-1 md:flex-none btn-primary flex items-center justify-center gap-3 py-4 px-8 shadow-xl shadow-red-500/20"

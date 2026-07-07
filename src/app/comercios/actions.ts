@@ -1,7 +1,11 @@
 "use server";
 
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { NextResponse } from "next/server";
+// fix/panel-comercio-auditoria: auth contra DB via requireMerchantApi (reglas
+// #13/#28). El patrón anterior (hasAnyRole sobre el JWT, y peor: leer
+// session.user.merchantId crudo del token) reintroducía el bug del 403
+// post-aprobación — el carnet puede estar stale hasta 7 días.
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -122,12 +126,18 @@ async function verifyMerchantOwnership(productId: string, userId: string) {
 }
 
 export async function importCatalogProducts(productIds: string[]) {
-    const session = await auth();
-    const merchantId = (session?.user as any)?.merchantId;
-
-    if (!session || !merchantId) {
+    // fix/panel-comercio-auditoria: antes confiaba en session.user.merchantId
+    // (valor crudo del JWT, sin lookup) — patrón prohibido. Ahora el merchant
+    // sale de la DB.
+    const authResult = await requireMerchantApi();
+    if (authResult instanceof NextResponse) {
         return { error: "No autorizado" };
     }
+    const { merchant: authMerchant } = authResult;
+    if (!authMerchant) {
+        return { error: "No autorizado" };
+    }
+    const merchantId = authMerchant.id;
 
     try {
         // 1. Get merchant's acquisition rights
@@ -233,10 +243,12 @@ export async function importCatalogProducts(productIds: string[]) {
 }
 
 export async function createProduct(formData: FormData) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
+    // fix/panel-comercio-auditoria: auth contra DB (reglas #13/#28).
+    const authResult = await requireMerchantApi({ allowAdmin: true });
+    if (authResult instanceof NextResponse) {
         return { error: "No autorizado" };
     }
+    const userId = authResult.userId;
 
     const rawData = {
         name: formData.get("name"),
@@ -273,7 +285,7 @@ export async function createProduct(formData: FormData) {
 
     try {
         const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
+            where: { ownerId: userId },
         });
 
         if (!merchant) {
@@ -330,10 +342,12 @@ export async function createProduct(formData: FormData) {
 }
 
 export async function updateProduct(productId: string, formData: FormData) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
+    // fix/panel-comercio-auditoria: auth contra DB (reglas #13/#28).
+    const authResult = await requireMerchantApi({ allowAdmin: true });
+    if (authResult instanceof NextResponse) {
         return { error: "No autorizado" };
     }
+    const userId = authResult.userId;
 
     const rawData = {
         name: formData.get("name"),
@@ -369,7 +383,7 @@ export async function updateProduct(productId: string, formData: FormData) {
     const data = validation.data;
 
     try {
-        const merchant = await verifyMerchantOwnership(productId, session.user.id);
+        const merchant = await verifyMerchantOwnership(productId, userId);
 
         if (!merchant) {
             return { error: "No tienes permiso para editar este producto." };
@@ -438,13 +452,15 @@ export async function updateProduct(productId: string, formData: FormData) {
 }
 
 export async function deleteProduct(productId: string) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
+    // fix/panel-comercio-auditoria: auth contra DB (reglas #13/#28).
+    const authResult = await requireMerchantApi({ allowAdmin: true });
+    if (authResult instanceof NextResponse) {
         return { error: "No autorizado" };
     }
+    const userId = authResult.userId;
 
     try {
-        const merchant = await verifyMerchantOwnership(productId, session.user.id);
+        const merchant = await verifyMerchantOwnership(productId, userId);
 
         if (!merchant) {
             return { error: "No tienes permiso para eliminar este producto." };
@@ -473,13 +489,15 @@ export async function deleteProduct(productId: string) {
 }
 
 export async function toggleProductActive(productId: string, isActive: boolean) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
+    // fix/panel-comercio-auditoria: auth contra DB (reglas #13/#28).
+    const authResult = await requireMerchantApi({ allowAdmin: true });
+    if (authResult instanceof NextResponse) {
         return { error: "No autorizado" };
     }
+    const userId = authResult.userId;
 
     try {
-        const merchant = await verifyMerchantOwnership(productId, session.user.id);
+        const merchant = await verifyMerchantOwnership(productId, userId);
 
         if (!merchant) {
             return { error: "No tienes permiso para modificar este producto." };
@@ -529,10 +547,12 @@ const merchantSchema = z.object({
 });
 
 export async function updateMerchant(formData: FormData) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
+    // fix/panel-comercio-auditoria: auth contra DB (reglas #13/#28).
+    const authResult = await requireMerchantApi({ allowAdmin: true });
+    if (authResult instanceof NextResponse) {
         return { error: "No autorizado" };
     }
+    const userId = authResult.userId;
 
     // Build rawData filtering out null values (fields not present in the form)
     // Zod .optional() accepts undefined but NOT null, and formData.get() returns null for missing fields
@@ -604,7 +624,7 @@ export async function updateMerchant(formData: FormData) {
 
     try {
         const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
+            where: { ownerId: userId },
         });
 
         if (!merchant) {
@@ -644,7 +664,7 @@ export async function updateMerchant(formData: FormData) {
             // Only update owner fields if they were sent (MiComercioForm sends them, SettingsForm does not)
             ...(data.firstName !== undefined || data.lastName !== undefined || data.ownerPhone !== undefined ? [
                 prisma.user.update({
-                    where: { id: session.user.id },
+                    where: { id: userId },
                     data: {
                         ...(data.firstName !== undefined && { firstName: data.firstName }),
                         ...(data.lastName !== undefined && { lastName: data.lastName }),
@@ -700,10 +720,12 @@ const scheduleJsonSchema = z.record(
 );
 
 export async function updateMerchantSchedule(scheduleEnabled: boolean, scheduleJson: string | null) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
+    // fix/panel-comercio-auditoria: auth contra DB (reglas #13/#28).
+    const authResult = await requireMerchantApi({ allowAdmin: true });
+    if (authResult instanceof NextResponse) {
         return { error: "No autorizado" };
     }
+    const userId = authResult.userId;
 
     try {
         // Validar scheduleJson si viene
@@ -716,7 +738,7 @@ export async function updateMerchantSchedule(scheduleEnabled: boolean, scheduleJ
         }
 
         const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
+            where: { ownerId: userId },
         });
 
         if (!merchant) {
@@ -737,14 +759,16 @@ export async function updateMerchantSchedule(scheduleEnabled: boolean, scheduleJ
 }
 
 export async function toggleMerchantOpen(isOpen: boolean) {
-    const session = await auth();
-    if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
+    // fix/panel-comercio-auditoria: auth contra DB (reglas #13/#28).
+    const authResult = await requireMerchantApi({ allowAdmin: true });
+    if (authResult instanceof NextResponse) {
         return { error: "No autorizado" };
     }
+    const userId = authResult.userId;
 
     try {
         const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id },
+            where: { ownerId: userId },
             include: {
                 products: { where: { isActive: true }, select: { id: true }, take: 3 },
             },

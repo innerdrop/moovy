@@ -10,6 +10,44 @@
 
 ---
 
+## 2026-07-07 (rama `fix/panel-comercio-auditoria`)
+
+fix: panel del comercio — 8 actions + 4 endpoints a auth contra DB (adios JWT stale), pantalla de paquetes con flag, endpoints muertos borrados, precio $500 inventado eliminado, errores visibles con retry, modales Moovy y acentos
+
+**Archivos:** src/app/api/comercios/adquisiciones/route.ts, src/app/api/comercios/mis-paquetes/[id]/productos/route.ts, src/app/api/comercios/mis-paquetes/route.ts, src/app/api/comercios/products/suggest-weight/route.ts, src/app/api/comercios/soporte/notificaciones/route.ts, src/app/api/merchant/import/route.ts, src/app/comercios/(protected)/adquirir-paquetes/page.tsx, src/app/comercios/(protected)/pagos/page.tsx (+8 mas)
+
+## 2026-07-07 (rama `fix/panel-comercio-auditoria`)
+
+fix: panel del comercio — auth contra DB en todo + limpieza (Grupos 2 y 3 de la auditoría)
+
+GRUPO 2 — Auth (reglas #13/#28):
+- Las 8 server actions de comercios/actions.ts migradas a `requireMerchantApi`
+  (antes hasAnyRole(JWT); importCatalogProducts era peor: confiaba en
+  session.user.merchantId crudo del token). El bug del 403 post-aprobación queda
+  erradicado del panel entero.
+- `suggest-weight` migrado (hasAnyRole → helper).
+- 3 endpoints comercios/* con auth artesanal migrados al helper canónico
+  (mis-paquetes, mis-paquetes/[id]/productos, soporte/notificaciones).
+
+GRUPO 3 — Limpieza:
+- BORRADOS los endpoints muertos api/merchant/import y api/comercios/adquisiciones.
+- desde-paquetes envuelta en FeatureFlagGuard (merchant.paquetes, la única puerta
+  sin guard) + botón "Mis Paquetes" de /productos solo si el flag está ON.
+- Reseñas usa /api/merchant/me (antes disparaba la query pesada de earnings solo
+  para sacar el id).
+- adquirir-paquetes: precio fallback $500 ELIMINADO (regla #15: sin pricing
+  configurado, no se puede comprar — botón "No disponible") + errores de compra
+  con toast (antes silencio total).
+- Estados de error visibles: pagos (pantalla con Reintentar, antes catch vacío)
+  y soporte (toasts en cargar/abrir chats).
+- window.confirm → modal Moovy (regla #24) en eliminar producto, descartar alta
+  y entrega de pickup.
+- Acentos (Últimas transacciones, Histórico, información).
+
+**Archivos:** src/app/comercios/actions.ts, src/app/api/comercios/products/suggest-weight/route.ts, src/app/api/comercios/mis-paquetes/route.ts, src/app/api/comercios/mis-paquetes/[id]/productos/route.ts, src/app/api/comercios/soporte/notificaciones/route.ts, src/app/comercios/(protected)/productos/desde-paquetes/page.tsx, src/app/comercios/(protected)/productos/page.tsx, src/app/comercios/(protected)/resenas/page.tsx, src/app/comercios/(protected)/adquirir-paquetes/page.tsx, src/app/comercios/(protected)/pagos/page.tsx, src/app/comercios/(protected)/soporte/page.tsx, src/app/comercios/(protected)/pedidos/page.tsx, src/components/comercios/DeleteProductButton.tsx, src/components/comercios/NewProductForm.tsx (+2 endpoints borrados)
+
+---
+
 ## 2026-07-07 (rama `fix/dashboard-dinero-real`)
 
 fix(comercio): panel con plata real — ventas = subtotal sin envio en dashboard y pagos, pedidos sin cancelados, estados en espanol, comision del snapshot por transaccion

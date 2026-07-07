@@ -43,18 +43,30 @@ export default function MerchantPagosPage() {
     const [summary, setSummary] = useState<Summary | null>(null);
     const [recentOrders, setRecentOrders] = useState<OrderRow[]>([]);
     const [period, setPeriod] = useState<"thisMonth" | "lastMonth" | "allTime">("thisMonth");
+    // fix/panel-comercio-auditoria: los errores de carga se muestran, no se
+    // tragan — antes el catch vacío dejaba la pantalla muda (regla UX: estado
+    // de Error con retry).
+    const [loadError, setLoadError] = useState(false);
+
+    const loadEarnings = () => {
+        setLoading(true);
+        setLoadError(false);
+        fetch("/api/merchant/earnings")
+            .then((r) => {
+                if (!r.ok) throw new Error(`HTTP ${r.status}`);
+                return r.json();
+            })
+            .then((data) => {
+                setSummary(data.summary);
+                setRecentOrders(data.recentOrders || []);
+            })
+            .catch(() => setLoadError(true))
+            .finally(() => setLoading(false));
+    };
 
     useEffect(() => {
-        fetch("/api/merchant/earnings")
-            .then((r) => (r.ok ? r.json() : null))
-            .then((data) => {
-                if (data) {
-                    setSummary(data.summary);
-                    setRecentOrders(data.recentOrders || []);
-                }
-            })
-            .catch(() => {})
-            .finally(() => setLoading(false));
+        loadEarnings();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     if (loading) {
@@ -65,10 +77,16 @@ export default function MerchantPagosPage() {
         );
     }
 
-    if (!summary) {
+    if (loadError || !summary) {
         return (
             <div className="text-center py-20">
-                <p className="text-gray-500">No se pudo cargar la informacion de pagos</p>
+                <p className="text-gray-500 mb-4">No pudimos cargar la información de pagos. Puede ser un problema de conexión.</p>
+                <button
+                    onClick={loadEarnings}
+                    className="px-6 py-2.5 bg-blue-600 text-white rounded-xl font-semibold text-sm hover:bg-blue-700 transition"
+                >
+                    Reintentar
+                </button>
             </div>
         );
     }
@@ -77,7 +95,7 @@ export default function MerchantPagosPage() {
     const periodLabels = {
         thisMonth: "Este mes",
         lastMonth: "Mes anterior",
-        allTime: "Historico",
+        allTime: "Histórico",
     };
 
     return (
@@ -152,7 +170,7 @@ export default function MerchantPagosPage() {
             {/* Recent Transactions */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100">
                 <div className="p-4 border-b border-gray-100">
-                    <h2 className="font-bold text-gray-900">Ultimas transacciones</h2>
+                    <h2 className="font-bold text-gray-900">Últimas transacciones</h2>
                 </div>
                 {recentOrders.length === 0 ? (
                     <div className="p-8 text-center text-gray-400">

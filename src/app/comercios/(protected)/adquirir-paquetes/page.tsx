@@ -4,6 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import UploadImage from "@/components/ui/UploadImage";
 import FeatureFlagGuard from "@/components/shared/FeatureFlagGuard";
+import { toast } from "@/store/toast";
 import {
     ShoppingBag, Search, Loader2, ChevronLeft, Check,
     ImageIcon, Layers, ArrowRight, Plus, Sparkles,
@@ -152,9 +153,13 @@ function PackageCatalogPageInner() {
         return pricingTiers.find(t => t.minItems > cart.length) || null;
     }, [cart, pricingTiers]);
 
+    // fix/panel-comercio-auditoria: sin precio inventado. Antes, si faltaba el
+    // pricing en la config, se cobraba "$500" mágico (regla #15: si falta config
+    // crítica, NO operar). Ahora cartTotal = null → la UI bloquea la compra.
     const cartTotal = useMemo(() => {
         if (currentTier) return currentTier.pricePerItem * cart.length;
-        const individualPrice = pricingTiers.find(t => t.minItems === 1)?.pricePerItem || 500;
+        const individualPrice = pricingTiers.find(t => t.minItems === 1)?.pricePerItem;
+        if (individualPrice === undefined) return null;
         return individualPrice * cart.length;
     }, [cart, currentTier, pricingTiers]);
 
@@ -181,6 +186,13 @@ function PackageCatalogPageInner() {
 
             const data = await res.json();
 
+            if (!res.ok) {
+                // fix/panel-comercio-auditoria: los errores se muestran, no se tragan
+                // (regla #25). Antes la compra fallaba en silencio total.
+                toast.error(data.error || "No pudimos procesar la compra. Intentá de nuevo.");
+                return;
+            }
+
             if (data.paymentMethod === "free") {
                 // Free purchase — go to success page
                 router.push(`/comercios/paquetes/resultado?status=success&free=true&count=${data.imported}`);
@@ -190,9 +202,11 @@ function PackageCatalogPageInner() {
                 window.location.href = mpUrl;
             } else {
                 console.error("No init_point in response:", data);
+                toast.error("No pudimos iniciar el pago. Contactá al equipo de Moovy.");
             }
         } catch (error) {
             console.error("Purchase error:", error);
+            toast.error("Error de conexión. Revisá tu internet e intentá de nuevo.");
         } finally {
             setPurchasing(false);
         }
@@ -589,19 +603,27 @@ function PackageCatalogPageInner() {
                                         {cart.length} producto{cart.length !== 1 ? "s" : ""} seleccionado{cart.length !== 1 ? "s" : ""}
                                     </p>
                                     <p className="text-xs text-slate-500">
-                                        {currentTier ? `${currentTier.name} — $${currentTier.pricePerItem.toLocaleString()}/producto` : `$${(pricingTiers.find(t => t.minItems === 1)?.pricePerItem || 500).toLocaleString()}/producto`}
+                                        {currentTier
+                                            ? `${currentTier.name} — $${currentTier.pricePerItem.toLocaleString()}/producto`
+                                            : cartTotal !== null
+                                                ? `$${(pricingTiers.find(t => t.minItems === 1)?.pricePerItem ?? 0).toLocaleString()}/producto`
+                                                : "Precios no disponibles por el momento"}
                                     </p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-3">
                                 <button onClick={() => setCart([])} className="text-slate-400 hover:text-slate-600 text-sm font-bold">Limpiar</button>
+                                {/* fix/panel-comercio-auditoria: sin pricing configurado NO se
+                                    puede comprar (antes cobraba $500 inventado). */}
                                 <button
                                     onClick={() => handlePurchase("custom", undefined, cart)}
-                                    disabled={purchasing}
+                                    disabled={purchasing || cartTotal === null}
                                     className="px-8 py-3 bg-blue-600 text-white rounded-xl font-black text-sm hover:bg-blue-700 transition disabled:opacity-50 flex items-center gap-2"
                                 >
-                                    {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : (
+                                    {purchasing ? <Loader2 className="w-4 h-4 animate-spin" /> : cartTotal !== null ? (
                                         <>Comprar ${cartTotal.toLocaleString()}</>
+                                    ) : (
+                                        <>No disponible</>
                                     )}
                                 </button>
                             </div>

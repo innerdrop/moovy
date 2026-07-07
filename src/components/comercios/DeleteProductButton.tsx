@@ -5,6 +5,8 @@ import { Trash2, Loader2 } from "lucide-react";
 import { deleteProduct } from "@/app/comercios/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "@/store/toast";
+// fix/panel-comercio-auditoria: modal Moovy en vez de window.confirm (regla #24).
+import { confirm } from "@/store/confirm";
 
 interface DeleteProductButtonProps {
     productId: string;
@@ -16,9 +18,14 @@ export default function DeleteProductButton({ productId, productName }: DeletePr
     const router = useRouter();
 
     const handleDelete = async () => {
-        if (!confirm(`¿Estás seguro de que quieres eliminar "${productName}"?`)) {
-            return;
-        }
+        const ok = await confirm({
+            title: "Eliminar producto",
+            message: `¿Querés eliminar "${productName}"? Esta acción no se puede deshacer.`,
+            confirmLabel: "Eliminar",
+            cancelLabel: "Cancelar",
+            variant: "danger",
+        });
+        if (!ok) return;
 
         setIsDeleting(true);
         try {

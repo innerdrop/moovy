@@ -23,6 +23,7 @@ import Link from "next/link";
 import { toggleProductActive, importCatalogProducts } from "@/app/comercios/actions";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
 import { toast } from "@/store/toast";
+import FeatureFlagGuard from "@/components/shared/FeatureFlagGuard";
 
 const cleanName = cleanEncoding;
 
@@ -51,7 +52,24 @@ interface Product {
     image: string | null;
 }
 
+// fix/panel-comercio-auditoria: esta pantalla vive del sistema de Paquetes B2B,
+// que está APAGADO para el lanzamiento (flag merchant.paquetes) — pero era la
+// única puerta sin el guard. Mismo wrapper que /adquirir-paquetes.
 export default function ProductosDesdePaquetesPage() {
+    return (
+        <FeatureFlagGuard
+            flag="merchant.paquetes"
+            backHref="/comercios/productos"
+            backLabel="Volver a Mis Productos"
+            title="Paquetes B2B — disponible próximamente"
+            description="Estamos coordinando con proveedores los primeros paquetes para tu comercio. Te avisaremos cuando puedas adquirirlos."
+        >
+            <ProductosDesdePaquetesPageInner />
+        </FeatureFlagGuard>
+    );
+}
+
+function ProductosDesdePaquetesPageInner() {
     const router = useRouter();
     const [packages, setPackages] = useState<PackageCategory[]>([]);
     const [selectedPackage, setSelectedPackage] = useState<PackageCategory | null>(null);

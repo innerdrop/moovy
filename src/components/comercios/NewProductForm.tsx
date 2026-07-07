@@ -9,6 +9,8 @@ import { Loader2, Plus, ArrowLeft, Search, Package, Check, Layers, Ban, Sparkles
 import Link from 'next/link';
 import { useRouter } from "next/navigation";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
+// fix/panel-comercio-auditoria: modal Moovy en vez de window.confirm (regla #24).
+import { confirm as confirmModal } from "@/store/confirm";
 
 interface CatalogProduct {
     id: string;
@@ -298,8 +300,15 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
         formValues.stock !== "" &&
         Number(formValues.stock) >= 0;
 
-    const handleDiscard = () => {
-        if (!confirm("¿Descartar lo que estás cargando? Vas a perder los datos ingresados.")) return;
+    const handleDiscard = async () => {
+        const ok = await confirmModal({
+            title: "Descartar cambios",
+            message: "¿Descartar lo que estás cargando? Vas a perder los datos ingresados.",
+            confirmLabel: "Descartar",
+            cancelLabel: "Seguir editando",
+            variant: "warning",
+        });
+        if (!ok) return;
         setFormValues({
             name: "",
             description: "",

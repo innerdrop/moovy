@@ -11,11 +11,14 @@ export default function MerchantResenasPage() {
     useEffect(() => {
         async function fetchMerchant() {
             try {
-                const res = await fetch("/api/merchant/earnings");
+                // fix/panel-comercio-auditoria: antes pedía /api/merchant/earnings
+                // (la query PESADA de todas las órdenes entregadas) solo para sacar
+                // el id. /api/merchant/me es la pregunta chiquita para eso.
+                const res = await fetch("/api/merchant/me");
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.summary) {
-                        setMerchantId(data.summary.merchantId);
+                    if (data.id) {
+                        setMerchantId(data.id);
                     }
                 }
             } catch (error) {

@@ -8,6 +8,9 @@ import { formatTime } from "@/lib/timezone";
 import { formatPinForDisplay } from "@/lib/pin";
 import { useRealtimeOrders } from "@/hooks/useRealtimeOrders";
 import { toast } from "@/store/toast";
+// fix/panel-comercio-auditoria: modal Moovy (regla #24). Alias para no chocar
+// con el window.confirm global.
+import { confirm as confirmModal } from "@/store/confirm";
 import {
     ShoppingBag,
     Clock,
@@ -456,7 +459,14 @@ export default function ComercioPedidosPage() {
     // Cuando isPickup=true y status=READY, el comercio cierra la operación marcando
     // el pedido como entregado al cliente (READY → DELIVERED, sin driver).
     const markPickedUpByCustomer = async (orderId: string) => {
-        if (!confirm("¿Confirmás que el cliente vino y retiró este pedido?")) return;
+        // fix/panel-comercio-auditoria: modal Moovy en vez de window.confirm (regla #24).
+        const ok = await confirmModal({
+            title: "Entregar al cliente",
+            message: "¿Confirmás que el cliente vino y retiró este pedido?",
+            confirmLabel: "Sí, lo retiró",
+            cancelLabel: "Cancelar",
+        });
+        if (!ok) return;
         setUpdating(orderId);
         try {
             const res = await fetch(`/api/merchant/orders/${orderId}/mark-picked-up`, { method: "POST" });

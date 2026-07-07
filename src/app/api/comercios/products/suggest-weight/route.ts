@@ -23,8 +23,7 @@
 
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { auth } from "@/lib/auth";
-import { hasAnyRole } from "@/lib/auth-utils";
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { applyHeuristic, getSizeFromWeight, hashProductName, normalizeProductName, ProductSize } from "@/lib/product-weight";
@@ -53,10 +52,10 @@ interface SuggestResponse {
 
 export async function POST(request: Request) {
   // ─── Auth ──────────────────────────────────────────────────────────────────
-  const session = await auth();
-  if (!session?.user?.id || !hasAnyRole(session, ["MERCHANT", "ADMIN"])) {
-    return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-  }
+  // fix/panel-comercio-auditoria: contra DB (reglas #13/#28), no contra el JWT.
+  const authResult = await requireMerchantApi({ allowAdmin: true });
+  if (authResult instanceof NextResponse) return authResult;
+  const { userId } = authResult;
 
   // ─── Rate limit (100/hora por IP) ──────────────────────────────────────────
   const limit = await applyRateLimit(request, "products:suggest-weight", 100, 3600_000);
@@ -101,7 +100,7 @@ export async function POST(request: Request) {
 
       productLogger.info(
         {
-          userId: session.user.id,
+          userId,
           source: "CACHE",
           cacheSource: cached.source,
           latencyMs: Date.now() - startedAt,
@@ -144,7 +143,7 @@ export async function POST(request: Request) {
     //      el modelo (Haiku = ~75-85 promedio).
     //   4. Devolver la sugerencia con source:"AI".
     productLogger.warn(
-      { userId: session.user.id, name },
+      { userId, name },
       "AI weight suggestion enabled but integration not implemented yet — falling back to heuristic"
     );
   }
@@ -155,7 +154,7 @@ export async function POST(request: Request) {
   if (heuristic) {
     productLogger.info(
       {
-        userId: session.user.id,
+        userId,
         source: "HEURISTIC",
         latencyMs: Date.now() - startedAt,
         confidence: heuristic.confidence,
@@ -180,7 +179,7 @@ export async function POST(request: Request) {
   // ─── No hay sugerencia ─────────────────────────────────────────────────────
   productLogger.info(
     {
-      userId: session.user.id,
+      userId,
       source: "NONE",
       latencyMs: Date.now() - startedAt,
       normalizedName: normalizeProductName(name),

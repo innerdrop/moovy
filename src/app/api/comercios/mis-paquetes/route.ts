@@ -1,21 +1,15 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+// fix/panel-comercio-auditoria: helper canónico en vez de auth artesanal.
+import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 
 // GET - Obtener paquetes (categorías) adquiridos por el comercio
 // Infiere categorías desde los productos que el comercio ya tiene
 export async function GET() {
     try {
-        const session = await auth();
-
-        if (!session?.user?.id) {
-            return NextResponse.json({ error: "No autorizado" }, { status: 401 });
-        }
-
-        // Obtener el merchant del usuario
-        const merchant = await prisma.merchant.findFirst({
-            where: { ownerId: session.user.id }
-        });
+        const authResult = await requireMerchantApi();
+        if (authResult instanceof NextResponse) return authResult;
+        const { merchant } = authResult;
 
         if (!merchant) {
             return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });

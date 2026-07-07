@@ -12,6 +12,8 @@ import {
     CheckCheck
 } from "lucide-react";
 import Link from "next/link";
+// fix/panel-comercio-auditoria: errores visibles, no tragados (estado UX de error).
+import { toast } from "@/store/toast";
 
 interface Message {
     id: string;
@@ -64,9 +66,12 @@ export default function ComercioSoportePage() {
             if (res.ok) {
                 const data = await res.json();
                 setChats(data);
+            } else {
+                toast.error("No pudimos cargar tus conversaciones. Recargá la página.");
             }
         } catch (error) {
             console.error("Error fetching chats:", error);
+            toast.error("Error de conexión al cargar soporte. Revisá tu internet.");
         } finally {
             setLoading(false);
         }
@@ -78,9 +83,12 @@ export default function ComercioSoportePage() {
             if (res.ok) {
                 const data = await res.json();
                 setSelectedChat(data);
+            } else {
+                toast.error("No pudimos abrir la conversación. Intentá de nuevo.");
             }
         } catch (error) {
             console.error("Error fetching chat:", error);
+            toast.error("Error de conexión al abrir la conversación.");
         }
     }
 
