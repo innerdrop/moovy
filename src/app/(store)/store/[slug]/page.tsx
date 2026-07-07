@@ -161,10 +161,25 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
 
                 <div className="container mx-auto px-4 -mt-10 relative">
                     <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 mb-4">
+                        {/* fix/logo-perfil-comercio: el tile SIEMPRE mostraba la inicial —
+                            el logo (Merchant.image) nunca se había conectado acá. Ahora:
+                            logo real con la inicial como fallback. */}
                         <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-xl shadow-md p-1">
-                            <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center text-2xl font-bold text-gray-400">
-                                {merchant.name.charAt(0)}
-                            </div>
+                            {merchant.image ? (
+                                <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-50">
+                                    <Image
+                                        src={merchant.image}
+                                        alt={`Logo de ${merchant.name}`}
+                                        fill
+                                        sizes="96px"
+                                        className="object-cover"
+                                    />
+                                </div>
+                            ) : (
+                                <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center text-2xl font-bold text-gray-400">
+                                    {merchant.name.charAt(0)}
+                                </div>
+                            )}
                         </div>
 
                         <div className="flex-1 pb-1">

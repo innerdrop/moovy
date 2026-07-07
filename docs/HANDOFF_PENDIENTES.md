@@ -3,7 +3,21 @@
 > Punto de retome para la próxima sesión. Generado al pausar el trabajo del checklist pre-launch.
 > Leé este archivo al volver para reconstruir el contexto.
 
-## Dónde estamos (actualizado 2026-07-06 — CIERRE, post 2º devmain)
+## Dónde estamos (actualizado 2026-07-07 — CIERRE)
+
+**Sesión de operativos + pulido de diseño. 9 ramas cerradas** (todas -NoDB): `fix/cron-broadcasts-auth-401` (el cron "en rojo desde junio" comparaba el header entero contra el secreto → 401 eterno; fix 2 líneas) · `chore/limpiar-completed` (deuda de código = CERO) · `style/ops-sidebar-fijo` (patrón app-shell: página no scrollea, columnas independientes, sin barra) · `chore/og-card-hecha-en-ushuaia` (tarjeta WhatsApp + ?v=2) · `chore/pwa-icono-m-blanca` (ficha roja, M blanca, zona segura) · `fix/envio-gratis-badge` (el "Envío Gratis" salía de un campo legacy que el motor ignora — 4 componentes mentían precio; ahora sale de freeDeliveryMinimum real) · `feat/portada-comercio` (campo banner huérfano conectado: upload 16:5 guía 1600×500, header del perfil, tarjetas anchas de la home) · `style/cards-producto-compactas` (~20% menos, imagen 4:3) · docs.
+
+**INCIDENTE del día (resuelto + blindado)**: reinicio programado de Hostinger → moovy-db con RestartPolicy=no + pm2 sin startup → ~1h43m caído sin que nadie avise. Fixes: `docker update --restart unless-stopped` + `pm2 startup/save`. PENDIENTE FOUNDER (10 min): monitor externo UptimeRobot → `https://somosmoovy.com/api/health` (endpoint ya existe, pasos exactos en el chat / ISSUES).
+
+**Workflow automatizado**: reglas 3b/3c en CLAUDE.md — `.next-branch` (`tipo nombre` con ESPACIO) y `.commit-message`; Mauro solo corre start.ps1/finish.ps1 a secas.
+
+**Verificado hoy en prod**: motor por distancia ✓ · crontab 18/18 ✓ · 500 soporte-notificaciones muerto ✓ · zonas de cobertura ✓ (4 zonas) · flags merchant.doc.* decididos ✓. **Pendientes vivos**: prueba del reembolso automático (tarea #8, pospuesta por founder) · UptimeRobot · categorías home (a medida que carguen comercios) · gestión MP marketplace_fee.
+
+**Lo próximo**: post-deploy verificar el tour visual (crons/sidebar/tarjeta/ícono/portada) → reorg de docs/ → CHECKLIST de 296.
+
+---
+
+## Dónde estamos (histórico — 2026-07-06, CIERRE post 2º devmain)
 
 **En `develop`, limpio. TODO deployado** (2º devmain MODO SCHEMA del 07-06 incluyó: boost MOOVER configurable + defaults canónicos, 4 fixes de la auditoría auth/estados/crons, `requireSellerApi`, carrito UN SOLO comercio, reject atómico, payout a centavos, comisiones 10% en textos/schema).
 

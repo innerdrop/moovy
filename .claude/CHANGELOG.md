@@ -10,6 +10,25 @@
 
 ---
 
+## 2026-07-07 (rama `fix/logo-perfil-comercio`)
+
+fix: logo del comercio en su perfil publico — el tile siempre mostraba la inicial, merchant.image nunca se habia conectado (fallback a inicial se mantiene)
+
+**Archivos:** ISSUES.md, PROJECT_STATUS.md, docs/HANDOFF_PENDIENTES.md, src/app/(store)/store/[slug]/page.tsx
+
+## 2026-07-07 (rama `fix/logo-perfil-comercio`)
+
+fix: el logo del comercio nunca se mostraba en su perfil público
+
+Cazado por el founder al probar las portadas nuevas: el tile flotante del perfil
+SIEMPRE renderizaba la inicial del nombre — `merchant.image` jamás se conectó en
+esa pantalla (bug preexistente, la portada lo dejó en evidencia). Ahora: logo
+real (next/image, object-cover) con la inicial como fallback si no hay logo.
+
+**Archivos:** src/app/(store)/store/[slug]/page.tsx
+
+---
+
 ## 2026-07-07 (rama `style/cards-producto-compactas`)
 
 style: tarjetas de producto ~20% mas compactas — imagen 4:3, padding y tipografia ajustados, descripcion a 1 linea (boton + intacto por area tactil)

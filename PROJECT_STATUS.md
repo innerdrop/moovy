@@ -1,5 +1,7 @@
 # Moovy — Estado del proyecto
-Última actualización: 2026-07-06
+Última actualización: 2026-07-07
+
+> **Sesión 2026-07-07 (resumen)**: 9 ramas de operativos+diseño (cron broadcasts arreglado tras meses en rojo, panel OPS app-shell, tarjeta social e ícono PWA nuevos, "Envío Gratis" mentiroso eliminado, PORTADAS de comercio conectadas, cards compactas, deuda de código en CERO). Incidente de infra resuelto y blindado (reinicio Hostinger + sin auto-arranque → docker unless-stopped + pm2 startup; falta UptimeRobot, 10 min founder). Verificados en prod: motor por distancia, crontab completo, zonas, flags docs. Detalle: HANDOFF_PENDIENTES + CHANGELOG.
 
 > **Dashboard de una pantalla.** Para detalle de tareas → `ISSUES.md`. Para histórico de ramas → `.claude/CHANGELOG.md`.
 > Para el detalle vivo de pendientes → `docs/HANDOFF_PENDIENTES.md`.
