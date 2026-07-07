@@ -34,6 +34,21 @@ export default async function ComerciosDashboardPage() {
     }
 
     // Get stats & recent orders
+    // fix/dashboard-dinero-real: estados en español — el comercio no tiene por qué
+    // leer "PENDING"/"PREPARING" en inglés.
+    const ORDER_STATUS_ES: Record<string, string> = {
+        PENDING: "Pendiente",
+        CONFIRMED: "Confirmado",
+        PREPARING: "Preparando",
+        READY: "Listo",
+        IN_DELIVERY: "En camino",
+        DELIVERED: "Entregado",
+        CANCELLED: "Cancelado",
+        SEARCHING_DRIVER: "Buscando repartidor",
+        SCHEDULED: "Programado",
+        SCHEDULED_CONFIRMED: "Programado",
+    };
+
     const [activeProducts, pendingOrdersCount, recentOrders] = await Promise.all([
         prisma.product.count({
             where: { merchantId: merchant.id, isActive: true },
@@ -311,12 +326,15 @@ export default async function ComerciosDashboardPage() {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className="font-bold text-gray-900 text-sm">${order.total.toLocaleString("es-AR")}</p>
+                                        {/* fix/dashboard-dinero-real: SUBTOTAL (tu venta), no el
+                                            total con envío — consistente con /comercios/pedidos. */}
+                                        <p className="font-bold text-gray-900 text-sm">${order.subtotal.toLocaleString("es-AR")}</p>
                                         <p className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full inline-block ${order.status === 'PENDING' ? 'bg-amber-100 text-amber-700' :
                                             order.status === 'DELIVERED' ? 'bg-green-100 text-green-700' :
-                                                'bg-blue-100 text-blue-700'
+                                                order.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                                                    'bg-blue-100 text-blue-700'
                                             }`}>
-                                            {order.status}
+                                            {ORDER_STATUS_ES[order.status] ?? order.status}
                                         </p>
                                     </div>
                                 </Link>

@@ -40,16 +40,21 @@ export async function GET() {
       weekRevenueResult,
     ] = await Promise.all([
       // Today's orders count
+      // fix/dashboard-dinero-real: los cancelados no cuentan como actividad del día.
       prisma.order.count({
         where: {
           merchantId: merchant.id,
           createdAt: { gte: today },
+          status: { not: "CANCELLED" },
           deletedAt: null,
         },
       }),
       // Today's revenue (paid orders only)
       // fix/auditoria-estados-crons: estado pagado canónico = "PAID" (regla #32).
-      // Con "APPROVED" (estado inexistente) el dashboard del comercio sumaba $0.
+      // fix/dashboard-dinero-real: se suma el SUBTOTAL (los productos del comercio),
+      // NO el total — el total incluye el envío, que es plata del repartidor/Moovy.
+      // Antes el KPI principal del panel estaba inflado y no cerraba contra la caja
+      // real del comercio.
       prisma.order.aggregate({
         where: {
           merchantId: merchant.id,
@@ -57,7 +62,7 @@ export async function GET() {
           paymentStatus: "PAID",
           deletedAt: null,
         },
-        _sum: { total: true },
+        _sum: { subtotal: true },
       }),
       // Pending orders count
       prisma.order.count({
@@ -72,10 +77,11 @@ export async function GET() {
         where: {
           merchantId: merchant.id,
           createdAt: { gte: weekAgo },
+          status: { not: "CANCELLED" },
           deletedAt: null,
         },
       }),
-      // Week's revenue
+      // Week's revenue (subtotal — ver comentario de arriba)
       prisma.order.aggregate({
         where: {
           merchantId: merchant.id,
@@ -83,17 +89,17 @@ export async function GET() {
           paymentStatus: "PAID",
           deletedAt: null,
         },
-        _sum: { total: true },
+        _sum: { subtotal: true },
       }),
     ]);
 
     const stats: MerchantStats = {
       todayOrdersCount: todayOrdersResult,
-      todayRevenue: todayRevenueResult._sum.total || 0,
+      todayRevenue: todayRevenueResult._sum.subtotal || 0,
       pendingOrdersCount,
       averageRating: merchant.rating || 0,
       weekOrdersCount: weekOrdersResult,
-      weekRevenue: weekRevenueResult._sum.total || 0,
+      weekRevenue: weekRevenueResult._sum.subtotal || 0,
     };
 
     return NextResponse.json(stats);

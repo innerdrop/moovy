@@ -16,8 +16,12 @@ interface OrderRow {
     id: string;
     orderNumber: string;
     total: number;
+    /** fix/dashboard-dinero-real: la venta del comercio (sin envío). */
+    subtotal: number;
     merchantPayout: number | null;
     moovyCommission: number | null;
+    /** % del snapshot con el que se liquidó ESTE pedido (mes 1 / tier del momento). */
+    merchantCommissionRate: number | null;
     paymentMethod: string | null;
     paymentStatus: string;
     createdAt: string;
@@ -91,7 +95,8 @@ export default function MerchantPagosPage() {
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
                 <Percent className="w-5 h-5 text-blue-600" />
                 <p className="text-sm text-blue-800">
-                    Tu comision actual es del <span className="font-bold">{summary.commissionRate}%</span> sobre cada venta entregada.
+                    Tu comisión actual es del <span className="font-bold">{summary.commissionRate}%</span> sobre
+                    cada venta entregada. Cada transacción muestra la comisión con la que se cobró en su momento.
                 </p>
             </div>
 
@@ -122,7 +127,7 @@ export default function MerchantPagosPage() {
                 />
                 <KpiCard
                     icon={<Receipt className="w-5 h-5 text-gray-600" />}
-                    label="Ventas totales"
+                    label="Ventas (sin envío)"
                     value={formatCurrency(current.totalSales)}
                     bg="bg-gray-50"
                 />
@@ -133,9 +138,11 @@ export default function MerchantPagosPage() {
                     bg="bg-green-50"
                     valueClass="text-green-700"
                 />
+                {/* fix/dashboard-dinero-real: sin el "(X%)" — los montos históricos se
+                    liquidaron con el % del snapshot de cada pedido, no con el actual. */}
                 <KpiCard
                     icon={<ArrowDownRight className="w-5 h-5 text-orange-600" />}
-                    label={`Comision MOOVY (${summary.commissionRate}%)`}
+                    label="Comisión MOOVY"
                     value={formatCurrency(current.commission)}
                     bg="bg-orange-50"
                     valueClass="text-orange-700"
@@ -175,7 +182,7 @@ export default function MerchantPagosPage() {
                                         {formatCurrency(order.merchantPayout || 0)}
                                     </p>
                                     <p className="text-xs text-gray-400">
-                                        de {formatCurrency(order.total)}
+                                        de {formatCurrency(order.subtotal)} · comisión {order.merchantCommissionRate ?? summary.commissionRate}%
                                     </p>
                                 </div>
                             </div>

@@ -10,6 +10,38 @@
 
 ---
 
+## 2026-07-07 (rama `fix/dashboard-dinero-real`)
+
+fix(comercio): panel con plata real — ventas = subtotal sin envio en dashboard y pagos, pedidos sin cancelados, estados en espanol, comision del snapshot por transaccion
+
+**Archivos:** docs/AUDITORIA_PANEL_COMERCIO.md, docs/AUDITORIA_PANEL_COMERCIO_SIMPLE.md, src/app/api/merchant/earnings/route.ts, src/app/api/merchant/stats/route.ts, src/app/comercios/(protected)/KPIDashboard.tsx, src/app/comercios/(protected)/page.tsx, src/app/comercios/(protected)/pagos/page.tsx
+
+## 2026-07-07 (rama `fix/dashboard-dinero-real`)
+
+fix(comercio): el panel dejó de mostrarle plata equivocada al comercio
+
+Grupo 1 de la auditoría integral del panel (docs/AUDITORIA_PANEL_COMERCIO*.md).
+El principio: "Ventas" del comercio = SUBTOTAL de sus productos. El total incluye
+el envío (plata del repartidor/Moovy) — sumarlo inflaba todos los resúmenes y no
+cerraba contra la caja real del comercio.
+
+- `api/merchant/stats`: Ingresos Hoy/Semana suman subtotal (antes total); Pedidos
+  Hoy/Semana excluyen cancelados. Labels del KPIDashboard: "Ventas Hoy — tus
+  productos, sin envío" / "sin contar cancelados" (antes decía "completados" y
+  contaba todo).
+- Dashboard "Pedidos Recientes": muestra subtotal (consistente con /pedidos) +
+  estados en ESPAÑOL (mapa PENDING→Pendiente etc., antes inglés crudo) + color
+  rojo para cancelados.
+- `api/merchant/earnings` + /comercios/pagos: "Ventas (sin envío)" = subtotal;
+  sumas con round2 (drift de floats); cada transacción muestra la comisión del
+  SNAPSHOT con la que se liquidó (select expone merchantCommissionRate) y el
+  banner aclara que el % actual aplica a ventas nuevas. Card "Comisión MOOVY"
+  sin el "(X%)" vivo que no correspondía a montos históricos. Acentos.
+
+**Archivos:** src/app/api/merchant/stats/route.ts, src/app/api/merchant/earnings/route.ts, src/app/comercios/(protected)/KPIDashboard.tsx, src/app/comercios/(protected)/page.tsx, src/app/comercios/(protected)/pagos/page.tsx
+
+---
+
 ## 2026-07-07 (rama `fix/logo-perfil-comercio`)
 
 fix: logo del comercio en su perfil publico — el tile siempre mostraba la inicial, merchant.image nunca se habia conectado (fallback a inicial se mantiene)

@@ -96,9 +96,11 @@ export default function KPIDashboard() {
           <ShoppingCart className="w-5 h-5 text-green-600" />
         </div>
         <div>
+          {/* fix/dashboard-dinero-real: el label decía "completados" pero el count
+              incluye todo el día (menos cancelados) — ahora dice la verdad. */}
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Pedidos Hoy</p>
           <p className="text-2xl font-bold text-gray-900">{stats.todayOrdersCount}</p>
-          <p className="text-xs text-gray-500 mt-1">pedidos completados</p>
+          <p className="text-xs text-gray-500 mt-1">sin contar cancelados</p>
         </div>
       </div>
 
@@ -108,9 +110,11 @@ export default function KPIDashboard() {
           <TrendingUp className="w-5 h-5" style={{ color: "#e60012" }} />
         </div>
         <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ingresos Hoy</p>
+          {/* fix/dashboard-dinero-real: el backend ahora suma SUBTOTAL (tu venta,
+              sin el envío) — el label acompaña. */}
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ventas Hoy</p>
           <p className="text-xl font-bold text-gray-900 truncate">{formatCurrency(stats.todayRevenue)}</p>
-          <p className="text-xs text-gray-500 mt-1">pagos aprobados</p>
+          <p className="text-xs text-gray-500 mt-1">tus productos, sin envío</p>
         </div>
       </div>
 
@@ -156,9 +160,9 @@ export default function KPIDashboard() {
           <TrendingUp className="w-5 h-5 text-purple-600" />
         </div>
         <div>
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ingresos Semana</p>
+          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Ventas Semana</p>
           <p className="text-xl font-bold text-gray-900 truncate">{formatCurrency(stats.weekRevenue)}</p>
-          <p className="text-xs text-gray-500 mt-1">últimos 7 días</p>
+          <p className="text-xs text-gray-500 mt-1">últimos 7 días, sin envío</p>
         </div>
       </div>
     </div>
