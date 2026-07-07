@@ -34,7 +34,9 @@ export const metadata: Metadata = {
         type: "website",
         images: [
             {
-                url: "/og-moovy.png",
+                // chore/og-card-hecha-en-ushuaia: ?v=2 fuerza a WhatsApp/Facebook a
+                // re-scrapear la imagen nueva (cachean la tarjeta por URL, a veces días).
+                url: "/og-moovy.png?v=2",
                 width: 1200,
                 height: 630,
                 alt: "Moovy — Hecha en Ushuaia, para Ushuaia",
@@ -45,7 +47,7 @@ export const metadata: Metadata = {
         card: "summary_large_image",
         title: OG_TITLE,
         description: OG_DESC,
-        images: ["/og-moovy.png"],
+        images: ["/og-moovy.png?v=2"],
     },
 };
 

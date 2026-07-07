@@ -10,6 +10,28 @@
 
 ---
 
+## 2026-07-07 (rama `chore/og-card-hecha-en-ushuaia`)
+
+chore: tarjeta social og-moovy.png actualizada al lema "Hecha en Ushuaia, para Ushuaia" + cache-busting ?v=2 para forzar re-scrape de WhatsApp
+
+**Archivos:** ISSUES.md, public/og-moovy.png, src/app/proximamente/page.tsx
+
+## 2026-07-07 (rama `chore/og-card-hecha-en-ushuaia`)
+
+chore: tarjeta social actualizada al lema nuevo
+
+La tarjeta de WhatsApp/Facebook (`public/og-moovy.png`) tenía horneado el texto
+viejo ("Está por llegar a Ushuaia"). Regenerada reciclando el arte original
+(mismo rojo #e60012 exacto muestreado, mismo logo) con el lema nuevo "Hecha en
+Ushuaia, para Ushuaia". 30KB. En la metadata de /proximamente, la URL pasa a
+`/og-moovy.png?v=2` para forzar el re-scrape (WhatsApp cachea por URL, a veces
+días). Verificación post-deploy: compartir el link por WhatsApp y ver la tarjeta
+nueva (si tarda, probar con `?algo` al final del link).
+
+**Archivos:** public/og-moovy.png, src/app/proximamente/page.tsx
+
+---
+
 ## 2026-07-07 (rama `style/ops-sidebar-fijo`)
 
 style(ops): panel app-shell — sidebar fijo con scroll interno sin barra, contenido con scroll independiente, drawer mobile intacto

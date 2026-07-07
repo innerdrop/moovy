@@ -80,7 +80,7 @@
 - **Bajar reserva MP a 7,6% en la Biblia (OPS)** — en prod está en 8%: Moovy se auto-descuenta de más y le regala ~0,4% de su parte al comercio en cada pedido. 1 minuto, sin deploy.
 - **Liberación del `marketplace_fee` retenida por MP** — la comisión de marketplace queda en "dinero a liquidar" con calendario propio a nivel aplicación (la config "al instante" de la cuenta NO aplica). Gestionar el plazo con el ejecutivo comercial de MP. Mientras: dimensionar capital de trabajo para payouts de drivers.
 - ✅ **Ciclo logístico completo en prod** — VERIFICADO 2026-07-06: aviso de viaje al driver (post-fix equipamiento) → PIN retiro → PIN entrega → DELIVERED → earn de puntos corrió idempotente (`pointsEarned=0`, correcto para montos de prueba; con $1.000+ acredita visible). Quedan como verificaciones menores: motor de envío a distintas distancias + reembolso automático al vencer la ventana de búsqueda (tarea #8).
-- **Verificar tarjeta social de WhatsApp** — `public/og-moovy.png` puede tener horneado el texto viejo ("Está por llegar"); si es así, regenerarla (la cortina nueva dice "Hecha en Ushuaia, para Ushuaia").
+- ✅ **Tarjeta social de WhatsApp** — VERIFICADA VIEJA y REGENERADA (rama `chore/og-card-hecha-en-ushuaia`, 2026-07-07): arte original reciclado con el lema nuevo + `?v=2` en metadata para forzar re-scrape. Verificar tarjeta nueva post-deploy compartiendo el link.
 - ✅ **`driverPayoutAmount` redondeaba a pesos enteros** — RESUELTO (rama `fix/driver-payout-centavos`): snapshot inmutable (order-totals), estimación de la oferta (assignment-engine) y preview del quote (delivery.ts) ahora redondean a centavos (regla PAGOS). El precio del envío al cliente sigue en pesos enteros (deliberado).
 
 ## ✅ Resueltos esta sesión (2026-07-03)
