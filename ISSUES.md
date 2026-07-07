@@ -26,8 +26,8 @@
 
 > **Resumen rápido de lo que queda** → `docs/CHECKLIST_PARA_LANZAR.md`.
 
-- **Sumar `daily-revenue-summary` al crontab del VPS** — faltaba esa línea (server UTC → `0 12 * * *` = 9 AM ART). Línea exacta dada en chat / `docs/RUNBOOK_CRONS.md`.
-- **Cron "broadcast" en rojo** — re-verificar que se vaya solo en ~1h post-fix de crons; si persiste, mirar el endpoint `process-broadcasts`.
+- ✅ **`daily-revenue-summary` en el crontab del VPS** — VERIFICADO 2026-07-07: la línea ya estaba (`0 12 * * *` = 9 AM ART). Crontab completo: los 18 crons del código presentes + backup diario de DB (retención 30d). Pendiente de la misma pasada: confirmar en `/ops/crons` que broadcast y daily-revenue-summary corran en verde, y que el email de ingresos LLEGUE (si no llega → revisar SMTP prod).
+- ✅ **Cron "broadcast" en rojo / "Nunca corrió"** — RESUELTO (rama `fix/cron-broadcasts-auth-401`, 2026-07-07): el endpoint comparaba el header completo ("Bearer xxx") contra el secreto pelado → 401 eterno a crontab Y al "Ejecutar ahora". Fix de 2 líneas (extraer token como los otros 17). Verificar post-deploy: corridas OK en /ops/crons en ~10 min.
 - **Categorías de la home: tarea OPERATIVA** — configurar slots activos en `/ops/categorias` (en prod no hay ninguno).
 - **Zonas de cobertura** — pintar/confirmar en `/ops/zonas-delivery`.
 - **A re-probar** (sin bug conocido, solo verificar): s2-2a-11 (bonus bienvenida pendiente), s2-2b-01 (email "registro recibido" al comercio), s3-3c-01 (errores OPS en toast no genérico), s4-4c-04 (variantes de producto), s7-7a-02 (bloqueo de pedido fuera de zona).
@@ -67,6 +67,13 @@
 9. `docs/RUNBOOK_CRONS.md` sin commitear.
 
 **✅ Verificados OK**: PIN doble (flujo normal), refund automático idempotente, reversal de puntos, transiciones estrictas del driver, CRON_SECRET timing-safe en 18/18 crons, recordCronRun 18/18, IDOR (muestreo), Zod (muestreo), resurrección bloqueada, rate limit en auth, proxy.ts según canon.
+
+### Incidente 2026-07-07 — DB de prod caída ~1h43m (resuelto + lecciones)
+
+- **Qué pasó**: reinicio PROGRAMADO del VPS por Hostinger (avisado por email — CONFIRMADO por el founder). El contenedor `moovy-db` se apagó limpio a las 10:35 UTC y NO volvió a levantarse porque tenía `RestartPolicy=no`; pm2 tampoco tenía startup habilitado. Todo lo que toca DB dio 500 hasta el arranque manual (12:18 UTC). Lección: los mails de mantenimiento de Hostinger ahora son inofensivos (auto-arranque configurado en ambas capas), pero conviene leerlos igual.
+- ✅ **Fix inmediato aplicado**: `docker update --restart unless-stopped moovy-db` (verificar que quedó). DB arriba, schema in sync, pm2 recargado.
+- 🔴 **PRE-LAUNCH NUEVO: monitor externo de uptime (tarea founder, 10 min)** — nadie se enteró de ~2h de caída total. El endpoint YA EXISTE: `GET /api/health` (chequea DB + socket, 503 si degradado, no lo tapa la cortina). Falta: cuenta en UptimeRobot (o similar) → monitor HTTP a `https://somosmoovy.com/api/health` cada 1-5 min → alerta a email/celular. Sin esto NO se lanza (escenario 6 del pre-mortem).
+- ✅ **Resurrección de pm2 configurada** (2026-07-07): `pm2 startup` NO estaba habilitado (un reboot del VPS dejaba app+DB muertas). Hecho: servicio systemd `pm2-root` habilitado + `pm2 save`. Ambas capas (Docker y pm2) ahora se auto-levantan.
 
 ### Sesión 2026-07-03 → 06 — pendientes nuevos (de las pruebas reales en prod)
 

@@ -10,6 +10,31 @@
 
 ---
 
+## 2026-07-07 (rama `fix/cron-broadcasts-auth-401`)
+
+fix(crons): process-broadcasts extraía mal el token del header — 401 eterno a crontab y panel, nunca registró una corrida
+
+**Archivos:** ISSUES.md, src/app/api/cron/process-broadcasts/route.ts
+
+## 2026-07-07 (rama `fix/cron-broadcasts-auth-401`)
+
+fix(crons): process-broadcasts rechazaba a TODOS con 401 — comparaba el header entero
+
+Resuelve el misterio del cron "en rojo" de junio + "Nunca corrió" del healthcheck:
+el endpoint pasaba el header completo ("Bearer xxx") a `verifyBearerToken`, que
+compara timing-safe contra el secreto pelado → nunca podía coincidir. 401 a cada
+hit del crontab (cada 10 min desde siempre) Y al "Ejecutar ahora" del panel. Como
+el auth va antes de recordCronRun, jamás quedó registro. Fix de 2 líneas: extraer
+el token con `replace("Bearer ", "")` como los otros 17 crons. Barrido confirmó
+que era el ÚNICO con este patrón.
+
+Verificación post-deploy: en ~10 min el cron aparece OK en /ops/crons con corridas
+registradas ("0 items" hasta que exista una campaña real).
+
+**Archivos:** src/app/api/cron/process-broadcasts/route.ts
+
+---
+
 ## 2026-07-07 (rama `chore/limpiar-completed`)
 
 chore: eliminar estado fantasma COMPLETED de chequeos defensivos (rating/tip + refund OPS + probe de pago) — solo DELIVERED y PAID canónicos

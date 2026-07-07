@@ -29,8 +29,14 @@ const BATCH_SIZE = 200;
 const PROCESS_CAMPAIGNS_PER_RUN = 5; // por run, para distribuir carga
 
 export async function POST(request: NextRequest) {
+    // fix/cron-broadcasts-auth-401: acá se pasaba el header COMPLETO ("Bearer xxx")
+    // a verifyBearerToken, que compara contra el secreto pelado → 401 eterno desde
+    // el nacimiento del cron (por eso figuraba "Nunca corrió" en /ops/crons y el
+    // "Ejecutar ahora" tampoco andaba). Extraemos el token primero, igual que los
+    // otros 17 crons.
     const authHeader = request.headers.get("authorization");
-    if (!verifyBearerToken(authHeader ?? null, process.env.CRON_SECRET)) {
+    const token = authHeader?.replace("Bearer ", "");
+    if (!verifyBearerToken(token ?? null, process.env.CRON_SECRET)) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
