@@ -56,6 +56,18 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
         notFound();
     }
 
+    // fix/envio-gratis-badge: el badge de envío gratis sale de la ÚNICA promo real
+    // (StoreSettings.freeDeliveryMinimum, global, controlada por Moovy desde la
+    // Biblia). El viejo `merchant.deliveryFee === 0` era un campo legacy que el
+    // motor por distancia ignora — mostraba "Envío Gratis" y el checkout cobraba.
+    const settings = await prisma.storeSettings.findFirst({
+        select: { freeDeliveryMinimum: true },
+    });
+    const freeDeliveryMinimum =
+        settings?.freeDeliveryMinimum && settings.freeDeliveryMinimum > 0
+            ? settings.freeDeliveryMinimum
+            : null;
+
     // Calcular estado real (pausa manual + horario) en timezone de Ushuaia.
     // merchant.isOpen es SOLO la pausa manual; el estado que el buyer tiene
     // que ver combina eso con el horario configurado. El guard server-side
@@ -162,9 +174,9 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                             <MapPin className="w-4 h-4 text-gray-400" />
                             <span>{merchant.address}</span>
                         </div>
-                        {merchant.deliveryFee === 0 && (
+                        {freeDeliveryMinimum !== null && (
                             <div className="text-green-600 font-medium px-2 py-0.5 bg-green-50 rounded-md">
-                                Envío Gratis
+                                Envío gratis desde ${freeDeliveryMinimum.toLocaleString("es-AR")}
                             </div>
                         )}
                     </div>

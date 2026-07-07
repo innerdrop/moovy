@@ -204,13 +204,7 @@ function DestacadoCard({
               {merchant.deliveryTimeMin}-{merchant.deliveryTimeMax} min
             </span>
           </div>
-          <span className="font-semibold flex-shrink-0">
-            {merchant.deliveryFee === 0 ? (
-              <span className="text-green-600 font-semibold">Gratis</span>
-            ) : (
-              <span className="text-gray-700">${merchant.deliveryFee}</span>
-            )}
-          </span>
+          {/* fix/envio-gratis-badge: sin precio de envío inventado (legacy). */}
         </div>
       </div>
     </Link>

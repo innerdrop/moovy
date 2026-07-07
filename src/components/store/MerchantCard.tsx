@@ -107,13 +107,9 @@ export default function MerchantCard({ merchant, variant = "default" }: Merchant
                             <MapPin className="w-3 h-3" />
                             <span className="truncate max-w-[90px]">{cleanEncoding(merchant.address || "Ushuaia")}</span>
                         </span>
-                        <span className="font-semibold ml-auto flex-shrink-0">
-                            {merchant.deliveryFee === 0 ? (
-                                <span className="text-green-600">Gratis</span>
-                            ) : (
-                                <span className="text-gray-700">${merchant.deliveryFee}</span>
-                            )}
-                        </span>
+                        {/* fix/envio-gratis-badge: sin precio de envío en tarjetas — el
+                            costo real es por distancia y lo muestra el checkout. El
+                            deliveryFee del comercio era legacy y mentía. */}
                     </div>
                 </div>
             </Link>
@@ -190,13 +186,8 @@ export default function MerchantCard({ merchant, variant = "default" }: Merchant
                             <span className="truncate max-w-[120px]">{cleanEncoding(merchant.address || "Ushuaia")}</span>
                         </span>
                     </div>
-                    <span className="font-semibold flex-shrink-0">
-                        {merchant.deliveryFee === 0 ? (
-                            <span className="text-green-600">Envío gratis</span>
-                        ) : (
-                            <span className="text-gray-700">${merchant.deliveryFee}</span>
-                        )}
-                    </span>
+                    {/* fix/envio-gratis-badge: ídem variante horizontal — sin precio
+                        de envío inventado. */}
                 </div>
             </div>
         </Link>

@@ -167,13 +167,7 @@ function DiscoveryCard({ merchant }: { merchant: MerchantPreview }) {
               <Clock className="w-3 h-3" />
               {merchant.deliveryTimeMin}-{merchant.deliveryTimeMax} min
             </span>
-            <span className="font-semibold ml-auto">
-              {merchant.deliveryFee === 0 ? (
-                <span className="text-green-600">Envío gratis</span>
-              ) : (
-                <span className="text-gray-700">${merchant.deliveryFee}</span>
-              )}
-            </span>
+            {/* fix/envio-gratis-badge: sin precio de envío inventado (legacy). */}
           </div>
         </div>
       </div>

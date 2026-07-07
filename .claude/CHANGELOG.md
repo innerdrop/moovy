@@ -10,6 +10,41 @@
 
 ---
 
+## 2026-07-07 (rama `fix/envio-gratis-badge`)
+
+fix: badge "Envio Gratis" mentiroso — perfil de tienda usa la promo real de la Biblia (freeDeliveryMinimum) y las tarjetas dejan de mostrar precio de envio inventado del campo legacy
+
+**Archivos:** src/app/(store)/store/[slug]/page.tsx, src/components/home/DestacadosSection.tsx, src/components/home/MerchantDiscoveryRow.tsx, src/components/store/MerchantCard.tsx
+
+## 2026-07-07 (rama `fix/envio-gratis-badge`)
+
+fix: "Envío Gratis" mentiroso eliminado — el badge sale de la promo real
+
+Hallazgo del founder recorriendo la tienda: el perfil del comercio TEST decía
+"Envío Gratis" pero el checkout cobraba por distancia. Causa: 4 componentes
+mostraban envío según `merchant.deliveryFee` (campo LEGACY que el motor aditivo
+ignora) — "gratis" si 0, o un precio fijo inventado si no. Ambas ramas mentían:
+promesa de dinero rota = reclamo asegurado post-launch.
+
+- Perfil de tienda (server component): badge nuevo "Envío gratis desde $X" leído
+  de `StoreSettings.freeDeliveryMinimum` — la ÚNICA promo real (global, Moovy la
+  controla desde la Biblia, el rider cobra igual, Moovy absorbe). Si la promo
+  está desactivada (0/null), no hay badge.
+- Tarjetas (MerchantCard ×2 variantes, MerchantDiscoveryRow, DestacadosSection):
+  precio de envío ELIMINADO — es por distancia de cada comprador, cualquier
+  número fijo es falso. Queda tiempo estimado + dirección; el precio real lo
+  muestra el checkout.
+- `Merchant.deliveryFee` queda en schema (sin uso display); candidato a limpieza
+  en una futura pasada de campos muertos.
+
+Recordatorio de cómo funciona el envío gratis (canon): `freeDeliveryMinimum` en
+la Biblia → subtotal ≥ X paga $0 de envío, repartidor cobra su 80% igual, Moovy
+absorbe. 0 = desactivado.
+
+**Archivos:** src/app/(store)/store/[slug]/page.tsx, src/components/store/MerchantCard.tsx, src/components/home/MerchantDiscoveryRow.tsx, src/components/home/DestacadosSection.tsx
+
+---
+
 ## 2026-07-07 (rama `chore/pwa-icono-m-blanca`)
 
 chore: icono PWA — ficha roja con M blanca centrada (zona segura maskable), cubre Android e iOS sin cambios de codigo
