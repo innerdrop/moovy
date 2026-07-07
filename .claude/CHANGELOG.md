@@ -10,6 +10,34 @@
 
 ---
 
+## 2026-07-07 (rama `chore/limpiar-completed`)
+
+chore: eliminar estado fantasma COMPLETED de chequeos defensivos (rating/tip + refund OPS + probe de pago) — solo DELIVERED y PAID canónicos
+
+**Archivos:** ISSUES.md, src/app/(store)/mis-pedidos/[orderId]/page.tsx, src/app/(store)/mis-pedidos/page.tsx, src/app/api/ops/refund/route.ts, src/app/api/orders/[id]/rate-merchant/route.ts, src/app/api/orders/[id]/rate-seller/route.ts, src/app/api/orders/[id]/tip/route.ts
+
+## 2026-07-07 (rama `chore/limpiar-completed`)
+
+chore: eliminar el estado fantasma "COMPLETED" de chequeos defensivos
+
+Cierre del último hallazgo cosmético de la auditoría. "COMPLETED" no existe ni
+como Order.status (bug de abril, eliminado y data migrada) ni como paymentStatus
+(canónico = "PAID", regla #32). Los chequeos que lo toleraban invitaban a
+re-propagarlo en código nuevo.
+
+- Order.status: rate-merchant, rate-seller, tip → solo "DELIVERED".
+- paymentStatus: ops/refund + mis-pedidos (×2, probe de confirmación de pago) →
+  solo "PAID".
+- NO se tocaron los "COMPLETED" legítimos de otros dominios: BroadcastCampaign
+  (estado válido de campañas) y PendingAssignment (ciclo de asignación), ni los
+  comentarios históricos de rate/route.ts.
+
+Con esto, la deuda de código pre-launch queda en CERO.
+
+**Archivos:** src/app/api/orders/[id]/rate-merchant/route.ts, src/app/api/orders/[id]/rate-seller/route.ts, src/app/api/orders/[id]/tip/route.ts, src/app/api/ops/refund/route.ts, src/app/(store)/mis-pedidos/page.tsx, src/app/(store)/mis-pedidos/[orderId]/page.tsx
+
+---
+
 ## 2026-07-06 (rama `fix/driver-payout-centavos`)
 
 fix(pagos): payout del repartidor a centavos (snapshot + oferta + preview) + invariante del simulador actualizado al redondeo exacto

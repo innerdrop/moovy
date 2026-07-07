@@ -56,7 +56,8 @@ export async function POST(
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
-        if (order.status !== "DELIVERED" && order.status !== "COMPLETED") {
+        // chore/limpiar-completed: "COMPLETED" no existe como estado de pedido.
+        if (order.status !== "DELIVERED") {
             return NextResponse.json({ error: "El pedido debe estar entregado para calificar" }, { status: 400 });
         }
 

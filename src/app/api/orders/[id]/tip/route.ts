@@ -82,7 +82,8 @@ export async function POST(
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
         }
 
-        if (order.status !== "DELIVERED" && order.status !== "COMPLETED") {
+        // chore/limpiar-completed: "COMPLETED" no existe como estado de pedido.
+        if (order.status !== "DELIVERED") {
             return NextResponse.json(
                 { error: "Solo podés declarar propina en pedidos entregados" },
                 { status: 400 }

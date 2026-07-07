@@ -65,9 +65,11 @@ export async function POST(request: NextRequest) {
         const existingNotes = order.adminNotes ? `${order.adminNotes}\n\n` : "";
 
         // Path 1: Orden PAID con MercadoPago → helper canónico (refund real a MP)
+        // chore/limpiar-completed: estado pagado canónico = "PAID" (regla #32);
+        // "COMPLETED" nunca fue un paymentStatus válido.
         const isPaidMP = (
             order.paymentMethod === "mercadopago" &&
-            (order.paymentStatus === "PAID" || order.paymentStatus === "COMPLETED")
+            order.paymentStatus === "PAID"
         );
 
         if (isPaidMP) {

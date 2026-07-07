@@ -286,7 +286,7 @@ export default function MisPedidosPage() {
                     const res = await fetch(`/api/payments/${order.id}/status`);
                     if (res.ok) {
                         const data = await res.json();
-                        if (data.confirmedJustNow || data.paymentStatus === "PAID" || data.paymentStatus === "COMPLETED") {
+                        if (data.confirmedJustNow || data.paymentStatus === "PAID") {
                             anyConfirmed = true;
                             pendingProbeRef.current.set(order.id, MAX_PROBES);
                         }

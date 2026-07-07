@@ -322,7 +322,7 @@ export default function OrderDetailPage() {
                 const res = await fetch(`/api/payments/${orderId}/status`);
                 if (res.ok) {
                     const data = await res.json();
-                    if (data.confirmedJustNow || data.paymentStatus === "PAID" || data.paymentStatus === "COMPLETED") {
+                    if (data.confirmedJustNow || data.paymentStatus === "PAID") {
                         paymentProbedRef.current = MAX_PROBES;
                         if (!cancelled) fetchOrder();
                     }
