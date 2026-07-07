@@ -69,7 +69,9 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
                 href={`/productos/${product.slug}`}
                 className="card overflow-hidden group bg-white border border-gray-100 rounded-xl block h-full flex flex-col relative"
             >
-                <div className="aspect-square bg-gray-100 relative overflow-hidden">
+                {/* style/cards-producto-compactas: imagen 4:3 (antes cuadrada) — la card
+                    pierde ~20% de alto y entran ~2 filas más por pantalla en mobile. */}
+                <div className="aspect-[4/3] bg-gray-100 relative overflow-hidden">
                     {product.image ? (
                         <img
                             src={product.image}
@@ -78,7 +80,7 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">
-                            <Store className="w-10 h-10 opacity-20" />
+                            <Store className="w-8 h-8 opacity-20" />
                         </div>
                     )}
 
@@ -91,16 +93,16 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
                     <HeartButton type="product" itemId={product.id} className="absolute top-2 right-2" />
                 </div>
 
-                <div className="p-3 flex-1 flex flex-col">
-                    <h3 className="font-semibold text-gray-800 text-sm group-hover:text-[#e60012] transition line-clamp-2 mb-1">
+                <div className="p-2.5 flex-1 flex flex-col">
+                    <h3 className="font-semibold text-gray-800 text-[13px] leading-snug group-hover:text-[#e60012] transition line-clamp-2 mb-0.5">
                         {cleanEncoding(product.name)}
                     </h3>
-                    <p className="text-gray-500 text-xs line-clamp-2 mb-auto">
+                    <p className="text-gray-500 text-[11px] line-clamp-1 mb-auto">
                         {cleanEncoding(product.description)}
                     </p>
 
-                    <div className="flex items-center justify-between mt-3">
-                        <p className="text-lg font-bold text-[#e60012]">
+                    <div className="flex items-center justify-between mt-2">
+                        <p className="text-base font-bold text-[#e60012]">
                             ${product.price.toLocaleString("es-AR")}
                         </p>
                         {showAddButton && (

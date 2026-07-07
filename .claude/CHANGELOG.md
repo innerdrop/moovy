@@ -10,6 +10,27 @@
 
 ---
 
+## 2026-07-07 (rama `style/cards-producto-compactas`)
+
+style: tarjetas de producto ~20% mas compactas — imagen 4:3, padding y tipografia ajustados, descripcion a 1 linea (boton + intacto por area tactil)
+
+**Archivos:** src/components/store/ProductCard.tsx
+
+## 2026-07-07 (rama `style/cards-producto-compactas`)
+
+style: tarjetas de producto ~20% más compactas
+
+Pedido founder (aval de diseño): con catálogos de 20+ productos las cards eran
+poco densas. Un solo componente compartido (ProductCard, lo usan tienda y
+/productos): imagen cuadrada → 4:3, padding 3→2.5, título 14→13px, descripción
+a 1 línea (11px), precio lg→base, gaps ajustados. El botón "+" NO se achicó
+(área táctil, regla UX ≥44px de zona). Resultado: ~2 filas más por pantalla en
+mobile manteniendo legibilidad.
+
+**Archivos:** src/components/store/ProductCard.tsx
+
+---
+
 ## 2026-07-07 (rama `feat/portada-comercio`)
 
 feat: portada del comercio — upload 16:5 en el panel (campo banner que existia sin conectar), header del perfil con la portada y tarjetas anchas de la home prefieren portada sobre logo
