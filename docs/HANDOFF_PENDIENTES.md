@@ -3,7 +3,21 @@
 > Punto de retome para la próxima sesión. Generado al pausar el trabajo del checklist pre-launch.
 > Leé este archivo al volver para reconstruir el contexto.
 
-## Dónde estamos (actualizado 2026-07-06)
+## Dónde estamos (actualizado 2026-07-06 — CIERRE, post 2º devmain)
+
+**En `develop`, limpio. TODO deployado** (2º devmain MODO SCHEMA del 07-06 incluyó: boost MOOVER configurable + defaults canónicos, 4 fixes de la auditoría auth/estados/crons, `requireSellerApi`, carrito UN SOLO comercio, reject atómico, payout a centavos, comisiones 10% en textos/schema).
+
+**La auditoría pre-launch de código está CERRADA**: pagos ✓ (split verificado con pago real) · motor ✓ · comisiones ✓ · puntos ✓ (anti-fantasma, todo conectado) · auth ✓ · estados ✓ · crons ✓. Los 4 críticos que encontró quedaron resueltos y deployados el mismo día.
+
+**Decisiones founder de hoy**: multi-vendor DESHABILITADO (un pedido = un local; el código queda dormido y la derivación de estados que faltaba ya no bloquea) · reserva MP queda en 8% (colchón deliberado a favor del comercio) · boost ×2 se prende desde OPS el día del launch (multiplicador 2 + fecha, se apaga solo).
+
+**Única rama de código pendiente (menor)**: `chore/limpiar-completed` — sacar chequeos del estado fantasma "COMPLETED" en 4 endpoints de rating/tip. 15 min, no bloquea.
+
+**Lo próximo (ya NO es código)**: operativos de OPS (crontab `daily-revenue-summary`, categorías home, zonas de cobertura, flags `merchant.doc.*`, 500 de soporte-notificaciones) → verificaciones prod (motor a distintas distancias, reembolso auto tarea #8, tarjeta WhatsApp og-moovy.png) → gestión con MP (liberación del marketplace_fee) → reorg docs/ → CHECKLIST de 296 → ISSUE-004 → abrir-tienda.ps1.
+
+---
+
+## Dónde estamos (histórico — sesión 2026-07-02 → 06, primera parte)
 
 **En `develop`, limpio. TODO deployado a prod** (3 batches: motor+emails el 07-02; cortina+direcciones y equipamiento+split el 07-05/06). 5 ramas cerradas esta sesión.
 

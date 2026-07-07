@@ -26,7 +26,7 @@
 | Data cleanup pre-launch | 🔴 ABIERTO (script listo, se ejecuta el día del launch — ISSUE-004) |
 | Organización de documentos | 🟡 Planificada (índice armado). Falta ejecutar |
 
-**Veredicto**: sesión de **prueba real en producción** con dos bugs de dinero/logística cazados y arreglados el mismo día: (1) el filtro invisible de mochila térmica dejaba pedidos sin asignar con un driver online al lado; (2) el comercio pagaba el 7,6% de MP también sobre la plata de Moovy. El split quedó verificado con pago real. Falta cerrar el ciclo logístico completo en prod (aviso de viaje + PINs) y dos gestiones operativas (reserva 7,6% + liberación de fondos con MP).
+**Veredicto (cierre 07-06, 2º devmain)**: sesión histórica. Ciclo completo verificado en prod con plata real (pago→split→asignación→PINs→entrega→puntos), 2 bugs de dinero cazados y arreglados el mismo día, **auditoría pre-launch de código CERRADA** (7 dominios, 4 críticos resueltos y deployados), multi-vendor deshabilitado por decisión founder (un pedido = un local), boost MOOVER configurable listo para el día del launch. La deuda de código pre-launch quedó en ~cero (resta 1 chore cosmético). Lo que separa del checklist final ya no es código: operativos de OPS + verificaciones de prod + gestión con MP + reorg de docs.
 
 ---
 
@@ -47,23 +47,27 @@
 
 ## Próximas tareas (orden)
 
-1. **Bajar reserva MP a 7,6%** en la Biblia desde OPS (1 minuto, sin deploy).
-2. **Cerrar el ciclo logístico en prod**: pedido real → aviso de viaje al driver AUTO (post-fix) → aceptar → PIN retiro → PIN entrega. De paso: motor de envío a distintas distancias y flujo buscando-repartidor con reembolso (tarea #8).
-3. **Gestionar con MP la liberación del `marketplace_fee`** (ejecutivo comercial, con el ID de la app). Mientras tanto, dimensionar caja para los payouts de drivers.
-4. **Seguir la auditoría pre-launch** dominio por dominio (pagos → motor → comisiones/puntos → config OPS → auth → estados → crons).
-5. **Comisión vendedor a 10%** en el código (tarea #17, rama chica).
-6. **Organización de documentos**: reorg `docs/` + jubilar las 3 biblias viejas + sumar los docs y la comparativa competitiva de esta sesión.
-7. Seguimientos de emails / OPS docs por parámetro (#13) / repartidor cancela pedido (#12).
-8. Checklist pre-launch (296 items) con todo lo anterior verde.
+1. **Operativos de OPS/VPS** (~1h, sin código): crontab `daily-revenue-summary` + re-verificar cron broadcast · categorías home en `/ops/categorias` · zonas de cobertura en `/ops/zonas-delivery` · decidir flags `merchant.doc.*` · re-verificar 500 de soporte-notificaciones.
+2. **Verificaciones en prod** (~30 min): motor de envío a distintas distancias · reembolso automático al vencer ventana de búsqueda (tarea #8) · tarjeta WhatsApp (`og-moovy.png`, puede tener texto viejo horneado).
+3. **Gestionar con MP la liberación del `marketplace_fee`** (ejecutivo comercial, ID de la app). Dimensionar caja para payouts mientras tanto.
+4. **`chore/limpiar-completed`** (15 min, cosmético): sacar chequeos del estado fantasma en 4 endpoints de rating/tip.
+5. **Organización de documentos**: reorg `docs/` + jubilar las 3 biblias viejas + sumar docs de esta sesión (Plan Maestro, comparativa competitiva).
+6. Seguimientos de emails / OPS docs por parámetro (#13) / repartidor cancela pedido (#12) — sin cambios.
+7. **Checklist pre-launch (296 items)** con todo lo anterior verde → ISSUE-004 el día antes → `abrir-tienda.ps1`.
+8. **Día del launch**: prender boost ×2 en la Biblia (multiplicador 2 + fecha a 30 días).
+
+**Reserva MP: decisión founder — queda en 8%** (colchón deliberado a favor del comercio; Moovy absorbe ~0,4% extra de su parte por pedido).
 
 ---
 
 ## Métricas
 
 - **Issues 🔴 abiertos**: 1 (ISSUE-004 cleanup data, día del launch).
-- **Prod**: TODO deployado — develop limpio, nada pendiente de deploy.
-- **Ramas cerradas esta sesión**: 5 (`fix/cortina-identidad-ushuaia`, `feat/direcciones-limite-y-chip-header`, `fix/direcciones-barra-entregar-en`, `fix/asignacion-sin-filtro-equipamiento`, `fix/split-mp-cada-parte-paga-lo-suyo`).
-- **Bugs cazados en prueba real de prod**: 2 (equipamiento en asignación + reparto del split MP), ambos arreglados, deployados y el split re-verificado con pago real.
+- **Prod**: TODO deployado (2 devmains esta sesión) — develop limpio.
+- **Ramas cerradas esta sesión**: 11 (`fix/cortina-identidad-ushuaia`, `feat/direcciones-limite-y-chip-header`, `fix/direcciones-barra-entregar-en`, `fix/asignacion-sin-filtro-equipamiento`, `fix/split-mp-cada-parte-paga-lo-suyo`, `fix/comision-vendedor-10`, `feat/moover-boost-lanzamiento-y-defaults`, `fix/auditoria-estados-crons`, `fix/seller-api-db-auth`, `fix/carrito-un-solo-comercio`, `fix/merchant-reject-atomico`, `fix/driver-payout-centavos` — 12 con la del payout).
+- **Auditoría pre-launch de código: CERRADA** (7 dominios, 4 críticos resueltos el mismo día).
+- **Bugs cazados en prueba real de prod**: 2 de dinero (equipamiento + split MP), verificados con pagos reales tras el fix.
+- **Ciclo E2E verificado en prod**: pago → split → asignación → PIN doble → DELIVERED → puntos idempotentes.
 
 ---
 
