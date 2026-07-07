@@ -14,6 +14,8 @@ interface MerchantPreview {
     name: string;
     description?: string | null;
     image: string | null;
+    /** feat/portada-comercio: portada 16:5 opcional para las tarjetas anchas. */
+    banner?: string | null;
     category: string | null;
     isOpen: boolean;
     rating: number | null;
@@ -150,9 +152,10 @@ function MerchantCard({ merchant }: { merchant: MerchantPreview }) {
             <div className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm transition-transform duration-200 group-hover:scale-[1.02] group-active:scale-[0.98]">
                 {/* Image */}
                 <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-                    {merchant.image ? (
+                    {/* feat/portada-comercio: portada real primero, logo como fallback. */}
+                    {(merchant.banner || merchant.image) ? (
                         <img
-                            src={merchant.image}
+                            src={merchant.banner || merchant.image!}
                             alt={merchant.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"

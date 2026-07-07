@@ -42,6 +42,7 @@ export default async function MiComercioPage() {
                     name: merchant.name,
                     description: merchant.description || "",
                     image: merchant.image || "",
+                    banner: merchant.banner || "",
                     email: merchant.email || "",
                     phone: merchant.phone || "",
                     address: merchant.address || "",

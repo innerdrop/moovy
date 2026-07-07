@@ -1,6 +1,7 @@
 
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { prisma } from "@/lib/prisma";
 import ProductCard from "@/components/store/ProductCard";
 import MerchantScheduleWidget from "@/components/store/MerchantScheduleWidget";
@@ -126,12 +127,29 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
             </header>
 
             {/* Merchant Header / Cover */}
+            {/* feat/portada-comercio: si el comercio subió portada (Merchant.banner,
+                16:5, se carga desde /comercios "Foto de portada"), se muestra con un
+                degradé sutil abajo para que el logo flotante y el badge no se pierdan.
+                Sin portada: el placeholder oscuro de siempre con el nombre. */}
             <div className="bg-white border-b border-gray-100">
-                <div className="h-32 sm:h-40 bg-gradient-to-r from-gray-800 to-gray-900 relative">
-                    {/* Banner Image would go here */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                        <span className="text-4xl font-bold text-white tracking-widest uppercase">{merchant.name}</span>
-                    </div>
+                <div className="h-32 sm:h-40 bg-gradient-to-r from-gray-800 to-gray-900 relative overflow-hidden">
+                    {merchant.banner ? (
+                        <>
+                            <Image
+                                src={merchant.banner}
+                                alt={`Portada de ${merchant.name}`}
+                                fill
+                                priority
+                                sizes="100vw"
+                                className="object-cover"
+                            />
+                            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
+                        </>
+                    ) : (
+                        <div className="absolute inset-0 flex items-center justify-center opacity-10">
+                            <span className="text-4xl font-bold text-white tracking-widest uppercase">{merchant.name}</span>
+                        </div>
+                    )}
                     {/* Verified Badge on Banner */}
                     {merchant.isVerified && (
                         <div className="absolute top-3 right-3 bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">

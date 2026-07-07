@@ -42,6 +42,9 @@ const MERCHANT_DISCOVERY_SELECT = {
   name: true,
   description: true,
   image: true,
+  // feat/portada-comercio: la portada (16:5) es la imagen ancha de las tarjetas;
+  // el logo queda para las miniaturas cuadradas.
+  banner: true,
   category: true,
   isOpen: true,
   scheduleJson: true,

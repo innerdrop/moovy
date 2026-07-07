@@ -137,9 +137,10 @@ function DestacadoCard({
     >
       {/* Image container with status badge */}
       <div className="relative aspect-video bg-gray-100 overflow-hidden">
-        {merchant.image ? (
+        {/* feat/portada-comercio: portada real primero, logo como fallback. */}
+        {(merchant.banner || merchant.image) ? (
           <img
-            src={merchant.image}
+            src={merchant.banner || merchant.image!}
             alt={merchant.name}
             className="w-full h-full object-cover img-zoom group-hover:scale-105 transition-transform duration-300"
           />

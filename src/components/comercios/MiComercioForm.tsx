@@ -14,6 +14,8 @@ interface MiComercioFormProps {
         name: string;
         description: string;
         image: string;
+        /** feat/portada-comercio: foto de portada del perfil público (16:5). */
+        banner?: string | null;
         email: string;
         phone: string;
         address: string;
@@ -108,11 +110,18 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
     const [perfilDirty, setPerfilDirty] = useState(false);
     const initialImageUrl = useRef(merchant.image);
     const initialAddress = useRef(merchant.address);
+    // feat/portada-comercio: foto de portada (misma mecánica que el logo).
+    const [bannerUrl, setBannerUrl] = useState(merchant.banner ?? "");
+    const initialBannerUrl = useRef(merchant.banner ?? "");
 
     // Si cambia la imagen o la dirección, marcar dirty (no se detectan vía onChange del form).
     const handleImageChange = (url: string) => {
         setImageUrl(url);
         if (url !== initialImageUrl.current) setPerfilDirty(true);
+    };
+    const handleBannerChange = (url: string) => {
+        setBannerUrl(url);
+        if (url !== initialBannerUrl.current) setPerfilDirty(true);
     };
     const handleAddressChange = (val: string, newLat?: number, newLng?: number, street?: string, num?: string) => {
         const newAddr = num ? `${street} ${num}` : val;
@@ -146,6 +155,7 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
         setIsLoading(true);
         setError("");
         formData.append("image", imageUrl);
+        formData.append("banner", bannerUrl);
         const result = await updateMerchant(formData);
         if (result?.error) {
             toast.error(result.error);
@@ -154,6 +164,7 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
             toast.success("Perfil guardado correctamente");
             // Resetear el banner — snapshot pasa a ser el valor actual
             initialImageUrl.current = imageUrl;
+            initialBannerUrl.current = bannerUrl;
             initialAddress.current = address;
             setPerfilDirty(false);
         }
@@ -260,6 +271,25 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                         <Store className="w-5 h-5 text-blue-600" />
                         Información del Comercio
                     </h2>
+
+                    {/* feat/portada-comercio: foto de portada del perfil público. */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Foto de portada
+                        </label>
+                        <ImageUpload
+                            value={bannerUrl}
+                            onChange={handleBannerChange}
+                            disabled={isLoading}
+                            cropAspect={16 / 5}
+                            cropOutputSize={1600}
+                        />
+                        <p className="mt-1.5 text-xs text-gray-400">
+                            Es la imagen grande de tu perfil en la tienda. Tamaño ideal:
+                            1600 × 500 px (formato apaisado 16:5). Mostrá tu local, tus
+                            productos o tu equipo — es lo primero que ve el cliente.
+                        </p>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                         <div className="md:col-span-1">

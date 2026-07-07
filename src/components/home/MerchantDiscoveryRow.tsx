@@ -13,6 +13,8 @@ interface MerchantPreview {
   name: string;
   description: string | null;
   image: string | null;
+  /** feat/portada-comercio: portada 16:5 opcional para la tarjeta ancha. */
+  banner?: string | null;
   isOpen: boolean;
   rating: number | null;
   deliveryTimeMin: number;
@@ -108,9 +110,10 @@ function DiscoveryCard({ merchant }: { merchant: MerchantPreview }) {
       <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 transition-all duration-200 group-hover:shadow-md group-hover:scale-[1.02] group-active:scale-[0.98]">
         {/* Image */}
         <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
-          {merchant.image ? (
+          {/* feat/portada-comercio: portada real primero, logo como fallback. */}
+          {(merchant.banner || merchant.image) ? (
             <img
-              src={merchant.image}
+              src={merchant.banner || merchant.image!}
               alt={cleanEncoding(merchant.name)}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"

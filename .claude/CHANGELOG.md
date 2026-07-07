@@ -10,6 +10,38 @@
 
 ---
 
+## 2026-07-07 (rama `feat/portada-comercio`)
+
+feat: portada del comercio — upload 16:5 en el panel (campo banner que existia sin conectar), header del perfil con la portada y tarjetas anchas de la home prefieren portada sobre logo
+
+**Archivos:** src/app/(store)/page.tsx, src/app/(store)/store/[slug]/page.tsx, src/app/comercios/(protected)/mi-comercio/page.tsx, src/app/comercios/actions.ts, src/components/comercios/MiComercioForm.tsx, src/components/home/DestacadosSection.tsx, src/components/home/HomeFeed.tsx, src/components/home/MerchantDiscoveryRow.tsx (+1 mas)
+
+## 2026-07-07 (rama `feat/portada-comercio`)
+
+feat: foto de portada del comercio — sube desde el panel, viste el perfil y la home
+
+Pedido founder (con visto bueno del consejo): el perfil de la tienda mostraba un
+placeholder oscuro con el nombre; ahora el comercio elige su portada. El campo
+`Merchant.banner` EXISTÍA en el schema desde siempre, nunca conectado — cero
+cambios de schema.
+
+- Panel del comercio (MiComercioForm): upload "Foto de portada" arriba del logo,
+  con crop 16:5 (cropAspect) y guía visible: "Tamaño ideal: 1600 × 500 px".
+  Misma mecánica que el logo (dirty flag, banner flotante de guardar).
+- Server action updateMerchant: banner en schema Zod + formData + update.
+- Perfil de tienda: la portada llena el header (object-cover + degradé sutil
+  abajo para el logo flotante y el badge Verificado). Sin portada → placeholder
+  de siempre.
+- Home: las 4 tarjetas ANCHAS prefieren portada sobre logo (MerchantCard
+  vertical, MerchantDiscoveryRow, DestacadosSection, HomeFeed inline) —
+  `banner || image`. El anillo circular de "nuevos comercios" sigue usando el
+  logo (correcto). `MERCHANT_DISCOVERY_SELECT` incluye banner; tiendas y
+  destacados ya traían el objeto completo.
+
+**Archivos:** src/components/comercios/MiComercioForm.tsx, src/app/comercios/actions.ts, src/app/comercios/(protected)/mi-comercio/page.tsx, src/app/(store)/store/[slug]/page.tsx, src/app/(store)/page.tsx, src/components/store/MerchantCard.tsx, src/components/home/MerchantDiscoveryRow.tsx, src/components/home/DestacadosSection.tsx, src/components/home/HomeFeed.tsx
+
+---
+
 ## 2026-07-07 (rama `fix/envio-gratis-badge`)
 
 fix: badge "Envio Gratis" mentiroso — perfil de tienda usa la promo real de la Biblia (freeDeliveryMinimum) y las tarjetas dejan de mostrar precio de envio inventado del campo legacy

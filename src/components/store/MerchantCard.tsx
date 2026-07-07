@@ -12,6 +12,8 @@ interface MerchantCardProps {
         name: string;
         description: string | null;
         image: string | null;
+        /** feat/portada-comercio: portada 16:5; si existe, es la imagen ancha de la card. */
+        banner?: string | null;
         rating?: number | null;
         deliveryTimeMin: number;
         deliveryTimeMax: number;
@@ -120,9 +122,9 @@ export default function MerchantCard({ merchant, variant = "default" }: Merchant
     return (
         <Link href={`/tienda/${merchant.slug}`} className={`group block bg-white rounded-xl overflow-hidden shadow-sm hover-lift tap-bounce border ${merchant.isPremium ? 'border-yellow-300 ring-2 ring-yellow-200' : 'border-gray-100'} ${!merchant.isOpen ? 'opacity-75' : ''}`}>
             <div className="relative aspect-video bg-gray-100">
-                {/* Image placeholder or real image */}
-                {merchant.image ? (
-                    <img src={merchant.image} alt={merchant.name} className="w-full h-full object-cover img-zoom" />
+                {/* feat/portada-comercio: la portada real primero; el logo como fallback. */}
+                {(merchant.banner || merchant.image) ? (
+                    <img src={merchant.banner || merchant.image!} alt={merchant.name} className="w-full h-full object-cover img-zoom" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
                         <span className="text-4xl font-bold opacity-20">{cleanEncoding(merchant.name).charAt(0)}</span>
