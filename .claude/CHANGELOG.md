@@ -10,6 +10,41 @@
 
 ---
 
+## 2026-07-07 (rama `style/ops-sidebar-fijo`)
+
+style(ops): panel app-shell — sidebar fijo con scroll interno sin barra, contenido con scroll independiente, drawer mobile intacto
+
+**Archivos:** .claude/CLAUDE.md, ISSUES.md, src/app/ops/(protected)/layout.tsx, src/components/ops/OpsSidebar.tsx
+
+## 2026-07-07 (rama `style/ops-sidebar-fijo`)
+
+style(ops): panel con patrón APP-SHELL — sidebar fijo, scrolls independientes, sin barra
+
+Pedido del founder: en desktop scrollear el menú arrastraba el contenido (y al
+revés), con barra de scroll fea en el medio. Se probaron sticky y fixed+margen y
+ambos fallaron por interacciones de capas (el overflow-x-hidden del root rompe
+sticky; el margen de compensación no aplicaba). SOLUCIÓN FINAL — app-shell:
+
+- Layout root: `h-screen overflow-hidden flex` → LA PÁGINA NO SCROLLEA NUNCA.
+- Sidebar: columna estática de altura completa (lg:static h-full shrink-0, drawer
+  mobile intacto) — ocupa espacio real en el flujo, imposible que tape contenido;
+  como la página no scrollea, queda visualmente fijo. Nav con scroll interno +
+  `scrollbar-hide` (sin barra visible).
+- Contenido: su PROPIA columna con overflow-y-auto — scrollea independiente.
+
+Lección para el próximo panel: app-shell primero; sticky/fixed+margen solo si no
+hay ancestros con overflow.
+
+BONUS de la rama (meta, workflow): reglas 3b y 3c documentadas en CLAUDE.md —
+`.next-branch` en formato `tipo nombre` (espacio, no barra) y `.commit-message`
+al cerrar. Claude venía escribiendo mal el primero (barra) y no usaba el segundo:
+por eso el auto-start/auto-cierre de los scripts "nunca funcionaban". Flujo desde
+ahora, sin copy-paste: Claude deja los archivos, Mauro corre start.ps1/finish.ps1.
+
+**Archivos:** src/components/ops/OpsSidebar.tsx, src/app/ops/(protected)/layout.tsx
+
+---
+
 ## 2026-07-07 (rama `fix/cron-broadcasts-auth-401`)
 
 fix(crons): process-broadcasts extraía mal el token del header — 401 eterno a crontab y panel, nunca registró una corrida

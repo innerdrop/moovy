@@ -31,7 +31,7 @@
 - **Categorías de la home: tarea OPERATIVA** — configurar slots activos en `/ops/categorias` (en prod no hay ninguno).
 - **Zonas de cobertura** — pintar/confirmar en `/ops/zonas-delivery`.
 - **A re-probar** (sin bug conocido, solo verificar): s2-2a-11 (bonus bienvenida pendiente), s2-2b-01 (email "registro recibido" al comercio), s3-3c-01 (errores OPS en toast no genérico), s4-4c-04 (variantes de producto), s7-7a-02 (bloqueo de pedido fuera de zona).
-- **500 en `/api/comercios/soporte/notificaciones`** — re-verificar ahora que el batch está deployado; si persiste, abrir rama.
+- ✅ **500 en `/api/comercios/soporte/notificaciones`** — VERIFICADO 2026-07-07: responde 200 `{"count":0}`. Se arregló de rebote con los deploys (probablemente `fix/merchant-api-db-auth`). Cerrado sin rama.
 - **Configurar qué docs pedir al inicio** — decisión del founder: en `/ops/feature-flags`, apagar los `merchant.doc.*` que NO se pidan en el lanzamiento (el seed ya corrió en prod, los 5 flags existen en ON).
 
 ### Sesión 2026-07-02 — motor de envío + emails + auditoría pre-launch

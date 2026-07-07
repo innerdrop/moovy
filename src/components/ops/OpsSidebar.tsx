@@ -263,10 +263,16 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
             )}
 
             {/* Sidebar - Full for desktop, Drawer for mobile */}
+            {/* style/ops-sidebar-fijo (patrón app-shell): en desktop es una COLUMNA
+                estática de altura completa dentro del root h-screen/overflow-hidden —
+                ocupa su espacio real, el contenido nunca queda tapado, y como la
+                página no scrollea, el sidebar queda visualmente fijo. El nav scrollea
+                ADENTRO (overflow-y-auto + scrollbar-hide). Mobile: drawer fixed,
+                igual que siempre. */}
             <aside
                 className={`
                     fixed lg:static inset-y-0 left-0 z-50
-                    w-64 bg-slate-900 text-white flex flex-col
+                    w-64 h-screen lg:h-full bg-slate-900 text-white flex flex-col shrink-0
                     transform transition-transform duration-300 ease-in-out
                     ${isMobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
                 `}
@@ -307,7 +313,8 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                 </div>
 
                 {/* Navigation */}
-                <nav className="flex-1 p-3 overflow-y-auto">
+                {/* scrollbar-hide: scroll interno sin barra visible (pedido founder). */}
+                <nav className="flex-1 p-3 overflow-y-auto scrollbar-hide">
                     {navSections.map((section, sIdx) => (
                         <div key={section.title} className={sIdx > 0 ? "mt-4" : ""}>
                             <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider px-3 mb-1">

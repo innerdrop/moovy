@@ -15,18 +15,24 @@ async function OpsLayout({ children }: { children: React.ReactNode }) {
     // archivado de inmediato. requireAdminAccess redirige según el caso.
     await requireAdminAccess(session.user.id);
 
+    // style/ops-sidebar-fijo — patrón APP-SHELL: la página NO scrollea nunca
+    // (root = h-screen + overflow-hidden). Son dos columnas de altura completa:
+    // el sidebar (columna estática en desktop, drawer en mobile) scrollea su nav
+    // por adentro, y el contenido scrollea en SU propia columna (overflow-y-auto).
+    // Sin fixed/sticky ni compensaciones de margen: el sidebar ocupa su espacio
+    // real en el flujo, así que el contenido jamás puede quedar tapado.
     return (
-        <div className="min-h-screen bg-gray-100 flex overflow-x-hidden w-full max-w-[100vw]">
+        <div className="h-screen overflow-hidden bg-gray-100 flex w-full">
             {/* Sidebar - handles both desktop and mobile */}
             <OpsSidebar userName={session.user?.name || undefined} />
 
-            {/* Main Content */}
-            <div className="flex-1 flex flex-col lg:ml-0 min-w-0 max-w-full">
+            {/* Main Content — columna con scroll propio */}
+            <div className="flex-1 flex flex-col min-w-0 h-full overflow-y-auto overflow-x-hidden">
                 {/* Spacer for mobile menu button */}
                 <div className="lg:hidden h-16" />
 
                 {/* Page Content */}
-                <main className="flex-1 p-4 md:p-6 pb-24 lg:pb-6 overflow-x-hidden overflow-y-auto min-w-0 max-w-full">
+                <main className="flex-1 p-4 md:p-6 pb-24 lg:pb-6 min-w-0 max-w-full">
                     {children}
                 </main>
             </div>

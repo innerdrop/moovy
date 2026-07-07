@@ -229,11 +229,13 @@ Sentry:    NEXT_PUBLIC_SENTRY_DSN, SENTRY_ORG, SENTRY_PROJECT, SENTRY_AUTH_TOKEN
 | `test-pin-verification.ts`           | 11 tests del PIN                                           |
 | `cleanup-resurrected-users.ts`       | Detecta cuentas resucitadas (read-only)                    |
 
-## Reglas de ejecución (las 10 inviolables)
+## Reglas de ejecución (las 11 inviolables)
 
 1. NO abrir browser, NO `npm run dev/build`, NO pruebas visuales
 2. Verificar TS con `npx tsc --noEmit --skipLibCheck` (targeted si OOM)
 3. **NUNCA EDITAR CÓDIGO EN DEVELOP/MAIN.** Verificar rama antes de tocar archivo. Si está en `develop`/`main`: detener, pedir `start.ps1`. Si rama ya cerrada y hay otro cambio: nueva rama
+3b. **`.next-branch` SIEMPRE en formato `tipo nombre` (ESPACIO, NO barra)** — ej: `fix delivery-fee-preview`. Tipos válidos: feat|fix|hotfix|refactor|config|chore|docs|style|perf ("ux" NO existe → usar style). Con el archivo bien escrito, `start.ps1` crea la rama solo, sin menú ni copy-paste — Mauro solo corre `.\scripts\start.ps1`. Claude escribe este archivo ANTES de pedir la rama, siempre.
+3c. **`.commit-message` en el root al terminar cada rama** — una línea con el mensaje de commit. Con el archivo presente, `finish.ps1` NO pregunta el mensaje (auto-cierre, se borra post-commit). Claude lo escribe junto con el resumen de cierre, SIEMPRE — Mauro solo corre `.\scripts\finish.ps1`. Flujo completo sin copy-paste: `.next-branch` → start.ps1 → cambios → `.commit-message` → finish.ps1.
 4. Mostrar plan → esperar aprobación → ejecutar → mostrar archivos modificados + tsc
 5. Ignorar errores TS pre-existentes (`.next/dev/types/*`, `node_modules/.prisma/client`, archivos con TS1127 documentados)
 6. Al cerrar rama: actualizar CLAUDE.md (si tocó decisión canónica), ISSUES.md (si cerró issue), CHANGELOG.md (entry de la rama)
