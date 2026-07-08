@@ -61,19 +61,36 @@ export async function POST(request: NextRequest) {
 
         const userId = (session.user as any).id;
         const userName = (session.user as any).name || "Cliente";
-        const { category, message } = await request.json();
+        const { category, message, subject: subjectInput, origin: originHint } = await request.json();
 
         if (!message || !message.trim()) {
             return NextResponse.json({ error: "El mensaje es requerido" }, { status: 400 });
         }
 
+        // feat/soporte-bandeja-ops: origen DERIVADO server-side (no confiar en el
+        // hint del cliente). MERCHANT solo si el user tiene comercio (y ahí sí
+        // seteamos merchantId, que arregla el badge del panel comercio); DRIVER
+        // solo si tiene registro de repartidor; el resto es BUYER.
+        let origin: "BUYER" | "MERCHANT" | "DRIVER" = "BUYER";
+        let merchantId: string | undefined = undefined;
+        if (originHint === "MERCHANT") {
+            const merchant = await prisma.merchant.findFirst({ where: { ownerId: userId }, select: { id: true } });
+            if (merchant) { origin = "MERCHANT"; merchantId = merchant.id; }
+        } else if (originHint === "DRIVER") {
+            const driver = await prisma.driver.findUnique({ where: { userId }, select: { id: true } });
+            if (driver) { origin = "DRIVER"; }
+        }
+
         // Find available operator: online, active, with capacity
         const availableOperator = await findAvailableOperator();
 
-        // Build subject from first message (max 60 chars)
-        const subject = message.trim().length > 60
-            ? message.trim().substring(0, 57) + "..."
+        // Subject: usar el que mandó el usuario si vino; si no, derivarlo del mensaje.
+        const rawSubject = (typeof subjectInput === "string" && subjectInput.trim())
+            ? subjectInput.trim()
             : message.trim();
+        const subject = rawSubject.length > 60
+            ? rawSubject.substring(0, 57) + "..."
+            : rawSubject;
 
         // Create chat with user's message + optional system message
         const messagesData: any[] = [
@@ -98,6 +115,8 @@ export async function POST(request: NextRequest) {
         const chat = await (prisma as any).supportChat.create({
             data: {
                 userId,
+                merchantId,
+                origin,
                 category: category || "general",
                 subject,
                 status: availableOperator ? "active" : "waiting",
@@ -119,6 +138,22 @@ export async function POST(request: NextRequest) {
                 }
             }
         });
+
+        // Aviso al equipo (fire-and-forget: nunca rompe la creación del ticket).
+        (async () => {
+            try {
+                const { sendAdminNewSupportTicketEmail } = await import("@/lib/email-admin-ops");
+                await sendAdminNewSupportTicketEmail({
+                    origin,
+                    userName,
+                    subject,
+                    message: message.trim(),
+                    chatId: chat.id,
+                });
+            } catch (err) {
+                console.error("[support] fallo aviso de nuevo ticket:", err);
+            }
+        })();
 
         return NextResponse.json(chat, { status: 201 });
     } catch (error) {

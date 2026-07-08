@@ -1339,6 +1339,9 @@ model SupportChat {
   operatorId    String?
   subject       String?
   category      String?          // "pedido", "pago", "cuenta", "comercio", "repartidor", "otro"
+  // feat/soporte-bandeja-ops: origen del ticket para etiquetar/filtrar en la
+  // bandeja de OPS. Se deriva server-side al crear (no confiar en el cliente).
+  origin        String           @default("BUYER") // BUYER, MERCHANT, DRIVER
   status        String           @default("waiting") // waiting, active, resolved, closed
   priority      String           @default("normal")  // low, normal, high, urgent
   rating        Int?             // 1-5 post-chat rating
@@ -1354,6 +1357,8 @@ model SupportChat {
   @@index([userId])
   @@index([operatorId])
   @@index([status])
+  @@index([origin])
+  @@index([merchantId])
   @@index([createdAt])
 }
 

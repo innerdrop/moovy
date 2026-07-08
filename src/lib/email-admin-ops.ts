@@ -76,6 +76,53 @@ export async function sendAdminNewMerchantPendingEmail(data: {
     return results.some(Boolean);
 }
 
+// ─── Nuevo ticket de soporte (admin/owner) — feat/soporte-bandeja-ops ────────
+
+export async function sendAdminNewSupportTicketEmail(data: {
+    origin: string;          // BUYER | MERCHANT | DRIVER
+    userName: string;
+    subject: string;
+    message: string;
+    chatId: string;
+}): Promise<boolean> {
+    const esc = (s: string) =>
+        (s || "").replace(/[<>&]/g, (c) => (c === "<" ? "&lt;" : c === ">" ? "&gt;" : "&amp;"));
+    const originLabel =
+        data.origin === "MERCHANT" ? "Comercio" :
+        data.origin === "DRIVER" ? "Repartidor" : "Comprador";
+    const html = emailLayout(`
+        <div style="text-align: center; margin-bottom: 20px;">
+            ${emailBadge('💬 Nuevo ticket', '#fef2f2', '#b91c1c')}
+        </div>
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">
+            Nuevo ticket de soporte
+        </h2>
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 20px 0;">
+            Entró una consulta nueva a soporte. Respondela desde la bandeja de OPS.
+        </p>
+        ${emailInfoBox(`
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Origen:</strong> ${originLabel}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>De:</strong> ${esc(data.userName)}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Asunto:</strong> ${esc(data.subject)}</p>
+            <p style="margin: 4px 0; color: #333; font-size: 14px;"><strong>Mensaje:</strong> ${esc(data.message)}</p>
+        `)}
+        ${emailButton('Responder en OPS', `${baseUrl}/ops/soporte`, 'blue')}
+    `);
+
+    const recipients = await getAlertEmails();
+    const results = await Promise.all(
+        recipients.map((to) =>
+            sendEmail({
+                to,
+                subject: `💬 Nuevo ticket de soporte (${originLabel}) — responder en OPS`,
+                html,
+                tag: 'admin_new_support_ticket',
+            })
+        )
+    );
+    return results.some(Boolean);
+}
+
 // ─── #2 — Nuevo repartidor pendiente (admin/owner) ───────────────────────────
 
 export async function sendAdminNewDriverPendingEmail(data: {

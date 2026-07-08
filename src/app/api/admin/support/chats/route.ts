@@ -10,10 +10,13 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url);
         const status = searchParams.get("status") || "";
+        const origin = searchParams.get("origin") || "";
         const limit = parseInt(searchParams.get("limit") || "50");
 
         const where: any = {};
         if (status) where.status = status;
+        // feat/soporte-bandeja-ops: filtro por origen (BUYER/MERCHANT/DRIVER).
+        if (origin) where.origin = origin;
 
         const chats = await (prisma as any).supportChat.findMany({
             where,

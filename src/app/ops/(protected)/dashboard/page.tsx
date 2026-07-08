@@ -119,8 +119,10 @@ async function getStats() {
             // Catalog
             prisma.product.count({ where: { isActive: true } }),
             prisma.listing.count({ where: { isActive: true } }),
-            // Support
-            prisma.supportChat.count({ where: { status: "open" } }),
+            // Support — feat/soporte-bandeja-ops: "open" NO es un estado válido
+            // (son waiting|active|resolved|closed). Contamos los sin resolver
+            // (esperando + activos) para el aviso "N tickets sin responder".
+            prisma.supportChat.count({ where: { status: { in: ["waiting", "active"] } } }),
         ]);
 
         return {

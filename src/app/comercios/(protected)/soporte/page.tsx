@@ -130,7 +130,10 @@ export default function ComercioSoportePage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     subject: newChatSubject || "Consulta general",
-                    message: newChatMessage
+                    message: newChatMessage,
+                    // feat/soporte-bandeja-ops: etiqueta el ticket como de comercio
+                    // (el server valida contra la DB antes de confiar en esto).
+                    origin: "MERCHANT"
                 }),
             });
 
@@ -205,9 +208,9 @@ export default function ComercioSoportePage() {
                                     <div className="flex items-center gap-2 text-xs text-gray-500">
                                         <Clock className="w-3 h-3" />
                                         {new Date(chat.lastMessageAt).toLocaleDateString("es-AR")}
-                                        <span className={`px-1.5 py-0.5 rounded text-xs ${chat.status === 'open' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
+                                        <span className={`px-1.5 py-0.5 rounded text-xs ${chat.status === 'waiting' || chat.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'
                                             }`}>
-                                            {chat.status === 'open' ? 'Abierto' : 'Cerrado'}
+                                            {chat.status === 'waiting' || chat.status === 'active' ? 'Abierto' : 'Cerrado'}
                                         </span>
                                     </div>
                                 </button>

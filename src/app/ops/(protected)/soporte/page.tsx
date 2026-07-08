@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { SupportOperator, CannedResponse } from "@/types/support";
+import SupportInbox from "@/components/ops/SupportInbox";
 
 export default function AdminSoportePage() {
     const [tab, setTab] = useState<"chats" | "operators" | "canned" | "stats">("chats");
@@ -165,7 +166,7 @@ export default function AdminSoportePage() {
         <div className="space-y-6">
             <div>
                 <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Centro de Soporte</h1>
-                <p className="text-gray-600 text-sm mt-1 sm:mt-2">Gestiona operadores, respuestas rápidas y estadísticas</p>
+                <p className="text-gray-600 text-sm mt-1 sm:mt-2">Atendé tickets, gestioná operadores, respuestas rápidas y estadísticas</p>
             </div>
 
             {/* Tabs */}
@@ -213,10 +214,10 @@ export default function AdminSoportePage() {
                     </button>
                 </div>
 
-                {/* Tab: Chats */}
+                {/* Tab: Chats — bandeja real de tickets (feat/soporte-bandeja-ops) */}
                 {tab === "chats" && (
                     <div className="p-4 sm:p-6">
-                        <p className="text-gray-600">Ver conversaciones en el portal de soporte operadores</p>
+                        <SupportInbox />
                     </div>
                 )}
 

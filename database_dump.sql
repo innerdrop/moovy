@@ -1854,7 +1854,8 @@ CREATE TABLE public."SupportChat" (
     "lastMessageAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "resolvedAt" timestamp(3) without time zone,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    origin text DEFAULT 'BUYER'::text NOT NULL
 );
 
 
@@ -2869,7 +2870,7 @@ COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtota
 -- Data for Name: SupportChat; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."SupportChat" (id, "userId", "merchantId", "operatorId", subject, category, status, priority, rating, "ratingComment", "lastMessageAt", "resolvedAt", "createdAt", "updatedAt") FROM stdin;
+COPY public."SupportChat" (id, "userId", "merchantId", "operatorId", subject, category, status, priority, rating, "ratingComment", "lastMessageAt", "resolvedAt", "createdAt", "updatedAt", origin) FROM stdin;
 \.
 
 
@@ -4783,10 +4784,24 @@ CREATE INDEX "SupportChat_createdAt_idx" ON public."SupportChat" USING btree ("c
 
 
 --
+-- Name: SupportChat_merchantId_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "SupportChat_merchantId_idx" ON public."SupportChat" USING btree ("merchantId");
+
+
+--
 -- Name: SupportChat_operatorId_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX "SupportChat_operatorId_idx" ON public."SupportChat" USING btree ("operatorId");
+
+
+--
+-- Name: SupportChat_origin_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "SupportChat_origin_idx" ON public."SupportChat" USING btree (origin);
 
 
 --

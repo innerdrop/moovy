@@ -10,6 +10,59 @@
 
 ---
 
+## 2026-07-08 (rama `feat/soporte-bandeja-ops`)
+
+feat: soporte — bandeja de tickets en OPS + etiquetado por origen + avisos. Los tickets ahora se etiquetan BUYER/MERCHANT/DRIVER (merchantId server-side, arregla el badge del comercio), la pestaña Conversaciones de /ops/soporte pasa de placeholder vacío a bandeja real (lista con filtros por origen/estado, abrir, responder y resolver/cerrar vía /api/admin/support/chats/[id]), avisa al equipo por email al entrar un ticket, y se arreglan bugs (contador 'open' inexistente del dashboard → waiting/active, asunto ignorado, badge del panel comercio). Requiere prisma db push (nuevo campo SupportChat.origin)
+
+**Archivos:** prisma/schema.prisma, scripts/verify-soporte-bandeja.ts, src/app/api/admin/support/chats/[id]/route.ts, src/app/api/admin/support/chats/route.ts, src/app/api/support/chats/route.ts, src/app/comercios/(protected)/soporte/page.tsx, src/app/ops/(protected)/dashboard/page.tsx, src/app/ops/(protected)/soporte/page.tsx (+2 mas)
+
+## 2026-07-08 (rama `feat/soporte-bandeja-ops`)
+
+feat: bandeja de tickets de soporte en OPS + etiquetado por origen + avisos
+
+**Contexto (detectado por el founder):** un comercio mandó un mensaje de soporte
+desde `/comercios/soporte` y no llegó a ningún lado. Análisis (2 agentes) reveló:
+hay UN solo backend de tickets (`SupportChat`) compartido por comprador (burbuja
+de la tienda) y comercio; el único lugar para responder era un portal de
+operadores oculto (`/soporte`) que exige una cuenta `SupportOperator` online; la
+pestaña "Conversaciones" de `/ops/soporte` era un placeholder vacío; y no salía
+NINGUNA notificación al crear un ticket. Además el chat se creaba sin `merchantId`
+→ el badge del panel comercio siempre daba 0. Decisión founder: NO separar los
+soportes — unificar y etiquetar, y atender desde una bandeja en OPS.
+
+**1. Etiquetado (schema + creación):** `SupportChat.origin` (BUYER/MERCHANT/DRIVER)
++ índices (origin, merchantId). En `POST /api/support/chats` el origen se DERIVA
+server-side (no se confía en el cliente): MERCHANT solo si el user tiene comercio
+(y ahí se setea `merchantId`), DRIVER solo si tiene registro de repartidor. El
+panel comercio manda `origin: "MERCHANT"`. Se respeta el `subject` que manda el
+usuario (antes se ignoraba). Requiere `prisma db push`.
+
+**2. Bandeja en OPS:** la pestaña "Conversaciones" de `/ops/soporte` pasa de
+placeholder a bandeja real (`src/components/ops/SupportInbox.tsx`): lista con
+filtros por origen y estado, abrir ticket, leer la conversación, responder y
+marcar resuelto/cerrado. Nuevo endpoint `GET/POST/PATCH /api/admin/support/chats/[id]`
+(auth `requireApiAdmin`). El listado `/api/admin/support/chats` acepta `?origin=`.
+
+**3. Avisos:** al entrar un ticket → email al equipo (`sendAdminNewSupportTicketEmail`
+en email-admin-ops.ts, fire-and-forget, va a `getAlertEmails()`). Al responder el
+equipo → el usuario se entera por el badge/polling in-app (el badge del comercio
+ahora funciona porque el ticket tiene `merchantId`). Fix del contador del dashboard
+OPS: contaba `status:"open"` (estado inexistente) → ahora `waiting|active`.
+
+**Verificación:** `scripts/verify-soporte-bandeja.ts` (read-only, contra DB):
+distribución por origen, query de la bandeja, MERCHANT con merchantId, contador.
+Correr tras `prisma db push`.
+
+**Pendiente (fuera de alcance, documentado):** los operadores se crean como User
+con rol ADMIN (les da acceso a OPS de más). Es hardening de seguridad que toca la
+auth del portal de operadores — conviene su propia rama, no meterlo acá.
+
+**Archivos:** prisma/schema.prisma, src/app/api/support/chats/route.ts,
+src/app/comercios/(protected)/soporte/page.tsx, src/app/api/admin/support/chats/route.ts,
+src/app/api/admin/support/chats/[id]/route.ts (nuevo), src/components/ops/SupportInbox.tsx (nuevo),
+src/app/ops/(protected)/soporte/page.tsx, src/app/ops/(protected)/dashboard/page.tsx,
+src/lib/email-admin-ops.ts, scripts/verify-soporte-bandeja.ts (nuevo).
+
 ## 2026-07-08 (rama `feat/tamanos-producto-desde-ops`)
 
 feat: tamaños del producto derivados de OPS (PackageCategory) + limpieza — el selector del comercio ahora muestra rango de peso y vehículo desde /ops/configuracion-logistica (respeta isActive/displayOrder), se quitó la sugerencia IA de tamaño (botón + endpoint suggest-weight + cache/heurística + modelo ProductWeightCache + seeds), y Paquetes queda en gris/bloqueado (sidebar + menú mobile) y sin banner de compra cuando el flag merchant.paquetes está OFF
