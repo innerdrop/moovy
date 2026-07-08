@@ -50,6 +50,24 @@ function parseCsv(text: string): { headers: string[]; rows: string[][] } {
     return { headers, rows };
 }
 
+// Corrige "mojibake" de doble codificación (texto UTF-8 leído como Mac Roman y
+// re-guardado) — común en exports de Excel/sistemas de gestión viejos. Ej: el
+// archivo trae literalmente "MU√ëECO" en vez de "MUÑECO". Solo actúa si detecta
+// los marcadores (√ o ¬), así NO toca archivos sanos. Mapa verificado contra el
+// archivo real de Pixel Point.
+const MOJIBAKE: [string, string][] = [
+    ["√±", "ñ"], ["√ë", "Ñ"], ["√°", "á"], ["√©", "é"], ["√≠", "í"], ["√≥", "ó"], ["√∫", "ú"],
+    ["√Å", "Á"], ["√â", "É"], ["√ç", "Í"], ["√ì", "Ó"], ["√ö", "Ú"], ["√º", "ü"], ["√ú", "Ü"],
+    ["¬ø", "¿"], ["¬°", "¡"], ["√†", "à"], ["√®", "è"], ["√¢", "â"], ["√™", "ê"], ["√Æ", "î"],
+    ["√¥", "ô"], ["√ª", "û"], ["√´", "ë"], ["√Ø", "ï"], ["√∂", "ö"],
+];
+function fixMojibake(s: string): string {
+    if (s.indexOf("√") === -1 && s.indexOf("¬") === -1) return s;
+    let out = s;
+    for (const [bad, good] of MOJIBAKE) out = out.split(bad).join(good);
+    return out;
+}
+
 // EAN-8, UPC-12 o EAN-13 numéricos. El resto se considera código interno → vacío.
 function isValidBarcode(v: string): boolean {
     const s = v.trim();
@@ -89,14 +107,28 @@ function autodetect(headers: string[], rows: string[][]): Mapping {
     if (m.barcode === null) {
         for (let i = 0; i < headers.length; i++) if (!used().has(i) && colIsMostlyLongDigits(i)) { m.barcode = i; break; }
     }
+    // Una columna "id-like" (header id/nro/orden, o secuencia 1,2,3…) NUNCA es
+    // precio. Este era el bug: la autodetección agarraba `id` como precio.
+    const isIdLike = (idx: number) => {
+        const h = norm[idx] || "";
+        if (/^(id|n[°º]?|nro\.?|orden|#|item|linea|línea)$/.test(h)) return true;
+        const vals = sample.map((r) => parseInt((r[idx] || "").trim(), 10)).filter((n) => Number.isFinite(n));
+        if (vals.length >= sample.length * 0.8) {
+            const sorted = [...vals].sort((a, b) => a - b);
+            const consecutive = sorted.every((v, k) => k === 0 || v === sorted[k - 1] + 1);
+            if (consecutive && sorted[0] <= 2) return true; // arranca en 0/1/2 y va de a 1
+        }
+        return false;
+    };
     if (m.price === null) {
-        // columna numérica no-barcode con mediana "de precio" (1..1e7)
-        let best = -1, bestScore = 0;
+        // columna numérica, NO barcode, NO id-like, con mediana "de precio".
+        // Elegimos la de MAYOR mediana (los precios suelen ser más grandes que ids/stock).
+        let best = -1, bestMedian = -1;
         for (let i = 0; i < headers.length; i++) {
-            if (used().has(i)) continue;
+            if (used().has(i) || colIsMostlyLongDigits(i) || isIdLike(i)) continue;
             const s = colNumericStats(i);
-            if (s.count >= sample.length * 0.6 && s.median >= 1 && s.median < 1e7 && !colIsMostlyLongDigits(i)) {
-                if (s.count > bestScore) { best = i; bestScore = s.count; }
+            if (s.count >= sample.length * 0.6 && s.median >= 1 && s.median < 1e7) {
+                if (s.median > bestMedian) { best = i; bestMedian = s.median; }
             }
         }
         if (best >= 0) m.price = best;
@@ -121,6 +153,12 @@ export default function ImportarProductosPage() {
     const [importing, setImporting] = useState(false);
     const [result, setResult] = useState<{ created: number; updated: number; skipped: number; total: number; errors: { row: number; reason: string }[] } | null>(null);
     const [error, setError] = useState("");
+    // feat/import-revision: códigos editados por el comercio en el paso de revisión.
+    // Key = índice de fila en `rows`. Valor = código nuevo (o "" si lo borró).
+    const [codeOverrides, setCodeOverrides] = useState<Record<number, string>>({});
+    // feat/import-revision: filas que el comercio quitó de la importación desde la
+    // lista de revisión (por índice en `rows`). No se importan.
+    const [excludedRows, setExcludedRows] = useState<Set<number>>(new Set());
 
     function onFile(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -132,7 +170,8 @@ export default function ImportarProductosPage() {
         setError("");
         const reader = new FileReader();
         reader.onload = () => {
-            const { headers, rows } = parseCsv(String(reader.result || ""));
+            // fix/mojibake: corregir doble codificación antes de parsear (Ñ, acentos).
+            const { headers, rows } = parseCsv(fixMojibake(String(reader.result || "")));
             if (rows.length === 0) { setError("El archivo no tiene filas de datos."); return; }
             setHeaders(headers);
             setRows(rows);
@@ -143,29 +182,51 @@ export default function ImportarProductosPage() {
         reader.readAsText(file, "utf-8");
     }
 
-    // Preview + validación en base al mapeo.
+    // Código final de una fila: el que editó el comercio (override) o el del archivo.
+    const codeForRow = (rowIdx: number): string => {
+        if (rowIdx in codeOverrides) return (codeOverrides[rowIdx] || "").trim();
+        if (mapping.barcode === null) return "";
+        return (rows[rowIdx]?.[mapping.barcode] || "").trim();
+    };
+
+    // Filas con código IRREGULAR según el archivo original. Set ESTABLE (no depende
+    // de los overrides) para que la lista de revisión no cambie mientras editan.
+    const irregularRows = useMemo(() => {
+        if (mapping.name === null || mapping.price === null || mapping.barcode === null) return [];
+        const list: { rowIdx: number; name: string; original: string }[] = [];
+        rows.forEach((r, i) => {
+            const name = (r[mapping.name!] || "").trim();
+            const price = parsePrice(r[mapping.price!] || "");
+            if (!name || price === null || price < 0) return;
+            const raw = (r[mapping.barcode!] || "").trim();
+            if (raw && !isValidBarcode(raw)) list.push({ rowIdx: i, name, original: raw });
+        });
+        return list;
+    }, [mapping, rows]);
+
+    // Preview + validación (aplica overrides). Los códigos irregulares se CONSERVAN
+    // como código interno (no se descartan).
     const preview = useMemo(() => {
         if (mapping.name === null || mapping.price === null) return null;
-        let valid = 0, invalidName = 0, invalidPrice = 0, barcodeKept = 0, barcodeDropped = 0;
+        let valid = 0, invalidName = 0, invalidPrice = 0, validEan = 0, internal = 0, noCode = 0, excluded = 0;
         const payload: any[] = [];
-        for (const r of rows) {
-            const name = (r[mapping.name] || "").trim();
-            const price = parsePrice(r[mapping.price] || "");
-            if (!name) { invalidName++; continue; }
-            if (price === null || price < 0) { invalidPrice++; continue; }
-            let barcode: string | null = null;
-            if (mapping.barcode !== null) {
-                const raw = (r[mapping.barcode] || "").trim();
-                if (raw && isValidBarcode(raw)) { barcode = raw; barcodeKept++; }
-                else if (raw) barcodeDropped++;
-            }
+        rows.forEach((r, i) => {
+            const name = (r[mapping.name!] || "").trim();
+            const price = parsePrice(r[mapping.price!] || "");
+            if (!name) { invalidName++; return; }
+            if (price === null || price < 0) { invalidPrice++; return; }
+            if (excludedRows.has(i)) { excluded++; return; } // el comercio lo quitó en la revisión
+            const code = codeForRow(i);
+            if (!code) noCode++;
+            else if (isValidBarcode(code)) validEan++;
+            else internal++;
             const description = mapping.description !== null ? (r[mapping.description] || "").trim() : "";
             const stock = mapping.stock !== null ? Math.max(0, Math.round(parsePrice(r[mapping.stock] || "") || 0)) : undefined;
-            payload.push({ name, price, description: description || undefined, barcode: barcode || undefined, stock });
+            payload.push({ name, price, description: description || undefined, barcode: code || undefined, stock });
             valid++;
-        }
-        return { valid, invalidName, invalidPrice, barcodeKept, barcodeDropped, payload };
-    }, [mapping, rows]);
+        });
+        return { valid, invalidName, invalidPrice, validEan, internal, noCode, excluded, payload };
+    }, [mapping, rows, codeOverrides, excludedRows]);
 
     async function doImport() {
         if (!preview || preview.payload.length === 0) return;
@@ -189,6 +250,13 @@ export default function ImportarProductosPage() {
     }
 
     const colOptions = headers.map((h, i) => ({ i, label: h.trim() || `Columna ${i + 1} (sin nombre)` }));
+    // Primer valor no vacío de una columna — se muestra de ejemplo bajo el selector
+    // para que un mapeo malo (ej: precio → id) se note al instante.
+    const sampleFor = (idx: number | null): string => {
+        if (idx === null) return "";
+        for (const r of rows) { const v = (r[idx] || "").trim(); if (v) return v; }
+        return "";
+    };
 
     return (
         <div className="max-w-4xl mx-auto space-y-6 pb-16">
@@ -229,24 +297,30 @@ export default function ImportarProductosPage() {
                         <p className="text-sm font-bold text-gray-900 mb-1">Asociá tus columnas</p>
                         <p className="text-xs text-gray-500 mb-4">Decinos qué columna de tu archivo corresponde a cada dato. Ya intentamos adivinarlo.</p>
                         <div className="space-y-3">
-                            {FIELDS.map((f) => (
-                                <div key={f.key} className="flex items-center gap-3">
-                                    <div className="w-48 flex-shrink-0">
-                                        <span className="text-sm font-semibold text-gray-800">{f.label}</span>
-                                        <span className={`ml-1 text-[10px] ${f.required ? "text-red-500" : "text-gray-400"}`}>{f.hint}</span>
+                            {FIELDS.map((f) => {
+                                const sample = sampleFor(mapping[f.key]);
+                                return (
+                                    <div key={f.key} className="flex items-start gap-3">
+                                        <div className="w-48 flex-shrink-0 pt-2">
+                                            <span className="text-sm font-semibold text-gray-800">{f.label}</span>
+                                            <span className={`ml-1 text-[10px] ${f.required ? "text-red-500" : "text-gray-400"}`}>{f.hint}</span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <select
+                                                value={mapping[f.key] ?? ""}
+                                                onChange={(e) => setMapping({ ...mapping, [f.key]: e.target.value === "" ? null : Number(e.target.value) })}
+                                                className="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                                            >
+                                                <option value="">— No importar —</option>
+                                                {colOptions.map((c) => (
+                                                    <option key={c.i} value={c.i}>{c.label}</option>
+                                                ))}
+                                            </select>
+                                            {sample && <p className="text-[11px] text-gray-400 mt-1 ml-1 truncate">muestra: <span className="font-medium text-gray-500">{sample}</span></p>}
+                                        </div>
                                     </div>
-                                    <select
-                                        value={mapping[f.key] ?? ""}
-                                        onChange={(e) => setMapping({ ...mapping, [f.key]: e.target.value === "" ? null : Number(e.target.value) })}
-                                        className="flex-1 border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
-                                    >
-                                        <option value="">— No importar —</option>
-                                        {colOptions.map((c) => (
-                                            <option key={c.i} value={c.i}>{c.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            ))}
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -267,14 +341,57 @@ export default function ImportarProductosPage() {
                                     <p className="text-xs text-gray-500">se saltean (sin nombre/precio)</p>
                                 </div>
                                 <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                                    <p className="text-2xl font-bold text-blue-700">{preview.barcodeKept}</p>
-                                    <p className="text-xs text-blue-700">con código válido</p>
+                                    <p className="text-2xl font-bold text-blue-700">{preview.validEan}</p>
+                                    <p className="text-xs text-blue-700">con código de barras</p>
                                 </div>
                                 <div className="bg-amber-50 border border-amber-100 rounded-xl p-3">
-                                    <p className="text-2xl font-bold text-amber-700">{preview.barcodeDropped}</p>
-                                    <p className="text-xs text-amber-700">código irregular → vacío</p>
+                                    <p className="text-2xl font-bold text-amber-700">{preview.internal}</p>
+                                    <p className="text-xs text-amber-700">con código interno</p>
                                 </div>
                             </div>
+
+                            {/* Revisión de códigos irregulares (feat/import-revision): editables, se conservan como interno */}
+                            {irregularRows.length > 0 && (
+                                <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <AlertTriangle className="w-4 h-4 text-amber-500" />
+                                        <p className="text-sm font-bold text-gray-900">Revisar {irregularRows.length} códigos internos{excludedRows.size > 0 && <span className="text-gray-400 font-normal"> · {excludedRows.size} quitados</span>}</p>
+                                    </div>
+                                    <p className="text-xs text-gray-500 mb-4">No son códigos de barras estándar (suelen ser códigos internos de productos sueltos o por peso). Los guardamos <b>tal cual</b>. Podés editarlos, o <b>quitar</b> los que no sean productos (ej: recargas, ajustes) para que no se importen.</p>
+                                    <div className="max-h-72 overflow-y-auto divide-y border rounded-xl">
+                                        {irregularRows.map((ir) => {
+                                            const current = codeForRow(ir.rowIdx);
+                                            const stateLabel = !current ? "vacío" : isValidBarcode(current) ? "✓ de barras" : "interno";
+                                            const stateColor = !current ? "text-gray-400" : isValidBarcode(current) ? "text-green-600" : "text-amber-600";
+                                            const isExcluded = excludedRows.has(ir.rowIdx);
+                                            return (
+                                                <div key={ir.rowIdx} className={`flex items-center gap-3 px-3 py-2 ${isExcluded ? "bg-gray-50" : ""}`}>
+                                                    <span className={`flex-1 text-sm truncate ${isExcluded ? "text-gray-400 line-through" : "text-gray-700"}`}>{ir.name}</span>
+                                                    {isExcluded ? (
+                                                        <>
+                                                            <span className="w-40 text-[11px] text-gray-400 text-center">no se importa</span>
+                                                            <button type="button" onClick={() => setExcludedRows((prev) => { const n = new Set(prev); n.delete(ir.rowIdx); return n; })} className="w-16 text-[11px] font-semibold text-blue-600 hover:underline text-right">restaurar</button>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <input
+                                                                value={current}
+                                                                onChange={(e) => setCodeOverrides({ ...codeOverrides, [ir.rowIdx]: e.target.value })}
+                                                                className="w-40 border rounded-lg px-2 py-1 text-sm font-mono focus:ring-2 focus:ring-blue-500/20"
+                                                                placeholder="código"
+                                                            />
+                                                            <span className={`text-[11px] w-14 text-right ${stateColor}`}>{stateLabel}</span>
+                                                            <button type="button" onClick={() => setExcludedRows((prev) => new Set(prev).add(ir.rowIdx))} title="No importar este" className="text-gray-300 hover:text-red-500 transition p-1">
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                                 <div className="px-4 py-2 border-b text-xs font-bold text-gray-400 uppercase tracking-wider">Vista previa (primeras 5)</div>

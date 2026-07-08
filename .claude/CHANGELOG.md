@@ -10,6 +10,56 @@
 
 ---
 
+## 2026-07-08 (rama `feat/import-revision-y-mapeo`)
+
+feat: import de productos — fix de autodetección de precio + revisión de códigos internos + fix de codificación. La autodetección ya NO elige la columna 'id' (ni secuencias) como precio, prefiere la de valores tipo precio y muestra un valor de ejemplo bajo cada selector. Los códigos irregulares se conservan como 'código interno' con un paso de revisión editable donde el comercio también puede QUITAR filas que no son productos (recargas/ajustes). Y se corrige el mojibake de doble codificación del CSV (Ñ/acentos que venían como '√ë' etc.) con un mapa verificado que solo actúa si detecta la corrupción. Sin cambios de schema
+
+**Archivos:** src/app/comercios/(protected)/productos/importar/page.tsx
+
+## 2026-07-08 (rama `feat/import-revision-y-mapeo`)
+
+feat: import de productos — fix autodetección de precio + revisión de códigos internos
+
+**Bug cazado en prueba real (captura del founder):** al importar el CSV de Pixel
+Point, la autodetección mapeó **Precio → columna `id`**, y los precios salían
+$1/$2/$3 (los números de fila). El precio real estaba en una columna SIN
+encabezado (8400, etc.). Causa: el heurístico de contenido agarraba la primera
+columna numérica, y `id` calificaba.
+
+**Fix autodetección:** una columna "id-like" (header id/nro/orden/#/item, o una
+secuencia 1,2,3…) NUNCA se elige como precio. Entre las candidatas restantes se
+prefiere la de MAYOR mediana (los precios suelen ser más grandes que ids/stock),
+así agarra la columna sin nombre de 8400. Además, se muestra un **valor de
+ejemplo bajo cada selector** de mapeo ("muestra: 8400") para que un mapeo malo se
+note al instante.
+
+**Revisión de códigos internos (decisión founder — mantener como interno):** los
+códigos irregulares (no EAN-8/12/13) YA NO se descartan a vacío. Se conservan
+**tal cual** como código interno del comercio (suelen ser códigos de productos
+sueltos/por peso). Nuevo paso de revisión: una lista editable con las filas de
+código irregular (las 53 de Pixel Point) donde el comercio puede editar/borrar
+cada una — por defecto se mantienen, no es obligatorio tocar nada. Un badge por
+fila indica en vivo si el código es "de barras", "interno" o "vacío". Los chips
+del resumen pasan a "con código de barras" / "con código interno".
+
+**Quitar filas de la importación:** en esa misma lista el comercio puede **quitar**
+las filas que no son productos (recargas, ajustes tipo "aumentopreci", "RECARGA
+CLARO" que aparecieron en la prueba real) — quedan tachadas con opción de
+restaurar, y no se importan. El resumen resta esas filas de "listas para importar".
+
+**Fix de codificación (mojibake):** el archivo de Pixel Point es UTF-8 válido pero
+con doble corrupción (UTF-8 leído como Mac Roman y re-guardado): "Ñ" quedó como
+"√ë", "Ó" como "√ì", etc. — la basura está horneada en el archivo. Se agrega
+`fixMojibake()` con un mapa verificado (26 secuencias: ñÑ, acentos, ¿¡) que
+revierte al leer, y SOLO actúa si detecta los marcadores (√/¬) para no tocar
+archivos sanos. Verificado contra las filas reales (MUÑECO, PIÑA, FUSIÓN, COMÚN,
+PARÍS, VIÑAS quedan bien; "COCA COLA 2.5L" intacto).
+
+**Sin cambios de schema** (el barcode ya aceptaba cualquier string; la validez EAN
+se deriva en el cliente para el catálogo futuro). Deploy normal (`-NoDB`).
+
+**Archivos:** src/app/comercios/(protected)/productos/importar/page.tsx.
+
 ## 2026-07-08 (rama `feat/import-productos-comercio`)
 
 feat: importación de productos por CSV en el panel comercio. Nueva subsección Productos → Importar: subir CSV, mapear columnas (tu columna → campo Moovy con autodetección), validar filas y previsualizar, e importar como BORRADORES ocultos (isActive:false, sin foto). Toma nombre, descripción, precio y barcode (valida EAN-8/12/13; los códigos irregulares se dejan vacíos); stock opcional. Deduplica por barcode (nuevo campo Product.barcode, único por comercio) actualizando en vez de duplicar, y procesa en lotes. El comercio completa foto/tamaño y publica. Requiere prisma db push
