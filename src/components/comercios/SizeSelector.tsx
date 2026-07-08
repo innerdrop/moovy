@@ -106,7 +106,7 @@ export default function SizeSelector({ options, value, onChange, disabled }: Siz
     }
 
     return (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             {options.map((option) => (
                 <SizeCard
                     key={option.size}

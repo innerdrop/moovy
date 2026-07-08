@@ -10,6 +10,51 @@
 
 ---
 
+## 2026-07-08 (rama `style/productos-lista-y-edicion`)
+
+style+fix: panel de productos — paginación + rediseño de editar + no publicar incompletos. La lista deja el scroll infinito y pasa a paginación cliente (selector 20/50/100, default 20, Anterior/Siguiente + 'Página X de Y') con botón 'volver arriba'. La página de editar producto se rediseña al estándar de crear (ancho, header prolijo, cards con aire, responsive) y el selector de tamaño baja de 5-en-fila a máx 3 para que no se espachurre. FIX: toggleProductActive valida server-side al publicar (exige foto + descripción ≥10 + precio); un borrador importado incompleto ya no se puede 'Mostrar' en la tienda. Sin cambios de schema
+
+**Archivos:** src/app/comercios/actions.ts, src/components/comercios/EditProductForm.tsx, src/components/comercios/ProductsSearchContainer.tsx, src/components/comercios/SizeSelector.tsx
+
+## 2026-07-08 (rama `style/productos-lista-y-edicion`)
+
+style: paginación de la lista de productos + rediseño de editar producto
+
+**Contexto (founder):** con la importación, un comercio puede tener 1000+ productos.
+La lista tenía scroll infinito → tortura en mobile. Y la página de editar producto
+se veía desalineada (las tarjetas de tamaño espachurradas, texto cortado tipo
+"500 G A 2 K").
+
+**Paginación (ProductsSearchContainer):** se saca el scroll infinito y se pasa a
+paginación cliente — estándar de gestión de catálogo (Shopify/MeLi seller): selector
+20/50/100 por página (default 20), Anterior/Siguiente + "Página X de Y" sobre el
+resultado del buscador (que sigue igual), y contador de productos. Botón flotante
+**"volver arriba"** que aparece al scrollear (bottom-24 en mobile para no tapar la
+barra inferior). Cliente por ahora; server-side si algún día hay decenas de miles.
+
+**Rediseño de editar producto (EditProductForm):** alineado al estándar de la
+página de crear — contenedor ancho (max-w-2xl → max-w-5xl), header con back-button
+redondeado + subtítulo, imágenes en card, columna de detalles con más aire
+(rounded-2xl, p-8), grid `lg:grid-cols-3` (mejor stacking en tablet/mobile).
+
+**SizeSelector:** el grid baja de `lg:grid-cols-5` a máx `md:grid-cols-3` para que
+las 5 tarjetas no se espachurren (5 = fila de 3 + fila de 2, legibles). Mejora
+ambos formularios (crear y editar).
+
+**Fix — no publicar productos incompletos:** bug cazado por el founder — un
+borrador importado (sin foto ni descripción) se podía "Mostrar" en la tienda con
+el toggle. Ahora `toggleProductActive` valida server-side al PUBLICAR (isActive:
+true): exige foto (≥1) + descripción (≥10 chars) + precio (>0), espejo de los
+obligatorios del alta. Si falta algo, devuelve un mensaje claro ("Para mostrarlo
+en la tienda falta: una foto, una descripción…") y el toggle no se prende. Ocultar
+siempre se permite.
+
+**Sin cambios de schema.** Deploy normal (`-NoDB`).
+
+**Archivos:** src/components/comercios/ProductsSearchContainer.tsx,
+src/components/comercios/EditProductForm.tsx, src/components/comercios/SizeSelector.tsx,
+src/app/comercios/actions.ts.
+
 ## 2026-07-08 (rama `feat/import-revision-y-mapeo`)
 
 feat: import de productos — fix de autodetección de precio + revisión de códigos internos + fix de codificación. La autodetección ya NO elige la columna 'id' (ni secuencias) como precio, prefiere la de valores tipo precio y muestra un valor de ejemplo bajo cada selector. Los códigos irregulares se conservan como 'código interno' con un paso de revisión editable donde el comercio también puede QUITAR filas que no son productos (recargas/ajustes). Y se corrige el mojibake de doble codificación del CSV (Ñ/acentos que venían como '√ë' etc.) con un mapa verificado que solo actúa si detecta la corrupción. Sin cambios de schema

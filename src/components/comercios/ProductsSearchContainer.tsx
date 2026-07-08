@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, Edit, Package, X, SearchIcon, Filter } from "lucide-react";
+import { Search, Edit, Package, X, SearchIcon, ChevronLeft, ChevronRight, ArrowUp } from "lucide-react";
 import ProductStatusToggle from "./ProductStatusToggle";
 import DeleteProductButton from "./DeleteProductButton";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
@@ -33,6 +33,31 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
             p.categories.some(c => c.category.name.toLowerCase().includes(term))
         );
     }, [searchTerm, initialProducts]);
+
+    // Paginación (cliente): default 20/página, configurable. Reemplaza el scroll
+    // infinito — estándar de gestión de catálogo (Shopify/MeLi seller).
+    const [pageSize, setPageSize] = useState(20);
+    const [page, setPage] = useState(1);
+    const [showTop, setShowTop] = useState(false);
+
+    // Volver a la página 1 al cambiar el filtro o el tamaño de página.
+    useEffect(() => { setPage(1); }, [searchTerm, pageSize]);
+
+    // Botón flotante "volver arriba" cuando se scrolleó bastante.
+    useEffect(() => {
+        const onScroll = () => setShowTop(window.scrollY > 600);
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
+
+    const totalPages = Math.max(1, Math.ceil(filteredProducts.length / pageSize));
+    const safePage = Math.min(page, totalPages);
+    const pageProducts = filteredProducts.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+    const goTo = (p: number) => {
+        setPage(Math.min(Math.max(1, p), totalPages));
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
 
     return (
         <div className="space-y-6">
@@ -101,7 +126,7 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
 
                     {/* Products List */}
                     <div className="space-y-3">
-                        {filteredProducts.map((product) => (
+                        {pageProducts.map((product) => (
                             <div
                                 key={product.id}
                                 className="bg-white rounded-3xl border border-gray-100 p-4 md:px-8 md:py-5 hover:shadow-xl hover:shadow-blue-900/5 hover:-translate-y-0.5 transition-all group"
@@ -177,7 +202,50 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
                             </div>
                         ))}
                     </div>
+
+                    {/* Paginación */}
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span>{filteredProducts.length} producto{filteredProducts.length !== 1 ? "s" : ""}</span>
+                            <span className="text-gray-300">·</span>
+                            <label className="flex items-center gap-1.5">
+                                Mostrar
+                                <select
+                                    value={pageSize}
+                                    onChange={(e) => setPageSize(Number(e.target.value))}
+                                    className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white focus:ring-2 focus:ring-blue-500/20"
+                                >
+                                    <option value={20}>20</option>
+                                    <option value={50}>50</option>
+                                    <option value={100}>100</option>
+                                </select>
+                                por página
+                            </label>
+                        </div>
+                        {totalPages > 1 && (
+                            <div className="flex items-center gap-2">
+                                <button onClick={() => goTo(safePage - 1)} disabled={safePage <= 1} className="p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition" title="Anterior">
+                                    <ChevronLeft className="w-5 h-5" />
+                                </button>
+                                <span className="text-sm font-semibold text-gray-700 min-w-[120px] text-center">Página {safePage} de {totalPages}</span>
+                                <button onClick={() => goTo(safePage + 1)} disabled={safePage >= totalPages} className="p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition" title="Siguiente">
+                                    <ChevronRight className="w-5 h-5" />
+                                </button>
+                            </div>
+                        )}
+                    </div>
                 </div>
+            )}
+
+            {/* Volver arriba — aparece al scrollear. bottom-24 en mobile para no tapar la barra inferior. */}
+            {showTop && (
+                <button
+                    onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+                    title="Volver arriba"
+                    className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-40 w-12 h-12 rounded-full bg-blue-600 text-white shadow-xl flex items-center justify-center hover:bg-blue-700 active:scale-95 transition"
+                >
+                    <ArrowUp className="w-5 h-5" />
+                </button>
             )}
         </div>
     );

@@ -3453,7 +3453,6 @@ cmrc815tc00ln75y66w4inq0f	CEPITA PLASTICO 1L DURAZNO	cepita-plastico-1l-durazno-
 cmrc815tc00lo75y6p6laq1xk	ALFAJOR ZARPADO MAIZENA	alfajor-zarpado-maizena-qnc94q	\N	cmqz5vswb006uxhd8c5bcq86n	2016	0	4	5	f	f	\N	\N	\N	2026-07-08 15:16:58.373	2026-07-08 15:16:58.373	\N	\N	\N	7798448080038
 cmrc815tc00lp75y6vrwfno14	ALFAJOR ZARPADO CALAFATE	alfajor-zarpado-calafate-dc0py8	\N	cmqz5vswb006uxhd8c5bcq86n	2016	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.373	2026-07-08 15:16:58.373	\N	\N	\N	7798448080045
 cmrc815tc00lq75y6jebw521s	ALFAJOR ZARPADO DULCE DE LECHE	alfajor-zarpado-dulce-de-leche-wrt6kk	\N	cmqz5vswb006uxhd8c5bcq86n	2016	0	6	5	f	f	\N	\N	\N	2026-07-08 15:16:58.373	2026-07-08 15:16:58.373	\N	\N	\N	7798448080014
-cmrc815z000nx75y6vlpcpqri	MONEDA FELFORT	moneda-felfort-24aswk	\N	cmqz5vswb006uxhd8c5bcq86n	784	0	9	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	206
 cmrc815tc00lr75y6dnnbdmsm	ALFAJOR ZARPADO DULCE DE LECHE Y CALAFATE	alfajor-zarpado-dulce-de-leche-y-calafate-xn6y3r	\N	cmqz5vswb006uxhd8c5bcq86n	2016	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.373	2026-07-08 15:16:58.373	\N	\N	\N	7798448080021
 cmrc815tc00ls75y6zwjctum9	JABÓN VEGETAL JAZMÍN	jabon-vegetal-jazmin-n2qm8p	\N	cmqz5vswb006uxhd8c5bcq86n	6720	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.373	2026-07-08 15:16:58.373	\N	\N	\N	736684289232
 cmrc815tc00lt75y6wsh8nwfo	APEROL 750ML	aperol-750ml-ugnzqr	\N	cmqz5vswb006uxhd8c5bcq86n	14560	0	4	5	f	f	\N	\N	\N	2026-07-08 15:16:58.373	2026-07-08 15:16:58.373	\N	\N	\N	7891136057029
@@ -3825,6 +3824,7 @@ cmrc815za00vz75y6rc7y8yp4	GUMMY FOOTBALLS	gummy-footballs-dezq1o	\N	cmqz5vswb006
 cmrc815za00w075y6m9hlmp3y	QUESO CREMOSO X KG	queso-cremoso-x-kg-6o4wwb	\N	cmqz5vswb006uxhd8c5bcq86n	11200	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	222
 cmrc815za00w175y66intntie	CREMA DELTAL COLGATE 180G	crema-deltal-colgate-180g-35ukwa	\N	cmqz5vswb006uxhd8c5bcq86n	8960	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7509546686509
 cmrc815za00w275y610dvv25m	REXONA INVISIBLE	rexona-invisible-ebh65r	\N	cmqz5vswb006uxhd8c5bcq86n	5600	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	78944794
+cmrc815z000nx75y6vlpcpqri	MONEDA FELFORT	moneda-felfort-24aswk	\N	cmqz5vswb006uxhd8c5bcq86n	784	0	9	5	t	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 18:21:04.033	\N	\N	\N	206
 \.
 
 

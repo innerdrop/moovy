@@ -509,6 +509,34 @@ export async function toggleProductActive(productId: string, isActive: boolean) 
             return { error: "No tienes permiso para modificar este producto." };
         }
 
+        // fix: al PUBLICAR (isActive:true) el producto debe estar COMPLETO —
+        // foto + descripción (mín. 10) + precio. Un borrador importado sin foto/
+        // descripción no puede mostrarse en la tienda (validación autoritativa
+        // server-side, espejo de los obligatorios del alta). Al OCULTAR siempre
+        // se permite.
+        if (isActive) {
+            const product = await prisma.product.findUnique({
+                where: { id: productId },
+                select: {
+                    description: true,
+                    price: true,
+                    _count: { select: { images: true } },
+                },
+            });
+            if (!product) {
+                return { error: "Producto no encontrado." };
+            }
+            const missing: string[] = [];
+            if ((product._count?.images ?? 0) === 0) missing.push("una foto");
+            if (!product.description || product.description.trim().length < 10) {
+                missing.push("una descripción (mín. 10 caracteres)");
+            }
+            if (!product.price || product.price <= 0) missing.push("un precio");
+            if (missing.length > 0) {
+                return { error: `Para mostrarlo en la tienda falta: ${missing.join(", ")}. Completalo primero.` };
+            }
+        }
+
         await prisma.product.update({
             where: { id: productId },
             data: { isActive },
