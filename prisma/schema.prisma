@@ -235,6 +235,10 @@ model Product {
   minStock    Int                       @default(5)
   isActive    Boolean                   @default(true)
   isFeatured  Boolean                   @default(false)
+  // feat/import-productos-comercio: código de barras / SKU del comercio. Nullable
+  // (los códigos irregulares se dejan vacíos). Llave para deduplicar/actualizar en
+  // la importación por CSV y para el autocompletado por catálogo maestro a futuro.
+  barcode     String?
   // --- Soft delete (moderación OPS) ---
   deletedAt     DateTime?  // cuando OPS elimina el producto
   deletedBy     String?    // userId del admin que eliminó
@@ -261,6 +265,10 @@ model Product {
 
   @@index([merchantId])
   @@index([deletedAt])
+  // Un comercio no puede tener el mismo barcode dos veces (permite upsert en el
+  // import). Postgres trata los NULL como distintos, así que varios productos sin
+  // barcode por comercio conviven sin problema.
+  @@unique([merchantId, barcode])
 }
 
 model ProductCategory {

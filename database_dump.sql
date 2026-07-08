@@ -1486,7 +1486,8 @@ CREATE TABLE public."Product" (
     "updatedAt" timestamp(3) without time zone NOT NULL,
     "packageCategoryId" text,
     "weightGrams" integer,
-    "volumeMl" integer
+    "volumeMl" integer,
+    barcode text
 );
 
 
@@ -2620,55 +2621,55 @@ COPY public."PreLaunchLead" (id, role, name, email, whatsapp, consent, "consentA
 -- Data for Name: Product; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Product" (id, name, slug, description, "merchantId", price, "costPrice", stock, "minStock", "isActive", "isFeatured", "deletedAt", "deletedBy", "deletedReason", "createdAt", "updatedAt", "packageCategoryId", "weightGrams", "volumeMl") FROM stdin;
-cmqz5vric001uxhd8dq3pebwc	Heineken Lata 1L	heineken-1l	Cerveza Heineken lata 1 litro.	cmqz5vrhh001qxhd80605qjj8	3500	2800	50	5	t	t	\N	\N	\N	2026-06-29 11:55:47.075	2026-06-29 11:55:47.075	\N	\N	\N
-cmqz5vriy0020xhd87abgsp11	Patagonia 24.7 IPA	patagonia-247	Session IPA suave y refrescante.	cmqz5vrhh001qxhd80605qjj8	4200	3400	30	5	t	t	\N	\N	\N	2026-06-29 11:55:47.098	2026-06-29 11:55:47.098	\N	\N	\N
-cmqz5vrja0026xhd8qe6xdjlj	Schneider 710ml	schneider-710	Cerveza rubia clásica.	cmqz5vrhh001qxhd80605qjj8	2800	2100	40	5	t	f	\N	\N	\N	2026-06-29 11:55:47.11	2026-06-29 11:55:47.11	\N	\N	\N
-cmqz5vrjl002cxhd833p7o57x	Coca-Cola 2.25L	coca-225	Gaseosa Coca-Cola 2.25 litros.	cmqz5vrhh001qxhd80605qjj8	2900	2000	60	5	t	f	\N	\N	\N	2026-06-29 11:55:47.122	2026-06-29 11:55:47.122	\N	\N	\N
-cmqz5vrjx002ixhd8nhkuh93p	Agua Mineral Eco 2L	agua-eco-2l	Agua mineral sin gas.	cmqz5vrhh001qxhd80605qjj8	1200	700	0	5	t	f	\N	\N	\N	2026-06-29 11:55:47.133	2026-06-29 11:55:47.133	\N	\N	\N
-cmqz5vrk8002oxhd8yvzwazhc	Papas Lays Clásicas	lays-clasicas	Papas fritas 150g.	cmqz5vrhh001qxhd80605qjj8	2500	1600	3	5	t	f	\N	\N	\N	2026-06-29 11:55:47.144	2026-06-29 11:55:47.144	\N	\N	\N
-cmqz5vrwm0034xhd8d4r9d6to	Falafel Clásico (6u)	falafel-clasico	6 falafel caseros con tahini.	cmqz5vrwc0030xhd8eqeurj4k	5500	3200	25	5	t	t	\N	\N	\N	2026-06-29 11:55:47.59	2026-06-29 11:55:47.59	\N	\N	\N
-cmqz5vrwu003axhd81da2tlo4	Hummus con Pan Pita	hummus-pita	Hummus casero con pan pita tibio.	cmqz5vrwc0030xhd8eqeurj4k	4200	2400	20	5	t	t	\N	\N	\N	2026-06-29 11:55:47.599	2026-06-29 11:55:47.599	\N	\N	\N
-cmqz5vrx3003gxhd8ub7noyt3	Shawarma de Pollo	shawarma-pollo	Shawarma de pollo con vegetales y salsa.	cmqz5vrwc0030xhd8eqeurj4k	6800	4000	15	5	t	f	\N	\N	\N	2026-06-29 11:55:47.607	2026-06-29 11:55:47.607	\N	\N	\N
-cmqz5vrxc003mxhd83jyk6h5w	Ensalada Tabbouleh	tabbouleh	Ensalada fresca de perejil, trigo y limón.	cmqz5vrwc0030xhd8eqeurj4k	3900	2100	12	5	t	f	\N	\N	\N	2026-06-29 11:55:47.617	2026-06-29 11:55:47.617	\N	\N	\N
-cmqz5vrxo003sxhd871zld6hg	Baklava (2u)	baklava	Postre de masa filo, nueces y miel.	cmqz5vrwc0030xhd8eqeurj4k	3200	1800	2	5	t	f	\N	\N	\N	2026-06-29 11:55:47.628	2026-06-29 11:55:47.628	\N	\N	\N
-cmqz5vrxy003yxhd877e5bc3x	Limonada de Menta	limonada-menta	Limonada casera con menta.	cmqz5vrwc0030xhd8eqeurj4k	2400	1200	30	5	t	f	\N	\N	\N	2026-06-29 11:55:47.638	2026-06-29 11:55:47.638	\N	\N	\N
-cmqz5vs80004exhd844e7zog3	Cordero Fueguino (1/2)	cordero-fueguino	Medio cordero al asador.	cmqz5vs7q004axhd8fyr7ixm3	28000	19000	8	5	t	t	\N	\N	\N	2026-06-29 11:55:48	2026-06-29 11:55:48	\N	\N	\N
-cmqz5vs8b004kxhd8bi21pzoz	Tabla La Estancia (2p)	tabla-estancia	Fiambres y quesos patagónicos.	cmqz5vs7q004axhd8fyr7ixm3	12500	8000	10	5	t	t	\N	\N	\N	2026-06-29 11:55:48.011	2026-06-29 11:55:48.011	\N	\N	\N
-cmqz5vs8k004qxhd8eap2pdy6	Bife de Chorizo 400g	bife-chorizo	Bife de chorizo a la parrilla.	cmqz5vs7q004axhd8fyr7ixm3	11000	7500	14	5	t	f	\N	\N	\N	2026-06-29 11:55:48.021	2026-06-29 11:55:48.021	\N	\N	\N
-cmqz5vs8v004wxhd89uzvo3ri	Provoleta	provoleta	Provoleta a la parrilla con orégano.	cmqz5vs7q004axhd8fyr7ixm3	5500	3200	18	5	t	f	\N	\N	\N	2026-06-29 11:55:48.032	2026-06-29 11:55:48.032	\N	\N	\N
-cmqz5vs950052xhd8bzz3hc88	Beagle Red Ale	beagle-red-ale	Cerveza artesanal de Ushuaia.	cmqz5vs7q004axhd8fyr7ixm3	4500	3200	0	5	t	f	\N	\N	\N	2026-06-29 11:55:48.041	2026-06-29 11:55:48.041	\N	\N	\N
-cmqz5vs9k0058xhd8go65yynp	Flan Casero	flan-casero	Flan con dulce de leche y crema.	cmqz5vs7q004axhd8fyr7ixm3	3500	1900	16	5	t	f	\N	\N	\N	2026-06-29 11:55:48.057	2026-06-29 11:55:48.057	\N	\N	\N
-cmqz5vslj005oxhd8tkfo0b25	Muzzarella Grande	muzza-grande	Pizza de muzzarella a la piedra.	cmqz5vsla005kxhd8ax92pmri	7800	4200	30	5	t	t	\N	\N	\N	2026-06-29 11:55:48.488	2026-06-29 11:55:48.488	\N	\N	\N
-cmqz5vsls005uxhd8m8x7l5jp	Napolitana	napolitana	Muzza, tomate, ajo y albahaca.	cmqz5vsla005kxhd8ax92pmri	8900	4800	25	5	t	t	\N	\N	\N	2026-06-29 11:55:48.496	2026-06-29 11:55:48.496	\N	\N	\N
-cmqz5vsm10060xhd8o0zr7ojg	Fugazzeta Rellena	fugazzeta	Doble muzza y cebolla.	cmqz5vsla005kxhd8ax92pmri	9800	5400	20	5	t	f	\N	\N	\N	2026-06-29 11:55:48.506	2026-06-29 11:55:48.506	\N	\N	\N
-cmqz5vsm90066xhd8lcqqk1xb	Calabresa	calabresa	Muzza con longaniza calabresa.	cmqz5vsla005kxhd8ax92pmri	9200	5100	4	5	t	f	\N	\N	\N	2026-06-29 11:55:48.514	2026-06-29 11:55:48.514	\N	\N	\N
-cmqz5vsmh006cxhd8mnj4fj2f	Empanada (docena)	empanadas-docena	Docena de empanadas surtidas.	cmqz5vsla005kxhd8ax92pmri	9600	5200	22	5	t	f	\N	\N	\N	2026-06-29 11:55:48.522	2026-06-29 11:55:48.522	\N	\N	\N
-cmqz5vsmp006ixhd8s1clp988	Faina	faina	Faina de garbanzos recién horneada.	cmqz5vsla005kxhd8ax92pmri	1800	900	0	5	t	f	\N	\N	\N	2026-06-29 11:55:48.53	2026-06-29 11:55:48.53	\N	\N	\N
-cmqz5vswk006yxhd85fzl6bjp	Smash Doble	smash-doble	Doble medallón smash, cheddar y salsa.	cmqz5vswb006uxhd8c5bcq86n	8500	4600	40	5	t	t	\N	\N	\N	2026-06-29 11:55:48.885	2026-06-29 11:55:48.885	\N	\N	\N
-cmqz5vsws0074xhd8fu7xje1i	Cheeseburger Clásica	cheeseburger	Medallón, cheddar, pickles.	cmqz5vswb006uxhd8c5bcq86n	6900	3800	35	5	t	t	\N	\N	\N	2026-06-29 11:55:48.892	2026-06-29 11:55:48.892	\N	\N	\N
-cmqz5vsx0007axhd81gi0m5ww	Veggie Burger	veggie-burger	Medallón de garbanzo y remolacha.	cmqz5vswb006uxhd8c5bcq86n	7200	4000	12	5	t	f	\N	\N	\N	2026-06-29 11:55:48.9	2026-06-29 11:55:48.9	\N	\N	\N
-cmqz5vsx8007gxhd8gq8utpws	Papas Cheddar y Bacon	papas-cheddar-bacon	Papas con cheddar y panceta.	cmqz5vswb006uxhd8c5bcq86n	5400	2800	28	5	t	f	\N	\N	\N	2026-06-29 11:55:48.908	2026-06-29 11:55:48.908	\N	\N	\N
-cmqz5vsxg007mxhd8xms5cyyk	Nuggets x10	nuggets-10	10 nuggets crocantes con salsa.	cmqz5vswb006uxhd8c5bcq86n	5800	3100	2	5	t	f	\N	\N	\N	2026-06-29 11:55:48.917	2026-06-29 11:55:48.917	\N	\N	\N
-cmqz5vsxo007sxhd8av6s1rmm	Cerveza Artesanal Pinta	pinta-artesanal	Pinta de cerveza artesanal local.	cmqz5vswb006uxhd8c5bcq86n	3800	2400	24	5	t	f	\N	\N	\N	2026-06-29 11:55:48.924	2026-06-29 11:55:48.924	\N	\N	\N
-cmqz5vt740088xhd8njzv9jaq	Flat White	flat-white	Espresso doble con leche texturada.	cmqz5vt6v0084xhd80bepwszu	2900	1300	100	5	t	t	\N	\N	\N	2026-06-29 11:55:49.265	2026-06-29 11:55:49.265	\N	\N	\N
-cmqz5vt7d008exhd8e225dbgn	Medialunas (3u)	medialunas-3	Tres medialunas de manteca.	cmqz5vt6v0084xhd80bepwszu	2400	1100	50	5	t	t	\N	\N	\N	2026-06-29 11:55:49.273	2026-06-29 11:55:49.273	\N	\N	\N
-cmqz5vt7l008kxhd85l4k8cie	Cheesecake de Frutos Rojos	cheesecake	Porción de cheesecake casero.	cmqz5vt6v0084xhd80bepwszu	4200	2200	14	5	t	f	\N	\N	\N	2026-06-29 11:55:49.281	2026-06-29 11:55:49.281	\N	\N	\N
-cmqz5vt7v008qxhd8wep5yjsd	Tostado Jamón y Queso	tostado-jyq	Tostado en pan de masa madre.	cmqz5vt6v0084xhd80bepwszu	3800	1900	20	5	t	f	\N	\N	\N	2026-06-29 11:55:49.291	2026-06-29 11:55:49.291	\N	\N	\N
-cmqz5vt87008wxhd8i4ruq4dp	Café Filtrado V60	v60	Método filtrado, granos de especialidad.	cmqz5vt6v0084xhd80bepwszu	3200	1400	0	5	t	f	\N	\N	\N	2026-06-29 11:55:49.304	2026-06-29 11:55:49.304	\N	\N	\N
-cmqz5vt8l0092xhd8javeo8kq	Submarino	submarino	Leche caliente con barra de chocolate.	cmqz5vt6v0084xhd80bepwszu	3000	1500	30	5	t	f	\N	\N	\N	2026-06-29 11:55:49.317	2026-06-29 11:55:49.317	\N	\N	\N
-cmqz5vtj5009ixhd8t46zn9wf	Ibuprofeno 400mg x10	ibuprofeno-400	Analgésico y antiinflamatorio.	cmqz5vtiv009exhd8vvyf8nns	2800	1700	80	5	t	t	\N	\N	\N	2026-06-29 11:55:49.698	2026-06-29 11:55:49.698	\N	\N	\N
-cmqz5vtjf009oxhd8c9i4wrzy	Alcohol en Gel 250ml	alcohol-gel	Alcohol en gel sanitizante.	cmqz5vtiv009exhd8vvyf8nns	1900	1000	60	5	t	f	\N	\N	\N	2026-06-29 11:55:49.707	2026-06-29 11:55:49.707	\N	\N	\N
-cmqz5vtjo009uxhd8xkhsizbc	Protector Solar FPS50	protector-fps50	Protección alta para el sur.	cmqz5vtiv009exhd8vvyf8nns	8900	5500	18	5	t	t	\N	\N	\N	2026-06-29 11:55:49.717	2026-06-29 11:55:49.717	\N	\N	\N
-cmqz5vtjy00a0xhd80d91kijs	Termómetro Digital	termometro	Termómetro digital de punta flexible.	cmqz5vtiv009exhd8vvyf8nns	6500	4000	5	5	t	f	\N	\N	\N	2026-06-29 11:55:49.726	2026-06-29 11:55:49.726	\N	\N	\N
-cmqz5vtk800a6xhd80xq981ri	Barbijo x10	barbijo-10	Pack de 10 barbijos tricapa.	cmqz5vtiv009exhd8vvyf8nns	2200	1200	0	5	t	f	\N	\N	\N	2026-06-29 11:55:49.736	2026-06-29 11:55:49.736	\N	\N	\N
-cmqz5vtkk00acxhd86vi289ms	Vitamina C x60	vitamina-c	Suplemento de vitamina C.	cmqz5vtiv009exhd8vvyf8nns	5400	3200	26	5	t	f	\N	\N	\N	2026-06-29 11:55:49.749	2026-06-29 11:55:49.749	\N	\N	\N
-cmqz5vttk00asxhd88mkfnrrz	Banana (kg)	banana-kg	Banana ecuatoriana por kilo.	cmqz5vttb00aoxhd8gww43etq	2200	1300	40	5	t	t	\N	\N	\N	2026-06-29 11:55:50.072	2026-06-29 11:55:50.072	\N	\N	\N
-cmqz5vttr00ayxhd8nnpj4071	Tomate Perita (kg)	tomate-kg	Tomate perita fresco por kilo.	cmqz5vttb00aoxhd8gww43etq	2600	1500	35	5	t	f	\N	\N	\N	2026-06-29 11:55:50.08	2026-06-29 11:55:50.08	\N	\N	\N
-cmqz5vttz00b4xhd8p5x14oeu	Papa Negra (kg)	papa-kg	Papa negra por kilo.	cmqz5vttb00aoxhd8gww43etq	1500	800	80	5	t	t	\N	\N	\N	2026-06-29 11:55:50.087	2026-06-29 11:55:50.087	\N	\N	\N
-cmqz5vtu700baxhd85r80nq4c	Palta Hass (u)	palta	Palta Hass madura, unidad.	cmqz5vttb00aoxhd8gww43etq	1800	1100	3	5	t	f	\N	\N	\N	2026-06-29 11:55:50.095	2026-06-29 11:55:50.095	\N	\N	\N
-cmqz5vtuf00bgxhd8gls84ah6	Lechuga Mantecosa	lechuga	Lechuga mantecosa fresca.	cmqz5vttb00aoxhd8gww43etq	1400	700	22	5	t	f	\N	\N	\N	2026-06-29 11:55:50.103	2026-06-29 11:55:50.103	\N	\N	\N
-cmqz5vtun00bmxhd8ij93bqj4	Frutillas (250g)	frutillas	Caja de frutillas seleccionadas.	cmqz5vttb00aoxhd8gww43etq	3900	2400	0	5	t	f	\N	\N	\N	2026-06-29 11:55:50.111	2026-06-29 11:55:50.111	\N	\N	\N
+COPY public."Product" (id, name, slug, description, "merchantId", price, "costPrice", stock, "minStock", "isActive", "isFeatured", "deletedAt", "deletedBy", "deletedReason", "createdAt", "updatedAt", "packageCategoryId", "weightGrams", "volumeMl", barcode) FROM stdin;
+cmqz5vric001uxhd8dq3pebwc	Heineken Lata 1L	heineken-1l	Cerveza Heineken lata 1 litro.	cmqz5vrhh001qxhd80605qjj8	3500	2800	50	5	t	t	\N	\N	\N	2026-06-29 11:55:47.075	2026-06-29 11:55:47.075	\N	\N	\N	\N
+cmqz5vriy0020xhd87abgsp11	Patagonia 24.7 IPA	patagonia-247	Session IPA suave y refrescante.	cmqz5vrhh001qxhd80605qjj8	4200	3400	30	5	t	t	\N	\N	\N	2026-06-29 11:55:47.098	2026-06-29 11:55:47.098	\N	\N	\N	\N
+cmqz5vrja0026xhd8qe6xdjlj	Schneider 710ml	schneider-710	Cerveza rubia clásica.	cmqz5vrhh001qxhd80605qjj8	2800	2100	40	5	t	f	\N	\N	\N	2026-06-29 11:55:47.11	2026-06-29 11:55:47.11	\N	\N	\N	\N
+cmqz5vrjl002cxhd833p7o57x	Coca-Cola 2.25L	coca-225	Gaseosa Coca-Cola 2.25 litros.	cmqz5vrhh001qxhd80605qjj8	2900	2000	60	5	t	f	\N	\N	\N	2026-06-29 11:55:47.122	2026-06-29 11:55:47.122	\N	\N	\N	\N
+cmqz5vrjx002ixhd8nhkuh93p	Agua Mineral Eco 2L	agua-eco-2l	Agua mineral sin gas.	cmqz5vrhh001qxhd80605qjj8	1200	700	0	5	t	f	\N	\N	\N	2026-06-29 11:55:47.133	2026-06-29 11:55:47.133	\N	\N	\N	\N
+cmqz5vrk8002oxhd8yvzwazhc	Papas Lays Clásicas	lays-clasicas	Papas fritas 150g.	cmqz5vrhh001qxhd80605qjj8	2500	1600	3	5	t	f	\N	\N	\N	2026-06-29 11:55:47.144	2026-06-29 11:55:47.144	\N	\N	\N	\N
+cmqz5vrwm0034xhd8d4r9d6to	Falafel Clásico (6u)	falafel-clasico	6 falafel caseros con tahini.	cmqz5vrwc0030xhd8eqeurj4k	5500	3200	25	5	t	t	\N	\N	\N	2026-06-29 11:55:47.59	2026-06-29 11:55:47.59	\N	\N	\N	\N
+cmqz5vrwu003axhd81da2tlo4	Hummus con Pan Pita	hummus-pita	Hummus casero con pan pita tibio.	cmqz5vrwc0030xhd8eqeurj4k	4200	2400	20	5	t	t	\N	\N	\N	2026-06-29 11:55:47.599	2026-06-29 11:55:47.599	\N	\N	\N	\N
+cmqz5vrx3003gxhd8ub7noyt3	Shawarma de Pollo	shawarma-pollo	Shawarma de pollo con vegetales y salsa.	cmqz5vrwc0030xhd8eqeurj4k	6800	4000	15	5	t	f	\N	\N	\N	2026-06-29 11:55:47.607	2026-06-29 11:55:47.607	\N	\N	\N	\N
+cmqz5vrxc003mxhd83jyk6h5w	Ensalada Tabbouleh	tabbouleh	Ensalada fresca de perejil, trigo y limón.	cmqz5vrwc0030xhd8eqeurj4k	3900	2100	12	5	t	f	\N	\N	\N	2026-06-29 11:55:47.617	2026-06-29 11:55:47.617	\N	\N	\N	\N
+cmqz5vrxo003sxhd871zld6hg	Baklava (2u)	baklava	Postre de masa filo, nueces y miel.	cmqz5vrwc0030xhd8eqeurj4k	3200	1800	2	5	t	f	\N	\N	\N	2026-06-29 11:55:47.628	2026-06-29 11:55:47.628	\N	\N	\N	\N
+cmqz5vrxy003yxhd877e5bc3x	Limonada de Menta	limonada-menta	Limonada casera con menta.	cmqz5vrwc0030xhd8eqeurj4k	2400	1200	30	5	t	f	\N	\N	\N	2026-06-29 11:55:47.638	2026-06-29 11:55:47.638	\N	\N	\N	\N
+cmqz5vs80004exhd844e7zog3	Cordero Fueguino (1/2)	cordero-fueguino	Medio cordero al asador.	cmqz5vs7q004axhd8fyr7ixm3	28000	19000	8	5	t	t	\N	\N	\N	2026-06-29 11:55:48	2026-06-29 11:55:48	\N	\N	\N	\N
+cmqz5vs8b004kxhd8bi21pzoz	Tabla La Estancia (2p)	tabla-estancia	Fiambres y quesos patagónicos.	cmqz5vs7q004axhd8fyr7ixm3	12500	8000	10	5	t	t	\N	\N	\N	2026-06-29 11:55:48.011	2026-06-29 11:55:48.011	\N	\N	\N	\N
+cmqz5vs8k004qxhd8eap2pdy6	Bife de Chorizo 400g	bife-chorizo	Bife de chorizo a la parrilla.	cmqz5vs7q004axhd8fyr7ixm3	11000	7500	14	5	t	f	\N	\N	\N	2026-06-29 11:55:48.021	2026-06-29 11:55:48.021	\N	\N	\N	\N
+cmqz5vs8v004wxhd89uzvo3ri	Provoleta	provoleta	Provoleta a la parrilla con orégano.	cmqz5vs7q004axhd8fyr7ixm3	5500	3200	18	5	t	f	\N	\N	\N	2026-06-29 11:55:48.032	2026-06-29 11:55:48.032	\N	\N	\N	\N
+cmqz5vs950052xhd8bzz3hc88	Beagle Red Ale	beagle-red-ale	Cerveza artesanal de Ushuaia.	cmqz5vs7q004axhd8fyr7ixm3	4500	3200	0	5	t	f	\N	\N	\N	2026-06-29 11:55:48.041	2026-06-29 11:55:48.041	\N	\N	\N	\N
+cmqz5vs9k0058xhd8go65yynp	Flan Casero	flan-casero	Flan con dulce de leche y crema.	cmqz5vs7q004axhd8fyr7ixm3	3500	1900	16	5	t	f	\N	\N	\N	2026-06-29 11:55:48.057	2026-06-29 11:55:48.057	\N	\N	\N	\N
+cmqz5vslj005oxhd8tkfo0b25	Muzzarella Grande	muzza-grande	Pizza de muzzarella a la piedra.	cmqz5vsla005kxhd8ax92pmri	7800	4200	30	5	t	t	\N	\N	\N	2026-06-29 11:55:48.488	2026-06-29 11:55:48.488	\N	\N	\N	\N
+cmqz5vsls005uxhd8m8x7l5jp	Napolitana	napolitana	Muzza, tomate, ajo y albahaca.	cmqz5vsla005kxhd8ax92pmri	8900	4800	25	5	t	t	\N	\N	\N	2026-06-29 11:55:48.496	2026-06-29 11:55:48.496	\N	\N	\N	\N
+cmqz5vsm10060xhd8o0zr7ojg	Fugazzeta Rellena	fugazzeta	Doble muzza y cebolla.	cmqz5vsla005kxhd8ax92pmri	9800	5400	20	5	t	f	\N	\N	\N	2026-06-29 11:55:48.506	2026-06-29 11:55:48.506	\N	\N	\N	\N
+cmqz5vsm90066xhd8lcqqk1xb	Calabresa	calabresa	Muzza con longaniza calabresa.	cmqz5vsla005kxhd8ax92pmri	9200	5100	4	5	t	f	\N	\N	\N	2026-06-29 11:55:48.514	2026-06-29 11:55:48.514	\N	\N	\N	\N
+cmqz5vsmh006cxhd8mnj4fj2f	Empanada (docena)	empanadas-docena	Docena de empanadas surtidas.	cmqz5vsla005kxhd8ax92pmri	9600	5200	22	5	t	f	\N	\N	\N	2026-06-29 11:55:48.522	2026-06-29 11:55:48.522	\N	\N	\N	\N
+cmqz5vsmp006ixhd8s1clp988	Faina	faina	Faina de garbanzos recién horneada.	cmqz5vsla005kxhd8ax92pmri	1800	900	0	5	t	f	\N	\N	\N	2026-06-29 11:55:48.53	2026-06-29 11:55:48.53	\N	\N	\N	\N
+cmqz5vswk006yxhd85fzl6bjp	Smash Doble	smash-doble	Doble medallón smash, cheddar y salsa.	cmqz5vswb006uxhd8c5bcq86n	8500	4600	40	5	t	t	\N	\N	\N	2026-06-29 11:55:48.885	2026-06-29 11:55:48.885	\N	\N	\N	\N
+cmqz5vsws0074xhd8fu7xje1i	Cheeseburger Clásica	cheeseburger	Medallón, cheddar, pickles.	cmqz5vswb006uxhd8c5bcq86n	6900	3800	35	5	t	t	\N	\N	\N	2026-06-29 11:55:48.892	2026-06-29 11:55:48.892	\N	\N	\N	\N
+cmqz5vsx0007axhd81gi0m5ww	Veggie Burger	veggie-burger	Medallón de garbanzo y remolacha.	cmqz5vswb006uxhd8c5bcq86n	7200	4000	12	5	t	f	\N	\N	\N	2026-06-29 11:55:48.9	2026-06-29 11:55:48.9	\N	\N	\N	\N
+cmqz5vsx8007gxhd8gq8utpws	Papas Cheddar y Bacon	papas-cheddar-bacon	Papas con cheddar y panceta.	cmqz5vswb006uxhd8c5bcq86n	5400	2800	28	5	t	f	\N	\N	\N	2026-06-29 11:55:48.908	2026-06-29 11:55:48.908	\N	\N	\N	\N
+cmqz5vsxg007mxhd8xms5cyyk	Nuggets x10	nuggets-10	10 nuggets crocantes con salsa.	cmqz5vswb006uxhd8c5bcq86n	5800	3100	2	5	t	f	\N	\N	\N	2026-06-29 11:55:48.917	2026-06-29 11:55:48.917	\N	\N	\N	\N
+cmqz5vsxo007sxhd8av6s1rmm	Cerveza Artesanal Pinta	pinta-artesanal	Pinta de cerveza artesanal local.	cmqz5vswb006uxhd8c5bcq86n	3800	2400	24	5	t	f	\N	\N	\N	2026-06-29 11:55:48.924	2026-06-29 11:55:48.924	\N	\N	\N	\N
+cmqz5vt740088xhd8njzv9jaq	Flat White	flat-white	Espresso doble con leche texturada.	cmqz5vt6v0084xhd80bepwszu	2900	1300	100	5	t	t	\N	\N	\N	2026-06-29 11:55:49.265	2026-06-29 11:55:49.265	\N	\N	\N	\N
+cmqz5vt7d008exhd8e225dbgn	Medialunas (3u)	medialunas-3	Tres medialunas de manteca.	cmqz5vt6v0084xhd80bepwszu	2400	1100	50	5	t	t	\N	\N	\N	2026-06-29 11:55:49.273	2026-06-29 11:55:49.273	\N	\N	\N	\N
+cmqz5vt7l008kxhd85l4k8cie	Cheesecake de Frutos Rojos	cheesecake	Porción de cheesecake casero.	cmqz5vt6v0084xhd80bepwszu	4200	2200	14	5	t	f	\N	\N	\N	2026-06-29 11:55:49.281	2026-06-29 11:55:49.281	\N	\N	\N	\N
+cmqz5vt7v008qxhd8wep5yjsd	Tostado Jamón y Queso	tostado-jyq	Tostado en pan de masa madre.	cmqz5vt6v0084xhd80bepwszu	3800	1900	20	5	t	f	\N	\N	\N	2026-06-29 11:55:49.291	2026-06-29 11:55:49.291	\N	\N	\N	\N
+cmqz5vt87008wxhd8i4ruq4dp	Café Filtrado V60	v60	Método filtrado, granos de especialidad.	cmqz5vt6v0084xhd80bepwszu	3200	1400	0	5	t	f	\N	\N	\N	2026-06-29 11:55:49.304	2026-06-29 11:55:49.304	\N	\N	\N	\N
+cmqz5vt8l0092xhd8javeo8kq	Submarino	submarino	Leche caliente con barra de chocolate.	cmqz5vt6v0084xhd80bepwszu	3000	1500	30	5	t	f	\N	\N	\N	2026-06-29 11:55:49.317	2026-06-29 11:55:49.317	\N	\N	\N	\N
+cmqz5vtj5009ixhd8t46zn9wf	Ibuprofeno 400mg x10	ibuprofeno-400	Analgésico y antiinflamatorio.	cmqz5vtiv009exhd8vvyf8nns	2800	1700	80	5	t	t	\N	\N	\N	2026-06-29 11:55:49.698	2026-06-29 11:55:49.698	\N	\N	\N	\N
+cmqz5vtjf009oxhd8c9i4wrzy	Alcohol en Gel 250ml	alcohol-gel	Alcohol en gel sanitizante.	cmqz5vtiv009exhd8vvyf8nns	1900	1000	60	5	t	f	\N	\N	\N	2026-06-29 11:55:49.707	2026-06-29 11:55:49.707	\N	\N	\N	\N
+cmqz5vtjo009uxhd8xkhsizbc	Protector Solar FPS50	protector-fps50	Protección alta para el sur.	cmqz5vtiv009exhd8vvyf8nns	8900	5500	18	5	t	t	\N	\N	\N	2026-06-29 11:55:49.717	2026-06-29 11:55:49.717	\N	\N	\N	\N
+cmqz5vtjy00a0xhd80d91kijs	Termómetro Digital	termometro	Termómetro digital de punta flexible.	cmqz5vtiv009exhd8vvyf8nns	6500	4000	5	5	t	f	\N	\N	\N	2026-06-29 11:55:49.726	2026-06-29 11:55:49.726	\N	\N	\N	\N
+cmqz5vtk800a6xhd80xq981ri	Barbijo x10	barbijo-10	Pack de 10 barbijos tricapa.	cmqz5vtiv009exhd8vvyf8nns	2200	1200	0	5	t	f	\N	\N	\N	2026-06-29 11:55:49.736	2026-06-29 11:55:49.736	\N	\N	\N	\N
+cmqz5vtkk00acxhd86vi289ms	Vitamina C x60	vitamina-c	Suplemento de vitamina C.	cmqz5vtiv009exhd8vvyf8nns	5400	3200	26	5	t	f	\N	\N	\N	2026-06-29 11:55:49.749	2026-06-29 11:55:49.749	\N	\N	\N	\N
+cmqz5vttk00asxhd88mkfnrrz	Banana (kg)	banana-kg	Banana ecuatoriana por kilo.	cmqz5vttb00aoxhd8gww43etq	2200	1300	40	5	t	t	\N	\N	\N	2026-06-29 11:55:50.072	2026-06-29 11:55:50.072	\N	\N	\N	\N
+cmqz5vttr00ayxhd8nnpj4071	Tomate Perita (kg)	tomate-kg	Tomate perita fresco por kilo.	cmqz5vttb00aoxhd8gww43etq	2600	1500	35	5	t	f	\N	\N	\N	2026-06-29 11:55:50.08	2026-06-29 11:55:50.08	\N	\N	\N	\N
+cmqz5vttz00b4xhd8p5x14oeu	Papa Negra (kg)	papa-kg	Papa negra por kilo.	cmqz5vttb00aoxhd8gww43etq	1500	800	80	5	t	t	\N	\N	\N	2026-06-29 11:55:50.087	2026-06-29 11:55:50.087	\N	\N	\N	\N
+cmqz5vtu700baxhd85r80nq4c	Palta Hass (u)	palta	Palta Hass madura, unidad.	cmqz5vttb00aoxhd8gww43etq	1800	1100	3	5	t	f	\N	\N	\N	2026-06-29 11:55:50.095	2026-06-29 11:55:50.095	\N	\N	\N	\N
+cmqz5vtuf00bgxhd8gls84ah6	Lechuga Mantecosa	lechuga	Lechuga mantecosa fresca.	cmqz5vttb00aoxhd8gww43etq	1400	700	22	5	t	f	\N	\N	\N	2026-06-29 11:55:50.103	2026-06-29 11:55:50.103	\N	\N	\N	\N
+cmqz5vtun00bmxhd8ij93bqj4	Frutillas (250g)	frutillas	Caja de frutillas seleccionadas.	cmqz5vttb00aoxhd8gww43etq	3900	2400	0	5	t	f	\N	\N	\N	2026-06-29 11:55:50.111	2026-06-29 11:55:50.111	\N	\N	\N	\N
 \.
 
 
@@ -2871,6 +2872,7 @@ COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtota
 --
 
 COPY public."SupportChat" (id, "userId", "merchantId", "operatorId", subject, category, status, priority, rating, "ratingComment", "lastMessageAt", "resolvedAt", "createdAt", "updatedAt", origin) FROM stdin;
+cmrc2vw0f000113mgtop0d6rn	cmqz5vsvy006nxhd8cea1yx8k	cmqz5vswb006uxhd8c5bcq86n	\N	Problema con un pedido	general	active	normal	\N	\N	2026-07-08 12:54:41.266	\N	2026-07-08 12:52:54.35	2026-07-08 12:54:41.268	MERCHANT
 \.
 
 
@@ -2879,6 +2881,8 @@ COPY public."SupportChat" (id, "userId", "merchantId", "operatorId", subject, ca
 --
 
 COPY public."SupportMessage" (id, "chatId", "senderId", content, "isFromAdmin", "isSystem", "isRead", "attachmentUrl", "attachmentType", "createdAt") FROM stdin;
+cmrc2vw0f000313mglqhiykjm	cmrc2vw0f000113mgtop0d6rn	cmqz5vsvy006nxhd8cea1yx8k	Esto es un mensaje de prueba	f	f	t	\N	\N	2026-07-08 12:52:54.35
+cmrc2y6hx000513mgml5n4sfh	cmrc2vw0f000113mgtop0d6rn	cmqz5vqsx0000xhd86fq6wm5d	Hola! Buen día!	t	f	t	\N	\N	2026-07-08 12:54:41.253
 \.
 
 
@@ -4606,6 +4610,13 @@ CREATE UNIQUE INDEX "ProductCategory_productId_categoryId_key" ON public."Produc
 --
 
 CREATE INDEX "Product_deletedAt_idx" ON public."Product" USING btree ("deletedAt");
+
+
+--
+-- Name: Product_merchantId_barcode_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "Product_merchantId_barcode_key" ON public."Product" USING btree ("merchantId", barcode);
 
 
 --

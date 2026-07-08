@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import Link from "next/link";
-import { Plus, XCircle } from "lucide-react";
+import { Plus, XCircle, Upload } from "lucide-react";
 import ProductsSearchContainer from "@/components/comercios/ProductsSearchContainer";
 import { isFeatureEnabled } from "@/lib/feature-flags";
 
@@ -63,6 +63,13 @@ export default async function ProductosPage() {
                             Mis Paquetes
                         </Link>
                     )}
+                    <Link
+                        href="/comercios/productos/importar"
+                        className="flex-1 md:flex-none py-4 px-6 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all font-bold text-sm text-center inline-flex items-center justify-center gap-2"
+                    >
+                        <Upload className="w-4 h-4" />
+                        Importar CSV
+                    </Link>
                     <Link
                         href="/comercios/productos/nuevo"
                         className="flex-1 md:flex-none btn-primary flex items-center justify-center gap-3 py-4 px-8 shadow-xl shadow-red-500/20"

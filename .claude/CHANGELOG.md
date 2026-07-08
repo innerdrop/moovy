@@ -10,6 +10,58 @@
 
 ---
 
+## 2026-07-08 (rama `feat/import-productos-comercio`)
+
+feat: importación de productos por CSV en el panel comercio. Nueva subsección Productos → Importar: subir CSV, mapear columnas (tu columna → campo Moovy con autodetección), validar filas y previsualizar, e importar como BORRADORES ocultos (isActive:false, sin foto). Toma nombre, descripción, precio y barcode (valida EAN-8/12/13; los códigos irregulares se dejan vacíos); stock opcional. Deduplica por barcode (nuevo campo Product.barcode, único por comercio) actualizando en vez de duplicar, y procesa en lotes. El comercio completa foto/tamaño y publica. Requiere prisma db push
+
+**Archivos:** prisma/schema.prisma, scripts/verify-import-productos.ts, src/app/api/comercios/products/import/route.ts, src/app/comercios/(protected)/productos/importar/page.tsx, src/app/comercios/(protected)/productos/page.tsx
+
+## 2026-07-08 (rama `feat/import-productos-comercio`)
+
+feat: importación de productos por CSV en el panel del comercio
+
+**Contexto:** onboarding real — el primer cliente (Pixel Point, kiosco) tiene 1155
+productos; nadie los carga a mano. Analizamos su export real: solo trae nombre,
+barcode, precio (en una columna SIN encabezado) y stock. NO trae foto (obligatoria
+en Moovy), ni descripción, ni categoría, ni tamaño. Decisión: importar lo que hay
+como BORRADORES y que el comercio complete foto/tamaño antes de publicar.
+
+**Qué se tomó (decisión founder):** nombre, descripción (si viene), precio y
+barcode. Barcode: se validan EAN-8/UPC-12/EAN-13; los códigos irregulares
+(3-5 dígitos = internos) se dejan vacíos para que el comercio complete. Stock
+opcional (mapeable). El resto (foto, categoría, tamaño) lo completa el comercio.
+
+**Cómo (decisiones founder: mapeo de columnas + borradores):**
+- Nueva subsección `/comercios/productos/importar` (client): subir CSV → parser
+  propio (comillas, CRLF, BOM, y maneja el encabezado vacío de Pixel Point) →
+  **mapeo de columnas** (tu columna → campo Moovy, con autodetección por
+  encabezado y por contenido: detecta la columna de precio sin nombre y la de
+  barcode por longitud) → validación con preview (N listas / M se saltean /
+  códigos válidos vs irregulares) → importar.
+- Endpoint `POST /api/comercios/products/import` (requireMerchantApi): valida con
+  Zod, crea productos como **borradores** (`isActive:false`, sin foto),
+  **deduplica por barcode** (si el comercio ya lo tiene, actualiza precio/descr/
+  stock en vez de duplicar), procesa en **lotes** (createMany, chunk 400) para
+  bancar 1000+ filas. Máx 2000 por import.
+- Schema: nuevo `Product.barcode String?` + `@@unique([merchantId, barcode])`
+  (Postgres permite varios NULL por comercio). Requiere `prisma db push`.
+- Botón "Importar CSV" en la lista de Productos. Los borradores ya aparecen en la
+  lista (activos + inactivos) para completarlos.
+
+**Solo CSV por ahora** (decisión founder): el proyecto no tiene librería de Excel;
+el comercio guarda su Excel como CSV. Queda listo para sumar .xlsx (SheetJS) luego.
+
+**Mejora futura anotada:** el barcode es global → catálogo maestro por barcode que
+autocomplete foto/descr/tamaño de productos comunes al importar (network effect).
+Por eso el barcode ya es la llave. No se construye ahora.
+
+**Verificación:** `scripts/verify-import-productos.ts` (no escribe): lógica de
+barcode/precio con casos reales de Pixel Point + campo barcode consultable.
+
+**Archivos:** prisma/schema.prisma, src/app/api/comercios/products/import/route.ts (nuevo),
+src/app/comercios/(protected)/productos/importar/page.tsx (nuevo),
+src/app/comercios/(protected)/productos/page.tsx, scripts/verify-import-productos.ts (nuevo).
+
 ## 2026-07-08 (rama `feat/soporte-bandeja-ops`)
 
 feat: soporte — bandeja de tickets en OPS + etiquetado por origen + avisos. Los tickets ahora se etiquetan BUYER/MERCHANT/DRIVER (merchantId server-side, arregla el badge del comercio), la pestaña Conversaciones de /ops/soporte pasa de placeholder vacío a bandeja real (lista con filtros por origen/estado, abrir, responder y resolver/cerrar vía /api/admin/support/chats/[id]), avisa al equipo por email al entrar un ticket, y se arreglan bugs (contador 'open' inexistente del dashboard → waiting/active, asunto ignorado, badge del panel comercio). Requiere prisma db push (nuevo campo SupportChat.origin)
