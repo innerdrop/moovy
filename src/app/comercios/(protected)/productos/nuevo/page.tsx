@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import NewProductForm from "@/components/comercios/NewProductForm";
 import { auth } from "@/lib/auth";
+import { getMerchantSizeOptions } from "@/lib/product-sizes";
+import { isFeatureEnabled, FEATURE_FLAGS } from "@/lib/feature-flags";
 
 export default async function NewProductPage() {
     const session = await auth();
@@ -70,11 +72,19 @@ export default async function NewProductPage() {
         orderBy: { name: "asc" },
     });
 
+    // 5. Opciones de tamaño derivadas de OPS (PackageCategory) + flag de paquetes.
+    const [sizeOptions, paquetesEnabled] = await Promise.all([
+        getMerchantSizeOptions(),
+        isFeatureEnabled(FEATURE_FLAGS.MERCHANT_PAQUETES),
+    ]);
+
     return (
         <div className="max-w-4xl mx-auto">
             <NewProductForm
                 categories={categories}
                 allCategories={allCategories}
+                sizeOptions={sizeOptions}
+                paquetesEnabled={paquetesEnabled}
                 catalogProducts={masterProducts.map(p => ({
                     id: p.id,
                     name: p.name,

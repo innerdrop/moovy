@@ -32,7 +32,9 @@ import { SIZE_METADATA, type ProductSize } from "@/lib/product-weight";
  *    (deja el valor original) y solo completa el peso por defecto.
  */
 async function resolveSizeSnapshot(input: {
-    productSize?: ProductSize | "" | null;
+    // feat/tamanos-producto-desde-ops: ahora es el name de la PackageCategory
+    // (string), no un enum hardcodeado — OPS puede tener categorías custom.
+    productSize?: string | null;
     packageCategoryId: string | null;
     weightGrams: number | null;
 }): Promise<{ packageCategoryId: string | null; weightGrams: number | null }> {
@@ -107,7 +109,11 @@ const productSchema = z.object({
     volumeMl: z.coerce.number().int().min(0).max(1000000).nullish()
         .transform((v) => (v && v > 0 ? v : null)),
     packageCategoryId: z.string().nullish().transform((v) => (v && v.length > 0 ? v : null)),
-    productSize: z.enum(["MICRO", "SMALL", "MEDIUM", "LARGE", "XL", ""]).nullish(),
+    // feat/tamanos-producto-desde-ops: antes era un enum hardcodeado (MICRO..XL).
+    // Ahora es el name de la PackageCategory (OPS puede tener categorías custom),
+    // así que aceptamos cualquier string. resolveSizeSnapshot lo resuelve contra
+    // la DB por name y es defensivo si el name no existe.
+    productSize: z.string().nullish(),
 });
 
 // Helper to verify merchant ownership

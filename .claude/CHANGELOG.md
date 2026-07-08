@@ -10,6 +10,52 @@
 
 ---
 
+## 2026-07-08 (rama `feat/tamanos-producto-desde-ops`)
+
+feat: tamaños del producto derivados de OPS (PackageCategory) + limpieza — el selector del comercio ahora muestra rango de peso y vehículo desde /ops/configuracion-logistica (respeta isActive/displayOrder), se quitó la sugerencia IA de tamaño (botón + endpoint suggest-weight + cache/heurística + modelo ProductWeightCache + seeds), y Paquetes queda en gris/bloqueado (sidebar + menú mobile) y sin banner de compra cuando el flag merchant.paquetes está OFF
+
+**Archivos:** prisma/schema.prisma, scripts/seed-data/product-weight-cache.json, scripts/seed-product-weight-cache.ts, scripts/setup-mundo-real.ts, scripts/verify-tamanos-ops.ts, src/app/api/comercios/products/suggest-weight/route.ts, src/app/comercios/(protected)/layout.tsx, src/app/comercios/(protected)/productos/[id]/page.tsx (+8 mas)
+
+## 2026-07-07 (rama `feat/tamanos-producto-desde-ops`)
+
+feat: tamaños del producto derivados de OPS + limpieza de sugerencia IA + gate de Paquetes
+
+**Contexto (detectado por el founder):** el selector de tamaño del form del
+comercio mostraba 5 tarjetas con rangos de peso y vehículo HARDCODEADOS
+(SIZE_METADATA). Si en OPS (`/ops/configuracion-logistica` → PackageCategory) se
+cambiaba un peso máximo o los vehículos permitidos, el comercio seguía viendo lo
+viejo. El tamaño elegido define qué vehículo lleva el pedido → OPS DEBE mandar.
+
+**1. Tamaños desde OPS (fuente única):** nuevo helper server
+`src/lib/product-sizes.ts` (`getMerchantSizeOptions`) lee `PackageCategory`
+activas (isActive) ordenadas por displayOrder y deriva rango de peso (de
+maxWeightGrams, min = max de la previa), vehículo MÍNIMO permitido (de
+allowedVehicles) y peso asumido (punto medio del rango). `SizeSelector` recibe
+`options` por prop (antes iteraba SIZE_METADATA) y muestra el vehículo mínimo por
+tarjeta. `NewProductForm`/`EditProductForm` reciben `sizeOptions` desde sus
+páginas server. `productSize` pasa de enum a string (name de la categoría);
+`actions.ts` valida `z.string()` y `resolveSizeSnapshot` acepta string. El tipo
+`MerchantSizeOption` vive en product-weight.ts (client-safe); SIZE_METADATA queda
+solo como cosmético + fallback de resolvers downstream.
+
+**2. Sugerencia IA de tamaño ELIMINADA (botón + backend):** botón "Sugerir" fuera
+de ambos forms; endpoint `/api/comercios/products/suggest-weight` borrado;
+product-weight.ts sin heurística/normalización/hashing (applyHeuristic,
+KEYWORD_DICTIONARY, UNIT_PATTERNS, normalizeProductName, hashProductName) ni
+import de `crypto`; modelo `ProductWeightCache` fuera del schema (requiere
+`prisma db push`); seeds huérfanos borrados (`seed-product-weight-cache.ts` + JSON,
+sacado de `setup-mundo-real.ts`).
+
+**3. Gate de Paquetes por flag `merchant.paquetes`:** con el flag OFF el botón
+Paquetes queda en GRIS/bloqueado con candado (no navega) en el sidebar desktop y
+en el menú "Más" mobile (antes se ocultaba), y el banner "Catálogo MOOVY
+disponible / comprá paquetes" del alta de producto no se muestra.
+
+**Verificación:** `scripts/verify-tamanos-ops.ts` (contra DB real) chequea que lo
+que ve el comercio coincida 1:1 con PackageCategory (cantidad, orden, vehículo
+mínimo, rango). Correr tras `prisma db push`. Pendiente Mauro: `prisma db push`
+(dropea ProductWeightCache) + limpiar `.next` (referencia stale a suggest-weight).
+
 ## 2026-07-07 (rama `fix/panel-comercio-auditoria`)
 
 fix: panel del comercio — 8 actions + 4 endpoints a auth contra DB (adios JWT stale), pantalla de paquetes con flag, endpoints muertos borrados, precio $500 inventado eliminado, errores visibles con retry, modales Moovy y acentos

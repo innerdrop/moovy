@@ -1537,28 +1537,6 @@ CREATE TABLE public."ProductVariant" (
 ALTER TABLE public."ProductVariant" OWNER TO postgres;
 
 --
--- Name: ProductWeightCache; Type: TABLE; Schema: public; Owner: postgres
---
-
-CREATE TABLE public."ProductWeightCache" (
-    id text NOT NULL,
-    "nameHash" text NOT NULL,
-    "nameSample" text NOT NULL,
-    "weightGrams" integer NOT NULL,
-    "volumeMl" integer NOT NULL,
-    "packageCategoryId" text,
-    "suggestedVehicle" text,
-    source text NOT NULL,
-    confidence integer DEFAULT 100 NOT NULL,
-    "hitCount" integer DEFAULT 0 NOT NULL,
-    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL
-);
-
-
-ALTER TABLE public."ProductWeightCache" OWNER TO postgres;
-
---
 -- Name: PushSubscription; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2414,7 +2392,7 @@ cmqz5vt6v0084xhd80bepwszu	Café Beagle	cafe-beagle	Café de especialidad y paste
 cmqz5vtiv009exhd8vvyf8nns	Farmacia del Canal	farmacia-del-canal	Farmacia con delivery rápido. Medicamentos y cuidado personal.	https://picsum.photos/seed/moovy-logo-farmacia-del-canal/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio7@somosmoovy.com	+5492901555007	Av. San Martín 640, Ushuaia	-54.8061	-68.3055	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:49.684	2026-06-29 11:55:49.684	Farmacia	cmqz5vtik0097xhd8n00sds6h	2026-06-29 11:55:49.687	2026-06-29 11:55:49.687	4.4	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:49.684	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:49.687	\N
 cmqz5vttb00aoxhd8gww43etq	Verdulería La Huerta Fueguina	verduleria-la-huerta	Frutas y verduras frescas, selección diaria.	https://picsum.photos/seed/moovy-logo-verduleria-la-huerta/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio8@somosmoovy.com	+5492901555008	Karukinka 210, Ushuaia	-54.7995	-68.3155	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:50.06	2026-06-29 11:55:50.06	Verdulería	cmqz5vtsy00ahxhd807lierxs	2026-06-29 11:55:50.063	2026-06-29 11:55:50.063	4.6	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:50.06	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:50.063	\N
 cmqz5vrhh001qxhd80605qjj8	Patagonia Drinks	patagonia-drinks	Las mejores bebidas del fin del mundo. Cervezas, gaseosas y más.	https://picsum.photos/seed/moovy-logo-patagonia-drinks/600/600	\N	t	f	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio1@somosmoovy.com	+5492901555001	San Martín 456, Ushuaia	-54.8069	-68.3042	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:47.04	2026-06-29 11:55:47.04	Kiosco	cmqz5vrgz001jxhd84w7eneza	2026-06-29 11:55:47.045	2026-07-06 23:22:37.811	4.7	\N	\N	\N	10	\N	0	\N	\N	t	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:47.04	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:47.045	\N
-cmqz5vswb006uxhd8c5bcq86n	Burger del Fin del Mundo	burger-fin-del-mundo	Hamburguesas smash con ingredientes locales.	https://picsum.photos/seed/moovy-logo-burger-fin-del-mundo/600/600	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1783445927411-logo.webp	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio5@somosmoovy.com	+5492901555005	9 de Julio 120, Ushuaia	-54.8058	-68.3075	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:48.872	2026-06-29 11:55:48.872	Hamburguesería	cmqz5vsvy006nxhd8cea1yx8k	2026-06-29 11:55:48.876	2026-07-07 17:39:58.932	4.5	\N	\N	Burger del Fin del Mundo	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:48.872	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:48.876	\N
+cmqz5vswb006uxhd8c5bcq86n	Burger del Fin del Mundo	burger-fin-del-mundo	Hamburguesas smash con ingredientes locales.	https://picsum.photos/seed/moovy-logo-burger-fin-del-mundo/600/600	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1783445927411-logo.webp	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio5@somosmoovy.com	+5492901555005	9 de Julio 120, Ushuaia	-54.8058	-68.3075	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:48.872	2026-06-29 11:55:48.872	Hamburguesería	cmqz5vsvy006nxhd8cea1yx8k	2026-06-29 11:55:48.876	2026-07-07 23:49:57.763	4.5	\N	\N	Burger del Fin del Mundo	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	+5492901222222	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:48.872	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:48.876	\N
 \.
 
 
@@ -2810,14 +2788,6 @@ cmqz5vtur00bqxhd8i9bsb5je	cmqz5vtun00bmxhd8ij93bqj4	https://picsum.photos/seed/m
 --
 
 COPY public."ProductVariant" (id, "productId", name, price, stock, "isActive") FROM stdin;
-\.
-
-
---
--- Data for Name: ProductWeightCache; Type: TABLE DATA; Schema: public; Owner: postgres
---
-
-COPY public."ProductWeightCache" (id, "nameHash", "nameSample", "weightGrams", "volumeMl", "packageCategoryId", "suggestedVehicle", source, confidence, "hitCount", "createdAt", "updatedAt") FROM stdin;
 \.
 
 
@@ -3471,14 +3441,6 @@ ALTER TABLE ONLY public."ProductImage"
 
 ALTER TABLE ONLY public."ProductVariant"
     ADD CONSTRAINT "ProductVariant_pkey" PRIMARY KEY (id);
-
-
---
--- Name: ProductWeightCache ProductWeightCache_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public."ProductWeightCache"
-    ADD CONSTRAINT "ProductWeightCache_pkey" PRIMARY KEY (id);
 
 
 --
@@ -4636,27 +4598,6 @@ CREATE INDEX "PreLaunchLead_role_idx" ON public."PreLaunchLead" USING btree (rol
 --
 
 CREATE UNIQUE INDEX "ProductCategory_productId_categoryId_key" ON public."ProductCategory" USING btree ("productId", "categoryId");
-
-
---
--- Name: ProductWeightCache_nameHash_key; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE UNIQUE INDEX "ProductWeightCache_nameHash_key" ON public."ProductWeightCache" USING btree ("nameHash");
-
-
---
--- Name: ProductWeightCache_packageCategoryId_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX "ProductWeightCache_packageCategoryId_idx" ON public."ProductWeightCache" USING btree ("packageCategoryId");
-
-
---
--- Name: ProductWeightCache_source_idx; Type: INDEX; Schema: public; Owner: postgres
---
-
-CREATE INDEX "ProductWeightCache_source_idx" ON public."ProductWeightCache" USING btree (source);
 
 
 --

@@ -4,8 +4,8 @@ import { useState, useRef } from "react";
 import { updateProduct, deleteProduct } from "@/app/comercios/actions";
 import MultiImageUpload from "@/components/ui/MultiImageUpload";
 import SizeSelector from "@/components/comercios/SizeSelector";
-import { ProductSize, SIZE_METADATA, getSizeFromWeight } from "@/lib/product-weight";
-import { Loader2, Save, ArrowLeft, Trash2, AlertTriangle, Sparkles, Info, Settings, X } from "lucide-react";
+import { getSizeFromWeight, type MerchantSizeOption } from "@/lib/product-weight";
+import { Loader2, Save, ArrowLeft, Trash2, AlertTriangle, Settings, X } from "lucide-react";
 import Link from 'next/link';
 
 interface EditProductFormProps {
@@ -24,9 +24,11 @@ interface EditProductFormProps {
         packageCategoryId: string | null;
     };
     categories: { id: string; name: string }[];
+    /** Opciones de tamaño derivadas de OPS (PackageCategory). Ver src/lib/product-sizes.ts */
+    sizeOptions: MerchantSizeOption[];
 }
 
-export default function EditProductForm({ product, categories }: EditProductFormProps) {
+export default function EditProductForm({ product, categories, sizeOptions }: EditProductFormProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -50,12 +52,11 @@ export default function EditProductForm({ product, categories }: EditProductForm
     const [stock, setStock] = useState<string>(String(product.stock));
     const [categoryId, setCategoryId] = useState<string>(product.categoryId);
     // Tamaño: si el producto ya tenía weightGrams cargado, derivar la categoría
-    const [productSize, setProductSize] = useState<ProductSize | null>(
+    // inicial (string = name de la PackageCategory).
+    const [productSize, setProductSize] = useState<string | null>(
         product.weightGrams != null ? getSizeFromWeight(product.weightGrams) : null
     );
     const [advancedMode, setAdvancedMode] = useState(false);
-    const [isSuggesting, setIsSuggesting] = useState(false);
-    const [suggestionInfo, setSuggestionInfo] = useState<string>("");
 
     // feat/comercio-ux-guardar-y-totales (2026-05-13): snapshot del estado
     // inicial del producto al montar. Lo usamos para calcular si el form
@@ -104,13 +105,12 @@ export default function EditProductForm({ product, categories }: EditProductForm
 
     /**
      * Click en una card de SizeSelector. Autocompleta los gramos/volumen
-     * internos según la metadata canónica de la categoría.
+     * internos con los valores DERIVADOS de OPS para esa categoría.
      */
-    const handleSelectSize = (size: ProductSize) => {
-        const meta = SIZE_METADATA[size];
-        setProductSize(size);
-        setWeightGrams(String(meta.weightGrams));
-        setVolumeMl(String(meta.volumeMl));
+    const handleSelectSize = (option: MerchantSizeOption) => {
+        setProductSize(option.size);
+        setWeightGrams(String(option.assumedWeightGrams));
+        setVolumeMl(String(option.assumedVolumeMl));
     };
 
     // fix/comercio-ux: el banner de error vive arriba del form — si el usuario
@@ -149,55 +149,6 @@ export default function EditProductForm({ product, categories }: EditProductForm
         if (result?.error) {
             showError(result.error);
             setIsLoading(false);
-        }
-    };
-
-    /**
-     * Pide sugerencia de peso/volumen al endpoint de cache+heurística.
-     * Autocompleta los campos editables. El comercio puede ajustar.
-     */
-    const handleSuggestWeight = async () => {
-        if (!name || name.trim().length < 2) {
-            setSuggestionInfo("Ingresá un nombre antes de pedir sugerencia");
-            setTimeout(() => setSuggestionInfo(""), 3000);
-            return;
-        }
-        setIsSuggesting(true);
-        setSuggestionInfo("");
-        try {
-            const res = await fetch("/api/comercios/products/suggest-weight", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, description: description || null }),
-            });
-            if (!res.ok) {
-                const err = await res.json().catch(() => ({}));
-                setSuggestionInfo(err.error || "No se pudo obtener sugerencia");
-                return;
-            }
-            const data = await res.json();
-            if (data.weightGrams && data.volumeMl) {
-                const suggestedSize: ProductSize = data.suggestedSize || getSizeFromWeight(data.weightGrams);
-                setProductSize(suggestedSize);
-                setWeightGrams(String(data.weightGrams));
-                setVolumeMl(String(data.volumeMl));
-                if (data.packageCategoryId) setPackageCategoryId(data.packageCategoryId);
-                const sourceLabel =
-                    data.source === "CACHE" ? "encontrado en catálogo común" :
-                    data.source === "AI" ? "sugerido por IA" :
-                    data.source === "HEURISTIC" ? "estimado por nombre" :
-                    "sugerencia";
-                const sizeName = SIZE_METADATA[suggestedSize].displayName;
-                setSuggestionInfo(`Tamaño ${sourceLabel}: ${sizeName}. Podés cambiarlo si no coincide.`);
-            } else {
-                setSuggestionInfo("No encontramos tamaño para este producto. Elegí uno manualmente.");
-            }
-            setTimeout(() => setSuggestionInfo(""), 6000);
-        } catch (err) {
-            setSuggestionInfo("Error al obtener sugerencia. Cargá los valores manualmente.");
-            setTimeout(() => setSuggestionInfo(""), 4000);
-        } finally {
-            setIsSuggesting(false);
         }
     };
 
@@ -370,38 +321,21 @@ export default function EditProductForm({ product, categories }: EditProductForm
                             </div>
                         </div>
 
-                        {/* Tamaño del producto — rama feat/peso-volumen-productos */}
+                        {/* Tamaño del producto — feat/tamanos-producto-desde-ops (opciones de OPS) */}
                         <div className="border-t border-gray-100 pt-5">
-                            <div className="flex items-center justify-between gap-4 mb-4">
-                                <div>
-                                    <h3 className="text-sm font-bold text-gray-900">Tamaño del producto</h3>
-                                    <p className="text-xs text-gray-500 mt-0.5">
-                                        Elegí el tamaño. Define qué vehículo usamos para entregarlo.
-                                    </p>
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={handleSuggestWeight}
-                                    disabled={isLoading || isSuggesting}
-                                    className="flex items-center gap-2 px-3 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-bold rounded-lg border border-blue-100 transition disabled:opacity-50 whitespace-nowrap"
-                                >
-                                    {isSuggesting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                                    Sugerir
-                                </button>
+                            <div className="mb-4">
+                                <h3 className="text-sm font-bold text-gray-900">Tamaño del producto</h3>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    Elegí el tamaño. Define qué vehículo usamos para entregarlo.
+                                </p>
                             </div>
 
                             <SizeSelector
+                                options={sizeOptions}
                                 value={productSize}
                                 onChange={handleSelectSize}
                                 disabled={isLoading}
                             />
-
-                            {suggestionInfo && (
-                                <p className="text-xs text-blue-600 font-semibold mt-3 flex items-center gap-1.5">
-                                    <Info className="w-3.5 h-3.5 flex-shrink-0" />
-                                    {suggestionInfo}
-                                </p>
-                            )}
 
                             {/* Modo avanzado */}
                             <div className="mt-5 pt-4 border-t border-gray-50">
@@ -544,3 +478,4 @@ export default function EditProductForm({ product, categories }: EditProductForm
         </>
     );
 }
+

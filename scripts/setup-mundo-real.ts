@@ -13,9 +13,8 @@
  *   2. seed-biblia-launch         → StoreSettings, Points, Tiers, MoovyConfig
  *   3. seed-package-categories    → PackageCategory + DeliveryRate (Biblia v3)
  *   4. seed-delivery-zones        → 3 zonas A/B/C (polígonos vacíos)
- *   5. seed-product-weight-cache  → 130 productos comunes argentinos
- *   6. seed-real-world-test       → 4 cuentas test + 5 productos
- *   7. validate-ops-config        → integridad del panel OPS
+ *   5. seed-real-world-test       → 4 cuentas test + 5 productos
+ *   6. validate-ops-config        → integridad del panel OPS
  *
  * IDEMPOTENTE: cada seed individual lo es; corrido 2 veces no duplica.
  *
@@ -58,18 +57,12 @@ const STEPS: Step[] = [
         script: "seed-delivery-zones.ts",
     },
     {
-        name: "5. Cache de pesos comunes",
-        description: "130 productos típicos argentinos con peso/volumen estimado. Reduce llamadas a IA en el botón 'Sugerir' del form de comercio.",
-        script: "seed-product-weight-cache.ts",
-        args: ["--execute"],
-    },
-    {
-        name: "6. Cuentas test",
+        name: "5. Cuentas test",
         description: "Buyer + Merchant aprobado (5 productos) + Driver MOTO online + Seller marketplace. Direcciones reales en Ushuaia.",
         script: "seed-real-world-test.ts",
     },
     {
-        name: "7. Validación final",
+        name: "6. Validación final",
         description: "9 tests de integridad del panel OPS. Detecta configs faltantes o inconsistentes.",
         script: "validate-ops-config.ts",
         optional: true, // Falla por inconsistencias menores no bloquea el setup
@@ -157,3 +150,4 @@ if (isExecute) {
 } else {
     dryRun();
 }
+

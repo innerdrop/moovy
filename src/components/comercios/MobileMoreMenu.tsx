@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { MoreHorizontal, X, Store, Megaphone, Star, Settings, Building2 } from "lucide-react";
+import { MoreHorizontal, X, Store, Megaphone, Star, Settings, Building2, Lock } from "lucide-react";
 import { SupportNavBadgeMobile } from "@/components/comercios/SupportNavBadge";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
@@ -29,12 +29,18 @@ const moreItems: MoreItem[] = [
 export default function MobileMoreMenu() {
     const [open, setOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    // feat/feature-flags-ops: leer flags de la lista. Cualquier item que tenga
-    // requiresFlag y el flag este OFF se filtra del menu.
+    // feat/feature-flags-ops + feat/tamanos-producto-desde-ops: leer flags de la
+    // lista. Con el flag OFF: Paquetes se muestra en GRIS/bloqueado (no navega);
+    // el resto (ej: Publicidad) se oculta del menú.
     const { flags } = useFeatureFlags(["merchant.paquetes", "merchant.publicidad"]);
-    const visibleItems = moreItems.filter(
-        (item) => !item.requiresFlag || flags[item.requiresFlag as keyof typeof flags]
-    );
+    const itemState = (item: MoreItem): "visible" | "locked" | "hidden" => {
+        if (!item.requiresFlag) return "visible";
+        if (flags[item.requiresFlag as keyof typeof flags]) return "visible";
+        return item.requiresFlag === "merchant.paquetes" ? "locked" : "hidden";
+    };
+    const shownItems = moreItems
+        .map((item) => ({ item, state: itemState(item) }))
+        .filter(({ state }) => state !== "hidden");
 
     // Close on outside click
     useEffect(() => {
@@ -83,17 +89,30 @@ export default function MobileMoreMenu() {
                     {/* Menu */}
                     <div className="absolute bottom-full right-0 mb-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
                         <div className="py-2">
-                            {visibleItems.map((item) => (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    onClick={() => setOpen(false)}
-                                    className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                                >
-                                    <item.icon className="w-5 h-5" />
-                                    <span className="text-sm font-medium">{item.label}</span>
-                                </Link>
-                            ))}
+                            {shownItems.map(({ item, state }) =>
+                                state === "locked" ? (
+                                    <div
+                                        key={item.href}
+                                        className="flex items-center gap-3 px-4 py-3 text-gray-300 cursor-not-allowed"
+                                        title="Disponible próximamente"
+                                        aria-disabled="true"
+                                    >
+                                        <item.icon className="w-5 h-5" />
+                                        <span className="text-sm font-medium flex-1">{item.label}</span>
+                                        <Lock className="w-4 h-4" />
+                                    </div>
+                                ) : (
+                                    <Link
+                                        key={item.href}
+                                        href={item.href}
+                                        onClick={() => setOpen(false)}
+                                        className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                                    >
+                                        <item.icon className="w-5 h-5" />
+                                        <span className="text-sm font-medium">{item.label}</span>
+                                    </Link>
+                                )
+                            )}
                             {/* Soporte with badge */}
                             <div onClick={() => setOpen(false)}>
                                 <SupportNavBadgeMobile variant="menu" />

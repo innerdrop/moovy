@@ -16,12 +16,14 @@ import {
     Star,
     Megaphone,
     Building2,
+    Lock,
 } from "lucide-react";
 
 import SupportNavBadge from "@/components/comercios/SupportNavBadge";
 import MobileMoreMenu from "@/components/comercios/MobileMoreMenu";
 import PortalSwitcher from "@/components/ui/PortalSwitcher";
 import PWAInstallPrompt from "@/components/onboarding/PWAInstallPrompt";
+import { isFeatureEnabled, FEATURE_FLAGS } from "@/lib/feature-flags";
 
 export default async function ComerciosLayout({ children }: { children: React.ReactNode }) {
     const session = await auth();
@@ -37,15 +39,19 @@ export default async function ComerciosLayout({ children }: { children: React.Re
     const authedSession = session!;
     const userRoles = getUserRoles(authedSession);
 
+    // feat/tamanos-producto-desde-ops: si el flag merchant.paquetes está OFF, el
+    // item Paquetes se muestra en gris/bloqueado (no navega) en vez de invitar a comprar.
+    const paquetesEnabled = await isFeatureEnabled(FEATURE_FLAGS.MERCHANT_PAQUETES);
+
     // Primeros 4 = bottom bar mobile. El resto va en menú "Más"
-    const navItems = [
+    const navItems: Array<{ href: string; icon: React.ElementType; label: string; requiresFlag?: string }> = [
         { href: "/comercios", icon: LayoutDashboard, label: "Inicio" },
         { href: "/comercios/pedidos", icon: ShoppingCart, label: "Pedidos" },
         { href: "/comercios/productos", icon: Package, label: "Productos" },
         { href: "/comercios/pagos", icon: DollarSign, label: "Pagos" },
         // --- Los siguientes van en sidebar desktop + menú "Más" mobile ---
         { href: "/comercios/mi-comercio", icon: Building2, label: "Mi Comercio" },
-        { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes" },
+        { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes", requiresFlag: "merchant.paquetes" },
         { href: "/comercios/publicidad", icon: Megaphone, label: "Publicidad" },
         { href: "/comercios/resenas", icon: Star, label: "Reseñas" },
         // Soporte is handled separately via SupportNavBadge component
@@ -86,6 +92,24 @@ export default async function ComerciosLayout({ children }: { children: React.Re
                                             </Link>
                                         </li>
                                     </React.Fragment>
+                                );
+                            }
+                            // Item bloqueado por flag OFF (ej: Paquetes pre-launch):
+                            // se muestra en gris con candado y no navega.
+                            const locked = item.requiresFlag === "merchant.paquetes" && !paquetesEnabled;
+                            if (locked) {
+                                return (
+                                    <li key={item.href}>
+                                        <div
+                                            className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-300 cursor-not-allowed font-medium"
+                                            title="Disponible próximamente"
+                                            aria-disabled="true"
+                                        >
+                                            <item.icon className="w-5 h-5" />
+                                            <span className="flex-1">{item.label}</span>
+                                            <Lock className="w-4 h-4" />
+                                        </div>
+                                    </li>
                                 );
                             }
                             return (

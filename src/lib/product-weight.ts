@@ -13,15 +13,11 @@
 // REGLA: nadie consume Product.weightGrams crudo. Todo pasa por resolveItemWeight()
 // para que el fallback sea consistente y testeable.
 //
-// HEURÍSTICA por keywords (applyHeuristic): se usa SOLO cuando el cache no tiene
-// match y el flag de IA está apagado. Reconoce patrones argentinos comunes:
-// "1.5L", "500ml", "1kg", "pack x6", etc. NO es la fuente principal — es fallback.
-//
-// HASHING: el cache se indexa por sha256 del nombre normalizado (lowercase + trim
-// + collapse de espacios + sin tildes). Esto permite que "Coca Cola 1.5L" y
-// "  COCA  COLA  1.5L  " hagan match al mismo entry.
-
-import { createHash } from "crypto";
+// NOTA (feat/tamanos-producto-desde-ops): la sugerencia automática de peso
+// (cache global + heurística + endpoint suggest-weight) se removió. Los tamaños
+// que ve el comercio ahora se DERIVAN de la config de OPS (tabla PackageCategory)
+// — ver src/lib/product-sizes.ts. Este archivo conserva la metadata cosmética
+// (SIZE_METADATA) y los resolvers de peso downstream.
 
 // ─── Tipos ───────────────────────────────────────────────────────────────────
 
@@ -51,13 +47,6 @@ export interface CartWeightSummary {
   itemCount: number;
   /** True si TODOS los items tenían weightGrams/volumeMl explícitos */
   allExplicit: boolean;
-}
-
-export interface HeuristicSuggestion {
-  weightGrams: number;
-  volumeMl: number;
-  confidence: number; // 0-100
-  matchedPatterns: string[];
 }
 
 // ─── Constantes de fallback ──────────────────────────────────────────────────
@@ -111,8 +100,36 @@ export interface SizeMetadata {
 }
 
 /**
- * Metadata canónica de las 5 categorías. Esta es LA fuente de verdad — el
- * form, el endpoint, el cache y el motor logístico la consumen.
+ * Opción de tamaño que ve el comercio en el formulario, DERIVADA de la config
+ * de OPS (tabla PackageCategory). A diferencia de SIZE_METADATA — que es
+ * cosmético + fallback hardcodeado —, estos valores (rango de peso, vehículo
+ * mínimo, peso asumido) salen de la DB. El helper que la arma vive en
+ * src/lib/product-sizes.ts (server, usa prisma). El TIPO vive acá para que los
+ * componentes cliente (SizeSelector, NewProductForm) lo importen sin arrastrar
+ * prisma al bundle.
+ */
+export interface MerchantSizeOption {
+  /** name de la PackageCategory (MICRO, SMALL, … o una custom de OPS) */
+  size: string;
+  displayName: string;
+  description: string;
+  examples: string;
+  iconName: "Mail" | "ShoppingBag" | "Package" | "PackageOpen" | "Truck";
+  /** Rango de peso legible, derivado de maxWeightGrams de OPS (ej: "Hasta 2 kg") */
+  weightRange: string;
+  /** Peso unitario asumido al elegir esta categoría (deriva del rango de OPS) */
+  assumedWeightGrams: number;
+  /** Volumen unitario asumido */
+  assumedVolumeMl: number;
+  /** Vehículo mínimo permitido por OPS para esta categoría ("Bici", "Moto"…) */
+  vehicleLabel: string;
+}
+
+/**
+ * Metadata cosmética + fallback de las 5 categorías estándar. Ya NO es la fuente
+ * de verdad de peso/vehículo (eso ahora vive en OPS/PackageCategory). Se usa
+ * para: (a) los ejemplos/ícono/nombre que muestra el form, keyados por name;
+ * (b) fallback de los resolvers de peso downstream cuando no hay category.
  */
 export const SIZE_METADATA: Record<ProductSize, SizeMetadata> = {
   MICRO: {
@@ -214,33 +231,6 @@ const CATEGORY_DEFAULTS: Record<string, { weightGrams: number; volumeMl: number 
   FLETE: { weightGrams: 100000, volumeMl: 150000 },
 };
 
-// ─── Normalización + hashing ─────────────────────────────────────────────────
-
-/**
- * Normaliza el nombre del producto para hashing del cache.
- * Lowercase, trim, colapsa espacios múltiples, remueve tildes/diacríticos,
- * remueve puntuación común. NO recorta unidades — "coca cola 1.5l" y
- * "coca cola 2l" son entradas distintas adrede.
- */
-export function normalizeProductName(name: string): string {
-  return name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "") // strip diacritics
-    .replace(/[.,;:!?"'`()[\]{}]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/**
- * Hash sha256 del nombre normalizado. Es la clave de búsqueda en
- * ProductWeightCache.nameHash.
- */
-export function hashProductName(name: string): string {
-  const normalized = normalizeProductName(name);
-  return createHash("sha256").update(normalized).digest("hex");
-}
-
 // ─── Resolución de peso unitario ─────────────────────────────────────────────
 
 /**
@@ -323,158 +313,4 @@ export function resolveCartWeight(items: CartItemWeightInput[]): CartWeightSumma
   }
 
   return { totalGrams, totalMl, itemCount, allExplicit };
-}
-
-// ─── Heurística por keywords (fallback cuando IA está OFF) ───────────────────
-
-/**
- * Patrones de unidades con su factor de conversión a gramos/ml.
- * Orden importa: el primero que matchea gana.
- */
-const UNIT_PATTERNS: Array<{
-  regex: RegExp;
-  toGrams: (n: number) => number;
-  toMl: (n: number) => number;
-  pattern: string;
-}> = [
-  // Litros: "1.5L", "1,5 l", "2 litros"
-  {
-    regex: /(\d+(?:[.,]\d+)?)\s*(?:l|lt|lts|litros?)\b/i,
-    toGrams: (n) => Math.round(n * 1000),
-    toMl: (n) => Math.round(n * 1000),
-    pattern: "litros",
-  },
-  // Mililitros: "500ml", "750 ml"
-  {
-    regex: /(\d+(?:[.,]\d+)?)\s*ml\b/i,
-    toGrams: (n) => Math.round(n),
-    toMl: (n) => Math.round(n),
-    pattern: "mililitros",
-  },
-  // Kilos: "1kg", "2.5 kilos", "3 kilo"
-  {
-    regex: /(\d+(?:[.,]\d+)?)\s*(?:kg|kilos?)\b/i,
-    toGrams: (n) => Math.round(n * 1000),
-    toMl: (n) => Math.round(n * 1200), // sólidos: ~1.2× volumen
-    pattern: "kilos",
-  },
-  // Gramos: "500g", "250 gr", "100 gramos"
-  {
-    regex: /(\d+(?:[.,]\d+)?)\s*(?:g|gr|grs|gramos?)\b/i,
-    toGrams: (n) => Math.round(n),
-    toMl: (n) => Math.round(n * 1.2),
-    pattern: "gramos",
-  },
-];
-
-/**
- * Detecta multiplicadores tipo "pack x6", "x12", "caja de 24".
- * Devuelve el factor (1 si no encuentra).
- */
-function detectPackMultiplier(name: string): number {
-  const xMatch = name.match(/\bx\s*(\d+)\b/i);
-  if (xMatch) return parseInt(xMatch[1], 10);
-  const cajaMatch = name.match(/\b(?:caja|pack|paquete|set)\s+(?:de\s+)?(\d+)\b/i);
-  if (cajaMatch) return parseInt(cajaMatch[1], 10);
-  return 1;
-}
-
-/**
- * Diccionario base de productos típicos sin medida en el nombre.
- * Pensado para Ushuaia: cubrir kioscos/restaurantes/farmacias comunes.
- * Cada entrada se matchea con includes() sobre el nombre normalizado.
- *
- * NO pretende ser exhaustivo. Es complemento de la heurística numérica.
- */
-const KEYWORD_DICTIONARY: Array<{
-  keyword: string;
-  weightGrams: number;
-  volumeMl: number;
-  confidence: number;
-}> = [
-  // Comida
-  { keyword: "hamburguesa", weightGrams: 350, volumeMl: 600, confidence: 70 },
-  { keyword: "pizza", weightGrams: 800, volumeMl: 4000, confidence: 75 },
-  { keyword: "empanada", weightGrams: 80, volumeMl: 150, confidence: 80 },
-  { keyword: "sandwich", weightGrams: 250, volumeMl: 500, confidence: 70 },
-  { keyword: "milanesa", weightGrams: 250, volumeMl: 400, confidence: 75 },
-  { keyword: "alfajor", weightGrams: 80, volumeMl: 120, confidence: 85 },
-  { keyword: "factura", weightGrams: 60, volumeMl: 100, confidence: 75 },
-  // Bebidas (sin medida explícita)
-  { keyword: "cafe", weightGrams: 250, volumeMl: 350, confidence: 65 },
-  { keyword: "gaseosa", weightGrams: 1500, volumeMl: 1500, confidence: 60 },
-  { keyword: "cerveza", weightGrams: 1000, volumeMl: 1000, confidence: 65 },
-  // Farmacia
-  { keyword: "blister", weightGrams: 30, volumeMl: 60, confidence: 80 },
-  { keyword: "ibuprofeno", weightGrams: 30, volumeMl: 60, confidence: 75 },
-  { keyword: "pastillas", weightGrams: 30, volumeMl: 60, confidence: 70 },
-  { keyword: "jarabe", weightGrams: 250, volumeMl: 200, confidence: 75 },
-  // Ferretería
-  { keyword: "tornillo", weightGrams: 10, volumeMl: 20, confidence: 70 },
-  { keyword: "clavo", weightGrams: 5, volumeMl: 10, confidence: 70 },
-  { keyword: "martillo", weightGrams: 600, volumeMl: 800, confidence: 75 },
-  { keyword: "destornillador", weightGrams: 200, volumeMl: 400, confidence: 75 },
-  // Mueblería / hogar (peso alto)
-  { keyword: "silla", weightGrams: 5000, volumeMl: 60000, confidence: 65 },
-  { keyword: "mesa", weightGrams: 15000, volumeMl: 200000, confidence: 60 },
-  { keyword: "sillon", weightGrams: 25000, volumeMl: 300000, confidence: 60 },
-  { keyword: "colchon", weightGrams: 25000, volumeMl: 400000, confidence: 65 },
-  // Indumentaria
-  { keyword: "remera", weightGrams: 200, volumeMl: 1000, confidence: 75 },
-  { keyword: "campera", weightGrams: 800, volumeMl: 5000, confidence: 70 },
-  { keyword: "zapatilla", weightGrams: 700, volumeMl: 4000, confidence: 75 },
-  // Electro
-  { keyword: "auriculares", weightGrams: 250, volumeMl: 500, confidence: 75 },
-  { keyword: "cable", weightGrams: 150, volumeMl: 400, confidence: 70 },
-  { keyword: "cargador", weightGrams: 200, volumeMl: 300, confidence: 75 },
-];
-
-/**
- * Aplica heurística por keywords sobre el nombre del producto.
- * Devuelve null si NO encuentra ningún patrón con confianza razonable.
- *
- * Estrategia:
- *   1. Buscar unidades numéricas (litros, kilos, ml, g) → confidence 90.
- *   2. Si no, buscar keyword del diccionario → confidence variable.
- *   3. Multiplicar por pack si hay "x6", "caja de 12", etc.
- */
-export function applyHeuristic(name: string, description?: string | null): HeuristicSuggestion | null {
-  const fullText = normalizeProductName([name, description ?? ""].join(" "));
-  const matchedPatterns: string[] = [];
-
-  // Paso 1: unidades numéricas
-  for (const unit of UNIT_PATTERNS) {
-    const m = fullText.match(unit.regex);
-    if (m) {
-      const value = parseFloat(m[1].replace(",", "."));
-      if (!isFinite(value) || value <= 0) continue;
-      const packMul = detectPackMultiplier(fullText);
-      if (packMul > 1) matchedPatterns.push(`pack x${packMul}`);
-      matchedPatterns.push(unit.pattern);
-      return {
-        weightGrams: unit.toGrams(value) * packMul,
-        volumeMl: unit.toMl(value) * packMul,
-        confidence: 90,
-        matchedPatterns,
-      };
-    }
-  }
-
-  // Paso 2: diccionario de keywords
-  for (const entry of KEYWORD_DICTIONARY) {
-    if (fullText.includes(entry.keyword)) {
-      const packMul = detectPackMultiplier(fullText);
-      if (packMul > 1) matchedPatterns.push(`pack x${packMul}`);
-      matchedPatterns.push(`keyword:${entry.keyword}`);
-      return {
-        weightGrams: entry.weightGrams * packMul,
-        volumeMl: entry.volumeMl * packMul,
-        confidence: entry.confidence,
-        matchedPatterns,
-      };
-    }
-  }
-
-  // Paso 3: nada matcheó
-  return null;
 }

@@ -1,25 +1,26 @@
 // SizeSelector — Cards visuales para que el comerciante elija tamaño del producto
-// Rama: feat/peso-volumen-productos
+// Rama: feat/tamanos-producto-desde-ops (antes: feat/peso-volumen-productos)
 //
 // Inspirado en Glovo/Cabify: en vez de tipear gramos, el comerciante elige
-// una de 5 categorías con icono + descripción + ejemplos. Cada categoría mapea
-// internamente a peso/volumen + vehículo recomendado (ver SIZE_METADATA en
-// src/lib/product-weight.ts).
+// una categoría con icono + descripción + ejemplos. Cada categoría mapea a
+// peso/volumen + vehículo mínimo.
 //
-// El componente expone una API simple:
-//   <SizeSelector value={selectedSize} onChange={setSize} disabled={loading} />
+// CAMBIO CLAVE: las opciones YA NO están hardcodeadas. Vienen por prop desde el
+// server (getMerchantSizeOptions en src/lib/product-sizes.ts), que las deriva de
+// la config de OPS (PackageCategory). Así el rango de peso y el vehículo que ve
+// el comercio coinciden 1:1 con lo que está configurado en OPS.
 //
-// El padre solo necesita guardar `selectedSize: ProductSize | null`. La
-// derivación a weightGrams/volumeMl la hace el server action al guardar.
+//   <SizeSelector options={sizeOptions} value={selectedSize} onChange={...} />
 
 "use client";
 
-import { Mail, ShoppingBag, Package, PackageOpen, Truck, Check } from "lucide-react";
-import { ProductSize, SIZE_METADATA, SIZE_ORDER, SizeMetadata } from "@/lib/product-weight";
+import { Mail, ShoppingBag, Package, PackageOpen, Truck, Check, Bike } from "lucide-react";
+import type { MerchantSizeOption } from "@/lib/product-weight";
 
 interface SizeSelectorProps {
-    value: ProductSize | null;
-    onChange: (size: ProductSize) => void;
+    options: MerchantSizeOption[];
+    value: string | null;
+    onChange: (option: MerchantSizeOption) => void;
     disabled?: boolean;
 }
 
@@ -29,20 +30,20 @@ const ICON_MAP = {
     Package,
     PackageOpen,
     Truck,
-};
+} as const;
 
 function SizeCard({
-    meta,
+    option,
     selected,
     disabled,
     onClick,
 }: {
-    meta: SizeMetadata;
+    option: MerchantSizeOption;
     selected: boolean;
     disabled?: boolean;
     onClick: () => void;
 }) {
-    const Icon = ICON_MAP[meta.iconName];
+    const Icon = ICON_MAP[option.iconName] ?? Package;
 
     return (
         <button
@@ -70,32 +71,51 @@ function SizeCard({
                 <Icon className="w-5 h-5" />
             </div>
 
-            <h4 className="font-bold text-gray-900 text-sm leading-tight">{meta.displayName}</h4>
-            <p className="text-xs text-gray-500 font-medium mt-0.5">{meta.description}</p>
+            <h4 className="font-bold text-gray-900 text-sm leading-tight">{option.displayName}</h4>
+            {option.description && (
+                <p className="text-xs text-gray-500 font-medium mt-0.5">{option.description}</p>
+            )}
 
             <div className="mt-2 space-y-1">
-                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">{meta.weightRange}</p>
-                <p className="text-[11px] text-gray-600 italic leading-snug">Ej: {meta.examples}</p>
+                <p className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">{option.weightRange}</p>
+                {option.examples && (
+                    <p className="text-[11px] text-gray-600 italic leading-snug">Ej: {option.examples}</p>
+                )}
+            </div>
+
+            {/* Vehículo mínimo — sale de OPS. Le muestra al comercio la consecuencia
+                logística de su elección ("esto lo lleva una moto"). */}
+            <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
+                <Bike className="w-3.5 h-3.5" />
+                <span>Se entrega en: {option.vehicleLabel}</span>
             </div>
         </button>
     );
 }
 
-export default function SizeSelector({ value, onChange, disabled }: SizeSelectorProps) {
+export default function SizeSelector({ options, value, onChange, disabled }: SizeSelectorProps) {
+    if (options.length === 0) {
+        // Defensivo: OPS sin categorías activas. No rompemos el alta — el producto
+        // se puede crear sin tamaño (cae al fallback conservador del motor).
+        return (
+            <p className="text-xs text-gray-500 bg-gray-50 border border-gray-100 rounded-xl p-3">
+                No hay tamaños configurados todavía. Podés publicar el producto igual; el equipo de Moovy
+                asignará el vehículo por defecto.
+            </p>
+        );
+    }
+
     return (
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            {SIZE_ORDER.map((size) => {
-                const meta = SIZE_METADATA[size];
-                return (
-                    <SizeCard
-                        key={size}
-                        meta={meta}
-                        selected={value === size}
-                        disabled={disabled}
-                        onClick={() => onChange(size)}
-                    />
-                );
-            })}
+            {options.map((option) => (
+                <SizeCard
+                    key={option.size}
+                    option={option}
+                    selected={value === option.size}
+                    disabled={disabled}
+                    onClick={() => onChange(option)}
+                />
+            ))}
         </div>
     );
 }

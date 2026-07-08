@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { notFound, redirect } from "next/navigation";
 import EditProductForm from "@/components/comercios/EditProductForm";
+import { getMerchantSizeOptions } from "@/lib/product-sizes";
 
 interface PageProps {
     params: Promise<{ id: string }>;
@@ -49,9 +50,13 @@ export default async function EditProductPage({ params }: PageProps) {
         orderBy: { name: "asc" },
     });
 
+    // Opciones de tamaño derivadas de OPS (PackageCategory).
+    const sizeOptions = await getMerchantSizeOptions();
+
     return (
         <div className="max-w-4xl mx-auto">
             <EditProductForm
+                sizeOptions={sizeOptions}
                 product={{
                     id: product.id,
                     name: product.name,
