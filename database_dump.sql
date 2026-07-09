@@ -2394,7 +2394,7 @@ cmqz5vt6v0084xhd80bepwszu	Café Beagle	cafe-beagle	Café de especialidad y paste
 cmqz5vtiv009exhd8vvyf8nns	Farmacia del Canal	farmacia-del-canal	Farmacia con delivery rápido. Medicamentos y cuidado personal.	https://picsum.photos/seed/moovy-logo-farmacia-del-canal/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio7@somosmoovy.com	+5492901555007	Av. San Martín 640, Ushuaia	-54.8061	-68.3055	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:49.684	2026-06-29 11:55:49.684	Farmacia	cmqz5vtik0097xhd8n00sds6h	2026-06-29 11:55:49.687	2026-06-29 11:55:49.687	4.4	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:49.684	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:49.687	\N
 cmqz5vttb00aoxhd8gww43etq	Verdulería La Huerta Fueguina	verduleria-la-huerta	Frutas y verduras frescas, selección diaria.	https://picsum.photos/seed/moovy-logo-verduleria-la-huerta/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio8@somosmoovy.com	+5492901555008	Karukinka 210, Ushuaia	-54.7995	-68.3155	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:50.06	2026-06-29 11:55:50.06	Verdulería	cmqz5vtsy00ahxhd807lierxs	2026-06-29 11:55:50.063	2026-06-29 11:55:50.063	4.6	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:50.06	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:50.063	\N
 cmqz5vrhh001qxhd80605qjj8	Patagonia Drinks	patagonia-drinks	Las mejores bebidas del fin del mundo. Cervezas, gaseosas y más.	https://picsum.photos/seed/moovy-logo-patagonia-drinks/600/600	\N	t	f	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio1@somosmoovy.com	+5492901555001	San Martín 456, Ushuaia	-54.8069	-68.3042	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:47.04	2026-06-29 11:55:47.04	Kiosco	cmqz5vrgz001jxhd84w7eneza	2026-06-29 11:55:47.045	2026-07-06 23:22:37.811	4.7	\N	\N	\N	10	\N	0	\N	\N	t	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:47.04	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:47.045	\N
-cmqz5vswb006uxhd8c5bcq86n	Burger del Fin del Mundo	burger-fin-del-mundo	Hamburguesas smash con ingredientes locales.	https://picsum.photos/seed/moovy-logo-burger-fin-del-mundo/600/600	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1783445927411-logo.webp	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio5@somosmoovy.com	+5492901555005	9 de Julio 120, Ushuaia	-54.8058	-68.3075	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:48.872	2026-06-29 11:55:48.872	Hamburguesería	cmqz5vsvy006nxhd8cea1yx8k	2026-06-29 11:55:48.876	2026-07-07 23:49:57.763	4.5	\N	\N	Burger del Fin del Mundo	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	+5492901222222	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:48.872	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:48.876	\N
+cmqz5vswb006uxhd8c5bcq86n	Burger del Fin del Mundo	burger-fin-del-mundo	Hamburguesas smash con ingredientes locales.	https://picsum.photos/seed/moovy-logo-burger-fin-del-mundo/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio5@somosmoovy.com	+5492901555005	9 de Julio 120, Ushuaia	-54.8058	-68.3075	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:48.872	2026-06-29 11:55:48.872	Hamburguesería	cmqz5vsvy006nxhd8cea1yx8k	2026-06-29 11:55:48.876	2026-07-08 23:22:52.859	4.5	\N	\N	Burger del Fin del Mundo	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	+5492901222222	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:48.872	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:48.876	\N
 \.
 
 
@@ -2651,7 +2651,6 @@ cmqz5vsws0074xhd8fu7xje1i	Cheeseburger Clásica	cheeseburger	Medallón, cheddar,
 cmqz5vsx0007axhd81gi0m5ww	Veggie Burger	veggie-burger	Medallón de garbanzo y remolacha.	cmqz5vswb006uxhd8c5bcq86n	7200	4000	12	5	t	f	\N	\N	\N	2026-06-29 11:55:48.9	2026-06-29 11:55:48.9	\N	\N	\N	\N
 cmqz5vsx8007gxhd8gq8utpws	Papas Cheddar y Bacon	papas-cheddar-bacon	Papas con cheddar y panceta.	cmqz5vswb006uxhd8c5bcq86n	5400	2800	28	5	t	f	\N	\N	\N	2026-06-29 11:55:48.908	2026-06-29 11:55:48.908	\N	\N	\N	\N
 cmqz5vsxg007mxhd8xms5cyyk	Nuggets x10	nuggets-10	10 nuggets crocantes con salsa.	cmqz5vswb006uxhd8c5bcq86n	5800	3100	2	5	t	f	\N	\N	\N	2026-06-29 11:55:48.917	2026-06-29 11:55:48.917	\N	\N	\N	\N
-cmqz5vsxo007sxhd8av6s1rmm	Cerveza Artesanal Pinta	pinta-artesanal	Pinta de cerveza artesanal local.	cmqz5vswb006uxhd8c5bcq86n	3800	2400	24	5	t	f	\N	\N	\N	2026-06-29 11:55:48.924	2026-06-29 11:55:48.924	\N	\N	\N	\N
 cmqz5vt740088xhd8njzv9jaq	Flat White	flat-white	Espresso doble con leche texturada.	cmqz5vt6v0084xhd80bepwszu	2900	1300	100	5	t	t	\N	\N	\N	2026-06-29 11:55:49.265	2026-06-29 11:55:49.265	\N	\N	\N	\N
 cmqz5vt7d008exhd8e225dbgn	Medialunas (3u)	medialunas-3	Tres medialunas de manteca.	cmqz5vt6v0084xhd80bepwszu	2400	1100	50	5	t	t	\N	\N	\N	2026-06-29 11:55:49.273	2026-06-29 11:55:49.273	\N	\N	\N	\N
 cmqz5vt7l008kxhd85l4k8cie	Cheesecake de Frutos Rojos	cheesecake	Porción de cheesecake casero.	cmqz5vt6v0084xhd80bepwszu	4200	2200	14	5	t	f	\N	\N	\N	2026-06-29 11:55:49.281	2026-06-29 11:55:49.281	\N	\N	\N	\N
@@ -3470,8 +3469,6 @@ cmrc815td00m475y67d6g6ybh	JABON NEUTRO PATRICIA ALLEN	jabon-neutro-patricia-alle
 cmrc815td00m575y6okejoq6o	PAN RALLADO MAROLIO 500G	pan-rallado-marolio-500g-k88hkk	\N	cmqz5vswb006uxhd8c5bcq86n	1792	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.373	2026-07-08 15:16:58.373	\N	\N	\N	7797470132623
 cmrc815td00m675y6t3dq8vwk	BEAGLE BOTELLA 1L GOLDEN ALE	beagle-botella-1l-golden-ale-4f51p2	\N	cmqz5vswb006uxhd8c5bcq86n	7840	0	3	5	f	f	\N	\N	\N	2026-07-08 15:16:58.373	2026-07-08 15:16:58.373	\N	\N	\N	7798137950055
 cmrc815td00m775y6lknnxjcj	PASO DE LOS TOROS 269ml	paso-de-los-toros-269ml-bqf3m5	\N	cmqz5vswb006uxhd8c5bcq86n	2352	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.373	2026-07-08 15:16:58.373	\N	\N	\N	7791813800774
-cmrc815yy00m875y6jmw5w7l9	soyunaprueba	soyunaprueba-utpilz	\N	cmqz5vswb006uxhd8c5bcq86n	247.52	0	4	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	99999
-cmrc815yy00m975y6k0lurue0	soyunaprueba2	soyunaprueba2-kemc19	\N	cmqz5vswb006uxhd8c5bcq86n	376.32	0	4	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	9998
 cmrc815yy00ma75y62wgrl8gb	soyprueba3	soyprueba3-o6z843	\N	cmqz5vswb006uxhd8c5bcq86n	1851.36	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7734
 cmrc815yy00mb75y6ye0ohg3p	HELADO KOPA	helado-kopa-8ncii7	\N	cmqz5vswb006uxhd8c5bcq86n	3136	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7790580135263
 cmrc815yy00mc75y6wgeogt7c	HELADO KOPA ARCOR CREMA AMERICANA/DULCE DE LECHE	helado-kopa-arcor-crema-americana-dulce-de-leche-ksmaoh	\N	cmqz5vswb006uxhd8c5bcq86n	3136	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7790580135287
@@ -3492,6 +3489,7 @@ cmrc815yz00mq75y64r6dk1a6	CHOCOLATE SHOT BLANCO 35g	chocolate-shot-blanco-35g-tw
 cmrc815yz00mr75y62mgehrco	SNACKY 60g	snacky-60g-xf7u1g	\N	cmqz5vswb006uxhd8c5bcq86n	3360	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7622300335052
 cmrc815yz00ms75y6xinu3d30	HABANITOS 60g	habanitos-60g-usgafn	\N	cmqz5vswb006uxhd8c5bcq86n	3360	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7622300335076
 cmrc815yz00mt75y6jqrusat8	ALFAJOR MILKA RELLENO DULCE DE LECHE 70g	alfajor-milka-relleno-dulce-de-leche-70g-1mr7xl	\N	cmqz5vswb006uxhd8c5bcq86n	2352	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7622202370021
+cmrc815yy00m975y6k0lurue0	soyunaprueba2	soyunaprueba2-kemc19	\N	cmqz5vswb006uxhd8c5bcq86n	376.32	0	4	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 23:34:18.389	\N	\N	\N	9998
 cmrc815yz00mu75y69lxpelxr	ALFAJOR MILKA BLANCO 70g	alfajor-milka-blanco-70g-60vjlz	\N	cmqz5vswb006uxhd8c5bcq86n	2352	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7622202370045
 cmrc815yz00mv75y6q9e4jgms	ALFAJOR TERRABUSI BLANCO TRIPLE	alfajor-terrabusi-blanco-triple-a2nq6t	\N	cmqz5vswb006uxhd8c5bcq86n	2352	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7622202805554
 cmrc815yz00mw75y6vug83hb9	TABACO LAS HOJAS	tabaco-las-hojas-jge9rp	\N	cmqz5vswb006uxhd8c5bcq86n	8512	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7798096700012
@@ -3824,7 +3822,7 @@ cmrc815za00vz75y6rc7y8yp4	GUMMY FOOTBALLS	gummy-footballs-dezq1o	\N	cmqz5vswb006
 cmrc815za00w075y6m9hlmp3y	QUESO CREMOSO X KG	queso-cremoso-x-kg-6o4wwb	\N	cmqz5vswb006uxhd8c5bcq86n	11200	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	222
 cmrc815za00w175y66intntie	CREMA DELTAL COLGATE 180G	crema-deltal-colgate-180g-35ukwa	\N	cmqz5vswb006uxhd8c5bcq86n	8960	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7509546686509
 cmrc815za00w275y610dvv25m	REXONA INVISIBLE	rexona-invisible-ebh65r	\N	cmqz5vswb006uxhd8c5bcq86n	5600	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	78944794
-cmrc815z000nx75y6vlpcpqri	MONEDA FELFORT	moneda-felfort-24aswk	\N	cmqz5vswb006uxhd8c5bcq86n	784	0	9	5	t	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 18:21:04.033	\N	\N	\N	206
+cmqz5vsxo007sxhd8av6s1rmm	Cerveza Artesanal Pinta	pinta-artesanal	Pinta de cerveza artesanal local.	cmqz5vswb006uxhd8c5bcq86n	3800	2400	24	5	t	f	\N	\N	\N	2026-06-29 11:55:48.924	2026-07-08 23:44:30.249	\N	\N	\N	\N
 \.
 
 
@@ -3937,6 +3935,7 @@ cmqz5vtu400b8xhd8lc22lyqg	cmqz5vttz00b4xhd8p5x14oeu	https://picsum.photos/seed/m
 cmqz5vtuc00bexhd8f2zju172	cmqz5vtu700baxhd85r80nq4c	https://picsum.photos/seed/moovy-palta/600/600	Palta Hass (u)	0
 cmqz5vtuk00bkxhd8856goox3	cmqz5vtuf00bgxhd8gls84ah6	https://picsum.photos/seed/moovy-lechuga/600/600	Lechuga Mantecosa	0
 cmqz5vtur00bqxhd8i9bsb5je	cmqz5vtun00bmxhd8ij93bqj4	https://picsum.photos/seed/moovy-frutillas/600/600	Frutillas (250g)	0
+cmrcpsqjg00037nue72igl8ba	cmrc815yy00m975y6k0lurue0	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1783553654082-ushuaia-bg.webp	soyunaprueba2	0
 \.
 
 
@@ -4027,7 +4026,8 @@ COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtota
 --
 
 COPY public."SupportChat" (id, "userId", "merchantId", "operatorId", subject, category, status, priority, rating, "ratingComment", "lastMessageAt", "resolvedAt", "createdAt", "updatedAt", origin) FROM stdin;
-cmrc2vw0f000113mgtop0d6rn	cmqz5vsvy006nxhd8cea1yx8k	cmqz5vswb006uxhd8c5bcq86n	\N	Problema con un pedido	general	active	normal	\N	\N	2026-07-08 12:54:41.266	\N	2026-07-08 12:52:54.35	2026-07-08 12:54:41.268	MERCHANT
+cmrc2vw0f000113mgtop0d6rn	cmqz5vsvy006nxhd8cea1yx8k	cmqz5vswb006uxhd8c5bcq86n	\N	Problema con un pedido	general	resolved	normal	\N	\N	2026-07-08 23:51:22.93	2026-07-09 00:47:50.454	2026-07-08 12:52:54.35	2026-07-09 00:47:50.456	MERCHANT
+cmrcsjs7o000d7nuefmjm1j2l	cmqz5vsvy006nxhd8cea1yx8k	cmqz5vswb006uxhd8c5bcq86n	cmrcsilkn00097nuetc7vfy53	Consulta general	general	closed	normal	\N	\N	2026-07-09 00:51:19.571	2026-07-09 00:58:59.213	2026-07-09 00:51:19.571	2026-07-09 00:58:59.215	MERCHANT
 \.
 
 
@@ -4038,6 +4038,13 @@ cmrc2vw0f000113mgtop0d6rn	cmqz5vsvy006nxhd8cea1yx8k	cmqz5vswb006uxhd8c5bcq86n	\N
 COPY public."SupportMessage" (id, "chatId", "senderId", content, "isFromAdmin", "isSystem", "isRead", "attachmentUrl", "attachmentType", "createdAt") FROM stdin;
 cmrc2vw0f000313mglqhiykjm	cmrc2vw0f000113mgtop0d6rn	cmqz5vsvy006nxhd8cea1yx8k	Esto es un mensaje de prueba	f	f	t	\N	\N	2026-07-08 12:52:54.35
 cmrc2y6hx000513mgml5n4sfh	cmrc2vw0f000113mgtop0d6rn	cmqz5vqsx0000xhd86fq6wm5d	Hola! Buen día!	t	f	t	\N	\N	2026-07-08 12:54:41.253
+cmrcn38b500027nueukda4uf2	cmrc2vw0f000113mgtop0d6rn	cmqz5vsvy006nxhd8cea1yx8k	Como estas?	f	f	t	\N	\N	2026-07-08 22:18:29.201
+cmrcqep0f00057nue9nm77cgx	cmrc2vw0f000113mgtop0d6rn	cmqz5vqsx0000xhd86fq6wm5d	fgd	t	f	t	\N	\N	2026-07-08 23:51:22.91
+cmrcsfav100077nue73gpd1bb	cmrc2vw0f000113mgtop0d6rn	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-09 00:47:50.46
+cmrcsjs7o000g7nue9imo8rn2	cmrcsjs7o000d7nuefmjm1j2l	cmqz5vqsx0000xhd86fq6wm5d	Admin MOOVY es tu operador asignado. En un momento te atiende, Diego Beagle.	t	t	t	\N	\N	2026-07-09 00:51:19.571
+cmrcsjs7o000f7nuej6oaquld	cmrcsjs7o000d7nuefmjm1j2l	cmqz5vsvy006nxhd8cea1yx8k	No me acreditaron los ultimos puntos	f	f	t	\N	\N	2026-07-09 00:51:19.571
+cmrcsthnf000m7nuerl0z0r0i	cmrcsjs7o000d7nuefmjm1j2l	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-09 00:58:52.443
+cmrcstmvu000o7nue0s2qbsm0	cmrcsjs7o000d7nuefmjm1j2l	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-09 00:58:59.225
 \.
 
 
@@ -4046,6 +4053,7 @@ cmrc2y6hx000513mgml5n4sfh	cmrc2vw0f000113mgtop0d6rn	cmqz5vqsx0000xhd86fq6wm5d	Ho
 --
 
 COPY public."SupportOperator" (id, "userId", "displayName", "isActive", "isOnline", "maxChats", "lastSeenAt", "createdAt", "updatedAt") FROM stdin;
+cmrcsilkn00097nuetc7vfy53	cmqz5vqsx0000xhd86fq6wm5d	Admin MOOVY	t	f	5	2026-07-09 00:51:43.484	2026-07-09 00:50:24.311	2026-07-09 00:51:43.486
 \.
 
 
@@ -4070,9 +4078,9 @@ cmqz5vw6e00frxhd8xzbnhvi3	repartidor4@somosmoovy.com	$2b$12$SCzlk3i5xewt6sCl6HzM
 cmqz5vwws00gbxhd8xdblt14z	cliente3@somosmoovy.com	$2b$12$9q91L9dMys9zsNJgBBKjgO3rmqK5OFExmfJJEbUojP7g8AJLw4Ufa	Lucía Test	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwws00gcxhd8ifwc7bkh	\N	2026-06-29 11:55:54.076	2026-06-29 11:55:54.076	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vx5l00ghxhd8xnar59ix	cliente4@somosmoovy.com	$2b$12$EfMi32tg/BNF9KGFede11OJs3dScKvyk3ted7lL7Ds5MFgBQ80Hve	Marco Demo	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vx5l00gixhd8lk39samr	\N	2026-06-29 11:55:54.393	2026-06-29 11:55:54.393	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vva600f3xhd89zcsytov	repartidor1@somosmoovy.com	$2b$12$wM6iMD5E3RXXdUr5GYnjc.ywxwzoF08aXzL.JKLJSHm0NzMKtQ3RW	Mateo Rider	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vva600f4xhd8q48id7j2	\N	2026-06-29 11:55:51.966	2026-06-29 12:11:39.124	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
-cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.37Whxp97s8kSiR7D.jXmok.DPmVC8uu	 				COMERCIO	\N	\N	0	0	f	cmqz5vsvy006oxhd85im89bep	\N	2026-06-29 11:55:48.862	2026-07-07 17:39:58.932	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-07 14:53:34.731	\N
 cmqz5vwfh00fzxhd8bchmmyw5	cliente1@somosmoovy.com	$2b$12$7ZFsSIglT1XVS/UewQDNYO4T.UjlCul7h9mv6sCYTJ4N.xVVgJYNO	Juana Cliente	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwfh00g0xhd8w7w3k570	\N	2026-06-29 11:55:53.453	2026-07-02 21:17:16.559	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-02 21:17:16.557	\N
 cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-07-06 17:01:28.941	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.37Whxp97s8kSiR7D.jXmok.DPmVC8uu	 				COMERCIO	\N	\N	0	0	f	cmqz5vsvy006oxhd85im89bep	\N	2026-06-29 11:55:48.862	2026-07-08 23:22:52.859	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-07 14:53:34.731	\N
 cmqz5vrgz001jxhd84w7eneza	comercio1@somosmoovy.com	$2b$12$yF6/4feNZrmKkGW/zI752eg44jwODi1JejVllozBQ6DuoL3r0r.vm	Carlos Patagonia	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vrgz001kxhd8fe0upbjz	\N	2026-06-29 11:55:47.028	2026-07-06 23:20:58.373	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:20:58.372	\N
 cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-07-06 23:32:32.958	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:32:32.921	\N
 \.

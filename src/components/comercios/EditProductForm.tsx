@@ -126,20 +126,11 @@ export default function EditProductForm({ product, categories, sizeOptions }: Ed
         setIsLoading(true);
         setError("");
 
-        if (imageUrls.length === 0) {
-            showError("Debes subir al menos una imagen para el producto");
-            setIsLoading(false);
-            return;
-        }
-
-        // El server (productSchema) exige descripcion min 10 — validamos aca
-        // para que el comercio vea el error al instante (la UI decia "Opcional",
-        // mentira detectada en QA pre-launch).
-        if (!description || description.trim().length < 10) {
-            showError("La descripción debe tener al menos 10 caracteres");
-            setIsLoading(false);
-            return;
-        }
+        // feat: al EDITAR se puede guardar el AVANCE aunque falten campos (foto o
+        // descripción) — típico de un borrador importado. La completitud (foto +
+        // descripción ≥10 + precio) se exige recién al MOSTRARLO en la tienda (el
+        // server relaja el guardado y auto-oculta si quedó incompleto). Por eso acá
+        // ya NO bloqueamos el guardado.
 
         // Send all image URLs as JSON array
         formData.append("imageUrls", JSON.stringify(imageUrls));
@@ -317,7 +308,7 @@ export default function EditProductForm({ product, categories, sizeOptions }: Ed
                                 disabled={isLoading}
                             />
                             <div className="flex items-start justify-between gap-3 mt-1">
-                                <p className="text-[11px] text-gray-400">Mínimo 10 caracteres.</p>
+                                <p className="text-[11px] text-gray-400">Mín. 10 caracteres para mostrarlo en la tienda. Podés guardar el avance sin ella.</p>
                                 <p className={`text-[11px] font-bold whitespace-nowrap ${description.trim().length >= 10 ? "text-green-600" : "text-gray-400"}`}>
                                     {description.trim().length >= 10 ? "✓ " : ""}{description.trim().length}/10
                                 </p>

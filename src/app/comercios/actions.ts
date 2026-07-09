@@ -116,6 +116,32 @@ const productSchema = z.object({
     productSize: z.string().nullish(),
 });
 
+// feat: al EDITAR un producto, el comercio puede guardar el AVANCE aunque falten
+// campos obligatorios para publicar (ej: descripción o foto — típico de un
+// borrador importado). La completitud (foto + descripción ≥10 + precio) se exige
+// recién al MOSTRARLO en la tienda (toggleProductActive). Por eso el update usa un
+// schema RELAJADO: descripción opcional, imágenes opcionales. Si el producto
+// estaba visible y queda incompleto, se auto-oculta (ver updateProduct).
+const updateProductSchema = z.object({
+    name: z.string().min(3, "El nombre debe tener al menos 3 caracteres"),
+    description: z.string().nullish().transform((v) => (v && v.trim().length > 0 ? v : null)),
+    price: z.coerce.number().min(0, "El precio no puede ser negativo"),
+    stock: z.coerce.number().int().min(0, "El stock no puede ser negativo"),
+    imageUrls: z.string().transform((val) => {
+        try {
+            const parsed = JSON.parse(val);
+            return Array.isArray(parsed) ? parsed : [];
+        } catch {
+            return [];
+        }
+    }),
+    categoryId: z.string().nullish(),
+    weightGrams: z.coerce.number().int().min(0).max(500000).nullish().transform((v) => (v && v > 0 ? v : null)),
+    volumeMl: z.coerce.number().int().min(0).max(1000000).nullish().transform((v) => (v && v > 0 ? v : null)),
+    packageCategoryId: z.string().nullish().transform((v) => (v && v.length > 0 ? v : null)),
+    productSize: z.string().nullish(),
+});
+
 // Helper to verify merchant ownership
 async function verifyMerchantOwnership(productId: string, userId: string) {
     const merchant = await prisma.merchant.findFirst({
@@ -368,7 +394,7 @@ export async function updateProduct(productId: string, formData: FormData) {
         productSize: formData.get("productSize") || undefined,
     };
 
-    const validation = productSchema.safeParse(rawData);
+    const validation = updateProductSchema.safeParse(rawData);
 
     if (!validation.success) {
         // Rama feat/payment-pending-cancellation: incluir el campo que falla en el
@@ -377,7 +403,7 @@ export async function updateProduct(productId: string, formData: FormData) {
         // depurar desde la UI del comercio.
         const issue = validation.error.issues[0];
         const fieldPath = issue.path.length > 0 ? issue.path.join(".") : "campo desconocido";
-        console.error("[productSchema] Validation failed:", {
+        console.error("[updateProductSchema] Validation failed:", {
             field: fieldPath,
             message: issue.message,
             code: issue.code,
@@ -402,6 +428,18 @@ export async function updateProduct(productId: string, formData: FormData) {
             weightGrams: data.weightGrams,
         });
 
+        // feat: si el producto estaba VISIBLE y con esta edición queda INCOMPLETO
+        // (sin foto, o descripción <10, o precio 0), lo auto-ocultamos para no dejar
+        // un producto público a medias. Guardar el avance nunca se bloquea; se
+        // vuelve a mostrar cuando el comercio lo complete (regla de toggleProductActive).
+        const current = await prisma.product.findUnique({
+            where: { id: productId },
+            select: { isActive: true },
+        });
+        const descLen = data.description ? data.description.trim().length : 0;
+        const isComplete = data.imageUrls.length > 0 && descLen >= 10 && data.price > 0;
+        const autoHide = !!current?.isActive && !isComplete;
+
         // Update the product
         await prisma.product.update({
             where: { id: productId },
@@ -415,6 +453,7 @@ export async function updateProduct(productId: string, formData: FormData) {
                 weightGrams: sizeSnapshot.weightGrams,
                 volumeMl: data.volumeMl,
                 packageCategoryId: sizeSnapshot.packageCategoryId,
+                ...(autoHide ? { isActive: false } : {}),
             },
         });
 

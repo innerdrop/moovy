@@ -272,62 +272,62 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                         Información del Comercio
                     </h2>
 
-                    {/* feat/portada-comercio: foto de portada del perfil público. */}
+                    {/* Header de perfil estilo app (PedidosYa/Rappi/IG): portada de fondo
+                        + logo montado como avatar abajo a la izquierda. */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Foto de portada
+                            Portada y logo
                         </label>
-                        <ImageUpload
-                            value={bannerUrl}
-                            onChange={handleBannerChange}
-                            disabled={isLoading}
-                            cropAspect={16 / 5}
-                            cropOutputSize={1600}
-                        />
-                        <p className="mt-1.5 text-xs text-gray-400">
-                            Es la imagen grande de tu perfil en la tienda. Tamaño ideal:
-                            1600 × 500 px (formato apaisado 16:5). Mostrá tu local, tus
-                            productos o tu equipo — es lo primero que ve el cliente.
+                        <div className="relative">
+                            <ImageUpload
+                                value={bannerUrl}
+                                onChange={handleBannerChange}
+                                disabled={isLoading}
+                                cropAspect={16 / 5}
+                                cropOutputSize={1600}
+                                previewAspectClass="h-40 sm:h-52"
+                            />
+                            {/* Logo montado como avatar */}
+                            <div className="absolute -bottom-8 left-4 z-10 w-24 h-24 rounded-2xl ring-4 ring-white shadow-lg overflow-hidden bg-white">
+                                <ImageUpload
+                                    value={imageUrl}
+                                    onChange={handleImageChange}
+                                    disabled={isLoading}
+                                    cropAspect={1}
+                                    cropOutputSize={500}
+                                    compact
+                                />
+                            </div>
+                        </div>
+                        <p className="mt-12 text-xs text-gray-400">
+                            La <b className="text-gray-500">portada</b> (1600×500, 16:5) y el
+                            <b className="text-gray-500"> logo</b> son lo primero que ve el cliente en la tienda.
                         </p>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div className="md:col-span-1">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Logo del Comercio
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Nombre del Comercio
                             </label>
-                            <ImageUpload
-                                value={imageUrl}
-                                onChange={handleImageChange}
-                                disabled={isLoading}
-                                cropAspect={1}
-                                cropOutputSize={500}
-                            />
+                            <input name="name" type="text" required defaultValue={merchant.name} className="input" disabled={isLoading} />
                         </div>
-                        <div className="md:col-span-2 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Nombre del Comercio
-                                </label>
-                                <input name="name" type="text" required defaultValue={merchant.name} className="input" disabled={isLoading} />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Descripción
-                                </label>
-                                <textarea name="description" rows={2} defaultValue={merchant.description} placeholder="Describe tu comercio..." className="input" disabled={isLoading} />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    <Tag className="w-4 h-4 inline mr-1" />
-                                    Categoría
-                                </label>
-                                <select name="category" className="input" defaultValue={merchant.category} disabled={isLoading}>
-                                    {CATEGORIES.map((cat) => (
-                                        <option key={cat} value={cat}>{cat}</option>
-                                    ))}
-                                </select>
-                            </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Descripción
+                            </label>
+                            <textarea name="description" rows={2} defaultValue={merchant.description} placeholder="Describe tu comercio..." className="input" disabled={isLoading} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <Tag className="w-4 h-4 inline mr-1" />
+                                Categoría
+                            </label>
+                            <select name="category" className="input" defaultValue={merchant.category} disabled={isLoading}>
+                                {CATEGORIES.map((cat) => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -481,37 +481,39 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                         const dayIsOpen = shifts !== null && shifts !== undefined;
 
                         return (
-                            <div key={day} className="p-3 bg-gray-50 rounded-lg space-y-2">
-                                <div className="flex items-center gap-3">
-                                    <button
-                                        type="button"
-                                        onClick={() => toggleDay(day)}
-                                        className={`w-5 h-5 rounded border-2 flex items-center justify-center transition flex-shrink-0 ${dayIsOpen ? "bg-green-500 border-green-500 text-white" : "border-gray-300"}`}
-                                    >
-                                        {dayIsOpen && <span className="text-xs font-bold">&#10003;</span>}
-                                    </button>
-                                    <span className={`w-24 text-sm font-medium ${dayIsOpen ? "text-gray-900" : "text-gray-400"}`}>{name}</span>
-                                    {!dayIsOpen && <span className="text-sm text-gray-400 italic ml-auto">Cerrado</span>}
-                                </div>
+                            <div key={day} className="flex flex-wrap items-center gap-x-3 gap-y-2 bg-gray-50 rounded-lg px-3 py-2.5">
+                                <button
+                                    type="button"
+                                    onClick={() => toggleDay(day)}
+                                    className={`w-5 h-5 rounded border-2 flex items-center justify-center transition flex-shrink-0 ${dayIsOpen ? "bg-green-500 border-green-500 text-white" : "border-gray-300"}`}
+                                >
+                                    {dayIsOpen && <span className="text-xs font-bold">&#10003;</span>}
+                                </button>
+                                <span className={`w-20 text-sm font-medium ${dayIsOpen ? "text-gray-900" : "text-gray-400"}`}>{name}</span>
 
-                                {dayIsOpen && shifts && shifts.map((shift, idx) => (
-                                    <div key={idx} className="flex items-center gap-2 ml-8">
-                                        <input type="time" value={shift.open} onChange={(e) => updateShift(day, idx, "open", e.target.value)} className="input w-28 text-sm" />
-                                        <span className="text-gray-400 text-sm">a</span>
-                                        <input type="time" value={shift.close} onChange={(e) => updateShift(day, idx, "close", e.target.value)} className="input w-28 text-sm" />
-                                        {shifts.length > 1 && (
-                                            <button type="button" onClick={() => removeShift(day, idx)} className="text-red-400 hover:text-red-600 transition p-1" title="Eliminar turno">
-                                                <Trash2 className="w-4 h-4" />
+                                {!dayIsOpen ? (
+                                    <span className="text-sm text-gray-400 italic">Cerrado</span>
+                                ) : (
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        {shifts && shifts.map((shift, idx) => (
+                                            <div key={idx} className="flex items-center gap-1.5">
+                                                <input type="time" value={shift.open} onChange={(e) => updateShift(day, idx, "open", e.target.value)} className="input w-[7.5rem] text-sm !py-1.5" />
+                                                <span className="text-gray-400 text-sm">a</span>
+                                                <input type="time" value={shift.close} onChange={(e) => updateShift(day, idx, "close", e.target.value)} className="input w-[7.5rem] text-sm !py-1.5" />
+                                                {shifts.length > 1 && (
+                                                    <button type="button" onClick={() => removeShift(day, idx)} className="text-red-400 hover:text-red-600 transition p-1" title="Eliminar turno">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        ))}
+                                        {shifts && shifts.length < MAX_SHIFTS_PER_DAY && (
+                                            <button type="button" onClick={() => addShift(day)} className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition">
+                                                <Plus className="w-3 h-3" />
+                                                Turno
                                             </button>
                                         )}
                                     </div>
-                                ))}
-
-                                {dayIsOpen && shifts && shifts.length < MAX_SHIFTS_PER_DAY && (
-                                    <button type="button" onClick={() => addShift(day)} className="ml-8 text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition">
-                                        <Plus className="w-3 h-3" />
-                                        Agregar turno
-                                    </button>
                                 )}
                             </div>
                         );

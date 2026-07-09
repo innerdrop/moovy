@@ -47,9 +47,14 @@ export default function ReviewsList({ type, entityId }: ReviewsListProps) {
 
     if (reviews.length === 0) {
         return (
-            <div className="text-center py-8">
-                <MessageSquare className="w-12 h-12 text-gray-200 mx-auto mb-3" />
-                <p className="text-gray-400 text-sm">No hay reseñas todavía</p>
+            <div className="bg-white border border-gray-100 rounded-2xl py-14 text-center shadow-sm">
+                <div className="w-16 h-16 rounded-2xl bg-yellow-50 flex items-center justify-center mx-auto mb-4">
+                    <Star className="w-8 h-8 text-yellow-300" />
+                </div>
+                <h3 className="font-bold text-gray-900 mb-1">Todavía no tenés reseñas</h3>
+                <p className="text-gray-400 text-sm max-w-xs mx-auto">
+                    Cuando tus clientes califiquen sus pedidos entregados, sus estrellas y comentarios van a aparecer acá.
+                </p>
             </div>
         );
     }

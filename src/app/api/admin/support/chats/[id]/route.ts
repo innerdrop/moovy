@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
+import { notifySupportMessage } from "@/lib/support-notify";
 
 // GET — detalle del chat + mensajes. Marca como leídos los mensajes del usuario.
 export async function GET(
@@ -68,6 +69,10 @@ export async function POST(
         if (!chat) {
             return NextResponse.json({ error: "Ticket no encontrado" }, { status: 404 });
         }
+        // No se puede responder una consulta cerrada/resuelta: hay que reabrirla.
+        if (chat.status === "closed" || chat.status === "resolved") {
+            return NextResponse.json({ error: "La consulta está cerrada. Reabrila para responder." }, { status: 409 });
+        }
 
         // isFromAdmin:true + isRead:false → cuenta como no leído PARA EL USUARIO
         // (enciende el badge del panel comercio, que filtra por merchantId).
@@ -90,6 +95,9 @@ export async function POST(
                 status: chat.status === "waiting" ? "active" : chat.status,
             },
         });
+
+        // Tiempo real: avisar al usuario dueño del chat (fire-and-forget).
+        notifySupportMessage({ chatId: id, chatUserId: chat.userId, isFromAdmin: true, message }).catch(() => {});
 
         return NextResponse.json(message, { status: 201 });
     } catch (error) {
@@ -127,6 +135,23 @@ export async function PATCH(
                 resolvedAt: status === "resolved" || status === "closed" ? new Date() : null,
             },
         });
+
+        // feat/chat-en-vivo: al CERRAR o RESOLVER, avisar al usuario que la consulta
+        // finalizó y que puede iniciar una nueva si necesita más ayuda (mensaje
+        // visible + notificación en tiempo real / badge).
+        if ((status === "closed" || status === "resolved") && chat.status !== status) {
+            const closeMsg = await (prisma as any).supportMessage.create({
+                data: {
+                    chatId: id,
+                    senderId: admin.userId,
+                    content: "El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!",
+                    isFromAdmin: true,
+                    isSystem: false,
+                    isRead: false,
+                },
+            });
+            notifySupportMessage({ chatId: id, chatUserId: chat.userId, isFromAdmin: true, message: closeMsg }).catch(() => {});
+        }
 
         return NextResponse.json(updated);
     } catch (error) {

@@ -10,6 +10,115 @@
 
 ---
 
+## 2026-07-08 (rama `feat/chat-en-vivo-y-logo-tienda`)
+
+feat: chat de soporte en vivo (Socket.io + fallback) + fix logo en la tienda + pulido de diseño del panel comercio. CHAT EN VIVO: presencia real con heartbeat + staleness, toggle Disponible/No disponible en OPS, dos modos (en línea → chat en vivo / offline → ticket) y mensajes instantáneos por Socket.io con polling de respaldo (helper notifySupportMessage + hook useSupportSocket, sin tocar socket-server). TIENDA: las tarjetas muestran el logo en vez de la portada. DISEÑO: Mi Comercio (portada 16:5 en vez de gigante + horarios en una línea por día), Reseñas (hero + estado vacío + tip, ya no pelada) y chat de soporte del comercio (contenedor 2xl + header con avatar y estado). Sin cambios de schema
+
+**Archivos:** src/app/api/admin/support/availability/route.ts, src/app/api/admin/support/chats/[id]/route.ts, src/app/api/admin/support/chats/route.ts, src/app/api/admin/support/unread-count/route.ts, src/app/api/support/chats/[id]/route.ts, src/app/api/support/chats/route.ts, src/app/api/support/operator/chats/[id]/route.ts, src/app/api/support/operator/status/route.ts (+19 mas)
+
+## 2026-07-08 (rama `feat/chat-en-vivo-y-logo-tienda`)
+
+feat: chat de soporte en vivo (Socket.io + fallback) + fix logo en la tienda
+
+**Logo en la tienda (fix founder):** las tarjetas de comercio de la home mostraban
+la portada primero (`merchant.banner || merchant.image`) → se veían fotos de
+paisaje. Invertido a `merchant.image || merchant.banner` para mostrar el LOGO;
+la portada solo como fallback si no hay logo. En HomeFeed.tsx y MerchantDiscoveryRow.tsx.
+
+**Chat en vivo** — decisiones founder: atender desde OPS + real-time "mixto"
+(Socket.io instantáneo + polling de respaldo). Se apoya en la infra que ya existía
+(el chat de pedidos es el mismo patrón); NO se tocó `socket-server.ts` (se reusa
+el auto-join `user:<id>` y el `/emit`).
+
+1. **Presencia real:** hoy un operador que cerraba la pestaña quedaba "en línea"
+   fantasma. Se agrega heartbeat cada 30s + `sendBeacon` offline al `pagehide` en
+   el portal `/soporte` y en la bandeja OPS, y **staleness** en `GET /api/support/status`
+   (solo cuenta operadores con `lastSeenAt` < 2 min). Nuevo POST en
+   `/api/support/operator/status` (para el beacon, que va por POST).
+2. **Toggle Disponible/No disponible en OPS:** el admin se pone disponible desde la
+   bandeja (nuevo `GET/POST /api/admin/support/availability` que hace upsert de su
+   `SupportOperator` + isOnline + lastSeenAt). Es "atender desde OPS".
+3. **Dos modos:** el comprador (ChatWidget) y el comercio ven "en línea → chateá en
+   vivo" vs "offline → dejanos tu consulta". El panel comercio ahora muestra estado
+   del equipo (poll 30s) y refresca la conversación solo (antes había que recargar).
+4. **Tiempo real:** nuevo `src/lib/support-notify.ts` (`notifySupportMessage`) que
+   emite `new_support_message` por Socket.io al room del destinatario (staff→user a
+   `user:<chatUserId>`, user→staff a cada operador online) tras guardar el mensaje.
+   Cableado en los 3 endpoints (buyer/comercio, operador, admin OPS). Nuevo hook
+   `src/hooks/useSupportSocket.ts` (patrón de OrderChatPanel, con fix LAN/mobile)
+   escucha en ChatWidget, panel comercio y bandeja OPS. Polling (5s/6s) como respaldo.
+
+**Pulido de diseño (panel comercio):**
+- **Mi Comercio:** la portada se veía gigante (preview en aspect 4:3 → ~670px);
+  `ImageUpload` ahora acepta `previewAspectClass` y la portada usa `aspect-[16/5]`
+  (banner apaisado real). Los horarios pasan de una tarjeta de 2 filas por día a
+  **una sola línea por día** (checkbox + día + turnos en la misma fila) → mucho
+  menos scroll.
+- **Reseñas:** header hero (card ámbar con estrella), estado vacío rediseñado
+  ("Todavía no tenés reseñas" con ícono en card) y una tarjeta de tip "¿cómo
+  consigo más reseñas?". Ya no se ve "pelada".
+- **Soporte comercio:** contenedor rounded-2xl + ring, y el header de la conversación
+  con avatar "M" de MOOVY + punto de estado (en línea/te respondemos pronto).
+
+**Fix — guardar avance de un producto sin bloquear:** al editar un borrador
+importado (agregar una foto pero sin descripción), el form obligaba a completar la
+descripción (mín 10) para poder guardar. Ahora el update usa un schema relajado
+(`updateProductSchema`: descripción/foto opcionales) y el cliente ya no bloquea →
+se puede guardar el avance. La completitud (foto + descripción ≥10 + precio) se
+exige recién al MOSTRARLO en la tienda (`toggleProductActive`). Si un producto que
+estaba visible queda incompleto tras la edición, se **auto-oculta** para no dejar
+un producto público a medias.
+
+**Herramientas de gestión en la lista de productos:** el comercio ahora ve el
+estado de su catálogo de un vistazo. Chips con contadores clickeables — **Todos ·
+En tienda · Listos · Incompletos** — donde: *En tienda* = publicado/visible;
+*Listos* = completos pero ocultos (solo falta tocar "Mostrar"); *Incompletos* =
+les falta foto/descripción/precio (los borradores importados). La lista **ordena
+publicados primero** (luego listos, luego incompletos; recientes dentro de cada
+grupo) y la etiqueta por fila pasa de "Visible/Oculto" a los 3 estados. Todo del
+lado cliente sobre los datos ya cargados. (`ProductsSearchContainer.tsx`).
+
+**Avisos visuales de soporte:**
+- **Badge en el sidebar de OPS** al lado de "Soporte" (rojo, pulsante) con la
+  cantidad de tickets con mensajes sin leer (`GET /api/admin/support/unread-count`,
+  poll 15s + socket). Reusa el sistema de badges del sidebar.
+- **Ticket resaltado en la bandeja** cuando tiene mensajes sin leer: fondo ámbar +
+  barra lateral + contador rojo + negrita (el listado admin ahora devuelve
+  `unreadCount` por ticket). Así OPS ve de un vistazo quién escribió.
+- **Badge del comercio instantáneo:** el `SupportNavBadge` ya poleaba; se le sumó
+  socket para que el aviso llegue al toque cuando el equipo responde.
+
+**Cierre de consulta + soporte solo con operador en línea (decisión founder):**
+- Al **cerrar/resolver** un ticket desde OPS, se le envía al usuario un mensaje
+  visible: "El equipo de Moovy dio por finalizada esta consulta. Si necesitás más
+  ayuda, podés iniciar una nueva…" (con notificación en tiempo real).
+- El usuario **solo puede escribir a soporte si hay un operador disponible** (OPS
+  debe ponerse "Disponible"). Nuevo helper `isSupportAvailable()` bloquea
+  server-side crear/enviar mensaje si no hay operador online+fresco (409). El panel
+  del comercio deshabilita el botón "+", la nueva consulta y el input, con el aviso
+  "El soporte no está disponible en este momento". (Reemplaza el modo "dejá un
+  ticket" offline por live-only.)
+
+**Sección de cerradas + reabrir + no escribir en cerradas:** la bandeja de OPS
+cambia el filtro de estado por 3 grupos — **Abiertas · Cerradas · Todas** (default
+Abiertas; el endpoint acepta `?group=open|closed`). Al cerrar un ticket, sale de la
+vista "Abiertas" y aparece en "Cerradas". En una consulta cerrada/resuelta, el box
+para escribir se deshabilita **de los dos lados** (OPS y comercio) con guardas
+server-side (409) y aviso en la UI; OPS ve un botón **"Reabrir"** (vuelve a "active")
+que rehabilita la respuesta. El comercio no puede reabrir: inicia una nueva.
+
+**Sin cambios de schema** (origin/lastSeenAt/isOnline ya existían). Deploy normal
+(`-NoDB`). `socket-server.ts` NO cambió → no requiere reinicio especial.
+
+**Archivos:** src/components/home/HomeFeed.tsx, MerchantDiscoveryRow.tsx,
+src/lib/support-notify.ts (nuevo), src/hooks/useSupportSocket.ts (nuevo),
+src/app/api/support/status/route.ts, src/app/api/support/operator/status/route.ts,
+src/app/api/admin/support/availability/route.ts (nuevo),
+src/app/api/support/chats/[id]/route.ts, .../support/operator/chats/[id]/route.ts,
+.../admin/support/chats/[id]/route.ts, src/components/ops/SupportInbox.tsx,
+src/app/comercios/(protected)/soporte/page.tsx, src/components/support/ChatWidget.tsx,
+src/app/soporte/(protected)/page.tsx.
+
 ## 2026-07-08 (rama `style/productos-lista-y-edicion`)
 
 style+fix: panel de productos — paginación + rediseño de editar + no publicar incompletos. La lista deja el scroll infinito y pasa a paginación cliente (selector 20/50/100, default 20, Anterior/Siguiente + 'Página X de Y') con botón 'volver arriba'. La página de editar producto se rediseña al estándar de crear (ancho, header prolijo, cards con aire, responsive) y el selector de tamaño baja de 5-en-fila a máx 3 para que no se espachurre. FIX: toggleProductActive valida server-side al publicar (exige foto + descripción ≥10 + precio); un borrador importado incompleto ya no se puede 'Mostrar' en la tienda. Sin cambios de schema

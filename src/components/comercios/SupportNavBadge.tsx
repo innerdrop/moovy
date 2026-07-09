@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { MessageCircle } from "lucide-react";
+import { useSupportSocket } from "@/hooks/useSupportSocket";
 
 export default function SupportNavBadge() {
     const [unreadCount, setUnreadCount] = useState(0);
@@ -21,10 +22,13 @@ export default function SupportNavBadge() {
 
     useEffect(() => {
         fetchNotifications();
-        // Poll every 30 seconds for real-time updates without WebSockets
+        // Poll de respaldo (el socket da el aviso instantáneo).
         const interval = setInterval(fetchNotifications, 30000);
         return () => clearInterval(interval);
     }, []);
+
+    // Tiempo real: al llegar un mensaje del equipo, refrescar el contador al toque.
+    useSupportSocket(() => fetchNotifications());
 
     return (
         <Link

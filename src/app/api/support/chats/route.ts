@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isSupportAvailable, SUPPORT_UNAVAILABLE_MESSAGE } from "@/lib/support-availability";
 
 // GET - Get user's support chats
 export async function GET(request: NextRequest) {
@@ -65,6 +66,11 @@ export async function POST(request: NextRequest) {
 
         if (!message || !message.trim()) {
             return NextResponse.json({ error: "El mensaje es requerido" }, { status: 400 });
+        }
+
+        // feat/chat-en-vivo: solo se puede iniciar una consulta si hay soporte en línea.
+        if (!(await isSupportAvailable())) {
+            return NextResponse.json({ error: SUPPORT_UNAVAILABLE_MESSAGE }, { status: 409 });
         }
 
         // feat/soporte-bandeja-ops: origen DERIVADO server-side (no confiar en el

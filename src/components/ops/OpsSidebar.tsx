@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import OpsNotificationBell from "./OpsNotificationBell";
+import { useSupportSocket } from "@/hooks/useSupportSocket";
 import {
     LayoutDashboard,
     Package,
@@ -63,7 +64,7 @@ const navSections: NavSection[] = [
             { href: "/ops/dashboard", icon: LayoutDashboard, label: "Dashboard" },
             { href: "/ops/live", icon: Radio, label: "En Vivo", badge: "live-indicator" },
             { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
-            { href: "/ops/soporte", icon: MessageCircle, label: "Soporte" },
+            { href: "/ops/soporte", icon: MessageCircle, label: "Soporte", badge: "support-unread" },
             { href: "/ops/fraude", icon: Shield, label: "Fraude" },
             // feat/propinas-y-ratings-post-entrega (2026-05-08): queue de
             // reseñas que la blacklist o la comunidad mando a revisar.
@@ -165,6 +166,8 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
     // pueden esperar 1 minuto. Endpoint devuelve ceros si falla auth.
     const [pendingMerchants, setPendingMerchants] = useState(0);
     const [pendingDrivers, setPendingDrivers] = useState(0);
+    // feat/chat-en-vivo: tickets de soporte con mensajes sin leer (badge rojo en "Soporte").
+    const [supportUnread, setSupportUnread] = useState(0);
 
     // Poll active orders every 15s for live indicator
     useEffect(() => {
@@ -194,6 +197,19 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
         const interval = setInterval(fetchPending, 60000);
         return () => clearInterval(interval);
     }, []);
+
+    // Mensajes de soporte sin leer (badge rojo en "Soporte"): poll 15s + socket instantáneo.
+    useEffect(() => {
+        const fetchSupport = () => {
+            fetch("/api/admin/support/unread-count").then(r => r.json()).then(d => setSupportUnread(d.count || 0)).catch(() => {});
+        };
+        fetchSupport();
+        const interval = setInterval(fetchSupport, 15000);
+        return () => clearInterval(interval);
+    }, []);
+    useSupportSocket(() => {
+        fetch("/api/admin/support/unread-count").then(r => r.json()).then(d => setSupportUnread(d.count || 0)).catch(() => {});
+    });
 
     const pendingTotal = pendingMerchants + pendingDrivers;
     // Cap visual: >99 -> "99+" para que el badge no se desborde
@@ -360,6 +376,12 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                                                 pendingMerchants > 0 ? (
                                                     <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-yellow-400 text-slate-900 text-[10px] font-bold">
                                                         {formatBadgeCount(pendingMerchants)}
+                                                    </span>
+                                                ) : null
+                                            ) : item.badge === "support-unread" ? (
+                                                supportUnread > 0 ? (
+                                                    <span className="ml-auto inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-red-500 text-white text-[10px] font-bold animate-pulse">
+                                                        {formatBadgeCount(supportUnread)}
                                                     </span>
                                                 ) : null
                                             ) : item.badge ? (

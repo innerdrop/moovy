@@ -17,9 +17,12 @@ interface ImageUploadProps {
     cropAspect?: number;
     /** Output size in pixels for cropped image (default 500) */
     cropOutputSize?: number;
+    /** Clase de aspect-ratio para la PREVIEW (ej: "aspect-[16/5]" para portada).
+        Por defecto usa 4:3. No aplica cuando cropAspect === 1 (logo cuadrado). */
+    previewAspectClass?: string;
 }
 
-export default function ImageUpload({ value, onChange, disabled, compact, cropAspect, cropOutputSize = 500 }: ImageUploadProps) {
+export default function ImageUpload({ value, onChange, disabled, compact, cropAspect, cropOutputSize = 500, previewAspectClass }: ImageUploadProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [cropSrc, setCropSrc] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -179,7 +182,7 @@ export default function ImageUpload({ value, onChange, disabled, compact, cropAs
                     )}
                 </div>
             ) : (
-                <div className={`relative w-full ${isSquare ? "aspect-square" : "aspect-video sm:aspect-[4/3]"} rounded-xl overflow-hidden border border-gray-200 group`}>
+                <div className={`relative w-full ${isSquare ? "aspect-square" : (previewAspectClass || "aspect-video sm:aspect-[4/3]")} rounded-xl overflow-hidden border border-gray-200 group`}>
                     <UploadImage
                         src={value}
                         alt="Uploaded Image"

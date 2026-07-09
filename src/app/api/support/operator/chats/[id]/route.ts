@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notifySupportMessage } from "@/lib/support-notify";
 
 async function getOperator(userId: string) {
     return (prisma as any).supportOperator.findUnique({
@@ -137,6 +138,9 @@ export async function POST(
                 status: chat.status === "waiting" ? "active" : chat.status
             }
         });
+
+        // Tiempo real: avisar al usuario dueño del chat (fire-and-forget).
+        notifySupportMessage({ chatId: id, chatUserId: chat.userId, isFromAdmin: true, message }).catch(() => {});
 
         return NextResponse.json(message, { status: 201 });
     } catch (error) {

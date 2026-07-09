@@ -103,6 +103,22 @@ export default function SoporteDashboard() {
         return () => clearInterval(refreshChats);
     }, [activeChat?.id]);
 
+    // feat/chat-en-vivo: heartbeat de presencia. Mientras estoy en línea, refresco
+    // lastSeenAt cada 30s (para no quedar "fantasma") y aviso offline al cerrar.
+    useEffect(() => {
+        if (!operator?.isOnline) return;
+        const iv = setInterval(() => {
+            fetch("/api/support/operator/status", {
+                method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ isOnline: true }),
+            }).catch(() => {});
+        }, 30000);
+        const onHide = () => {
+            try { navigator.sendBeacon("/api/support/operator/status", new Blob([JSON.stringify({ isOnline: false })], { type: "application/json" })); } catch { /* */ }
+        };
+        window.addEventListener("pagehide", onHide);
+        return () => { clearInterval(iv); window.removeEventListener("pagehide", onHide); };
+    }, [operator?.isOnline]);
+
     // Auto-scroll
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

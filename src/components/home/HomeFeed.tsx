@@ -152,10 +152,10 @@ function MerchantCard({ merchant }: { merchant: MerchantPreview }) {
             <div className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm transition-transform duration-200 group-hover:scale-[1.02] group-active:scale-[0.98]">
                 {/* Image */}
                 <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-                    {/* feat/portada-comercio: portada real primero, logo como fallback. */}
-                    {(merchant.banner || merchant.image) ? (
+                    {/* fix/tienda-logo-comercio: mostrar el LOGO del comercio; la portada solo como fallback si no hay logo. */}
+                    {(merchant.image || merchant.banner) ? (
                         <img
-                            src={merchant.banner || merchant.image!}
+                            src={merchant.image || merchant.banner!}
                             alt={merchant.name}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"

@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { ChatBubbleIcon } from "./ChatBubbleIcon";
 import { SupportChat } from "@/types/support";
+import { useSupportSocket } from "@/hooks/useSupportSocket";
 
 function OnlineIndicator() {
     return (
@@ -131,6 +132,19 @@ export function ChatWidget() {
         const interval = setInterval(loadChat, 5000);
         return () => clearInterval(interval);
     }, [activeChat?.id]);
+
+    // Tiempo real: socket (instantáneo) además del polling de arriba.
+    const activeIdRef = useRef<string | null>(null);
+    activeIdRef.current = activeChat && activeChat.id !== "new" ? activeChat.id : null;
+    useSupportSocket(async (data) => {
+        if (data.chatId && data.chatId === activeIdRef.current) {
+            try {
+                const res = await fetch(`/api/support/chats/${data.chatId}`);
+                if (res.ok) setActiveChat(await res.json());
+            } catch { /* ignore */ }
+        }
+        loadChats();
+    });
 
     // Auto-scroll to bottom
     useEffect(() => {

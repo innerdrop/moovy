@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 // fix/panel-comercio-auditoria: errores visibles, no tragados (estado UX de error).
 import { toast } from "@/store/toast";
+import { useSupportSocket } from "@/hooks/useSupportSocket";
 
 interface Message {
     id: string;
@@ -46,7 +47,10 @@ export default function ComercioSoportePage() {
     const [showNewChat, setShowNewChat] = useState(false);
     const [newChatSubject, setNewChatSubject] = useState("");
     const [newChatMessage, setNewChatMessage] = useState("");
+    const [supportOnline, setSupportOnline] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const selectedIdRef = useRef<string | null>(null);
+    selectedIdRef.current = selectedChat?.id ?? null;
 
     useEffect(() => {
         fetchChats();
@@ -55,6 +59,25 @@ export default function ComercioSoportePage() {
     useEffect(() => {
         scrollToBottom();
     }, [selectedChat?.messages]);
+
+    // Estado del equipo: en línea → chat en vivo; offline → ticket. Poll 30s.
+    useEffect(() => {
+        const check = () => fetch("/api/support/status").then((r) => r.json()).then((d) => setSupportOnline(!!d.isOnline)).catch(() => {});
+        check();
+        const iv = setInterval(check, 30000);
+        return () => clearInterval(iv);
+    }, []);
+
+    // Tiempo real: socket (instantáneo) + polling del chat abierto cada 5s (respaldo).
+    useSupportSocket((data) => {
+        if (data.chatId === selectedIdRef.current) openChat(data.chatId);
+        fetchChats();
+    });
+    useEffect(() => {
+        if (!selectedChat?.id) return;
+        const iv = setInterval(() => { if (selectedIdRef.current) openChat(selectedIdRef.current); }, 5000);
+        return () => clearInterval(iv);
+    }, [selectedChat?.id]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -111,6 +134,9 @@ export default function ComercioSoportePage() {
                     messages: [...selectedChat.messages, message]
                 });
                 setNewMessage("");
+            } else {
+                const d = await res.json().catch(() => ({}));
+                toast.error(d.error || "No se pudo enviar el mensaje.");
             }
         } catch (error) {
             console.error("Error sending message:", error);
@@ -144,6 +170,9 @@ export default function ComercioSoportePage() {
                 setNewChatMessage("");
                 await fetchChats();
                 openChat(data.chat?.id || data.id);
+            } else {
+                const d = await res.json().catch(() => ({}));
+                toast.error(d.error || "No se pudo iniciar la consulta.");
             }
         } catch (error) {
             console.error("Error creating chat:", error);
@@ -162,14 +191,22 @@ export default function ComercioSoportePage() {
 
     return (
         <div className="h-[calc(100vh-8rem)]">
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 h-full flex overflow-hidden">
+            <div className="bg-white rounded-2xl shadow-md ring-1 ring-gray-100 h-full flex overflow-hidden">
                 {/* Sidebar - Chat List */}
                 <div className={`w-full md:w-80 border-r flex flex-col ${selectedChat ? 'hidden md:flex' : 'flex'}`}>
                     <div className="p-4 border-b flex items-center justify-between">
-                        <h2 className="font-bold text-lg text-gray-900">Soporte MOOVY</h2>
+                        <div>
+                            <h2 className="font-bold text-lg text-gray-900">Soporte MOOVY</h2>
+                            <span className="flex items-center gap-1.5 text-xs font-medium mt-0.5">
+                                <span className={`w-2 h-2 rounded-full ${supportOnline ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
+                                <span className={supportOnline ? "text-green-600" : "text-gray-400"}>{supportOnline ? "En línea" : "Fuera de línea"}</span>
+                            </span>
+                        </div>
                         <button
                             onClick={() => setShowNewChat(true)}
-                            className="p-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] transition"
+                            disabled={!supportOnline}
+                            title={supportOnline ? "Nueva consulta" : "Soporte no disponible ahora"}
+                            className="p-2 bg-[#e60012] text-white rounded-lg hover:bg-[#cc000f] transition disabled:opacity-40 disabled:cursor-not-allowed"
                         >
                             <Plus className="w-5 h-5" />
                         </button>
@@ -260,8 +297,8 @@ export default function ComercioSoportePage() {
                                 </div>
                                 <button
                                     type="submit"
-                                    disabled={sending || !newChatMessage.trim()}
-                                    className="mt-4 btn-primary w-full flex items-center justify-center gap-2"
+                                    disabled={sending || !newChatMessage.trim() || !supportOnline}
+                                    className="mt-4 btn-primary w-full flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     {sending ? (
                                         <Loader2 className="w-5 h-5 animate-spin" />
@@ -282,10 +319,14 @@ export default function ComercioSoportePage() {
                                 >
                                     <ChevronLeft className="w-5 h-5" />
                                 </button>
-                                <div className="flex-1">
-                                    <h3 className="font-bold text-gray-900">{selectedChat.subject || "Consulta"}</h3>
-                                    <p className="text-sm text-gray-500">
-                                        Chat con el equipo de MOOVY
+                                <div className="relative flex-shrink-0">
+                                    <div className="w-10 h-10 rounded-full bg-[#e60012] text-white flex items-center justify-center font-bold text-sm">M</div>
+                                    <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${supportOnline ? "bg-green-500" : "bg-gray-300"}`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                    <h3 className="font-bold text-gray-900 truncate">{selectedChat.subject || "Consulta"}</h3>
+                                    <p className="text-xs text-gray-500">
+                                        Equipo MOOVY · {supportOnline ? "en línea" : "te respondemos pronto"}
                                     </p>
                                 </div>
                             </div>
@@ -322,26 +363,36 @@ export default function ComercioSoportePage() {
                                 <div ref={messagesEndRef} />
                             </div>
 
-                            <form onSubmit={sendMessage} className="p-4 border-t bg-white flex gap-2">
-                                <input
-                                    type="text"
-                                    value={newMessage}
-                                    onChange={(e) => setNewMessage(e.target.value)}
-                                    placeholder="Escribí tu mensaje..."
-                                    className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-[#e60012]"
-                                />
-                                <button
-                                    type="submit"
-                                    disabled={sending || !newMessage.trim()}
-                                    className="p-3 bg-[#e60012] text-white rounded-full hover:bg-[#cc000f] transition disabled:opacity-50"
-                                >
-                                    {sending ? (
-                                        <Loader2 className="w-5 h-5 animate-spin" />
-                                    ) : (
-                                        <Send className="w-5 h-5" />
-                                    )}
-                                </button>
-                            </form>
+                            {selectedChat && (selectedChat.status === "closed" || selectedChat.status === "resolved") ? (
+                                <div className="p-4 border-t bg-gray-50 text-center text-sm text-gray-500">
+                                    Esta consulta finalizó. Si necesitás más ayuda, iniciá una nueva desde el botón +.
+                                </div>
+                            ) : supportOnline ? (
+                                <form onSubmit={sendMessage} className="p-4 border-t bg-white flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={newMessage}
+                                        onChange={(e) => setNewMessage(e.target.value)}
+                                        placeholder="Escribí tu mensaje..."
+                                        className="flex-1 px-4 py-2 border rounded-full focus:outline-none focus:ring-2 focus:ring-[#e60012]"
+                                    />
+                                    <button
+                                        type="submit"
+                                        disabled={sending || !newMessage.trim()}
+                                        className="p-3 bg-[#e60012] text-white rounded-full hover:bg-[#cc000f] transition disabled:opacity-50"
+                                    >
+                                        {sending ? (
+                                            <Loader2 className="w-5 h-5 animate-spin" />
+                                        ) : (
+                                            <Send className="w-5 h-5" />
+                                        )}
+                                    </button>
+                                </form>
+                            ) : (
+                                <div className="p-4 border-t bg-gray-50 text-center text-sm text-gray-500">
+                                    El soporte no está disponible ahora. Vas a poder escribir cuando el equipo esté en línea.
+                                </div>
+                            )}
                         </>
                     ) : (
                         // Empty State
@@ -350,13 +401,16 @@ export default function ComercioSoportePage() {
                                 <MessageCircle className="w-16 h-16 mx-auto mb-4 text-gray-300" />
                                 <h3 className="font-bold text-gray-900 mb-2">Centro de Soporte</h3>
                                 <p className="text-gray-500 mb-4">
-                                    ¿Necesitás ayuda? Iniciá una conversación con nuestro equipo.
+                                    {supportOnline
+                                        ? "Estamos en línea — chateá con nuestro equipo y te respondemos al instante."
+                                        : "El soporte no está disponible en este momento. Volvé cuando estemos en línea para chatear con nuestro equipo."}
                                 </p>
                                 <button
                                     onClick={() => setShowNewChat(true)}
-                                    className="btn-primary"
+                                    disabled={!supportOnline}
+                                    className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    Nueva consulta
+                                    {supportOnline ? "Chatear en vivo" : "No disponible ahora"}
                                 </button>
                             </div>
                         </div>

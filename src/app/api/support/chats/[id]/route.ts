@@ -2,6 +2,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { notifySupportMessage } from "@/lib/support-notify";
+import { isSupportAvailable, SUPPORT_UNAVAILABLE_MESSAGE } from "@/lib/support-availability";
 
 // GET - Get chat with messages
 export async function GET(
@@ -79,6 +81,11 @@ export async function POST(
             return NextResponse.json({ error: "Mensaje vacío" }, { status: 400 });
         }
 
+        // feat/chat-en-vivo: solo se puede escribir si hay soporte en línea.
+        if (!(await isSupportAvailable())) {
+            return NextResponse.json({ error: SUPPORT_UNAVAILABLE_MESSAGE }, { status: 409 });
+        }
+
         // Get chat
         const chat = await (prisma as any).supportChat.findUnique({ where: { id } });
         if (!chat) {
@@ -88,6 +95,12 @@ export async function POST(
         // Check permission
         if (chat.userId !== userId) {
             return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+        }
+
+        // feat/chat-en-vivo: no se puede escribir en una consulta cerrada/resuelta.
+        // El usuario debe iniciar una nueva (solo OPS puede reabrir).
+        if (chat.status === "closed" || chat.status === "resolved") {
+            return NextResponse.json({ error: "Esta consulta está cerrada. Iniciá una nueva para seguir." }, { status: 409 });
         }
 
         // Create message
@@ -114,6 +127,9 @@ export async function POST(
                 status: chat.status === "waiting" ? "active" : chat.status
             }
         });
+
+        // Tiempo real: avisar a los operadores disponibles (fire-and-forget).
+        notifySupportMessage({ chatId: id, chatUserId: chat.userId, isFromAdmin: false, message }).catch(() => {});
 
         return NextResponse.json(message, { status: 201 });
     } catch (error) {
