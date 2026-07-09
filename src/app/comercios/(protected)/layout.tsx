@@ -7,7 +7,6 @@ import {
     LayoutDashboard,
     Package,
     ShoppingCart,
-    Settings,
     Store,
     LogOut,
     Menu,
@@ -41,7 +40,15 @@ export default async function ComerciosLayout({ children }: { children: React.Re
 
     // feat/tamanos-producto-desde-ops: si el flag merchant.paquetes está OFF, el
     // item Paquetes se muestra en gris/bloqueado (no navega) en vez de invitar a comprar.
-    const paquetesEnabled = await isFeatureEnabled(FEATURE_FLAGS.MERCHANT_PAQUETES);
+    // feat/bloquear-publicidad: mismo trato para Publicidad (flag merchant.publicidad).
+    const [paquetesEnabled, publicidadEnabled] = await Promise.all([
+        isFeatureEnabled(FEATURE_FLAGS.MERCHANT_PAQUETES),
+        isFeatureEnabled(FEATURE_FLAGS.MERCHANT_PUBLICIDAD),
+    ]);
+    const flagEnabled: Record<string, boolean> = {
+        "merchant.paquetes": paquetesEnabled,
+        "merchant.publicidad": publicidadEnabled,
+    };
 
     // Primeros 4 = bottom bar mobile. El resto va en menú "Más"
     const navItems: Array<{ href: string; icon: React.ElementType; label: string; requiresFlag?: string }> = [
@@ -52,10 +59,10 @@ export default async function ComerciosLayout({ children }: { children: React.Re
         // --- Los siguientes van en sidebar desktop + menú "Más" mobile ---
         { href: "/comercios/mi-comercio", icon: Building2, label: "Mi Comercio" },
         { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes", requiresFlag: "merchant.paquetes" },
-        { href: "/comercios/publicidad", icon: Megaphone, label: "Publicidad" },
+        { href: "/comercios/publicidad", icon: Megaphone, label: "Publicidad", requiresFlag: "merchant.publicidad" },
         { href: "/comercios/resenas", icon: Star, label: "Reseñas" },
-        // Soporte is handled separately via SupportNavBadge component
-        { href: "/comercios/configuracion", icon: Settings, label: "Ajustes" },
+        // feat/reorg-mi-comercio: "Ajustes" se fusionó dentro de "Mi Comercio".
+        // Soporte se renderiza aparte (SupportNavBadge) al final del nav.
     ];
 
     return (
@@ -77,26 +84,9 @@ export default async function ComerciosLayout({ children }: { children: React.Re
                 <nav className="flex-1 p-4">
                     <ul className="space-y-1">
                         {navItems.map((item) => {
-                            // Insert Support before Configuration (last item)
-                            if (item.href === "/comercios/configuracion") {
-                                return (
-                                    <React.Fragment key="support-wrapper">
-                                        <li key="soporte-nav"><SupportNavBadge /></li>
-                                        <li key={item.href}>
-                                            <Link
-                                                href={item.href}
-                                                className="flex items-center gap-3 px-4 py-3 rounded-xl text-gray-600 hover:bg-blue-50 hover:text-blue-600 transition font-medium"
-                                            >
-                                                <item.icon className="w-5 h-5" />
-                                                {item.label}
-                                            </Link>
-                                        </li>
-                                    </React.Fragment>
-                                );
-                            }
-                            // Item bloqueado por flag OFF (ej: Paquetes pre-launch):
+                            // Item bloqueado por flag OFF (Paquetes / Publicidad pre-launch):
                             // se muestra en gris con candado y no navega.
-                            const locked = item.requiresFlag === "merchant.paquetes" && !paquetesEnabled;
+                            const locked = !!item.requiresFlag && !flagEnabled[item.requiresFlag];
                             if (locked) {
                                 return (
                                     <li key={item.href}>
@@ -124,6 +114,8 @@ export default async function ComerciosLayout({ children }: { children: React.Re
                                 </li>
                             );
                         })}
+                        {/* Soporte al final (con su badge de no leídos). */}
+                        <li key="soporte-nav"><SupportNavBadge /></li>
                     </ul>
                 </nav>
 

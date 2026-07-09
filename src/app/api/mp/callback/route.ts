@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
                 data: encryptMerchantData(mpData),
             });
 
-            return NextResponse.redirect(`${baseUrl}/comercios/configuracion?mp=connected`);
+            return NextResponse.redirect(`${baseUrl}/comercios/mi-comercio/mercadopago?mp=connected`);
         } else if (type === "seller") {
             const seller = await prisma.sellerProfile.findUnique({ where: { userId } });
             if (!seller) {
@@ -92,6 +92,6 @@ export async function GET(request: NextRequest) {
 
 function redirectWithError(type: string, error: string) {
     const baseUrl = process.env.NEXTAUTH_URL || process.env.NEXT_PUBLIC_URL || "https://somosmoovy.com";
-    const path = type === "seller" ? "/vendedor/configuracion" : "/comercios/configuracion";
+    const path = type === "seller" ? "/vendedor/configuracion" : "/comercios/mi-comercio/mercadopago";
     return NextResponse.redirect(`${baseUrl}${path}?mp=error&message=${encodeURIComponent(error)}`);
 }

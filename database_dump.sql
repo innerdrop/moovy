@@ -3824,7 +3824,7 @@ cmrc815za00vz75y6rc7y8yp4	GUMMY FOOTBALLS	gummy-footballs-dezq1o	\N	cmqz5vswb006
 cmrc815za00w075y6m9hlmp3y	QUESO CREMOSO X KG	queso-cremoso-x-kg-6o4wwb	\N	cmqz5vswb006uxhd8c5bcq86n	11200	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	222	\N	\N
 cmrc815za00w175y66intntie	CREMA DELTAL COLGATE 180G	crema-deltal-colgate-180g-35ukwa	\N	cmqz5vswb006uxhd8c5bcq86n	8960	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7509546686509	\N	\N
 cmrc815za00w275y610dvv25m	REXONA INVISIBLE	rexona-invisible-ebh65r	\N	cmqz5vswb006uxhd8c5bcq86n	5600	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	78944794	\N	\N
-cmqz5vsxo007sxhd8av6s1rmm	Cerveza Artesanal Pinta	pinta-artesanal	Pinta de cerveza artesanal local.	cmqz5vswb006uxhd8c5bcq86n	3800	2400	24	5	t	f	\N	\N	\N	2026-06-29 11:55:48.924	2026-07-08 23:44:30.249	\N	\N	\N	\N	\N	\N
+cmqz5vsxo007sxhd8av6s1rmm	Cerveza Artesanal Pinta	pinta-artesanal	Pinta de cerveza artesanal local.	cmqz5vswb006uxhd8c5bcq86n	3990	2793	24	5	f	f	\N	\N	\N	2026-06-29 11:55:48.924	2026-07-09 20:18:15.794	\N	\N	\N	\N	3800	5
 \.
 
 
@@ -3862,7 +3862,6 @@ cmqz5vswv0076xhd8tykppvs8	cmqz5vsws0074xhd8fu7xje1i	cmqz5vqxd000ixhd8e2wu3ki0
 cmqz5vsx3007cxhd8myyocynk	cmqz5vsx0007axhd81gi0m5ww	cmqz5vqxd000ixhd8e2wu3ki0
 cmqz5vsxb007ixhd8u9trjqp0	cmqz5vsx8007gxhd8gq8utpws	cmqz5vqxd000ixhd8e2wu3ki0
 cmqz5vsxj007oxhd8ywk3r7mh	cmqz5vsxg007mxhd8xms5cyyk	cmqz5vqxd000ixhd8e2wu3ki0
-cmqz5vsxr007uxhd8y54rthk8	cmqz5vsxo007sxhd8av6s1rmm	cmqz5vqxd000ixhd8e2wu3ki0
 cmqz5vt77008axhd8jo0ln2r2	cmqz5vt740088xhd8njzv9jaq	cmqz5vqxz000kxhd8glc5szfn
 cmqz5vt7g008gxhd87g7xkfa3	cmqz5vt7d008exhd8e225dbgn	cmqz5vqxz000kxhd8glc5szfn
 cmqz5vt7o008mxhd825423yqy	cmqz5vt7l008kxhd85l4k8cie	cmqz5vqxz000kxhd8glc5szfn
@@ -3881,6 +3880,7 @@ cmqz5vtu200b6xhd8fs4k4mv1	cmqz5vttz00b4xhd8p5x14oeu	cmqz5vqyv000pxhd8lec7u05x
 cmqz5vtu900bcxhd88a09lxob	cmqz5vtu700baxhd85r80nq4c	cmqz5vqyv000pxhd8lec7u05x
 cmqz5vtuh00bixhd8s133dior	cmqz5vtuf00bgxhd8gls84ah6	cmqz5vqyv000pxhd8lec7u05x
 cmqz5vtup00boxhd8zzcppm7c	cmqz5vtun00bmxhd8ij93bqj4	cmqz5vqyv000pxhd8lec7u05x
+cmrdy8h4o00027adl031pe8a3	cmqz5vsxo007sxhd8av6s1rmm	cmqz5vqxd000ixhd8e2wu3ki0
 \.
 
 
@@ -3918,7 +3918,6 @@ cmqz5vswx0078xhd8ma5m3cio	cmqz5vsws0074xhd8fu7xje1i	https://picsum.photos/seed/m
 cmqz5vsx5007exhd8kuzipoig	cmqz5vsx0007axhd81gi0m5ww	https://picsum.photos/seed/moovy-veggie-burger/600/600	Veggie Burger	0
 cmqz5vsxe007kxhd8tvhgkkps	cmqz5vsx8007gxhd8gq8utpws	https://picsum.photos/seed/moovy-papas-cheddar-bacon/600/600	Papas Cheddar y Bacon	0
 cmqz5vsxl007qxhd8rbejql3z	cmqz5vsxg007mxhd8xms5cyyk	https://picsum.photos/seed/moovy-nuggets-10/600/600	Nuggets x10	0
-cmqz5vsxt007wxhd8i4s3k276	cmqz5vsxo007sxhd8av6s1rmm	https://picsum.photos/seed/moovy-pinta-artesanal/600/600	Cerveza Artesanal Pinta	0
 cmqz5vt7a008cxhd8rl8y0kpt	cmqz5vt740088xhd8njzv9jaq	https://picsum.photos/seed/moovy-flat-white/600/600	Flat White	0
 cmqz5vt7i008ixhd8dcx2nrbt	cmqz5vt7d008exhd8e225dbgn	https://picsum.photos/seed/moovy-medialunas-3/600/600	Medialunas (3u)	0
 cmqz5vt7r008oxhd8w97q7ow0	cmqz5vt7l008kxhd85l4k8cie	https://picsum.photos/seed/moovy-cheesecake/600/600	Cheesecake de Frutos Rojos	0
@@ -3938,6 +3937,7 @@ cmqz5vtuc00bexhd8f2zju172	cmqz5vtu700baxhd85r80nq4c	https://picsum.photos/seed/m
 cmqz5vtuk00bkxhd8856goox3	cmqz5vtuf00bgxhd8gls84ah6	https://picsum.photos/seed/moovy-lechuga/600/600	Lechuga Mantecosa	0
 cmqz5vtur00bqxhd8i9bsb5je	cmqz5vtun00bmxhd8ij93bqj4	https://picsum.photos/seed/moovy-frutillas/600/600	Frutillas (250g)	0
 cmrcpsqjg00037nue72igl8ba	cmrc815yy00m975y6k0lurue0	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1783553654082-ushuaia-bg.webp	soyunaprueba2	0
+cmrdy8h4000007adlg3vj1o47	cmqz5vsxo007sxhd8av6s1rmm	https://picsum.photos/seed/moovy-pinta-artesanal/600/600	Cerveza Artesanal Pinta	0
 \.
 
 

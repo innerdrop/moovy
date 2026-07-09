@@ -6,7 +6,7 @@ import MultiImageUpload from "@/components/ui/MultiImageUpload";
 import SizeSelector from "@/components/comercios/SizeSelector";
 import PriceRecargoField from "@/components/comercios/PriceRecargoField";
 import { getSizeFromWeight, type MerchantSizeOption } from "@/lib/product-weight";
-import { Loader2, Save, ArrowLeft, Trash2, AlertTriangle, Settings, X } from "lucide-react";
+import { Loader2, Save, ArrowLeft, Trash2, AlertTriangle, Settings, X, Info } from "lucide-react";
 import Link from 'next/link';
 
 interface EditProductFormProps {
@@ -27,6 +27,7 @@ interface EditProductFormProps {
         // con precio final directo o es un producto legacy).
         basePrice: number | null;
         markupPercent: number | null;
+        barcode: string | null;
     };
     categories: { id: string; name: string }[];
     /** Opciones de tamaño derivadas de OPS (PackageCategory). Ver src/lib/product-sizes.ts */
@@ -60,21 +61,14 @@ export default function EditProductForm({ product, categories, sizeOptions, comm
     // isDirty los detecte y el banner "Guardar" aparezca al editarlos (antes
     // eran defaultValue no trackeados -> el comercio no veia como guardar).
     // feat/recargo-moovy-y-tamano-toggle: el precio lo maneja PriceRecargoField.
-    // `price` guarda el precio FINAL (para el dirty-state) y lo actualiza el callback.
-    // `priceMeta` guarda el modo + base + recargo (también para el dirty-state).
-    const initialPriceMode: "direct" | "markup" =
-        product.basePrice != null && product.basePrice > 0 ? "markup" : "direct";
-    const initialBasePriceStr = product.basePrice != null && product.basePrice > 0 ? String(product.basePrice) : "";
-    const initialMarkupStr = product.markupPercent != null ? String(product.markupPercent) : "";
+    // `price` guarda el precio FINAL — es lo único que define el dirty-state del precio.
+    // Cambiar SOLO el modo (Precio final ↔ Con recargo) sin tocar el valor NO ensucia
+    // el form: lo que importa es el precio final que paga el cliente.
     const [price, setPrice] = useState<string>(String(product.price));
-    const [priceMeta, setPriceMeta] = useState<{ mode: "direct" | "markup"; basePrice: string; markupPercent: string }>({
-        mode: initialPriceMode,
-        basePrice: initialBasePriceStr,
-        markupPercent: initialMarkupStr,
-    });
     const [priceResetKey, setPriceResetKey] = useState(0);
     const [stock, setStock] = useState<string>(String(product.stock));
     const [categoryId, setCategoryId] = useState<string>(product.categoryId);
+    const [barcode, setBarcode] = useState<string>(product.barcode || "");
     // Tamaño: si el producto ya tenía weightGrams cargado, derivar la categoría
     // inicial (string = name de la PackageCategory).
     const [productSize, setProductSize] = useState<string | null>(
@@ -92,11 +86,9 @@ export default function EditProductForm({ product, categories, sizeOptions, comm
         name: product.name,
         description: product.description,
         price: String(product.price),
-        priceMode: initialPriceMode,
-        basePrice: initialBasePriceStr,
-        markupPercent: initialMarkupStr,
         stock: String(product.stock),
         categoryId: product.categoryId,
+        barcode: product.barcode || "",
         weightGrams: product.weightGrams != null ? String(product.weightGrams) : "",
         volumeMl: product.volumeMl != null ? String(product.volumeMl) : "",
         packageCategoryId: product.packageCategoryId || "",
@@ -107,11 +99,9 @@ export default function EditProductForm({ product, categories, sizeOptions, comm
         name !== initialState.current.name ||
         description !== initialState.current.description ||
         price !== initialState.current.price ||
-        priceMeta.mode !== initialState.current.priceMode ||
-        priceMeta.basePrice !== initialState.current.basePrice ||
-        priceMeta.markupPercent !== initialState.current.markupPercent ||
         stock !== initialState.current.stock ||
         categoryId !== initialState.current.categoryId ||
+        barcode !== initialState.current.barcode ||
         weightGrams !== initialState.current.weightGrams ||
         volumeMl !== initialState.current.volumeMl ||
         packageCategoryId !== initialState.current.packageCategoryId ||
@@ -122,14 +112,10 @@ export default function EditProductForm({ product, categories, sizeOptions, comm
         setName(initialState.current.name);
         setDescription(initialState.current.description);
         setPrice(initialState.current.price);
-        setPriceMeta({
-            mode: initialState.current.priceMode,
-            basePrice: initialState.current.basePrice,
-            markupPercent: initialState.current.markupPercent,
-        });
         setPriceResetKey((k) => k + 1); // remonta PriceRecargoField con los valores iniciales
         setStock(initialState.current.stock);
         setCategoryId(initialState.current.categoryId);
+        setBarcode(initialState.current.barcode);
         setWeightGrams(initialState.current.weightGrams);
         setVolumeMl(initialState.current.volumeMl);
         setPackageCategoryId(initialState.current.packageCategoryId);
@@ -260,7 +246,7 @@ export default function EditProductForm({ product, categories, sizeOptions, comm
                     <div className="lg:col-span-2 space-y-6 bg-white p-6 md:p-8 rounded-2xl border border-gray-100 shadow-sm">
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Nombre del Producto
+                                Nombre del Producto <span className="text-red-400">*</span>
                             </label>
                             <input
                                 name="name"
@@ -306,7 +292,6 @@ export default function EditProductForm({ product, categories, sizeOptions, comm
                             initialMarkupPercent={product.markupPercent}
                             disabled={isLoading}
                             onFinalPriceChange={(fp) => setPrice(fp > 0 ? String(fp) : "")}
-                            onStateChange={(s) => setPriceMeta({ mode: s.mode, basePrice: s.basePrice, markupPercent: s.markupPercent })}
                         />
 
                         <div>
@@ -350,12 +335,29 @@ export default function EditProductForm({ product, categories, sizeOptions, comm
                             </div>
                         </div>
 
+                        {/* Código de barras — interno del comercio, no se muestra en la tienda */}
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Código de barras <span className="text-gray-400 font-normal">(opcional)</span>
+                            </label>
+                            <input
+                                name="barcode"
+                                type="text"
+                                value={barcode}
+                                onChange={(e) => setBarcode(e.target.value)}
+                                placeholder="Escaneá o escribí el código"
+                                className="input"
+                                disabled={isLoading}
+                            />
+                            <p className="text-[11px] text-gray-400 mt-1">Solo para vos: buscar o escanear el producto en tu listado. No se muestra en la tienda.</p>
+                        </div>
+
                         {/* Tamaño del producto — feat/tamanos-producto-desde-ops (opciones de OPS) */}
                         <div className="border-t border-gray-100 pt-5">
                             <div className="mb-4">
-                                <h3 className="text-sm font-bold text-gray-900">Tamaño del producto</h3>
+                                <h3 className="text-sm font-bold text-gray-900">Tamaño del producto <span className="text-red-400">*</span></h3>
                                 <p className="text-xs text-gray-500 mt-0.5">
-                                    Elegí el tamaño. Define qué vehículo usamos para entregarlo.
+                                    Elegí el tamaño de <b className="font-semibold text-gray-600">una unidad</b> de tu producto. Con esto preparamos la entrega correcta.
                                 </p>
                             </div>
 
@@ -365,6 +367,11 @@ export default function EditProductForm({ product, categories, sizeOptions, comm
                                 onChange={handleSelectSize}
                                 disabled={isLoading}
                             />
+
+                            <p className="text-[11px] text-gray-400 mt-2 flex items-start gap-1.5">
+                                <Info className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+                                No te preocupes por la cantidad: si piden varias unidades, calculamos el envío sumando el peso total automáticamente.
+                            </p>
 
                             {/* Modo avanzado */}
                             <div className="mt-5 pt-4 border-t border-gray-50">

@@ -64,9 +64,12 @@ interface SettingsFormProps {
     // Si no se pasa (undefined), se muestran todos (retrocompatible).
     // feat/docs-comercio-configurables-ops.
     requiredDocFields?: string[];
+    // feat/reorg-mi-comercio: gating por sección para el hub. Sin section = todo (compat).
+    section?: "estado" | "entregas" | "mercadopago" | "documentacion";
 }
 
-export default function SettingsForm({ merchant, requiredDocFields }: SettingsFormProps) {
+export default function SettingsForm({ merchant, requiredDocFields, section }: SettingsFormProps) {
+    const show = (s: "estado" | "entregas" | "mercadopago" | "documentacion") => !section || section === s;
     const [isLoading, setIsLoading] = useState(false);
     const [isTogglingStore, setIsTogglingStore] = useState(false);
     const [isOpen, setIsOpen] = useState(merchant.isOpen);
@@ -135,6 +138,7 @@ export default function SettingsForm({ merchant, requiredDocFields }: SettingsFo
     return (
         <div className="space-y-6">
             {/* Store Status Toggle */}
+            {show("estado") && (
             <div className={`rounded-xl p-4 border flex items-center justify-between ${isOpen
                 ? "bg-green-50 border-green-200"
                 : "bg-gray-100 border-gray-200"
@@ -161,6 +165,7 @@ export default function SettingsForm({ merchant, requiredDocFields }: SettingsFo
                     {isOpen ? "Pausar Tienda" : "Abrir Tienda"}
                 </button>
             </div>
+            )}
 
             {error && (
                 <div className="p-4 bg-red-50 text-red-600 rounded-xl text-sm font-medium border border-red-100">
@@ -174,6 +179,7 @@ export default function SettingsForm({ merchant, requiredDocFields }: SettingsFo
             )}
 
             {/* Delivery & Pickup Settings */}
+            {show("entregas") && (
             <form action={handleSubmit} className="space-y-6">
                 {/* Hidden fields required by merchantSchema */}
                 <input type="hidden" name="name" value={merchant.name} />
@@ -266,11 +272,15 @@ export default function SettingsForm({ merchant, requiredDocFields }: SettingsFo
                     </button>
                 </div>
             </form>
+            )}
 
             {/* Document Status & Upload */}
-            <DocumentsSection merchant={merchant} requiredDocFields={requiredDocFields} />
+            {show("documentacion") && (
+                <DocumentsSection merchant={merchant} requiredDocFields={requiredDocFields} />
+            )}
 
             {/* MercadoPago */}
+            {show("mercadopago") && (
             <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
                 <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                     <Link2 className="w-5 h-5 text-blue-600" />
@@ -318,6 +328,7 @@ export default function SettingsForm({ merchant, requiredDocFields }: SettingsFo
                     </div>
                 )}
             </div>
+            )}
         </div>
     );
 }

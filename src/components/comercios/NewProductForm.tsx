@@ -67,6 +67,7 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
         weightGrams: "" as string | number,
         volumeMl: "" as string | number,
         packageCategoryId: "",
+        barcode: "",
     });
 
     // Tamaño elegido por el comerciante (Glovo-style). null = ninguno seleccionado.
@@ -94,6 +95,11 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
             weightGrams: option.assumedWeightGrams,
             volumeMl: option.assumedVolumeMl,
         }));
+        setFieldErrors((prev) => {
+            if (!prev.size) return prev;
+            const { size, ...rest } = prev;
+            return rest;
+        });
     };
 
     const hasCatalog = catalogProducts.length > 0;
@@ -159,6 +165,7 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
             weightGrams: "",
             volumeMl: "",
             packageCategoryId: "",
+            barcode: "",
         });
         if (item.imageUrl) setImageUrls([item.imageUrl]);
         setSearchTerm("");
@@ -173,7 +180,7 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
     // scrollear hasta arriba para enterarse. Patron estandar (Stripe/MeLi):
     // scroll + focus al primer campo invalido.
     const scrollToFirstError = (errors: Record<string, string>) => {
-        const order = ["image", "name", "price", "stock", "description"];
+        const order = ["image", "name", "price", "stock", "description", "size"];
         const first = order.find((f) => errors[f]);
         if (!first) return;
         requestAnimationFrame(() => {
@@ -182,7 +189,9 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                     ? document.getElementById("seccion-imagen-producto")
                     : first === "price"
                         ? document.getElementById("seccion-precio-producto")
-                        : (document.querySelector(`[name="${first}"]`) as HTMLElement | null);
+                        : first === "size"
+                            ? document.getElementById("seccion-tamano-producto")
+                            : (document.querySelector(`[name="${first}"]`) as HTMLElement | null);
             el?.scrollIntoView({ behavior: "smooth", block: "center" });
             if (el && el.tagName !== "DIV") {
                 (el as HTMLInputElement).focus({ preventScroll: true });
@@ -210,6 +219,12 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
         // invisible arriba del form (observacion QA pre-launch de Mauro).
         if (!formValues.description || formValues.description.trim().length < 10) {
             errors.description = "La descripción debe tener al menos 10 caracteres";
+        }
+        // El tamaño es obligatorio: define el vehículo y el costo del envío. Vale
+        // tanto elegir una tarjeta como tipear los gramos en modo avanzado.
+        const hasSize = productSize !== null || Number(formValues.weightGrams) > 0;
+        if (!hasSize) {
+            errors.size = "Elegí el tamaño del producto";
         }
 
         setFieldErrors(errors);
@@ -262,7 +277,8 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
         imageUrls.length > 0 &&
         Number(formValues.price) > 0 &&
         formValues.stock !== "" &&
-        Number(formValues.stock) >= 0;
+        Number(formValues.stock) >= 0 &&
+        (productSize !== null || Number(formValues.weightGrams) > 0);
 
     const handleDiscard = async () => {
         const ok = await confirmModal({
@@ -282,6 +298,7 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
             weightGrams: "",
             volumeMl: "",
             packageCategoryId: "",
+            barcode: "",
         });
         setImageUrls([]);
         setProductSize(null);
@@ -615,13 +632,31 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                         </div>
                     </div>
 
+                    {/* Código de barras — SKU interno del comercio (opcional, no se muestra en la tienda) */}
+                    <div>
+                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">
+                            Código de barras <span className="font-normal normal-case text-gray-300">(opcional)</span>
+                        </label>
+                        <input
+                            name="barcode"
+                            type="text"
+                            placeholder="Escaneá o escribí el código"
+                            className={fieldClass("barcode")}
+                            disabled={isLoading}
+                            value={formValues.barcode}
+                            onChange={(e) => setFormValues({ ...formValues, barcode: e.target.value })}
+                        />
+                        <p className="text-[10px] text-gray-400 mt-1 ml-1">Solo para vos: te sirve para buscar o escanear el producto en tu listado. No se muestra en la tienda.</p>
+                    </div>
+
                     {/* Tamaño del producto — feat/tamanos-producto-desde-ops (opciones de OPS) */}
-                    <div className="border-t border-gray-100 pt-6">
+                    <div id="seccion-tamano-producto" className="border-t border-gray-100 pt-6">
                         <div className="mb-4">
-                            <h3 className="text-sm font-bold text-gray-900">Tamaño del producto</h3>
+                            <h3 className="text-sm font-bold text-gray-900">Tamaño del producto <span className="text-red-400">*</span></h3>
                             <p className="text-xs text-gray-500 font-medium mt-0.5">
-                                Elegí el tamaño del producto. Eso define qué vehículo usamos para entregarlo.
+                                Elegí el tamaño de <b className="font-semibold text-gray-600">una unidad</b> de tu producto. Con esto preparamos la entrega correcta.
                             </p>
+                            {fieldErrors.size && <p className="text-xs text-red-500 font-semibold mt-1">{fieldErrors.size}</p>}
                         </div>
 
                         <SizeSelector
@@ -630,6 +665,11 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                             onChange={handleSelectSize}
                             disabled={isLoading}
                         />
+
+                        <p className="text-[11px] text-gray-400 mt-2 flex items-start gap-1.5">
+                            <Info className="w-3.5 h-3.5 flex-shrink-0 mt-px" />
+                            No te preocupes por la cantidad: si piden varias unidades, calculamos el envío sumando el peso total automáticamente.
+                        </p>
 
                         {/* Modo avanzado: tipear gramos exactos (farmacia/seller con productos heterogéneos) */}
                         <div className="mt-5 pt-4 border-t border-gray-50">

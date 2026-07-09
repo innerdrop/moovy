@@ -32,6 +32,8 @@ interface MiComercioFormProps {
         facebookUrl?: string | null;
         whatsappNumber?: string | null;
     };
+    // feat/reorg-mi-comercio: gating por sección para el hub. Sin section = todo (compat).
+    section?: "perfil" | "horarios";
 }
 
 interface TimeRange {
@@ -97,7 +99,8 @@ const CATEGORIES = [
     "Floristería", "Juguetería", "Indumentaria", "Otro",
 ];
 
-export default function MiComercioForm({ merchant }: MiComercioFormProps) {
+export default function MiComercioForm({ merchant, section }: MiComercioFormProps) {
+    const show = (s: "perfil" | "horarios") => !section || section === s;
     const [isLoading, setIsLoading] = useState(false);
     const [imageUrl, setImageUrl] = useState(merchant.image);
     const [error, setError] = useState("");
@@ -259,6 +262,7 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
             )}
 
             {/* Main Profile Form */}
+            {show("perfil") && (
             <form
                 action={handleSubmit}
                 className="space-y-6"
@@ -449,8 +453,10 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                     </div>
                 )}
             </form>
+            )}
 
             {/* Schedule Section — Horarios obligatorios */}
+            {show("horarios") && (
             <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
                 <div className="flex items-center justify-between">
                     <h2 className="font-semibold text-gray-900 flex items-center gap-2">
@@ -520,7 +526,7 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                     })}
 
                     <p className="text-xs text-gray-400 mt-1">
-                        Podés configurar turnos partidos (ej: mañana y tarde) con el botón &quot;Agregar turno&quot;. Usá el botón &quot;Pausar Tienda&quot; en Ajustes para cerrar temporalmente fuera de horario.
+                        Podés configurar turnos partidos (ej: mañana y tarde) con el botón &quot;Agregar turno&quot;. Para cerrar temporalmente fuera de horario, usá &quot;Pausar Tienda&quot; en el estado de la tienda.
                     </p>
 
                     <div className="flex justify-end pt-2">
@@ -531,8 +537,10 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                     </div>
                 </div>
             </div>
+            )}
 
             {/* Social Media */}
+            {show("perfil") && (
             <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
                 <h2 className="font-semibold text-gray-900 flex items-center gap-2">
                     <Globe className="w-5 h-5 text-blue-600" />
@@ -595,6 +603,7 @@ export default function MiComercioForm({ merchant }: MiComercioFormProps) {
                     </button>
                 </form>
             </div>
+            )}
         </div>
     );
 }

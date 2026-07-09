@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -22,15 +22,20 @@ interface Product {
     stock: number;
     isActive: boolean;
     description?: string | null;
+    // feat: el tamaño es obligatorio para publicar. weightGrams != null ⇒ tiene tamaño.
+    weightGrams?: number | null;
+    // feat: código de barras interno (buscar/escanear). No se muestra en la tienda.
+    barcode?: string | null;
     images: { url: string }[];
     categories: { category: { name: string } }[];
 }
 
 type ProductStatus = "published" | "ready" | "incomplete";
+type SortKey = "relevance" | "price-asc" | "price-desc" | "name" | "stock-asc" | "newest";
 
 // ¿El producto cumple los requisitos para publicarse? (foto + descripción ≥10 + precio)
 function isComplete(p: Product): boolean {
-    return (p.images?.length ?? 0) > 0 && ((p.description?.trim().length ?? 0) >= 10) && p.price > 0;
+    return (p.images?.length ?? 0) > 0 && ((p.description?.trim().length ?? 0) >= 10) && p.price > 0 && (p.weightGrams ?? 0) > 0;
 }
 // Estado: en tienda (publicado) | listo (oculto pero completo) | incompleto (falta algo).
 function statusOf(p: Product): ProductStatus {
@@ -53,6 +58,7 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
     const router = useRouter();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<"" | ProductStatus>("");
+    const [sortBy, setSortBy] = useState<SortKey>("relevance");
 
     // Contadores globales del catálogo (para los chips de arriba).
     const counts = useMemo(() => {
@@ -73,26 +79,47 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
         let list = initialProducts.filter(p =>
             !term ||
             p.name.toLowerCase().includes(term) ||
+            (p.barcode ? p.barcode.toLowerCase().includes(term) : false) ||
             p.categories.some(c => c.category.name.toLowerCase().includes(term))
         );
         if (statusFilter) list = list.filter(p => statusOf(p) === statusFilter);
-        return list
-            .map((p, i) => ({ p, i }))
-            .sort((a, b) => (STATUS_RANK[statusOf(a.p)] - STATUS_RANK[statusOf(b.p)]) || (a.i - b.i))
-            .map((x) => x.p);
-    }, [searchTerm, statusFilter, initialProducts]);
+        const withIdx = list.map((p, i) => ({ p, i }));
+        const comparators: Record<SortKey, (a: { p: Product; i: number }, b: { p: Product; i: number }) => number> = {
+            // "Recomendado": publicados → listos → incompletos, y dentro los más nuevos.
+            relevance: (a, b) => (STATUS_RANK[statusOf(a.p)] - STATUS_RANK[statusOf(b.p)]) || (a.i - b.i),
+            "price-asc": (a, b) => (a.p.price - b.p.price) || (a.i - b.i),
+            "price-desc": (a, b) => (b.p.price - a.p.price) || (a.i - b.i),
+            name: (a, b) => a.p.name.localeCompare(b.p.name, "es") || (a.i - b.i),
+            "stock-asc": (a, b) => (a.p.stock - b.p.stock) || (a.i - b.i),
+            newest: (a, b) => a.i - b.i, // initialProducts ya viene por createdAt desc
+        };
+        return withIdx.sort(comparators[sortBy]).map((x) => x.p);
+    }, [searchTerm, statusFilter, sortBy, initialProducts]);
 
     // Paginación (cliente): default 20/página, configurable.
     const [pageSize, setPageSize] = useState(20);
     const [page, setPage] = useState(1);
     const [showTop, setShowTop] = useState(false);
+    // El scroll de la lista vive en su propio contenedor (no en la página).
+    const listRef = useRef<HTMLDivElement>(null);
+    // Scroll interno SOLO en desktop; en mobile la página fluye normal (evita el
+    // "scroll dentro de scroll", que es mal UX en celular).
+    const [isDesktop, setIsDesktop] = useState(false);
 
-    useEffect(() => { setPage(1); }, [searchTerm, statusFilter, pageSize]);
+    useEffect(() => { setPage(1); }, [searchTerm, statusFilter, sortBy, pageSize]);
 
     useEffect(() => {
         const onScroll = () => setShowTop(window.scrollY > 600);
         window.addEventListener("scroll", onScroll, { passive: true });
         return () => window.removeEventListener("scroll", onScroll);
+    }, []);
+
+    useEffect(() => {
+        const mq = window.matchMedia("(min-width: 1024px)");
+        const update = () => setIsDesktop(mq.matches);
+        update();
+        mq.addEventListener("change", update);
+        return () => mq.removeEventListener("change", update);
     }, []);
 
     const totalPages = Math.max(1, Math.ceil(visible.length / pageSize));
@@ -101,7 +128,8 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
 
     const goTo = (p: number) => {
         setPage(Math.min(Math.max(1, p), totalPages));
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        // Volver al tope del contenedor de la lista (la página no scrollea).
+        listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
     };
 
     // ---- Selección en lote ----
@@ -195,6 +223,45 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
         { key: "incomplete", label: "Incompletos", count: counts.incomplete, color: "text-amber-600" },
     ];
 
+    // Controles de paginación (cantidad por página + anterior/siguiente). Se muestran
+    // arriba Y abajo de la lista.
+    const paginationControls = (
+        <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 min-w-0">
+                <span className="whitespace-nowrap">
+                    {visible.length}<span className="hidden sm:inline"> producto{visible.length !== 1 ? "s" : ""}</span><span className="sm:hidden"> prod.</span>
+                </span>
+                <label className="hidden sm:flex items-center gap-1.5">
+                    <span className="text-gray-300">·</span>
+                    Mostrar
+                    <select
+                        value={pageSize}
+                        onChange={(e) => setPageSize(Number(e.target.value))}
+                        className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white focus:ring-2 focus:ring-blue-500/20"
+                    >
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                    </select>
+                    por página
+                </label>
+            </div>
+            {totalPages > 1 && (
+                <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
+                    <button onClick={() => goTo(safePage - 1)} disabled={safePage <= 1} className="p-2 sm:p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition" title="Anterior">
+                        <ChevronLeft className="w-5 h-5" />
+                    </button>
+                    <span className="text-xs sm:text-sm font-semibold text-gray-700 text-center whitespace-nowrap min-w-[64px] sm:min-w-[120px]">
+                        <span className="hidden sm:inline">Página </span>{safePage}<span className="sm:hidden">/</span><span className="hidden sm:inline"> de </span>{totalPages}
+                    </span>
+                    <button onClick={() => goTo(safePage + 1)} disabled={safePage >= totalPages} className="p-2 sm:p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition" title="Siguiente">
+                        <ChevronRight className="w-5 h-5" />
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+
     return (
         <div className="space-y-6">
             {/* Search Bar */}
@@ -204,10 +271,10 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
                 </div>
                 <input
                     type="text"
-                    placeholder="Buscar producto por nombre o categoría..."
+                    placeholder="Buscar por nombre, categoría o código de barras..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full pl-14 pr-12 py-5 bg-white border border-gray-100 rounded-[2rem] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all shadow-sm hover:shadow-md text-lg font-medium"
+                    className="w-full pl-14 pr-12 py-3.5 sm:py-5 bg-white border border-gray-100 rounded-[2rem] text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-4 focus:ring-blue-50 focus:border-blue-200 transition-all shadow-sm hover:shadow-md text-base sm:text-lg font-medium"
                 />
                 {searchTerm && (
                     <button
@@ -219,19 +286,36 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
                 )}
             </div>
 
-            {/* Filtros por estado */}
+            {/* Toolbar: filtros de estado (izq) + orden (der) en una sola barra */}
             {counts.total > 0 && (
-                <div className="flex gap-2 flex-wrap">
-                    {statusTabs.map((t) => (
-                        <button
-                            key={t.key || "all"}
-                            onClick={() => setStatusFilter(t.key)}
-                            className={`px-3.5 py-1.5 rounded-full text-sm font-bold transition flex items-center gap-1.5 border ${statusFilter === t.key ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"}`}
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mb-1 sm:flex-wrap sm:overflow-visible sm:pb-0 sm:mb-0">
+                        {statusTabs.map((t) => (
+                            <button
+                                key={t.key || "all"}
+                                onClick={() => setStatusFilter(t.key)}
+                                className={`shrink-0 px-3.5 py-1.5 rounded-full text-sm font-bold transition flex items-center gap-1.5 border ${statusFilter === t.key ? "bg-gray-900 text-white border-gray-900" : "bg-white text-gray-600 border-gray-200 hover:border-gray-300"}`}
+                            >
+                                {t.label}
+                                <span className={`text-xs font-black ${statusFilter === t.key ? "text-white/80" : t.color}`}>{t.count}</span>
+                            </button>
+                        ))}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500 font-medium whitespace-nowrap">Ordenar:</span>
+                        <select
+                            value={sortBy}
+                            onChange={(e) => setSortBy(e.target.value as SortKey)}
+                            className="flex-1 sm:flex-none border border-gray-200 rounded-lg px-3 py-1.5 text-sm bg-white focus:ring-2 focus:ring-blue-500/20 font-medium text-gray-700"
                         >
-                            {t.label}
-                            <span className={`text-xs font-black ${statusFilter === t.key ? "text-white/80" : t.color}`}>{t.count}</span>
-                        </button>
-                    ))}
+                            <option value="relevance">Recomendado</option>
+                            <option value="price-asc">Precio: menor a mayor</option>
+                            <option value="price-desc">Precio: mayor a menor</option>
+                            <option value="name">Nombre (A-Z)</option>
+                            <option value="stock-asc">Stock: menos primero</option>
+                            <option value="newest">Más nuevos</option>
+                        </select>
+                    </div>
                 </div>
             )}
 
@@ -269,6 +353,9 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
                 </div>
             ) : (
                 <div className="space-y-4">
+                    {/* Paginación (arriba) */}
+                    {paginationControls}
+
                     {/* Desktop Table Header con checkbox de "seleccionar página" */}
                     <div className="hidden md:grid md:grid-cols-6 gap-4 px-5 py-2.5 bg-gray-50/50 rounded-xl text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
                         <div className="col-span-2 flex items-center gap-3">
@@ -300,8 +387,14 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
                         </div>
                     )}
 
-                    {/* Products List */}
-                    <div className="space-y-3">
+                    {/* Products List — en desktop es un contenedor con scroll interno
+                        (alto por estilo inline para no depender de clases arbitrarias);
+                        en mobile fluye normal. Encabezado y paginación quedan fijos. */}
+                    <div
+                        ref={listRef}
+                        className={`space-y-3 ${isDesktop ? "overflow-y-auto lg:border lg:border-gray-100 lg:rounded-2xl lg:bg-gray-50/40 lg:p-3" : ""}`}
+                        style={isDesktop ? { maxHeight: "calc(100dvh - 460px)", minHeight: "300px" } : undefined}
+                    >
                         {pageProducts.map((product) => {
                             const checked = selectedIds.has(product.id);
                             return (
@@ -380,37 +473,8 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
                         })}
                     </div>
 
-                    {/* Paginación */}
-                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                            <span>{visible.length} producto{visible.length !== 1 ? "s" : ""}</span>
-                            <span className="text-gray-300">·</span>
-                            <label className="flex items-center gap-1.5">
-                                Mostrar
-                                <select
-                                    value={pageSize}
-                                    onChange={(e) => setPageSize(Number(e.target.value))}
-                                    className="border border-gray-200 rounded-lg px-2 py-1 text-sm bg-white focus:ring-2 focus:ring-blue-500/20"
-                                >
-                                    <option value={20}>20</option>
-                                    <option value={50}>50</option>
-                                    <option value={100}>100</option>
-                                </select>
-                                por página
-                            </label>
-                        </div>
-                        {totalPages > 1 && (
-                            <div className="flex items-center gap-2">
-                                <button onClick={() => goTo(safePage - 1)} disabled={safePage <= 1} className="p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition" title="Anterior">
-                                    <ChevronLeft className="w-5 h-5" />
-                                </button>
-                                <span className="text-sm font-semibold text-gray-700 min-w-[120px] text-center">Página {safePage} de {totalPages}</span>
-                                <button onClick={() => goTo(safePage + 1)} disabled={safePage >= totalPages} className="p-2.5 rounded-xl border border-gray-100 text-gray-500 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition" title="Siguiente">
-                                    <ChevronRight className="w-5 h-5" />
-                                </button>
-                            </div>
-                        )}
-                    </div>
+                    {/* Paginación (abajo) */}
+                    {paginationControls}
                 </div>
             )}
 

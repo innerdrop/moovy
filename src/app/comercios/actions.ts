@@ -123,6 +123,9 @@ const productSchema = z.object({
     priceMode: z.enum(["direct", "markup"]).nullish(),
     basePrice: z.coerce.number().min(0).max(100000000).nullish().transform((v) => (v && v > 0 ? v : null)),
     markupPercent: z.coerce.number().min(0).max(1000).nullish().transform((v) => (typeof v === "number" && v >= 0 ? v : null)),
+    // feat: código de barras / SKU INTERNO del comercio. No se muestra en la tienda;
+    // sirve para buscar/escanear en el listado. Único por comercio (@@unique merchantId+barcode).
+    barcode: z.string().trim().max(64).nullish().transform((v) => (v && v.length > 0 ? v : null)),
 });
 
 // feat: al EDITAR un producto, el comercio puede guardar el AVANCE aunque falten
@@ -153,6 +156,9 @@ const updateProductSchema = z.object({
     priceMode: z.enum(["direct", "markup"]).nullish(),
     basePrice: z.coerce.number().min(0).max(100000000).nullish().transform((v) => (v && v > 0 ? v : null)),
     markupPercent: z.coerce.number().min(0).max(1000).nullish().transform((v) => (typeof v === "number" && v >= 0 ? v : null)),
+    // feat: código de barras / SKU INTERNO del comercio. No se muestra en la tienda;
+    // sirve para buscar/escanear en el listado. Único por comercio (@@unique merchantId+barcode).
+    barcode: z.string().trim().max(64).nullish().transform((v) => (v && v.length > 0 ? v : null)),
 });
 
 // Helper to verify merchant ownership
@@ -309,6 +315,7 @@ export async function createProduct(formData: FormData) {
         priceMode: formData.get("priceMode") || undefined,
         basePrice: formData.get("basePrice"),
         markupPercent: formData.get("markupPercent"),
+        barcode: formData.get("barcode"),
     };
 
     const validation = productSchema.safeParse(rawData);
@@ -358,6 +365,11 @@ export async function createProduct(formData: FormData) {
             markupPercent: data.markupPercent,
         });
 
+        // El tamaño es obligatorio: sin él no podemos elegir bien el vehículo del envío.
+        if (!sizeSnapshot.weightGrams || sizeSnapshot.weightGrams <= 0) {
+            return { error: "Elegí el tamaño del producto." };
+        }
+
         await prisma.product.create({
             data: {
                 name: data.name,
@@ -367,6 +379,7 @@ export async function createProduct(formData: FormData) {
                 costPrice: pricing.price * 0.7,
                 basePrice: pricing.basePrice,
                 markupPercent: pricing.markupPercent,
+                barcode: data.barcode,
                 stock: data.stock,
                 merchantId: merchant.id,
                 // Rama feat/peso-volumen-productos
@@ -392,6 +405,10 @@ export async function createProduct(formData: FormData) {
 
         revalidatePath("/comercios/productos");
     } catch (error) {
+        // Código de barras duplicado dentro del mismo comercio (@@unique merchantId+barcode).
+        if ((error as any)?.code === "P2002" && String((error as any)?.meta?.target ?? "").includes("barcode")) {
+            return { error: "Ya tenés otro producto con ese código de barras. Usá uno distinto o dejalo vacío." };
+        }
         console.error("Error creating product:", error);
         return { error: "Error al crear el producto. Inténtalo de nuevo." };
     }
@@ -421,6 +438,7 @@ export async function updateProduct(productId: string, formData: FormData) {
         priceMode: formData.get("priceMode") || undefined,
         basePrice: formData.get("basePrice"),
         markupPercent: formData.get("markupPercent"),
+        barcode: formData.get("barcode"),
     };
 
     const validation = updateProductSchema.safeParse(rawData);
@@ -474,7 +492,8 @@ export async function updateProduct(productId: string, formData: FormData) {
         });
 
         const descLen = data.description ? data.description.trim().length : 0;
-        const isComplete = data.imageUrls.length > 0 && descLen >= 10 && pricing.price > 0;
+        const hasSize = (sizeSnapshot.weightGrams ?? 0) > 0;
+        const isComplete = data.imageUrls.length > 0 && descLen >= 10 && pricing.price > 0 && hasSize;
         const autoHide = !!current?.isActive && !isComplete;
 
         // Update the product
@@ -487,6 +506,7 @@ export async function updateProduct(productId: string, formData: FormData) {
                 costPrice: pricing.price * 0.7,
                 basePrice: pricing.basePrice,
                 markupPercent: pricing.markupPercent,
+                barcode: data.barcode,
                 stock: data.stock,
                 // Rama feat/peso-volumen-productos
                 // Rama fix/asignacion-match-vehiculo: persistir el tamaño elegido.
@@ -529,6 +549,9 @@ export async function updateProduct(productId: string, formData: FormData) {
         revalidatePath("/comercios/productos");
         revalidatePath("/tienda");
     } catch (error) {
+        if ((error as any)?.code === "P2002" && String((error as any)?.meta?.target ?? "").includes("barcode")) {
+            return { error: "Ya tenés otro producto con ese código de barras. Usá uno distinto o dejalo vacío." };
+        }
         console.error("Error updating product:", error);
         return { error: "Error al actualizar el producto. Inténtalo de nuevo." };
     }
@@ -599,6 +622,7 @@ export async function toggleProductActive(productId: string, isActive: boolean) 
                 select: {
                     description: true,
                     price: true,
+                    weightGrams: true,
                     _count: { select: { images: true } },
                 },
             });
@@ -611,6 +635,7 @@ export async function toggleProductActive(productId: string, isActive: boolean) 
                 missing.push("una descripción (mín. 10 caracteres)");
             }
             if (!product.price || product.price <= 0) missing.push("un precio");
+            if (!product.weightGrams || product.weightGrams <= 0) missing.push("el tamaño");
             if (missing.length > 0) {
                 return { error: `Para mostrarlo en la tienda falta: ${missing.join(", ")}. Completalo primero.` };
             }

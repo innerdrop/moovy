@@ -14,7 +14,7 @@
 
 "use client";
 
-import { Mail, ShoppingBag, Package, PackageOpen, Truck, Check, Bike } from "lucide-react";
+import { Mail, ShoppingBag, Package, PackageOpen, Truck, Check } from "lucide-react";
 import type { MerchantSizeOption } from "@/lib/product-weight";
 
 interface SizeSelectorProps {
@@ -85,12 +85,6 @@ function SizeCard({
                 )}
             </div>
 
-            {/* Vehículo mínimo — sale de OPS. Le muestra al comercio la consecuencia
-                logística de su elección ("esto lo lleva una moto"). */}
-            <div className="mt-3 flex items-center gap-1.5 text-[11px] font-semibold text-gray-500">
-                <Bike className="w-3.5 h-3.5" />
-                <span>Se entrega en: {option.vehicleLabel}</span>
-            </div>
         </button>
     );
 }

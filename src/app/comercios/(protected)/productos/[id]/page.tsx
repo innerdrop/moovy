@@ -85,6 +85,7 @@ export default async function EditProductPage({ params }: PageProps) {
                     // feat/recargo-moovy-y-tamano-toggle: metadata del recargo
                     basePrice: product.basePrice,
                     markupPercent: product.markupPercent,
+                    barcode: product.barcode,
                 }}
                 categories={categories}
             />

@@ -65,10 +65,10 @@ export async function bulkSetProductsActive(rawIds: string[], isActive: boolean)
     // Mostrar: filtrar los completos.
     const products = await prisma.product.findMany({
         where: { id: { in: owned }, merchantId: merchant.id },
-        select: { id: true, description: true, price: true, _count: { select: { images: true } } },
+        select: { id: true, description: true, price: true, weightGrams: true, _count: { select: { images: true } } },
     });
     const completeIds = products
-        .filter((p) => (p._count?.images ?? 0) > 0 && (p.description?.trim().length ?? 0) >= 10 && p.price > 0)
+        .filter((p) => (p._count?.images ?? 0) > 0 && (p.description?.trim().length ?? 0) >= 10 && p.price > 0 && ((p as any).weightGrams ?? 0) > 0)
         .map((p) => p.id);
     const skipped = owned.length - completeIds.length;
     if (completeIds.length === 0) {

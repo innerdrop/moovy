@@ -73,14 +73,14 @@ export default async function ProductosPage() {
                     )}
                     <Link
                         href="/comercios/productos/importar"
-                        className="flex-1 md:flex-none py-4 px-6 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all font-bold text-sm text-center inline-flex items-center justify-center gap-2"
+                        className="flex-1 md:flex-none py-4 px-5 rounded-2xl border border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300 transition-all font-bold text-sm text-center inline-flex items-center justify-center gap-2 whitespace-nowrap"
                     >
                         <Upload className="w-4 h-4" />
                         Importar CSV
                     </Link>
                     <Link
                         href="/comercios/productos/nuevo"
-                        className="flex-1 md:flex-none btn-primary flex items-center justify-center gap-3 py-4 px-8 shadow-xl shadow-red-500/20"
+                        className="flex-1 md:flex-none btn-primary flex items-center justify-center gap-2 py-4 px-5 shadow-xl shadow-red-500/20 whitespace-nowrap"
                     >
                         <Plus className="w-5 h-5 stroke-[3px]" />
                         Nuevo Producto

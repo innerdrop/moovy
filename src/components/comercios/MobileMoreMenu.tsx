@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { MoreHorizontal, X, Store, Megaphone, Star, Settings, Building2, Lock } from "lucide-react";
+import { MoreHorizontal, X, Store, Megaphone, Star, Building2, Lock } from "lucide-react";
 import { SupportNavBadgeMobile } from "@/components/comercios/SupportNavBadge";
 import { useFeatureFlags } from "@/hooks/useFeatureFlags";
 
@@ -22,21 +22,21 @@ const moreItems: MoreItem[] = [
     { href: "/comercios/adquirir-paquetes", icon: Store, label: "Paquetes", requiresFlag: "merchant.paquetes" },
     { href: "/comercios/publicidad", icon: Megaphone, label: "Publicidad", requiresFlag: "merchant.publicidad" },
     { href: "/comercios/resenas", icon: Star, label: "Reseñas" },
-    // Soporte handled separately
-    { href: "/comercios/configuracion", icon: Settings, label: "Ajustes" },
+    // feat/reorg-mi-comercio: "Ajustes" se fusionó en "Mi Comercio". Soporte handled separately.
 ];
 
 export default function MobileMoreMenu() {
     const [open, setOpen] = useState(false);
     const menuRef = useRef<HTMLDivElement>(null);
-    // feat/feature-flags-ops + feat/tamanos-producto-desde-ops: leer flags de la
-    // lista. Con el flag OFF: Paquetes se muestra en GRIS/bloqueado (no navega);
-    // el resto (ej: Publicidad) se oculta del menú.
+    // feat/feature-flags-ops: leer flags de la lista. Con el flag OFF, los items
+    // gateados (Paquetes, Publicidad) se muestran en GRIS/bloqueado (no navegan).
     const { flags } = useFeatureFlags(["merchant.paquetes", "merchant.publicidad"]);
+    // feat/bloquear-publicidad: con el flag OFF, Paquetes Y Publicidad se muestran
+    // en GRIS/bloqueado (candado, no navegan) — ya no se esconden.
     const itemState = (item: MoreItem): "visible" | "locked" | "hidden" => {
         if (!item.requiresFlag) return "visible";
         if (flags[item.requiresFlag as keyof typeof flags]) return "visible";
-        return item.requiresFlag === "merchant.paquetes" ? "locked" : "hidden";
+        return "locked";
     };
     const shownItems = moreItems
         .map((item) => ({ item, state: itemState(item) }))

@@ -101,29 +101,29 @@ export default function OnboardingChecklist() {
     // combina categoría + flags de OPS). Si OPS apaga un doc, no aparece acá.
     const steps: Step[] = [
         ...(status.cuitRequired
-            ? [{ id: "cuit", label: "CUIT cargado", completed: status.hasCuit, href: "/comercios/configuracion", required: true, section: "docs" as const }]
+            ? [{ id: "cuit", label: "CUIT cargado", completed: status.hasCuit, href: "/comercios/mi-comercio/documentacion", required: true, section: "docs" as const }]
             : []),
         ...(status.bankAccountRequired
-            ? [{ id: "bank", label: "CBU o Alias bancario", completed: status.hasBankAccount, href: "/comercios/configuracion", required: true, section: "docs" as const }]
+            ? [{ id: "bank", label: "CBU o Alias bancario", completed: status.hasBankAccount, href: "/comercios/mi-comercio/documentacion", required: true, section: "docs" as const }]
             : []),
         ...(status.constanciaAfipRequired
-            ? [{ id: "afip", label: "Constancia AFIP", completed: status.hasConstanciaAfip, href: "/comercios/configuracion", required: true, section: "docs" as const }]
+            ? [{ id: "afip", label: "Constancia AFIP", completed: status.hasConstanciaAfip, href: "/comercios/mi-comercio/documentacion", required: true, section: "docs" as const }]
             : []),
         ...(status.habilitacionRequired
-            ? [{ id: "habilitacion", label: "Habilitación Municipal", completed: status.hasHabilitacion, href: "/comercios/configuracion", required: true, section: "docs" as const }]
+            ? [{ id: "habilitacion", label: "Habilitación Municipal", completed: status.hasHabilitacion, href: "/comercios/mi-comercio/documentacion", required: true, section: "docs" as const }]
             : []),
         ...(status.registroSanitarioRequired
-            ? [{ id: "sanitario", label: "Registro Sanitario", completed: status.hasRegistroSanitario, href: "/comercios/configuracion", required: true, section: "docs" as const }]
+            ? [{ id: "sanitario", label: "Registro Sanitario", completed: status.hasRegistroSanitario, href: "/comercios/mi-comercio/documentacion", required: true, section: "docs" as const }]
             : []),
         // Logo: requerido para visibilidad pública (rama fix/aprobacion-sin-logo).
         // La aprobación NO se bloquea por logo, pero los listados públicos
         // (/tiendas, home) filtran por image: { not: null }. Sin logo el comercio
         // puede operar via link/QR pero no aparece en los listados.
-        { id: "logo", label: "Subí tu logo (para aparecer en listados)", completed: status.hasLogo, href: "/comercios/mi-comercio", required: true, section: "ops" },
-        { id: "schedule", label: "Configurá horarios", completed: status.hasSchedule, href: "/comercios/mi-comercio", required: true, section: "ops" },
+        { id: "logo", label: "Subí tu logo (para aparecer en listados)", completed: status.hasLogo, href: "/comercios/mi-comercio/perfil", required: true, section: "ops" },
+        { id: "schedule", label: "Configurá horarios", completed: status.hasSchedule, href: "/comercios/mi-comercio/horarios", required: true, section: "ops" },
         { id: "products", label: `Publicá productos (${status.productCount}/1 mín.)`, completed: status.hasProducts, href: "/comercios/productos/nuevo", required: true, section: "ops" },
-        { id: "address", label: "Dirección del comercio", completed: status.hasAddress, href: "/comercios/mi-comercio", required: true, section: "ops" },
-        { id: "mp", label: "Vinculá MercadoPago", completed: status.hasMercadoPago, href: "/comercios/configuracion", required: false, section: "ops" },
+        { id: "address", label: "Dirección del comercio", completed: status.hasAddress, href: "/comercios/mi-comercio/perfil", required: true, section: "ops" },
+        { id: "mp", label: "Vinculá MercadoPago", completed: status.hasMercadoPago, href: "/comercios/mi-comercio/mercadopago", required: false, section: "ops" },
     ];
 
     const requiredSteps = steps.filter((s) => s.required);
