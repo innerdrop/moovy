@@ -20,7 +20,9 @@ import type { MerchantSizeOption } from "@/lib/product-weight";
 interface SizeSelectorProps {
     options: MerchantSizeOption[];
     value: string | null;
-    onChange: (option: MerchantSizeOption) => void;
+    // feat/recargo-moovy-y-tamano-toggle: onChange recibe null cuando el comercio
+    // DESELECCIONA (reaprieta la card ya elegida). Sin tamaño = vehículo por defecto.
+    onChange: (option: MerchantSizeOption | null) => void;
     disabled?: boolean;
 }
 
@@ -113,7 +115,8 @@ export default function SizeSelector({ options, value, onChange, disabled }: Siz
                     option={option}
                     selected={value === option.size}
                     disabled={disabled}
-                    onClick={() => onChange(option)}
+                    // Reapretar la card seleccionada la deselecciona (toggle).
+                    onClick={() => onChange(value === option.size ? null : option)}
                 />
             ))}
         </div>

@@ -231,6 +231,14 @@ model Product {
   merchantId  String?
   price       Float
   costPrice   Float
+  // feat/recargo-moovy-y-tamano-toggle: cómo el comercio armó el precio de Moovy.
+  // `price` (arriba) es el precio FINAL y la ÚNICA base de comisión. basePrice y
+  // markupPercent son METADATA no-cobrable: recuerdan el precio del local + el
+  // recargo % para poder re-editar el recargo después. Nullables: productos legacy
+  // y los cargados con "precio final directo" (o import con la escotilla) los dejan
+  // vacíos. NUNCA se usan para cobrar; si difieren de price, gana price.
+  basePrice     Float?
+  markupPercent Float?
   stock       Int                       @default(0)
   minStock    Int                       @default(5)
   isActive    Boolean                   @default(true)

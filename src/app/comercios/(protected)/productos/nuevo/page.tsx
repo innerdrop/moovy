@@ -3,6 +3,7 @@ import NewProductForm from "@/components/comercios/NewProductForm";
 import { auth } from "@/lib/auth";
 import { getMerchantSizeOptions } from "@/lib/product-sizes";
 import { isFeatureEnabled, FEATURE_FLAGS } from "@/lib/feature-flags";
+import { getEffectiveCommissionWithSource, getDefaultMerchantCommission } from "@/lib/merchant-loyalty";
 
 export default async function NewProductPage() {
     const session = await auth();
@@ -73,10 +74,17 @@ export default async function NewProductPage() {
     });
 
     // 5. Opciones de tamaño derivadas de OPS (PackageCategory) + flag de paquetes.
-    const [sizeOptions, paquetesEnabled] = await Promise.all([
+    //    + comisión efectiva para el desglose del recargo (0% en primer mes) y el
+    //    rate a futuro (lo que pagará cuando termine el mes gratis).
+    const [sizeOptions, paquetesEnabled, eff, defaultCommission] = await Promise.all([
         getMerchantSizeOptions(),
         isFeatureEnabled(FEATURE_FLAGS.MERCHANT_PAQUETES),
+        merchantId ? getEffectiveCommissionWithSource(merchantId) : Promise.resolve(null),
+        getDefaultMerchantCommission(),
     ]);
+    const commissionRate = eff ? eff.rate : defaultCommission;
+    const firstMonthFree = eff?.source === "FIRST_MONTH";
+    const futureCommissionRate = firstMonthFree ? defaultCommission : commissionRate;
 
     return (
         <div className="max-w-4xl mx-auto">
@@ -85,6 +93,9 @@ export default async function NewProductPage() {
                 allCategories={allCategories}
                 sizeOptions={sizeOptions}
                 paquetesEnabled={paquetesEnabled}
+                commissionRate={commissionRate}
+                firstMonthFree={firstMonthFree}
+                futureCommissionRate={futureCommissionRate}
                 catalogProducts={masterProducts.map(p => ({
                     id: p.id,
                     name: p.name,

@@ -3,10 +3,17 @@
 import { useState, useMemo, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, Edit, Package, X, SearchIcon, ChevronLeft, ChevronRight, ArrowUp } from "lucide-react";
+import { useRouter } from "next/navigation";
+import {
+    Search, Edit, Package, X, SearchIcon, ChevronLeft, ChevronRight, ArrowUp,
+    Trash2, Eye, EyeOff, FolderTree, Percent, Download, Loader2, CheckSquare, Square, AlertTriangle,
+} from "lucide-react";
 import ProductStatusToggle from "./ProductStatusToggle";
 import DeleteProductButton from "./DeleteProductButton";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
+import {
+    bulkSetProductsActive, bulkDeleteProducts, bulkSetProductsCategory, bulkAdjustProductsPrice,
+} from "@/app/comercios/bulk-actions";
 
 interface Product {
     id: string;
@@ -38,9 +45,12 @@ const STATUS_META: Record<ProductStatus, { label: string; classes: string }> = {
 
 interface ProductsSearchContainerProps {
     initialProducts: Product[];
+    // feat/recargo-moovy-y-tamano-toggle: categorías para el cambio en lote.
+    categories?: { id: string; name: string }[];
 }
 
-export default function ProductsSearchContainer({ initialProducts }: ProductsSearchContainerProps) {
+export default function ProductsSearchContainer({ initialProducts, categories = [] }: ProductsSearchContainerProps) {
+    const router = useRouter();
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState<"" | ProductStatus>("");
 
@@ -72,16 +82,13 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
             .map((x) => x.p);
     }, [searchTerm, statusFilter, initialProducts]);
 
-    // Paginación (cliente): default 20/página, configurable. Reemplaza el scroll
-    // infinito — estándar de gestión de catálogo (Shopify/MeLi seller).
+    // Paginación (cliente): default 20/página, configurable.
     const [pageSize, setPageSize] = useState(20);
     const [page, setPage] = useState(1);
     const [showTop, setShowTop] = useState(false);
 
-    // Volver a la página 1 al cambiar búsqueda, filtro o tamaño de página.
     useEffect(() => { setPage(1); }, [searchTerm, statusFilter, pageSize]);
 
-    // Botón flotante "volver arriba" cuando se scrolleó bastante.
     useEffect(() => {
         const onScroll = () => setShowTop(window.scrollY > 600);
         window.addEventListener("scroll", onScroll, { passive: true });
@@ -97,6 +104,90 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
         window.scrollTo({ top: 0, behavior: "smooth" });
     };
 
+    // ---- Selección en lote ----
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+    const [busy, setBusy] = useState(false);
+    const [msg, setMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+    const [modal, setModal] = useState<null | "delete" | "category" | "price">(null);
+    const [catChoice, setCatChoice] = useState<string>("");
+    const [pctChoice, setPctChoice] = useState<string>("");
+
+    const selectedCount = selectedIds.size;
+    const pageAllSelected = pageProducts.length > 0 && pageProducts.every((p) => selectedIds.has(p.id));
+    const visibleAllSelected = visible.length > 0 && visible.every((p) => selectedIds.has(p.id));
+
+    const setMany = (ids: string[], on: boolean) =>
+        setSelectedIds((prev) => {
+            const n = new Set(prev);
+            ids.forEach((id) => (on ? n.add(id) : n.delete(id)));
+            return n;
+        });
+    const toggleOne = (id: string) =>
+        setSelectedIds((prev) => {
+            const n = new Set(prev);
+            n.has(id) ? n.delete(id) : n.add(id);
+            return n;
+        });
+    const togglePage = () => setMany(pageProducts.map((p) => p.id), !pageAllSelected);
+    const selectAllVisible = () => setMany(visible.map((p) => p.id), true);
+    const clearSelection = () => setSelectedIds(new Set());
+
+    // Al cambiar el filtro/búsqueda, limpiamos la selección para no arrastrar ids
+    // que ya no se ven (evita "eliminé algo que no estaba mirando").
+    useEffect(() => { clearSelection(); setMsg(null); }, [searchTerm, statusFilter]);
+
+    const idsArray = () => Array.from(selectedIds);
+
+    async function handle<T extends { error: string } | { ok: true; [k: string]: unknown }>(
+        p: Promise<T>,
+        okText: (r: any) => string,
+    ) {
+        setBusy(true);
+        setMsg(null);
+        try {
+            const res = await p;
+            if ("error" in res) { setMsg({ type: "err", text: (res as { error: string }).error }); return; }
+            setMsg({ type: "ok", text: okText(res) });
+            clearSelection();
+            setModal(null);
+            router.refresh();
+        } catch {
+            setMsg({ type: "err", text: "Ocurrió un error. Probá de nuevo." });
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    const doHide = () => handle(bulkSetProductsActive(idsArray(), false), (r) => `${r.updated} producto(s) ocultado(s)`);
+    const doShow = () => handle(bulkSetProductsActive(idsArray(), true), (r) =>
+        `${r.updated} publicado(s)${r.skipped ? ` · ${r.skipped} incompleto(s) no se pudieron` : ""}`);
+    const doDelete = () => handle(bulkDeleteProducts(idsArray()), (r) =>
+        `${r.deleted} eliminado(s)${r.hidden ? ` · ${r.hidden} con ventas se ocultaron` : ""}`);
+    const doCategory = () => handle(bulkSetProductsCategory(idsArray(), catChoice || null), (r) =>
+        catChoice ? `Categoría asignada a ${r.updated}` : `Categoría quitada a ${r.updated}`);
+    const doPrice = () => handle(bulkAdjustProductsPrice(idsArray(), Number(pctChoice)), (r) =>
+        `Precio ajustado en ${r.updated} producto(s)`);
+
+    const exportCsv = () => {
+        const map = new Map(initialProducts.map((p) => [p.id, p]));
+        const rows = idsArray().map((id) => map.get(id)).filter((p): p is Product => !!p);
+        const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
+        const header = ["Nombre", "Precio", "Stock", "Categoria", "Estado"];
+        const lines = [header.join(",")].concat(
+            rows.map((p) => [
+                cleanEncoding(p.name), p.price, p.stock,
+                cleanEncoding(p.categories[0]?.category.name || ""), STATUS_META[statusOf(p)].label,
+            ].map(esc).join(",")),
+        );
+        const blob = new Blob(["﻿" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `productos-${new Date().toISOString().slice(0, 10)}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+    };
+
     const statusTabs: Array<{ key: "" | ProductStatus; label: string; count: number; color: string }> = [
         { key: "", label: "Todos", count: counts.total, color: "text-gray-700" },
         { key: "published", label: "En tienda", count: counts.published, color: "text-green-600" },
@@ -106,7 +197,7 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
 
     return (
         <div className="space-y-6">
-            {/* Search Bar Replacement */}
+            {/* Search Bar */}
             <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                     <Search className={`w-5 h-5 transition-colors ${searchTerm ? 'text-blue-600' : 'text-gray-400 group-focus-within:text-blue-600'}`} />
@@ -128,7 +219,7 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
                 )}
             </div>
 
-            {/* Filtros por estado (chips con contadores) — herramientas de gestión */}
+            {/* Filtros por estado */}
             {counts.total > 0 && (
                 <div className="flex gap-2 flex-wrap">
                     {statusTabs.map((t) => (
@@ -141,6 +232,14 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
                             <span className={`text-xs font-black ${statusFilter === t.key ? "text-white/80" : t.color}`}>{t.count}</span>
                         </button>
                     ))}
+                </div>
+            )}
+
+            {/* Toast de resultado */}
+            {msg && (
+                <div className={`rounded-2xl px-4 py-3 text-sm font-semibold flex items-center justify-between gap-3 border ${msg.type === "ok" ? "bg-green-50 border-green-100 text-green-700" : "bg-red-50 border-red-100 text-red-600"}`}>
+                    <span>{msg.text}</span>
+                    <button onClick={() => setMsg(null)} className="opacity-60 hover:opacity-100"><X className="w-4 h-4" /></button>
                 </div>
             )}
 
@@ -159,42 +258,67 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
                             : "Agrega tus productos para empezar a vender. Recuerda subir fotos de calidad."}
                     </p>
                     {searchTerm ? (
-                        <button
-                            onClick={() => setSearchTerm("")}
-                            className="text-blue-600 font-bold hover:underline"
-                        >
+                        <button onClick={() => setSearchTerm("")} className="text-blue-600 font-bold hover:underline">
                             Ver todos los productos
                         </button>
                     ) : (
-                        <Link
-                            href="/comercios/productos/nuevo"
-                            className="btn-primary inline-flex items-center gap-2 px-8 py-4"
-                        >
+                        <Link href="/comercios/productos/nuevo" className="btn-primary inline-flex items-center gap-2 px-8 py-4">
                             Crear Primer Producto
                         </Link>
                     )}
                 </div>
             ) : (
                 <div className="space-y-4">
-                    {/* Desktop Table Header (hidden on mobile) */}
+                    {/* Desktop Table Header con checkbox de "seleccionar página" */}
                     <div className="hidden md:grid md:grid-cols-6 gap-4 px-5 py-2.5 bg-gray-50/50 rounded-xl text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">
-                        <div className="col-span-2">Producto</div>
+                        <div className="col-span-2 flex items-center gap-3">
+                            <button onClick={togglePage} className="text-gray-400 hover:text-blue-600 transition" title="Seleccionar esta página">
+                                {pageAllSelected ? <CheckSquare className="w-4 h-4 text-blue-600" /> : <Square className="w-4 h-4" />}
+                            </button>
+                            Producto
+                        </div>
                         <div>Categoría</div>
                         <div>Precio</div>
                         <div>Stock</div>
                         <div className="text-right">Acciones</div>
                     </div>
 
+                    {/* Banner "seleccionar todos los del filtro" (estilo Gmail) */}
+                    {selectedCount > 0 && (
+                        <div className="flex flex-wrap items-center justify-between gap-2 bg-blue-50 border border-blue-100 rounded-xl px-4 py-2.5 text-sm">
+                            <span className="font-semibold text-blue-800">
+                                {selectedCount} seleccionado{selectedCount !== 1 ? "s" : ""}
+                            </span>
+                            <div className="flex items-center gap-3">
+                                {!visibleAllSelected && visible.length > pageProducts.length && (
+                                    <button onClick={selectAllVisible} className="font-bold text-blue-700 hover:underline">
+                                        Seleccionar los {visible.length} del filtro
+                                    </button>
+                                )}
+                                <button onClick={clearSelection} className="font-semibold text-gray-500 hover:text-gray-700">Limpiar</button>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Products List */}
                     <div className="space-y-3">
-                        {pageProducts.map((product) => (
+                        {pageProducts.map((product) => {
+                            const checked = selectedIds.has(product.id);
+                            return (
                             <div
                                 key={product.id}
-                                className="bg-white rounded-2xl border border-gray-100 p-3 md:px-5 md:py-3 hover:shadow-md hover:shadow-blue-900/5 transition-all group"
+                                className={`bg-white rounded-2xl border p-3 md:px-5 md:py-3 transition-all group ${checked ? "border-blue-300 ring-2 ring-blue-100" : "border-gray-100 hover:shadow-md hover:shadow-blue-900/5"}`}
                             >
                                 <div className="flex flex-col md:grid md:grid-cols-6 gap-3 items-center">
-                                    {/* Product Info */}
+                                    {/* Product Info + checkbox */}
                                     <div className="col-span-2 flex items-center gap-3 w-full">
+                                        <button
+                                            onClick={() => toggleOne(product.id)}
+                                            className="flex-shrink-0 text-gray-300 hover:text-blue-600 transition"
+                                            title={checked ? "Quitar de la selección" : "Seleccionar"}
+                                        >
+                                            {checked ? <CheckSquare className="w-5 h-5 text-blue-600" /> : <Square className="w-5 h-5" />}
+                                        </button>
                                         <div className="w-12 h-12 rounded-xl bg-gray-50 relative overflow-hidden flex-shrink-0 shadow-inner border border-gray-100">
                                             {product.images[0]?.url ? (
                                                 <Image
@@ -232,21 +356,15 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
                                         <div className="font-black text-blue-600 text-lg md:text-gray-900">
                                             ${product.price.toLocaleString("es-AR")}
                                         </div>
-
                                         <div className="flex items-center gap-2">
                                             <div className={`w-2 h-2 rounded-full ${product.stock > 10 ? "bg-green-500" : product.stock > 0 ? "bg-amber-500" : "bg-red-500"}`} />
-                                            <span className="text-sm font-bold text-gray-600">
-                                                {product.stock} un.
-                                            </span>
+                                            <span className="text-sm font-bold text-gray-600">{product.stock} un.</span>
                                         </div>
                                     </div>
 
                                     {/* Actions */}
                                     <div className="flex items-center justify-end gap-2 md:w-full pt-3 md:pt-0 border-t md:border-t-0 w-full">
-                                        <ProductStatusToggle
-                                            productId={product.id}
-                                            initialStatus={product.isActive}
-                                        />
+                                        <ProductStatusToggle productId={product.id} initialStatus={product.isActive} />
                                         <Link
                                             href={`/comercios/productos/${product.id}`}
                                             className="p-2 rounded-xl border border-gray-100 text-gray-400 hover:bg-blue-50 hover:text-blue-600 hover:border-blue-100 transition shadow-sm active:scale-95"
@@ -254,14 +372,12 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
                                         >
                                             <Edit className="w-4 h-4" />
                                         </Link>
-                                        <DeleteProductButton
-                                            productId={product.id}
-                                            productName={product.name}
-                                        />
+                                        <DeleteProductButton productId={product.id} productName={product.name} />
                                     </div>
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {/* Paginación */}
@@ -298,7 +414,120 @@ export default function ProductsSearchContainer({ initialProducts }: ProductsSea
                 </div>
             )}
 
-            {/* Volver arriba — aparece al scrollear. bottom-24 en mobile para no tapar la barra inferior. */}
+            {/* Barra de acciones en lote — flotante, aparece con ≥1 seleccionado. */}
+            {selectedCount > 0 && (
+                <div className="fixed left-0 right-0 bottom-16 md:bottom-6 z-40 px-3 sm:px-4 pointer-events-none">
+                    <div className="max-w-3xl mx-auto pointer-events-auto bg-white border border-gray-200 rounded-2xl shadow-2xl p-2.5 sm:p-3 flex items-center gap-2 overflow-x-auto">
+                        <span className="text-sm font-black text-gray-900 whitespace-nowrap px-2">{selectedCount} sel.</span>
+                        <div className="h-6 w-px bg-gray-200 flex-shrink-0" />
+                        <button onClick={doShow} disabled={busy} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-green-700 hover:bg-green-50 transition disabled:opacity-50 whitespace-nowrap">
+                            <Eye className="w-4 h-4" /> Mostrar
+                        </button>
+                        <button onClick={doHide} disabled={busy} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 whitespace-nowrap">
+                            <EyeOff className="w-4 h-4" /> Ocultar
+                        </button>
+                        <button onClick={() => { setCatChoice(""); setModal("category"); }} disabled={busy} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 whitespace-nowrap">
+                            <FolderTree className="w-4 h-4" /> Categoría
+                        </button>
+                        <button onClick={() => { setPctChoice(""); setModal("price"); }} disabled={busy} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 whitespace-nowrap">
+                            <Percent className="w-4 h-4" /> Precio
+                        </button>
+                        <button onClick={exportCsv} disabled={busy} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-gray-600 hover:bg-gray-100 transition disabled:opacity-50 whitespace-nowrap">
+                            <Download className="w-4 h-4" /> CSV
+                        </button>
+                        <button onClick={() => setModal("delete")} disabled={busy} className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 transition disabled:opacity-50 whitespace-nowrap">
+                            <Trash2 className="w-4 h-4" /> Eliminar
+                        </button>
+                        {busy && <Loader2 className="w-4 h-4 animate-spin text-gray-400 flex-shrink-0" />}
+                        <button onClick={clearSelection} disabled={busy} className="ml-auto p-2 text-gray-400 hover:text-gray-700 flex-shrink-0" title="Limpiar selección">
+                            <X className="w-4 h-4" />
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Eliminar */}
+            {modal === "delete" && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                                <AlertTriangle className="w-6 h-6 text-red-600" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-gray-900">Eliminar {selectedCount} producto(s)</h3>
+                                <p className="text-sm text-gray-500">Esta acción no se puede deshacer</p>
+                            </div>
+                        </div>
+                        <p className="text-gray-600 text-sm mb-6">
+                            Los que tengan historial de ventas se <b>ocultan</b> en vez de borrarse, para no romper pedidos anteriores.
+                        </p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setModal(null)} disabled={busy} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition font-medium">Cancelar</button>
+                            <button onClick={doDelete} disabled={busy} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition font-medium flex items-center justify-center gap-2">
+                                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />} Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Categoría */}
+            {modal === "category" && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+                        <h3 className="font-bold text-gray-900 mb-1">Categoría para {selectedCount} producto(s)</h3>
+                        <p className="text-sm text-gray-500 mb-4">Reemplaza la categoría actual de los seleccionados.</p>
+                        <select
+                            value={catChoice}
+                            onChange={(e) => setCatChoice(e.target.value)}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 mb-5"
+                        >
+                            <option value="">— Quitar categoría —</option>
+                            {categories.map((c) => (
+                                <option key={c.id} value={c.id}>{cleanEncoding(c.name)}</option>
+                            ))}
+                        </select>
+                        <div className="flex gap-3">
+                            <button onClick={() => setModal(null)} disabled={busy} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition font-medium">Cancelar</button>
+                            <button onClick={doCategory} disabled={busy} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2">
+                                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <FolderTree className="w-4 h-4" />} Aplicar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal Precio */}
+            {modal === "price" && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+                        <h3 className="font-bold text-gray-900 mb-1">Ajustar precio de {selectedCount} producto(s)</h3>
+                        <p className="text-sm text-gray-500 mb-4">Un porcentaje sobre el precio actual. Ej: <b>10</b> sube 10%, <b>-5</b> baja 5%.</p>
+                        <div className="relative mb-2">
+                            <input
+                                type="number"
+                                step="0.5"
+                                value={pctChoice}
+                                onChange={(e) => setPctChoice(e.target.value)}
+                                placeholder="0"
+                                onWheel={(e) => e.currentTarget.blur()}
+                                className="w-full border border-gray-200 rounded-lg px-3 py-2.5 pr-8 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 font-bold"
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mb-5">El precio pasa a ser un valor directo (se quita el recargo guardado, si tenía).</p>
+                        <div className="flex gap-3">
+                            <button onClick={() => setModal(null)} disabled={busy} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition font-medium">Cancelar</button>
+                            <button onClick={doPrice} disabled={busy || !pctChoice || Number(pctChoice) === 0} className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center justify-center gap-2 disabled:opacity-50">
+                                {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Percent className="w-4 h-4" />} Aplicar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Volver arriba */}
             {showTop && (
                 <button
                     onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}

@@ -16,6 +16,8 @@ import { NextResponse } from "next/server";
 import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+// feat/recargo-moovy-y-tamano-toggle: precio del local + recargo del lote → final.
+import { deriveImportPricing } from "@/lib/finance/product-pricing";
 
 const MAX_ROWS = 2000;
 const CREATE_CHUNK = 400;
@@ -63,9 +65,15 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: `Máximo ${MAX_ROWS} productos por importación` }, { status: 400 });
     }
 
+    // feat/recargo-moovy-y-tamano-toggle: recargo del lote (0..1000%) + escotilla
+    // "estos ya son precios finales". Clampeamos server-side (no confiar en el cliente).
+    const rawMarkup = Number((body as any)?.markupPercent);
+    const markupPercent = Number.isFinite(rawMarkup) ? Math.min(1000, Math.max(0, rawMarkup)) : 0;
+    const treatAsFinal = (body as any)?.treatAsFinal === true;
+
     // 1. Validar fila por fila (server-side, no confiar en el cliente).
     const errors: { row: number; reason: string }[] = [];
-    type Clean = { name: string; description: string | null; price: number; barcode: string | null; stock: number };
+    type Clean = { name: string; description: string | null; price: number; basePrice: number | null; markupPercent: number | null; barcode: string | null; stock: number };
     const clean: Clean[] = [];
     const seenBarcodes = new Set<string>();
 
@@ -82,10 +90,15 @@ export async function POST(request: Request) {
         // que perder la fila).
         if (barcode && seenBarcodes.has(barcode)) barcode = null;
         if (barcode) seenBarcodes.add(barcode);
+        // El precio mapeado es el del LOCAL; derivamos el final con el recargo del lote.
+        const mapped = Math.round(d.price * 100) / 100;
+        const pricing = deriveImportPricing(mapped, markupPercent, treatAsFinal);
         clean.push({
             name: d.name,
             description: d.description && d.description.length > 0 ? d.description : null,
-            price: Math.round(d.price * 100) / 100,
+            price: pricing.price,
+            basePrice: pricing.basePrice,
+            markupPercent: pricing.markupPercent,
             barcode,
             stock: d.stock ?? 0,
         });
@@ -118,6 +131,8 @@ export async function POST(request: Request) {
                 where: { id: existingByBarcode.get(c.barcode!) },
                 data: {
                     price: c.price,
+                    basePrice: c.basePrice,
+                    markupPercent: c.markupPercent,
                     stock: c.stock,
                     ...(c.description ? { description: c.description } : {}),
                 },
@@ -136,6 +151,8 @@ export async function POST(request: Request) {
             slug: generateSlug(c.name),
             description: c.description,
             price: c.price,
+            basePrice: c.basePrice,
+            markupPercent: c.markupPercent,
             costPrice: 0,
             stock: c.stock,
             isActive: false, // borrador: oculto hasta que el comercio le ponga foto

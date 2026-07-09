@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { createProduct, importCatalogProducts } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
 import SizeSelector from "@/components/comercios/SizeSelector";
+import PriceRecargoField from "@/components/comercios/PriceRecargoField";
 import type { MerchantSizeOption } from "@/lib/product-weight";
 import { Loader2, Plus, ArrowLeft, Search, Package, Check, Layers, Ban, Sparkles, Edit, Info, Image as ImageIcon, Settings, X, Save } from "lucide-react";
 import Link from 'next/link';
@@ -29,11 +30,17 @@ interface NewProductFormProps {
     sizeOptions: MerchantSizeOption[];
     /** Flag merchant.paquetes. Si está OFF, se oculta todo lo de comprar paquetes. */
     paquetesEnabled: boolean;
+    /** Rate de comisión efectivo (%) para el desglose del recargo. 0 en primer mes. */
+    commissionRate: number;
+    /** El rate 0 es por el mes gratis (no un override). Muestra el renglón "desde el mes 2". */
+    firstMonthFree?: boolean;
+    /** Rate que aplicará cuando termine el mes gratis. */
+    futureCommissionRate?: number;
 }
 
 const cleanName = cleanEncoding;
 
-export default function NewProductForm({ categories, catalogProducts, allCategories, sizeOptions, paquetesEnabled }: NewProductFormProps) {
+export default function NewProductForm({ categories, catalogProducts, allCategories, sizeOptions, paquetesEnabled, commissionRate, firstMonthFree, futureCommissionRate }: NewProductFormProps) {
     const router = useRouter();
     const [isLoading, setIsLoading] = useState(false);
     const [isImporting, setIsImporting] = useState<string | boolean>(false);
@@ -41,6 +48,9 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
     const [error, setError] = useState("");
     const [successMsg, setSuccessMsg] = useState("");
     const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+    // feat/recargo-moovy-y-tamano-toggle: al Descartar, forzamos remount del campo de
+    // precio (maneja su propio estado interno) incrementando este key.
+    const [priceResetKey, setPriceResetKey] = useState(0);
 
     // Catalog state
     const [searchTerm, setSearchTerm] = useState("");
@@ -70,7 +80,14 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
      * weightGrams/volumeMl internos con los valores DERIVADOS de OPS para esa
      * categoría. Esos valores son los que persiste el server action.
      */
-    const handleSelectSize = (option: MerchantSizeOption) => {
+    const handleSelectSize = (option: MerchantSizeOption | null) => {
+        // Deseleccionar (option null): limpiamos tamaño + peso/volumen. El producto
+        // queda sin tamaño → cae al vehículo por defecto del motor logístico.
+        if (!option) {
+            setProductSize(null);
+            setFormValues((prev) => ({ ...prev, weightGrams: "", volumeMl: "" }));
+            return;
+        }
         setProductSize(option.size);
         setFormValues((prev) => ({
             ...prev,
@@ -163,7 +180,9 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
             const el =
                 first === "image"
                     ? document.getElementById("seccion-imagen-producto")
-                    : (document.querySelector(`[name="${first}"]`) as HTMLElement | null);
+                    : first === "price"
+                        ? document.getElementById("seccion-precio-producto")
+                        : (document.querySelector(`[name="${first}"]`) as HTMLElement | null);
             el?.scrollIntoView({ behavior: "smooth", block: "center" });
             if (el && el.tagName !== "DIV") {
                 (el as HTMLInputElement).focus({ preventScroll: true });
@@ -269,6 +288,7 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
         setFieldErrors({});
         setError("");
         setSuccessMsg("");
+        setPriceResetKey((k) => k + 1);
     };
 
     return (
@@ -502,7 +522,28 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                         {fieldErrors.name && <p className="text-xs text-red-500 font-semibold mt-1 ml-1">{fieldErrors.name}</p>}
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Precio — feat/recargo-moovy-y-tamano-toggle: precio final directo
+                        o calculadora de recargo sobre el precio del local. */}
+                    <div id="seccion-precio-producto">
+                        <PriceRecargoField
+                            key={priceResetKey}
+                            commissionRate={commissionRate}
+                            firstMonthFree={firstMonthFree}
+                            futureCommissionRate={futureCommissionRate}
+                            disabled={isLoading}
+                            error={fieldErrors.price}
+                            onFinalPriceChange={(fp) => {
+                                setFormValues((prev) => ({ ...prev, price: fp > 0 ? String(fp) : "" }));
+                                setFieldErrors((prev) => {
+                                    if (!prev.price) return prev;
+                                    const { price, ...rest } = prev;
+                                    return rest;
+                                });
+                            }}
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Category */}
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">Categoría</label>
@@ -522,30 +563,6 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
                                 </select>
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"><Layers className="w-4 h-4" /></div>
                             </div>
-                        </div>
-
-                        {/* Price */}
-                        <div>
-                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2 ml-1">
-                                Precio de Venta <span className="text-red-400">*</span>
-                            </label>
-                            <div className="relative">
-                                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">$</span>
-                                <input
-                                    name="price"
-                                    type="number"
-                                    min="0"
-                                    step="1"
-                                    required
-                                    placeholder="0"
-                                    className={`${fieldClass("price")} pl-9`}
-                                    disabled={isLoading}
-                                    onWheel={(e) => e.currentTarget.blur()}
-                                    value={formValues.price}
-                                    onChange={(e) => { setFormValues({ ...formValues, price: e.target.value }); setFieldErrors(prev => { const { price, ...rest } = prev; return rest; }); }}
-                                />
-                            </div>
-                            {fieldErrors.price && <p className="text-xs text-red-500 font-semibold mt-1 ml-1">{fieldErrors.price}</p>}
                         </div>
 
                         {/* Stock */}

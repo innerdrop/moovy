@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { updateProduct, deleteProduct } from "@/app/comercios/actions";
 import MultiImageUpload from "@/components/ui/MultiImageUpload";
 import SizeSelector from "@/components/comercios/SizeSelector";
+import PriceRecargoField from "@/components/comercios/PriceRecargoField";
 import { getSizeFromWeight, type MerchantSizeOption } from "@/lib/product-weight";
 import { Loader2, Save, ArrowLeft, Trash2, AlertTriangle, Settings, X } from "lucide-react";
 import Link from 'next/link';
@@ -22,13 +23,23 @@ interface EditProductFormProps {
         weightGrams: number | null;
         volumeMl: number | null;
         packageCategoryId: string | null;
+        // feat/recargo-moovy-y-tamano-toggle: metadata del recargo (null si se cargó
+        // con precio final directo o es un producto legacy).
+        basePrice: number | null;
+        markupPercent: number | null;
     };
     categories: { id: string; name: string }[];
     /** Opciones de tamaño derivadas de OPS (PackageCategory). Ver src/lib/product-sizes.ts */
     sizeOptions: MerchantSizeOption[];
+    /** Rate de comisión efectivo (%) para el desglose del recargo. 0 en primer mes. */
+    commissionRate: number;
+    /** El rate 0 es por el mes gratis (no un override). Muestra el renglón "desde el mes 2". */
+    firstMonthFree?: boolean;
+    /** Rate que aplicará cuando termine el mes gratis. */
+    futureCommissionRate?: number;
 }
 
-export default function EditProductForm({ product, categories, sizeOptions }: EditProductFormProps) {
+export default function EditProductForm({ product, categories, sizeOptions, commissionRate, firstMonthFree, futureCommissionRate }: EditProductFormProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -48,7 +59,20 @@ export default function EditProductForm({ product, categories, sizeOptions }: Ed
     // Fix s4-4a-07: price/stock/category pasan a estado controlado para que
     // isDirty los detecte y el banner "Guardar" aparezca al editarlos (antes
     // eran defaultValue no trackeados -> el comercio no veia como guardar).
+    // feat/recargo-moovy-y-tamano-toggle: el precio lo maneja PriceRecargoField.
+    // `price` guarda el precio FINAL (para el dirty-state) y lo actualiza el callback.
+    // `priceMeta` guarda el modo + base + recargo (también para el dirty-state).
+    const initialPriceMode: "direct" | "markup" =
+        product.basePrice != null && product.basePrice > 0 ? "markup" : "direct";
+    const initialBasePriceStr = product.basePrice != null && product.basePrice > 0 ? String(product.basePrice) : "";
+    const initialMarkupStr = product.markupPercent != null ? String(product.markupPercent) : "";
     const [price, setPrice] = useState<string>(String(product.price));
+    const [priceMeta, setPriceMeta] = useState<{ mode: "direct" | "markup"; basePrice: string; markupPercent: string }>({
+        mode: initialPriceMode,
+        basePrice: initialBasePriceStr,
+        markupPercent: initialMarkupStr,
+    });
+    const [priceResetKey, setPriceResetKey] = useState(0);
     const [stock, setStock] = useState<string>(String(product.stock));
     const [categoryId, setCategoryId] = useState<string>(product.categoryId);
     // Tamaño: si el producto ya tenía weightGrams cargado, derivar la categoría
@@ -68,6 +92,9 @@ export default function EditProductForm({ product, categories, sizeOptions }: Ed
         name: product.name,
         description: product.description,
         price: String(product.price),
+        priceMode: initialPriceMode,
+        basePrice: initialBasePriceStr,
+        markupPercent: initialMarkupStr,
         stock: String(product.stock),
         categoryId: product.categoryId,
         weightGrams: product.weightGrams != null ? String(product.weightGrams) : "",
@@ -80,6 +107,9 @@ export default function EditProductForm({ product, categories, sizeOptions }: Ed
         name !== initialState.current.name ||
         description !== initialState.current.description ||
         price !== initialState.current.price ||
+        priceMeta.mode !== initialState.current.priceMode ||
+        priceMeta.basePrice !== initialState.current.basePrice ||
+        priceMeta.markupPercent !== initialState.current.markupPercent ||
         stock !== initialState.current.stock ||
         categoryId !== initialState.current.categoryId ||
         weightGrams !== initialState.current.weightGrams ||
@@ -92,6 +122,12 @@ export default function EditProductForm({ product, categories, sizeOptions }: Ed
         setName(initialState.current.name);
         setDescription(initialState.current.description);
         setPrice(initialState.current.price);
+        setPriceMeta({
+            mode: initialState.current.priceMode,
+            basePrice: initialState.current.basePrice,
+            markupPercent: initialState.current.markupPercent,
+        });
+        setPriceResetKey((k) => k + 1); // remonta PriceRecargoField con los valores iniciales
         setStock(initialState.current.stock);
         setCategoryId(initialState.current.categoryId);
         setWeightGrams(initialState.current.weightGrams);
@@ -105,9 +141,16 @@ export default function EditProductForm({ product, categories, sizeOptions }: Ed
 
     /**
      * Click en una card de SizeSelector. Autocompleta los gramos/volumen
-     * internos con los valores DERIVADOS de OPS para esa categoría.
+     * internos con los valores DERIVADOS de OPS para esa categoría. Si option
+     * es null (reaprieta la card ya elegida) deselecciona y limpia peso/volumen.
      */
-    const handleSelectSize = (option: MerchantSizeOption) => {
+    const handleSelectSize = (option: MerchantSizeOption | null) => {
+        if (!option) {
+            setProductSize(null);
+            setWeightGrams("");
+            setVolumeMl("");
+            return;
+        }
         setProductSize(option.size);
         setWeightGrams(String(option.assumedWeightGrams));
         setVolumeMl(String(option.assumedVolumeMl));
@@ -251,45 +294,37 @@ export default function EditProductForm({ product, categories, sizeOptions }: Ed
                             </select>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Precio
-                                </label>
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
-                                    <input
-                                        name="price"
-                                        type="number"
-                                        min="0"
-                                        step="0.01"
-                                        required
-                                        value={price}
-                                        onChange={(e) => setPrice(e.target.value)}
-                                        onWheel={(e) => e.currentTarget.blur()}
-                                        placeholder="0.00"
-                                        className="input !pl-10"
-                                        disabled={isLoading}
-                                    />
-                                </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Stock
-                                </label>
-                                <input
-                                    name="stock"
-                                    type="number"
-                                    min="0"
-                                    required
-                                    value={stock}
-                                    onChange={(e) => setStock(e.target.value)}
-                                    onWheel={(e) => e.currentTarget.blur()}
-                                    placeholder="Ej. 100"
-                                    className="input"
-                                    disabled={isLoading}
-                                />
-                            </div>
+                        {/* Precio — feat/recargo-moovy-y-tamano-toggle: precio final
+                            directo o calculadora de recargo sobre el precio del local. */}
+                        <PriceRecargoField
+                            key={priceResetKey}
+                            commissionRate={commissionRate}
+                            firstMonthFree={firstMonthFree}
+                            futureCommissionRate={futureCommissionRate}
+                            initialPrice={product.price}
+                            initialBasePrice={product.basePrice}
+                            initialMarkupPercent={product.markupPercent}
+                            disabled={isLoading}
+                            onFinalPriceChange={(fp) => setPrice(fp > 0 ? String(fp) : "")}
+                            onStateChange={(s) => setPriceMeta({ mode: s.mode, basePrice: s.basePrice, markupPercent: s.markupPercent })}
+                        />
+
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Stock
+                            </label>
+                            <input
+                                name="stock"
+                                type="number"
+                                min="0"
+                                required
+                                value={stock}
+                                onChange={(e) => setStock(e.target.value)}
+                                onWheel={(e) => e.currentTarget.blur()}
+                                placeholder="Ej. 100"
+                                className="input"
+                                disabled={isLoading}
+                            />
                         </div>
 
                         <div>

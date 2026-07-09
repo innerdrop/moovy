@@ -13,6 +13,8 @@ import { z } from "zod";
 // Rama fix/asignacion-match-vehiculo: SIZE_METADATA da el peso por defecto de cada
 // ProductSize cuando el comercio elige tamaño pero no carga gramos exactos.
 import { SIZE_METADATA, type ProductSize } from "@/lib/product-weight";
+// feat/recargo-moovy-y-tamano-toggle: derivación autoritativa del precio final.
+import { derivePricing } from "@/lib/finance/product-pricing";
 
 /**
  * Rama fix/asignacion-match-vehiculo.
@@ -114,6 +116,13 @@ const productSchema = z.object({
     // así que aceptamos cualquier string. resolveSizeSnapshot lo resuelve contra
     // la DB por name y es defensivo si el name no existe.
     productSize: z.string().nullish(),
+    // feat/recargo-moovy-y-tamano-toggle: metadata del recargo. priceMode decide si
+    // el precio final se recalcula desde basePrice+markupPercent ("markup") o si el
+    // comercio tipeó el precio final directo ("direct"). El server re-deriva el precio
+    // (anti-gaming, ver derivePricing) — nunca confía en el `price` del cliente en modo markup.
+    priceMode: z.enum(["direct", "markup"]).nullish(),
+    basePrice: z.coerce.number().min(0).max(100000000).nullish().transform((v) => (v && v > 0 ? v : null)),
+    markupPercent: z.coerce.number().min(0).max(1000).nullish().transform((v) => (typeof v === "number" && v >= 0 ? v : null)),
 });
 
 // feat: al EDITAR un producto, el comercio puede guardar el AVANCE aunque falten
@@ -140,6 +149,10 @@ const updateProductSchema = z.object({
     volumeMl: z.coerce.number().int().min(0).max(1000000).nullish().transform((v) => (v && v > 0 ? v : null)),
     packageCategoryId: z.string().nullish().transform((v) => (v && v.length > 0 ? v : null)),
     productSize: z.string().nullish(),
+    // feat/recargo-moovy-y-tamano-toggle: idem productSchema (ver arriba).
+    priceMode: z.enum(["direct", "markup"]).nullish(),
+    basePrice: z.coerce.number().min(0).max(100000000).nullish().transform((v) => (v && v > 0 ? v : null)),
+    markupPercent: z.coerce.number().min(0).max(1000).nullish().transform((v) => (typeof v === "number" && v >= 0 ? v : null)),
 });
 
 // Helper to verify merchant ownership
@@ -293,6 +306,9 @@ export async function createProduct(formData: FormData) {
         volumeMl: formData.get("volumeMl"),
         packageCategoryId: formData.get("packageCategoryId"),
         productSize: formData.get("productSize") || undefined,
+        priceMode: formData.get("priceMode") || undefined,
+        basePrice: formData.get("basePrice"),
+        markupPercent: formData.get("markupPercent"),
     };
 
     const validation = productSchema.safeParse(rawData);
@@ -334,13 +350,23 @@ export async function createProduct(formData: FormData) {
             weightGrams: data.weightGrams,
         });
 
+        // feat/recargo-moovy-y-tamano-toggle: precio final autoritativo server-side.
+        const pricing = derivePricing({
+            priceMode: data.priceMode,
+            price: data.price,
+            basePrice: data.basePrice,
+            markupPercent: data.markupPercent,
+        });
+
         await prisma.product.create({
             data: {
                 name: data.name,
                 slug: slug,
                 description: data.description,
-                price: data.price,
-                costPrice: data.price * 0.7,
+                price: pricing.price,
+                costPrice: pricing.price * 0.7,
+                basePrice: pricing.basePrice,
+                markupPercent: pricing.markupPercent,
                 stock: data.stock,
                 merchantId: merchant.id,
                 // Rama feat/peso-volumen-productos
@@ -392,6 +418,9 @@ export async function updateProduct(productId: string, formData: FormData) {
         volumeMl: formData.get("volumeMl"),
         packageCategoryId: formData.get("packageCategoryId"),
         productSize: formData.get("productSize") || undefined,
+        priceMode: formData.get("priceMode") || undefined,
+        basePrice: formData.get("basePrice"),
+        markupPercent: formData.get("markupPercent"),
     };
 
     const validation = updateProductSchema.safeParse(rawData);
@@ -436,8 +465,16 @@ export async function updateProduct(productId: string, formData: FormData) {
             where: { id: productId },
             select: { isActive: true },
         });
+        // feat/recargo-moovy-y-tamano-toggle: precio final autoritativo server-side.
+        const pricing = derivePricing({
+            priceMode: data.priceMode,
+            price: data.price,
+            basePrice: data.basePrice,
+            markupPercent: data.markupPercent,
+        });
+
         const descLen = data.description ? data.description.trim().length : 0;
-        const isComplete = data.imageUrls.length > 0 && descLen >= 10 && data.price > 0;
+        const isComplete = data.imageUrls.length > 0 && descLen >= 10 && pricing.price > 0;
         const autoHide = !!current?.isActive && !isComplete;
 
         // Update the product
@@ -446,7 +483,10 @@ export async function updateProduct(productId: string, formData: FormData) {
             data: {
                 name: data.name,
                 description: data.description,
-                price: data.price,
+                price: pricing.price,
+                costPrice: pricing.price * 0.7,
+                basePrice: pricing.basePrice,
+                markupPercent: pricing.markupPercent,
                 stock: data.stock,
                 // Rama feat/peso-volumen-productos
                 // Rama fix/asignacion-match-vehiculo: persistir el tamaño elegido.

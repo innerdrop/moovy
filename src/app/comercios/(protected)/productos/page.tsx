@@ -30,21 +30,29 @@ export default async function ProductosPage() {
     }
 
     // Fetch all products (both active and inactive) so merchant can manage them
-    const products = await prisma.product.findMany({
-        where: { merchantId: merchant.id },
-        include: {
-            images: {
-                orderBy: { order: 'asc' },
-                take: 1
-            },
-            categories: {
-                include: {
-                    category: true
+    // + categorías activas para el cambio de categoría en lote.
+    const [products, categories] = await Promise.all([
+        prisma.product.findMany({
+            where: { merchantId: merchant.id },
+            include: {
+                images: {
+                    orderBy: { order: 'asc' },
+                    take: 1
+                },
+                categories: {
+                    include: {
+                        category: true
+                    }
                 }
-            }
-        },
-        orderBy: { createdAt: "desc" },
-    });
+            },
+            orderBy: { createdAt: "desc" },
+        }),
+        prisma.category.findMany({
+            where: { isActive: true },
+            select: { id: true, name: true },
+            orderBy: { name: "asc" },
+        }),
+    ]);
 
     return (
         <div className="max-w-7xl mx-auto space-y-10">
@@ -81,7 +89,7 @@ export default async function ProductosPage() {
             </div>
 
             {/* Dynamic Search and List Container */}
-            <ProductsSearchContainer initialProducts={products as any} />
+            <ProductsSearchContainer initialProducts={products as any} categories={categories} />
         </div>
     );
 }

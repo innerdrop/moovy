@@ -159,6 +159,10 @@ export default function ImportarProductosPage() {
     // feat/import-revision: filas que el comercio quitó de la importación desde la
     // lista de revisión (por índice en `rows`). No se importan.
     const [excludedRows, setExcludedRows] = useState<Set<number>>(new Set());
+    // feat/recargo-moovy-y-tamano-toggle: el precio del archivo es el del LOCAL.
+    // Recargo del lote (%) que se le aplica a todos, o escotilla "ya son finales".
+    const [markupPercent, setMarkupPercent] = useState<string>("");
+    const [treatAsFinal, setTreatAsFinal] = useState(false);
 
     function onFile(e: React.ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -236,7 +240,13 @@ export default function ImportarProductosPage() {
             const res = await fetch("/api/comercios/products/import", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ rows: preview.payload }),
+                // El precio de payload es el del LOCAL; el server deriva el final con
+                // el recargo del lote (o lo respeta si son precios finales).
+                body: JSON.stringify({
+                    rows: preview.payload,
+                    markupPercent: treatAsFinal ? 0 : (Number(markupPercent) || 0),
+                    treatAsFinal,
+                }),
             });
             const data = await res.json();
             if (!res.ok) { setError(data.error || "No se pudo importar."); return; }
@@ -248,6 +258,11 @@ export default function ImportarProductosPage() {
             setImporting(false);
         }
     }
+
+    // feat/recargo-moovy-y-tamano-toggle: precio final para la vista previa. El
+    // precio mapeado es el del local; le aplicamos el recargo del lote (salvo escotilla).
+    const markupNum = treatAsFinal ? 0 : (Number(markupPercent) || 0);
+    const finalPriceOf = (base: number) => (treatAsFinal || markupNum <= 0) ? base : Math.round(base * (1 + markupNum / 100));
 
     const colOptions = headers.map((h, i) => ({ i, label: h.trim() || `Columna ${i + 1} (sin nombre)` }));
     // Primer valor no vacío de una columna — se muestra de ejemplo bajo el selector
@@ -323,6 +338,47 @@ export default function ImportarProductosPage() {
                             })}
                         </div>
                     </div>
+
+                    {/* Precio en Moovy — feat/recargo-moovy-y-tamano-toggle: el precio
+                        del archivo es el del LOCAL. Recargo del lote o escotilla. */}
+                    {mapping.price !== null && (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 space-y-4">
+                            <div>
+                                <p className="text-sm font-bold text-gray-900">Precio de venta en Moovy</p>
+                                <p className="text-xs text-gray-500 mt-0.5">El precio de tu archivo es el de tu local. Sumale un recargo para la venta en Moovy, o marcá que ya son tus precios finales.</p>
+                            </div>
+                            {!treatAsFinal && (
+                                <div className="flex flex-wrap items-end gap-3">
+                                    <div className="w-40">
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Recargo Moovy (%)</label>
+                                        <div className="relative">
+                                            <input
+                                                type="number"
+                                                min="0"
+                                                step="0.5"
+                                                placeholder="0"
+                                                value={markupPercent}
+                                                onChange={(e) => setMarkupPercent(e.target.value)}
+                                                onWheel={(e) => e.currentTarget.blur()}
+                                                className="w-full border rounded-lg px-3 py-2 pr-8 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 font-bold"
+                                            />
+                                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 pb-2 flex-1 min-w-[180px]">Se aplica a <b>todos</b> los productos del archivo. Después podés ajustar cada uno.</p>
+                                </div>
+                            )}
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={treatAsFinal}
+                                    onChange={(e) => setTreatAsFinal(e.target.checked)}
+                                    className="w-4 h-4 rounded border-gray-300"
+                                />
+                                <span className="text-sm text-gray-700">Estos ya son mis precios finales de Moovy (no aplicar recargo)</span>
+                            </label>
+                        </div>
+                    )}
 
                     {/* Vista previa + validación */}
                     {mapping.name === null || mapping.price === null ? (
@@ -400,7 +456,7 @@ export default function ImportarProductosPage() {
                                         <thead className="bg-gray-50 text-gray-500">
                                             <tr>
                                                 <th className="text-left px-4 py-2 font-semibold">Nombre</th>
-                                                <th className="text-left px-4 py-2 font-semibold">Precio</th>
+                                                <th className="text-left px-4 py-2 font-semibold">Precio Moovy</th>
                                                 <th className="text-left px-4 py-2 font-semibold">Código</th>
                                             </tr>
                                         </thead>
@@ -408,7 +464,12 @@ export default function ImportarProductosPage() {
                                             {preview.payload.slice(0, 5).map((p, i) => (
                                                 <tr key={i} className="border-t">
                                                     <td className="px-4 py-2 text-gray-900">{p.name}</td>
-                                                    <td className="px-4 py-2 text-gray-700">${p.price.toLocaleString("es-AR")}</td>
+                                                    <td className="px-4 py-2 text-gray-700">
+                                                        ${finalPriceOf(p.price).toLocaleString("es-AR")}
+                                                        {markupNum > 0 && !treatAsFinal && (
+                                                            <span className="text-[11px] text-gray-400 ml-1">(local ${p.price.toLocaleString("es-AR")})</span>
+                                                        )}
+                                                    </td>
                                                     <td className="px-4 py-2 text-gray-400">{p.barcode || "—"}</td>
                                                 </tr>
                                             ))}
