@@ -28,14 +28,14 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
             {/* Categorías destacadas */}
             {featured.length > 0 && (
                 <div className="px-4">
-                    <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
                         {featured.map((cat) => (
                             <Link
                                 key={cat.id}
                                 href={`/productos?categoria=${cat.slug}`}
                                 className="group rounded-[20px] overflow-hidden bg-white border border-gray-100 shadow-[0_8px_24px_rgba(80,5,10,0.10)]"
                             >
-                                <div className="h-[92px] bg-gray-100 overflow-hidden flex items-center justify-center">
+                                <div className="h-[118px] sm:h-[130px] bg-gray-100 overflow-hidden flex items-center justify-center">
                                     {cat.image ? (
                                         <img
                                             src={cat.image}
@@ -44,13 +44,13 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                                             loading="lazy"
                                         />
                                     ) : (
-                                        <div className="w-14 h-14 flex items-center justify-center">
+                                        <div className="w-16 h-16 flex items-center justify-center">
                                             {getCategoryIcon(cat.icon || cat.slug)}
                                         </div>
                                     )}
                                 </div>
                                 <div className="px-2.5 py-2.5 text-center">
-                                    <span className="text-[12.5px] font-black text-gray-900 leading-tight">{cat.name}</span>
+                                    <span className="text-[13px] font-black text-gray-900 leading-tight">{cat.name}</span>
                                 </div>
                             </Link>
                         ))}

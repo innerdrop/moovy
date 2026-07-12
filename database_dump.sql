@@ -2099,7 +2099,6 @@ cmqz5vqxz000kxhd8glc5szfn	Cafetería	cafeteria	\N	\N	t	5	STORE	2026-06-29 11:55:
 cmqz5vqy3000lxhd8hcaqu9dk	Panadería	panaderia	\N	\N	t	6	STORE	2026-06-29 11:55:46.348	2026-06-29 11:55:46.348	t	0	\N	f	t	\N	\N
 cmqz5vqy9000mxhd84i6y95uu	Farmacia	farmacia	\N	\N	t	7	STORE	2026-06-29 11:55:46.353	2026-06-29 11:55:46.353	t	0	\N	f	t	\N	\N
 cmqz5vqyf000nxhd8rnn283uf	Supermercado	supermercado	\N	\N	t	8	STORE	2026-06-29 11:55:46.36	2026-06-29 11:55:46.36	t	0	\N	f	t	\N	\N
-cmqz5vqyn000oxhd8fpc7qxgz	Kiosco	kiosco	\N	\N	t	9	STORE	2026-06-29 11:55:46.368	2026-06-29 11:55:46.368	t	0	\N	f	t	\N	\N
 cmqz5vqyv000pxhd8lec7u05x	Verdulería	verduleria	\N	\N	t	10	STORE	2026-06-29 11:55:46.375	2026-06-29 11:55:46.375	t	0	\N	f	t	\N	\N
 cmqz5vqz1000qxhd87idexjyt	Carnicería	carniceria	\N	\N	t	11	STORE	2026-06-29 11:55:46.381	2026-06-29 11:55:46.381	t	0	\N	f	t	\N	\N
 cmqz5vqz8000rxhd8i92g71fs	Otro	otro	\N	\N	t	99	BOTH	2026-06-29 11:55:46.388	2026-06-29 11:55:46.388	t	0	\N	f	t	\N	\N
@@ -2111,6 +2110,7 @@ cmqz5vr0e000wxhd871dqy12g	Juguetes	juguetes	\N	\N	t	5	MARKETPLACE	2026-06-29 11:
 cmqz5vr0i000xxhd8lsjz1e47	Libros y Música	libros-musica	\N	\N	t	6	MARKETPLACE	2026-06-29 11:55:46.435	2026-06-29 11:55:46.435	t	0	\N	f	t	\N	\N
 cmqz5vr0m000yxhd8gfimq465	Mascotas	mascotas	\N	\N	t	7	MARKETPLACE	2026-06-29 11:55:46.439	2026-06-29 11:55:46.439	t	0	\N	f	t	\N	\N
 cmqz5vr0q000zxhd8p3tglvrd	Artesanías	artesanias	\N	\N	t	9	MARKETPLACE	2026-06-29 11:55:46.443	2026-06-29 11:55:46.443	t	0	\N	f	t	\N	\N
+cmqz5vqyn000oxhd8fpc7qxgz	Kiosco	kiosco	\N	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1783867779052-Gemini_Generated_Image_taddjntaddjntadd.webp	t	9	STORE	2026-06-29 11:55:46.368	2026-07-12 14:49:47.648	t	0	\N	f	t	\N	\N
 \.
 
 
@@ -2325,6 +2325,7 @@ COPY public."HeroSlide" (id, title, subtitle, "buttonText", "buttonLink", gradie
 --
 
 COPY public."HomeCategorySlot" (id, "categoryId", "order", image, icon, label, "isActive", "createdAt", "updatedAt") FROM stdin;
+cmrhwtsaa0001evvy1jwx92fz	cmqz5vqyn000oxhd8fpc7qxgz	1	\N	\N	\N	t	2026-07-12 14:49:55.569	2026-07-12 14:49:55.569
 \.
 
 
@@ -4012,7 +4013,7 @@ cmqz5vv1200egxhd8raq97j04	cmqz5vv0p00e9xhd8vtohx0lr	Patagonia Outdoor	Equipamien
 --
 
 COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome", "heroSliderEnabled", "heroSliderInterval", "heroSliderShowArrows", "supportChatEnabled", "promoBannerButtonLink", "promoBannerButtonText", "promoBannerEnabled", "promoBannerImage", "promoBannerSubtitle", "promoBannerTitle", "promoBannerCtaPosition", "promoSlidesJson", "riderCommissionPercent", "zoneMultipliersJson", "climateMultipliersJson", "activeClimateCondition", "demandMultipliersJson", "activeDemandCondition", "operationalCostPercent", "excludedZonesJson", "defaultMerchantCommission", "defaultSellerCommission", "mpReservePercent", "cashMpOnlyDeliveries", "cashLimitL1", "cashLimitL2", "cashLimitL3", "maxOrdersPerSlot", "slotDurationMinutes", "minAnticipationHours", "maxAnticipationHours", "operatingHoursStart", "operatingHoursEnd", "merchantConfirmTimeoutSec", "driverResponseTimeoutSec", "adPricePlatino", "adPriceDestacado", "adPricePremium", "adPriceHeroBanner", "adPriceBannerPromo", "adPriceProducto", "adLaunchDiscountPercent", "adMaxHeroBannerSlots", "adMaxDestacadosSlots", "adMaxProductosSlots", "adMinDurationDays", "adDiscount3Months", "adDiscount6Months", "adPaymentMethods", "adCancellation48hFullRefund", "adCancellationAdminFeePercent", "heroBackgroundsJson", "bankName", "bankAccountHolder", "bankCbu", "bankAlias", "bankCuit") FROM stdin;
-settings	t	Volvemos pronto	f	Próximamente en Ushuaia.	1591	0.06	500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-06-29 11:55:46.2	Ver m??s	t	f	\N	\N	\N	\N	t	t	f	6	t	5000	t	t	/productos?categoria=pizzas	Ver locales	f	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	abajo-izquierda	[]	80	{"ZONA_A":1.0,"ZONA_B":1.15,"ZONA_C":1.35}	{"normal":1.0,"lluvia_leve":1.15,"temporal_fuerte":1.30}	normal	{"normal":1.0,"alta":1.20,"pico":1.40}	normal	5	[]	10	12	8	10	15000	25000	40000	15	120	1.5	48	09:00	22:00	300	60	150000	95000	55000	250000	180000	25000	50	3	8	12	7	10	20	["mercadopago","transferencia"]	t	10	{}					
+settings	t	Volvemos pronto	f	Próximamente en Ushuaia.	1591	0.06	500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-07-12 15:02:38.708	Ver m??s	t	f	\N	\N	\N	\N	t	t	f	6	t	5000	t	t	/productos?categoria=pizzas	Ver locales	t	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	abajo-izquierda	[{"id":"slide-1783868076095-inykr","title":"","subtitle":"","buttonText":"","buttonLink":"/productos?categoria=promos","image":"https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/promo/promo-1783868551893-rsgbh2.png","ctaPosition":"abajo-izquierda","enabled":true,"order":0}]	80	{"ZONA_A":1.0,"ZONA_B":1.15,"ZONA_C":1.35}	{"normal":1.0,"lluvia_leve":1.15,"temporal_fuerte":1.30}	normal	{"normal":1.0,"alta":1.20,"pico":1.40}	normal	5	[]	10	12	8	10	15000	25000	40000	15	120	1.5	48	09:00	22:00	300	60	150000	95000	55000	250000	180000	25000	50	3	8	12	7	10	20	["mercadopago","transferencia"]	t	10	{}					
 \.
 
 

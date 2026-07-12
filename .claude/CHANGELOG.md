@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-07-12 (rama `feat/ajuste-categorias-home`)
+
+feat: ajustes del home — se quitan las pills de categorías bajo el buscador (ya están abajo como tarjetas con imagen) y se agrandan las 3 categorías destacadas (imagen más alta + label)
+
+**Archivos:** src/components/home/CategoryGrid.tsx, src/components/home/HomeHero.tsx
+
 ## 2026-07-11 (rama `feat/rediseno-home`)
 
 feat: rediseño de tienda, marketplace y onboarding (header unificado que colapsa, hero una-tarjeta, Promos del Mundial con cupones, Banda MOOVER, cards y footer nuevos), OPS de cupones, carrito de invitado con login al pagar, ubicación en el pill del header, campanita pospuesta a Fase 2, /puntos con landing de conversión + animaciones de scroll y secciones modernizadas (ejemplo claro, bonos con jerarquía, niveles scrolleables + detalle del programa), /empezar rediseñado dentro de (store) con header de la app, y fix de overflow horizontal en desktop

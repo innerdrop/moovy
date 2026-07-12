@@ -118,40 +118,9 @@ export default function HomeHero({
                     <span className="text-[15px] text-gray-500 font-semibold">Buscá pizzas, farmacia, kiosco…</span>
                 </button>
 
-                {/* Category pills — se desvanecen junto con la pregunta */}
-                {categories.length > 0 && (
-                    <div
-                        className="overflow-hidden transition-all duration-300 ease-out"
-                        style={{
-                            maxHeight: collapsed ? 0 : 52,
-                            opacity: collapsed ? 0 : 1,
-                            marginTop: collapsed ? 0 : 12,
-                        }}
-                    >
-                        <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
-                            {categories.map((cat) => {
-                                const isActive = selectedCategory === cat.slug;
-                                return (
-                                    <button
-                                        key={cat.id}
-                                        type="button"
-                                        onClick={() => onCategoryChange(isActive ? null : cat.slug)}
-                                        className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${
-                                            isActive
-                                                ? "bg-white text-[#e60012] shadow-md"
-                                                : "bg-white/15 text-white hover:bg-white/25"
-                                        }`}
-                                    >
-                                        {cat.image && (
-                                            <img src={cat.image} alt="" className="w-5 h-5 rounded-full object-cover" />
-                                        )}
-                                        {cat.name}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    </div>
-                )}
+                {/* Las categorías ahora viven abajo como tarjetas con imagen
+                    (CategoryGrid) — se quitaron las pills bajo el buscador para no
+                    duplicarlas. */}
             </div>
         </section>
     );
