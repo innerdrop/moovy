@@ -106,14 +106,18 @@ export async function POST(request: Request) {
             filename = `${Date.now()}-${baseName}.pdf`;
             contentType = "application/pdf";
         } else {
-            // Imagen: comprimir con sharp
+            // Imagen: comprimir con sharp.
+            // .rotate() PRIMERO: auto-orienta según EXIF (las fotos de celular vienen
+            // rotadas). Luego resize (sin agrandar) y WebP q85 — WebP comprime muy bien
+            // manteniendo calidad alta. maxWidth respeta el tamaño del recorte para no
+            // degradar portadas grandes.
             finalBuffer = await sharp(originalBuffer)
+                .rotate()
                 .resize(maxWidth, null, {
                     withoutEnlargement: true,
                     fit: "inside"
                 })
-                .webp({ quality: 80 })
-                .rotate()
+                .webp({ quality: 85 })
                 .toBuffer();
             const baseName = file.name.replace(/\.[^/.]+$/, "").replaceAll(" ", "_");
             filename = `${Date.now()}-${baseName}.webp`;

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Clock, ChevronRight, Store, Star } from "lucide-react";
 import HomeHero from "./HomeHero";
-import HeroValueProposition from "./HeroValueProposition";
+import CategoryGrid from "./CategoryGrid";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -70,11 +70,45 @@ export default function HomeFeed({
         return filtered.slice(0, 12);
     }, [merchants, categories, selectedCategory]);
 
+    // Efecto de scroll lateral moderno: la tarjeta más cercana al centro se ve a
+    // tamaño pleno y las de los costados se achican un toque (foco tipo carrusel).
+    // Solo cuando la fila realmente scrollea (en desktop, si entran todas, no aplica).
+    const abiertosRowRef = useRef<HTMLDivElement>(null);
+    useEffect(() => {
+        const row = abiertosRowRef.current;
+        if (!row) return;
+        let raf = 0;
+        const update = () => {
+            const rect = row.getBoundingClientRect();
+            const kids = Array.from(row.children) as HTMLElement[];
+            if (row.scrollWidth <= row.clientWidth + 12) {
+                kids.forEach((k) => (k.style.transform = ""));
+                return;
+            }
+            const center = rect.left + rect.width / 2;
+            kids.forEach((k) => {
+                const r = k.getBoundingClientRect();
+                const cc = r.left + r.width / 2;
+                const d = Math.min(1, Math.abs(cc - center) / (rect.width * 0.6));
+                k.style.transform = `scale(${(1 - d * 0.07).toFixed(3)})`;
+            });
+        };
+        const onScroll = () => {
+            cancelAnimationFrame(raf);
+            raf = requestAnimationFrame(update);
+        };
+        update();
+        row.addEventListener("scroll", onScroll, { passive: true });
+        window.addEventListener("resize", onScroll);
+        return () => {
+            row.removeEventListener("scroll", onScroll);
+            window.removeEventListener("resize", onScroll);
+            cancelAnimationFrame(raf);
+        };
+    }, [openMerchants.length]);
+
     return (
         <>
-            {/* ── VALUE PROP (solo no-logueados) ── */}
-            <HeroValueProposition />
-
             {/* ── HERO ── */}
             <HomeHero
                 categories={categories}
@@ -82,28 +116,36 @@ export default function HomeFeed({
                 onCategoryChange={handleCategoryChange}
             />
 
+            {/* ── CATEGORÍAS (justo debajo del hero, como el diseño) ── */}
+            <div className="pt-4 pb-1">
+                <CategoryGrid categories={categories} />
+            </div>
+
             {/* ── ABIERTOS AHORA (filterable) ── */}
             <section id="abiertos-ahora" className="py-5 lg:py-8 bg-white scroll-mt-16">
                 <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
                     {/* Row header */}
                     <div className="flex items-center justify-between mb-3 lg:mb-4">
                         <div className="flex items-center gap-2.5">
-                            <div className="w-1 h-5 rounded-full bg-green-500" />
-                            <Clock className="w-4 h-4 text-green-600" />
-                            <h2 className="text-lg lg:text-xl font-black text-gray-900">
+                            <h2 className="text-xl font-black text-gray-900 tracking-tight">
                                 {selectedCategory
                                     ? `${categories.find(c => c.slug === selectedCategory)?.name || "Filtrado"}`
                                     : "Abiertos ahora"
                                 }
                             </h2>
-                            {selectedCategory && (
+                            {selectedCategory ? (
                                 <button
                                     type="button"
                                     onClick={() => setSelectedCategory(null)}
-                                    className="text-xs text-[#e60012] font-semibold ml-1 hover:underline"
+                                    className="text-xs text-[#e60012] font-semibold hover:underline"
                                 >
                                     Ver todos
                                 </button>
+                            ) : (
+                                <span className="inline-flex items-center gap-1.5 bg-green-50 text-green-700 text-[11px] font-black px-2.5 py-0.5 rounded-full">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                    En vivo
+                                </span>
                             )}
                         </div>
                         <Link
@@ -117,6 +159,7 @@ export default function HomeFeed({
                     {/* Merchant cards */}
                     {openMerchants.length > 0 ? (
                         <div
+                            ref={abiertosRowRef}
                             className="flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-2 -mx-1 px-1"
                             style={{ scrollbarWidth: "none" }}
                         >
@@ -144,54 +187,68 @@ export default function HomeFeed({
 // ─── Merchant Card (inline — consistent with MerchantDiscoveryRow style) ────
 
 function MerchantCard({ merchant }: { merchant: MerchantPreview }) {
+    // feat/rediseno-home: tarjeta estilo delivery — portada 16:5 de fondo + logo
+    // como avatar montado. Si no hay portada, un fondo neutro (no estiramos el logo).
+    const initials = merchant.name
+        .split(" ")
+        .slice(0, 2)
+        .map((w) => w.charAt(0))
+        .join("")
+        .toUpperCase();
     return (
         <Link
             href={`/tienda/${merchant.slug}`}
-            className="flex-shrink-0 snap-start group w-[180px] lg:w-[220px]"
+            className="flex-shrink-0 snap-center group w-[262px] origin-center will-change-transform transition-transform duration-100 ease-out"
         >
-            <div className="rounded-2xl overflow-hidden bg-white border border-gray-100 shadow-sm transition-transform duration-200 group-hover:scale-[1.02] group-active:scale-[0.98]">
-                {/* Image */}
-                <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-                    {/* fix/tienda-logo-comercio: mostrar el LOGO del comercio; la portada solo como fallback si no hay logo. */}
-                    {(merchant.image || merchant.banner) ? (
-                        <img
-                            src={merchant.image || merchant.banner!}
-                            alt={merchant.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                            loading="lazy"
-                        />
-                    ) : (
-                        <div className="w-full h-full flex items-center justify-center bg-gray-200">
-                            <span className="text-3xl font-bold text-gray-300">
-                                {merchant.name.charAt(0)}
-                            </span>
-                        </div>
-                    )}
-                    {/* Open indicator */}
-                    <div className="absolute top-2 right-2 w-2.5 h-2.5 rounded-full bg-green-500 shadow-sm" />
-                </div>
-
-                {/* Info */}
-                <div className="p-2.5">
-                    <h3 className="font-bold text-sm text-gray-900 truncate">{merchant.name}</h3>
-                    {merchant.category && (
-                        <p className="text-[11px] text-gray-400 font-medium truncate">{merchant.category}</p>
-                    )}
-                    <div className="flex items-center gap-1.5 mt-1">
-                        <Clock className="w-3 h-3 text-gray-400" />
-                        <span className="text-xs text-gray-500">
-                            {merchant.deliveryTimeMin}-{merchant.deliveryTimeMax} min
-                        </span>
-                        {merchant.rating && merchant.rating > 0 && (
-                            <>
-                                <span className="text-xs text-gray-300">·</span>
-                                <span className="text-xs text-yellow-600 font-semibold flex items-center gap-0.5">
-                                    <Star className="w-3 h-3 fill-yellow-500 text-yellow-500" />
-                                    {merchant.rating.toFixed(1)}
-                                </span>
-                            </>
+            <div className="rounded-[22px] overflow-hidden bg-white border border-gray-100 shadow-[0_6px_22px_rgba(30,10,5,0.09)] transition-transform duration-200 group-active:scale-[0.98]">
+                {/* Portada — el contenedor NO recorta (para que el logo montado
+                    sobresalga); solo la imagen se clipea en su propio wrapper. */}
+                <div className="relative h-[118px] bg-gray-100">
+                    <div className="absolute inset-0 overflow-hidden">
+                        {merchant.banner ? (
+                            <img
+                                src={merchant.banner}
+                                alt={merchant.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                loading="lazy"
+                            />
+                        ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300" />
                         )}
                     </div>
+                    {/* Badge Abierto */}
+                    <span className="absolute top-2.5 left-2.5 flex items-center gap-1.5 bg-white/95 text-green-700 text-[10.5px] font-black px-2.5 py-1 rounded-full shadow-sm">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                        Abierto
+                    </span>
+                    {/* Badge tiempo */}
+                    <span className="absolute top-2.5 right-2.5 flex items-center gap-1 bg-black/70 text-white text-[10.5px] font-bold px-2.5 py-1 rounded-full">
+                        <Clock className="w-3 h-3" />
+                        {merchant.deliveryTimeMin}-{merchant.deliveryTimeMax} min
+                    </span>
+                    {/* Logo avatar montado */}
+                    <div className="absolute -bottom-7 left-3.5 w-16 h-16 rounded-2xl border-4 border-white bg-white shadow-md overflow-hidden flex items-center justify-center">
+                        {merchant.image ? (
+                            <img src={merchant.image} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                            <span className="text-[22px] font-black text-gray-400">{initials}</span>
+                        )}
+                    </div>
+                </div>
+                {/* Info */}
+                <div className="pt-10 px-3.5 pb-3.5">
+                    <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-black text-base text-gray-900 truncate">{merchant.name}</h3>
+                        {merchant.rating && merchant.rating > 0 && (
+                            <span className="flex items-center gap-1 bg-[#fff8e6] text-[#b45309] text-xs font-black px-2 py-0.5 rounded-lg flex-shrink-0">
+                                <Star className="w-3 h-3 fill-[#f59e0b] text-[#f59e0b]" />
+                                {merchant.rating.toFixed(1)}
+                            </span>
+                        )}
+                    </div>
+                    <p className="mt-0.5 text-[12.5px] text-gray-400 font-semibold truncate">
+                        {merchant.category ? `${merchant.category} · Envío desde el local` : "Envío desde el local"}
+                    </p>
                 </div>
             </div>
         </Link>

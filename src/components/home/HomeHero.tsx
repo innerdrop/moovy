@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useState, useEffect } from "react";
 import { Search, Sunrise, Sun, Sunset, Moon } from "lucide-react";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -46,26 +45,20 @@ function getCurrentTimeSlot(): TimeSlot {
 }
 
 // ─── Component ──────────────────────────────────────────────────────────────
+// El hero es la MISMA tarjeta roja que la barra del logo del header (mismo rojo,
+// sin sombra ni línea entre medio → se ve como una sola). Es sticky: al scrollear,
+// la pregunta + subtítulo + categorías se desvanecen y colapsan, y queda pineado
+// solo el buscador bajo la barra del logo (opción 2a del diseño).
 
 export default function HomeHero({
     categories,
     selectedCategory,
     onCategoryChange,
 }: HomeHeroProps) {
-    const openSearch = () => window.dispatchEvent(new Event("moovy:open-search"));
     const [timeSlot, setTimeSlot] = useState<TimeSlot>(getCurrentTimeSlot);
     const [mounted, setMounted] = useState(false);
-    const searchBarRef = useRef<HTMLDivElement>(null);
-    const { status } = useSession();
-    // Rama feat/home-hero-condicional-sin-trust-strip (2026-05-21):
-    // El greeting contextual ("Buen día / ¿Qué desayunamos?") solo tiene
-    // sentido para usuarios recurrentes (logueados). Para visitantes
-    // no logueados ya se muestra el HeroValueProposition con su propio
-    // headline, así que mostrar 2 saludos consecutivos era ruido visual
-    // + empujaba la tienda al tercer fold + generaba percepción de
-    // "doble rojo" por la transición gradient→plano.
-    // status "loading" → NO mostrar (evita flash). Solo mostrar si auth.
-    const showGreeting = status === "authenticated";
+    const [collapsed, setCollapsed] = useState(false);
+    const openSearch = () => window.dispatchEvent(new Event("moovy:open-search"));
 
     useEffect(() => {
         setTimeSlot(getCurrentTimeSlot());
@@ -74,74 +67,67 @@ export default function HomeHero({
         return () => clearInterval(interval);
     }, []);
 
-    // Dispatch event when hero search bar scrolls out of view
-    // so AppHeader can show its compact search bar
+    // Colapso de la pregunta al scrollear (fade + shrink, in-place).
     useEffect(() => {
-        if (!mounted) return;
-        const el = searchBarRef.current;
-        if (!el) return;
-
-        const observer = new IntersectionObserver(
-            ([entry]) => {
-                window.dispatchEvent(
-                    new CustomEvent("moovy:hero-search-visibility", {
-                        detail: { visible: entry.isIntersecting },
-                    })
-                );
-            },
-            { threshold: 0 }
-        );
-
-        observer.observe(el);
-        return () => observer.disconnect();
-    }, [mounted]);
-
-    const Icon = timeSlot.icon;
+        const onScroll = () => setCollapsed(window.scrollY > 24);
+        onScroll();
+        window.addEventListener("scroll", onScroll, { passive: true });
+        return () => window.removeEventListener("scroll", onScroll);
+    }, []);
 
     if (!mounted) {
         return (
-            <section className="bg-[#e60012]">
-                <div className="h-[160px] animate-pulse" />
+            <section className="bg-[#e60012] rounded-b-[28px]">
+                <div className="h-[170px]" />
             </section>
         );
     }
 
     return (
-        <section className="bg-[#e60012] relative overflow-hidden">
-            {/* Decorative blobs */}
-            <div className="absolute -right-20 -top-20 w-64 h-64 rounded-full bg-white/5 blur-3xl pointer-events-none" />
-            <div className="absolute -left-16 bottom-0 w-48 h-48 rounded-full bg-black/5 blur-3xl pointer-events-none" />
+        <section className="sticky top-12 z-30 -mt-2 lg:relative lg:top-auto lg:mt-0 lg:z-auto overflow-hidden rounded-b-[28px] bg-[#e60012] shadow-[0_8px_24px_rgba(120,0,10,0.25)]">
+            {/* Blobs decorativos */}
+            <div className="absolute -right-12 -top-16 w-56 h-56 rounded-full bg-white/[0.08] blur-3xl pointer-events-none" />
+            <div className="absolute -left-10 -bottom-8 w-40 h-40 rounded-full bg-black/10 blur-3xl pointer-events-none" />
 
-            <div className="relative">
-                {/* ── Greeting ── solo para usuarios autenticados (recurrentes).
-                    Para no-logueados ya se muestra el HeroValueProposition arriba. */}
-                {showGreeting && (
-                    <div className="px-5 pt-4 pb-1 lg:pt-6 lg:pb-2 lg:max-w-7xl lg:mx-auto lg:px-8">
-                        <p className="text-white/70 text-sm font-medium flex items-center gap-1.5">
-                            <Icon className="w-4 h-4" />
-                            {timeSlot.greeting}
-                        </p>
-                        <h1 className="text-white text-xl lg:text-3xl font-black mt-0.5">
-                            {timeSlot.subtitle}
-                        </h1>
-                    </div>
-                )}
-
-                {/* ── Search bar (tracked for sticky fallback) ── */}
-                <div ref={searchBarRef} className={`px-5 ${showGreeting ? "pt-3" : "pt-4"} pb-2 lg:max-w-7xl lg:mx-auto lg:px-8`}>
-                    <button
-                        type="button"
-                        onClick={openSearch}
-                        className="w-full lg:max-w-xl flex items-center gap-3 px-4 py-3 bg-white rounded-2xl text-left shadow-lg shadow-black/10 transition active:scale-[0.98]"
-                    >
-                        <Search className="w-5 h-5 text-gray-400 flex-shrink-0" />
-                        <span className="text-sm text-gray-400 font-medium">Buscá productos, locales...</span>
-                    </button>
+            <div className="relative px-5 pt-4 pb-4 lg:max-w-7xl lg:mx-auto lg:px-8">
+                {/* Pregunta + subtítulo — se desvanecen y colapsan al scrollear */}
+                <div
+                    className="overflow-hidden transition-all duration-300 ease-out"
+                    style={{
+                        maxHeight: collapsed ? 0 : 78,
+                        opacity: collapsed ? 0 : 1,
+                        marginBottom: collapsed ? 0 : 14,
+                        transform: collapsed ? "translateY(-8px)" : "translateY(0)",
+                    }}
+                >
+                    <h1 className="text-white text-2xl lg:text-3xl font-black tracking-tight leading-tight mb-1">
+                        {timeSlot.subtitle}
+                    </h1>
+                    <p className="text-white/80 text-sm font-semibold">
+                        Tu comercio favorito te lo lleva a casa.
+                    </p>
                 </div>
 
-                {/* ── Category pills ── */}
+                {/* Buscador — queda pineado (mobile). En desktop la búsqueda vive en el header. */}
+                <button
+                    type="button"
+                    onClick={openSearch}
+                    className="w-full lg:hidden flex items-center gap-3 px-4 py-3.5 bg-white rounded-[18px] text-left shadow-[0_12px_28px_rgba(120,0,10,0.35)] transition active:scale-[0.98]"
+                >
+                    <Search className="w-5 h-5 text-[#e60012] flex-shrink-0" strokeWidth={2.2} />
+                    <span className="text-[15px] text-gray-500 font-semibold">Buscá pizzas, farmacia, kiosco…</span>
+                </button>
+
+                {/* Category pills — se desvanecen junto con la pregunta */}
                 {categories.length > 0 && (
-                    <div className="px-5 pt-2 pb-4 lg:pb-5 lg:max-w-7xl lg:mx-auto lg:px-8">
+                    <div
+                        className="overflow-hidden transition-all duration-300 ease-out"
+                        style={{
+                            maxHeight: collapsed ? 0 : 52,
+                            opacity: collapsed ? 0 : 1,
+                            marginTop: collapsed ? 0 : 12,
+                        }}
+                    >
                         <div className="flex gap-2 overflow-x-auto scrollbar-hide pb-1 -mx-1 px-1">
                             {categories.map((cat) => {
                                 const isActive = selectedCategory === cat.slug;
@@ -150,7 +136,7 @@ export default function HomeHero({
                                         key={cat.id}
                                         type="button"
                                         onClick={() => onCategoryChange(isActive ? null : cat.slug)}
-                                        className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-semibold transition-all duration-200 ${
+                                        className={`flex-shrink-0 flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-bold transition-all duration-200 ${
                                             isActive
                                                 ? "bg-white text-[#e60012] shadow-md"
                                                 : "bg-white/15 text-white hover:bg-white/25"
@@ -170,4 +156,3 @@ export default function HomeHero({
         </section>
     );
 }
-      

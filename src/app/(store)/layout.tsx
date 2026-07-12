@@ -2,12 +2,12 @@
 
 // Store Layout - Experiencia tipo App para TODOS los usuarios
 import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import { useSession } from "next-auth/react";
 import CartSidebar from "@/components/layout/CartSidebar";
 // FloatingCartButton removed — cart badge in header is sufficient
 import BottomNav from "@/components/layout/BottomNav";
 import AppHeader from "@/components/layout/AppHeader";
-import DeliveryAddressBar from "@/components/layout/DeliveryAddressBar";
 import VendorSwitchModal from "@/components/store/VendorSwitchModal";
 import PromoPopup from "@/components/store/PromoPopup";
 import ScrollToTop from "@/components/ScrollToTop";
@@ -26,6 +26,10 @@ export default function StoreLayout({
     children: React.ReactNode;
 }) {
     const { data: session, status } = useSession();
+    const pathname = usePathname();
+    // El home es la única página con footer oscuro; ahí la reserva para la barra
+    // flotante la da el propio footer (oscuro), no un padding blanco del main.
+    const isHome = pathname === "/";
     const cartCount = useCartStore((state) => state.getTotalItems());
 
     const [mounted, setMounted] = useState(false);
@@ -146,7 +150,7 @@ export default function StoreLayout({
 
     // ========== EXPERIENCIA APP UNIFICADA ==========
     return (
-        <div className={`min-h-screen flex flex-col bg-white overflow-x-hidden ${contentReady ? "app-ready" : ""}`} style={{ fontFamily: "var(--font-nunito), 'Nunito', system-ui, sans-serif" }}>
+        <div className={`min-h-screen flex flex-col bg-white overflow-x-clip lg:overflow-x-hidden ${contentReady ? "app-ready" : ""}`} style={{ fontFamily: "var(--font-nunito), 'Nunito', system-ui, sans-serif" }}>
             {/* Scroll to top on navigation */}
             <ScrollToTop />
 
@@ -158,12 +162,10 @@ export default function StoreLayout({
             />
 
             {/* Contenido scrollable — solo esta zona se mueve */}
-            <main className="flex-1 pt-14 lg:pt-[6.75rem] pb-20 lg:pb-0">
-                {/* Barra "Entregar en" (feat/direcciones-limite-y-chip-header):
-                    dirección de entrega activa, patrón apps de delivery. Va DENTRO
-                    del contenido (no en el header fijo) así el padding-top global
-                    no cambia; scrollea con la página. Se auto-oculta sin direcciones. */}
-                {isLoggedIn && <DeliveryAddressBar />}
+            <main className={`flex-1 pt-14 lg:pt-[6.75rem] ${isHome ? "pb-0" : "pb-28"} lg:pb-0`}>
+                {/* La dirección de entrega ahora se elige desde el pill "Ushuaia" del
+                    header (LocationAddressButton). La vieja barra blanca "Entregar en"
+                    se removió — partía la tarjeta roja del home. */}
                 <PullToRefresh>
                     {children}
                 </PullToRefresh>

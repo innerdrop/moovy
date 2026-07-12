@@ -14,17 +14,15 @@ import Link from "next/link";
 import { ArrowRight, Store, Star, TrendingUp } from "lucide-react";
 import { prisma } from "@/lib/prisma";
 import HeroBannerCarousel from "@/components/home/HeroBannerCarousel";
-import TrustBar from "@/components/home/TrustBar";
 import SupplySideCTA from "@/components/home/SupplySideCTA";
-import ListingCard from "@/components/store/ListingCard";
 import Footer from "@/components/layout/Footer";
 import HomeProductCard from "@/components/home/HomeProductCard";
 import PromoBanner from "@/components/home/PromoBanner";
+import PromosMundial from "@/components/home/PromosMundial";
+import MooverBand from "@/components/home/MooverBand";
 import HomeFeed from "@/components/home/HomeFeed";
 import MerchantDiscoveryRow from "@/components/home/MerchantDiscoveryRow";
 import NewMerchantsRow from "@/components/home/NewMerchantsRow";
-import CategoryGrid from "@/components/home/CategoryGrid";
-import QuickAccessRow from "@/components/home/QuickAccessRow";
 import ExploraUshuaiaMap from "@/components/home/ExploraUshuaiaMap";
 import AnimateIn from "@/components/ui/AnimateIn";
 import { checkMerchantSchedule, getMerchantOpenViewModel } from "@/lib/merchant-schedule";
@@ -177,6 +175,38 @@ async function getRecentListings() {
   }
 }
 
+/** Cupones activos y vigentes para la vitrina "Promos del Mundial". Fuente real
+ *  (modelo Coupon). Excluye vencidos y agotados. Se oculta si no hay ninguno. */
+async function getActiveCoupons() {
+  try {
+    const now = new Date();
+    const coupons = await prisma.coupon.findMany({
+      where: {
+        isActive: true,
+        validFrom: { lte: now },
+        OR: [{ validUntil: null }, { validUntil: { gt: now } }],
+      },
+      select: {
+        id: true,
+        code: true,
+        description: true,
+        discountType: true,
+        discountValue: true,
+        minOrderAmount: true,
+        maxUses: true,
+        usedCount: true,
+        validUntil: true,
+      },
+      orderBy: { createdAt: "desc" },
+      take: 8,
+    });
+    // Excluir cupones agotados (maxUses alcanzado)
+    return coupons.filter((c) => c.maxUses == null || c.usedCount < c.maxUses);
+  } catch {
+    return [];
+  }
+}
+
 /** Top merchants by order count (most popular) */
 async function getMostOrderedMerchantIds(): Promise<string[]> {
   try {
@@ -310,6 +340,7 @@ export default async function LiveStoreView() {
     recentListings,
     slides,
     topMerchantIds,
+    activeCoupons,
   ] = await Promise.all([
     getHomeCategories(settings?.maxCategoriesHome ?? 8),
     getAllActiveMerchants(),
@@ -317,6 +348,7 @@ export default async function LiveStoreView() {
     getRecentListings(),
     getHeroSlides(),
     getMostOrderedMerchantIds(),
+    getActiveCoupons(),
   ]);
 
   // Hero Banner OPS settings
@@ -401,79 +433,23 @@ export default async function LiveStoreView() {
         categories={categories as any}
       />
 
-      {/* ── 1b. ACCESOS RÁPIDOS — Favoritos + Puntos MOOVER (ISSUE-012) ── */}
-      <AnimateIn animation="reveal">
-        <QuickAccessRow />
-      </AnimateIn>
-
-      {/* ── 2b. CATEGORÍAS DE PRODUCTOS ── */}
-      <AnimateIn animation="reveal">
-        <section className="py-5 lg:py-7 bg-white">
-          <CategoryGrid categories={categories as any} />
-        </section>
-      </AnimateIn>
-
       {/* ── 4. PROMO BANNER CAROUSEL (OPS configurable) ── */}
       {promoSlides.length > 0 && <PromoBanner slides={promoSlides} interval={5000} />}
 
-      {/* 3b. Nuevos en MOOVY — círculos con logo + borde animado */}
-      {/* ISSUE-036: oculto si <2 o si ya aparecen en otra fila curada */}
-      {newMerchants.length > 0 && (
+      {/* ── 4b. PROMOS DEL MUNDIAL — cupones reales y vigentes (se oculta si no hay) ── */}
+      {activeCoupons.length > 0 && (
         <AnimateIn animation="reveal">
-          <NewMerchantsRow merchants={newMerchants as any} />
+          <PromosMundial coupons={activeCoupons as any} />
         </AnimateIn>
       )}
 
-      {/* ── 5. OPS Hero Banner — intercalado entre filas de discovery ── */}
-      {hasOpsSlides && (
-        <div className="py-2 lg:py-4">
-          <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
-            <div className="rounded-2xl overflow-hidden shadow-md">
-              <HeroBannerCarousel
-                slides={slides as any}
-                slideInterval={slideInterval}
-                showArrows={sliderShowArrows}
-              />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 3c. Los más pedidos */}
-      {/* ISSUE-036: oculto si no hay data de pedidos DELIVERED suficiente */}
-      {mostOrdered.length > 0 && (
-        <AnimateIn animation="reveal">
-          <MerchantDiscoveryRow
-            title="Los más pedidos"
-            icon={<TrendingUp className="w-4 h-4 text-orange-600" />}
-            merchants={mostOrdered}
-            viewAllHref="/tiendas?filter=populares"
-            accentColor="bg-orange-500"
-          />
-        </AnimateIn>
-      )}
-
-      {/* 3d. Mejor calificados */}
-      {/* ISSUE-036: oculto si <2 merchants con rating ≥3.5 fuera de otras filas */}
-      {bestRated.length > 0 && (
-        <AnimateIn animation="reveal">
-          <MerchantDiscoveryRow
-            title="Mejor calificados"
-            icon={<Star className="w-4 h-4 text-yellow-600" />}
-            merchants={bestRated}
-            viewAllHref="/tiendas?filter=mejor-calificados"
-            accentColor="bg-yellow-500"
-          />
-        </AnimateIn>
-      )}
-
-      {/* ── 6. PRODUCTOS — Lo más pedido ── */}
+      {/* ── 6. PRODUCTOS — Lo más pedido (fondo crema + borde redondeado, como el diseño) ── */}
       <AnimateIn animation="reveal" delay={100}>
-        <section className="py-8 lg:py-12 xl:py-14 bg-white">
+        <section className="py-8 lg:py-12 xl:py-14 bg-[#fdf9f3] rounded-t-[32px]">
           <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
-            <div className="flex items-center justify-between mb-5">
+            <div className="flex items-center justify-between mb-1">
               <h2 className="text-xl lg:text-2xl font-black text-gray-900">
-                Lo más pedido
+                Lo más pedido 🔥
               </h2>
               <Link
                 href="/productos"
@@ -482,6 +458,9 @@ export default async function LiveStoreView() {
                 Ver todos <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
+            <p className="text-[12.5px] text-gray-400 font-semibold mb-5">
+              Los favoritos de Ushuaia esta semana
+            </p>
 
             {enrichedFeaturedProducts.length > 0 ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 lg:gap-4">
@@ -501,55 +480,79 @@ export default async function LiveStoreView() {
         </section>
       </AnimateIn>
 
+      {/* ── 6b. BANDA MOOVER — invita a crear cuenta (solo no logueados) ── */}
+      <AnimateIn animation="reveal">
+        <MooverBand />
+      </AnimateIn>
+
       {/* ── 7. EXPLORÁ USHUAIA — mapa interactivo ── */}
       <AnimateIn animation="reveal">
         <ExploraUshuaiaMap merchants={enrichedMerchants as any} />
       </AnimateIn>
 
+      {/* ── 7b. NUEVOS EN MOOVY — chips píldora (oculto si <2 o ya en otra fila) ── */}
+      {newMerchants.length > 0 && (
+        <AnimateIn animation="reveal">
+          <NewMerchantsRow merchants={newMerchants as any} />
+        </AnimateIn>
+      )}
+
       {/* ── 8. MARKETPLACE — invitación compacta ── */}
       {recentListings.length > 0 && (
         <AnimateIn animation="reveal">
-          <section className="py-6 lg:py-8 bg-white">
+          <section
+            className="py-7 lg:py-9"
+            style={{ background: "linear-gradient(180deg, #f4f1fc 0%, #ece7fa 100%)" }}
+          >
             <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
-              {/* Compact marketplace banner */}
-              <div className="relative overflow-hidden rounded-2xl mb-4">
-                <div className="absolute inset-0 bg-gradient-to-r from-[#4C1D95] via-[#7C3AED] to-[#8B5CF6]" />
-                <div className="relative z-10 px-5 py-4 flex items-center justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
-                      <span className="text-[10px] font-bold text-white/70 uppercase tracking-widest">Vendedores activos</span>
-                    </div>
-                    <h2 className="text-lg lg:text-xl font-black text-white leading-tight">
-                      Marketplace
-                    </h2>
-                    <p className="text-xs text-white/60 mt-0.5">
-                      Comprá y vendé entre vecinos
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <Link
-                      href="/marketplace"
-                      className="inline-flex items-center gap-1.5 bg-white text-[#7C3AED] text-sm font-bold px-4 py-2 rounded-xl hover:bg-white/90 transition shadow-lg shadow-black/10"
-                    >
-                      Explorar
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-
-              {/* Single horizontal row of listings — scrollable */}
-              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory">
-                {recentListings.slice(0, 6).map((listing) => (
-                  <div key={listing.id} className="flex-shrink-0 w-[160px] lg:w-[180px] snap-start">
-                    <ListingCard listing={listing} />
-                  </div>
-                ))}
-                {/* CTA final card */}
+              {/* Header */}
+              <div className="flex items-center justify-between mb-1">
+                <h2 className="text-xl font-black tracking-tight" style={{ color: "#2e1065" }}>
+                  Marketplace
+                </h2>
                 <Link
                   href="/marketplace"
-                  className="flex-shrink-0 w-[160px] lg:w-[180px] snap-start flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-purple-200 bg-purple-50/50 hover:bg-purple-50 transition min-h-[200px]"
+                  className="inline-flex items-center gap-1.5 bg-[#7C3AED] text-white text-xs font-bold px-3.5 py-2 rounded-full shadow-[0_4px_12px_rgba(124,58,237,0.3)] transition active:scale-95"
+                >
+                  Explorar <ArrowRight className="w-3 h-3" />
+                </Link>
+              </div>
+              <p className="text-[12.5px] font-semibold mb-4" style={{ color: "#7c6fa0" }}>
+                Comprá y vendé entre vecinos de Ushuaia
+              </p>
+
+              {/* Listings — scroll horizontal */}
+              <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x snap-mandatory -mx-1 px-1">
+                {recentListings.slice(0, 6).map((listing) => (
+                  <Link
+                    key={listing.id}
+                    href={`/marketplace/${listing.id}`}
+                    className="flex-shrink-0 w-[150px] lg:w-[170px] snap-start block"
+                  >
+                    <div className="rounded-[18px] overflow-hidden bg-white shadow-[0_4px_14px_rgba(46,16,101,0.08)]">
+                      <div className="aspect-square bg-gradient-to-br from-purple-50 to-violet-100 overflow-hidden">
+                        {listing.images?.[0]?.url && (
+                          <img
+                            src={listing.images[0].url}
+                            alt={listing.title}
+                            className="w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        )}
+                      </div>
+                      <div className="px-3 pt-2.5 pb-3">
+                        <h3 className="text-[12.5px] font-extrabold text-gray-900 truncate">{listing.title}</h3>
+                        <p className="mt-0.5 text-[15px] font-black text-[#7C3AED]">
+                          ${listing.price.toLocaleString("es-AR")}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+                {/* CTA final */}
+                <Link
+                  href="/marketplace"
+                  className="flex-shrink-0 w-[150px] lg:w-[170px] snap-start flex flex-col items-center justify-center rounded-2xl border-2 border-dashed border-purple-200 bg-white/50 hover:bg-white transition min-h-[180px]"
                 >
                   <ArrowRight className="w-6 h-6 text-[#7C3AED] mb-2" />
                   <span className="text-sm font-semibold text-[#7C3AED]">Ver todo</span>
@@ -560,10 +563,47 @@ export default async function LiveStoreView() {
         </AnimateIn>
       )}
 
-      {/* ── 9. TRUST BAR ── */}
-      <AnimateIn animation="reveal" delay={50}>
-        <TrustBar />
-      </AnimateIn>
+      {/* ── 8b. OPS Hero Banner + filas de discovery (extras fuera del diseño base) ── */}
+      {hasOpsSlides && (
+        <div className="py-2 lg:py-4">
+          <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
+            <div className="rounded-2xl overflow-hidden shadow-md">
+              <HeroBannerCarousel
+                slides={slides as any}
+                slideInterval={slideInterval}
+                showArrows={sliderShowArrows}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mostOrdered.length > 0 && (
+        <AnimateIn animation="reveal">
+          <MerchantDiscoveryRow
+            title="Los más pedidos"
+            icon={<TrendingUp className="w-4 h-4 text-orange-600" />}
+            merchants={mostOrdered}
+            viewAllHref="/tiendas?filter=populares"
+            accentColor="bg-orange-500"
+          />
+        </AnimateIn>
+      )}
+
+      {bestRated.length > 0 && (
+        <AnimateIn animation="reveal">
+          <MerchantDiscoveryRow
+            title="Mejor calificados"
+            icon={<Star className="w-4 h-4 text-yellow-600" />}
+            merchants={bestRated}
+            viewAllHref="/tiendas?filter=mejor-calificados"
+            accentColor="bg-yellow-500"
+          />
+        </AnimateIn>
+      )}
+
+      {/* TrustBar (fila de métodos de pago) removido: estaba duplicado con la fila
+          de "Crecemos juntos". Queda una sola, y solo con MercadoPago. */}
 
       {/* ── 10. SUPPLY-SIDE CTAs ── */}
       <AnimateIn animation="reveal" delay={100}>

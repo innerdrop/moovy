@@ -198,7 +198,7 @@ export default function MarketplacePage() {
             {/* ═══════════════════════════════════════════
                 HERO — Compacto, orientado a acción
                ═══════════════════════════════════════════ */}
-            <section className="relative overflow-hidden bg-gradient-to-br from-[#7C3AED] via-[#6D28D9] to-[#4C1D95]">
+            <section className="relative overflow-hidden -mt-3 lg:mt-0 rounded-b-[28px] bg-gradient-to-br from-[#7C3AED] via-[#6D28D9] to-[#4C1D95]">
                 {/* Orbs decorativos */}
                 <div className="pointer-events-none absolute -right-16 -top-16 h-56 w-56 rounded-full bg-purple-400/10 blur-3xl mp-orb-1" />
                 <div className="pointer-events-none absolute -left-12 bottom-[-20px] h-40 w-40 rounded-full bg-fuchsia-400/10 blur-2xl mp-orb-2" />
@@ -219,7 +219,7 @@ export default function MarketplacePage() {
                         </div>
                         <Link
                             href="/vendedor/registro"
-                            className="hidden sm:inline-flex items-center gap-1.5 rounded-xl bg-white/15 px-4 py-2 text-xs font-bold text-white backdrop-blur-sm transition hover:bg-white/25 active:scale-95 lg:px-5 lg:py-2.5 lg:text-sm"
+                            className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-xl bg-white/15 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-sm transition hover:bg-white/25 active:scale-95 lg:px-5 lg:py-2.5 lg:text-sm"
                         >
                             <Tag className="h-3.5 w-3.5" />
                             Vender

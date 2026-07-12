@@ -46,6 +46,7 @@ import {
     ClipboardCheck,
     ToggleRight,
     Calculator,
+    Ticket,
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -107,6 +108,7 @@ const navSections: NavSection[] = [
             { href: "/ops/solicitudes-ads", icon: ClipboardList, label: "Solicitudes Ads" },
             { href: "/ops/hero", icon: ImageIcon, label: "Hero Banners" },
             { href: "/ops/banner-promo", icon: Megaphone, label: "Banner Promo" },
+            { href: "/ops/cupones", icon: Ticket, label: "Cupones" },
             { href: "/ops/destacados", icon: Star, label: "Destacados" },
         ],
     },

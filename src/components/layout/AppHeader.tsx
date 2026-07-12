@@ -4,11 +4,12 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ShoppingBag, MapPin, Package, X, ChevronRight, Bell, Search, Loader2, Store, Tag, ArrowLeft } from "lucide-react";
+import { ShoppingBag, MapPin, Package, X, ChevronRight, Search, Loader2, Store, Tag, ArrowLeft } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useRouter, usePathname } from "next/navigation";
 import UploadImage from "@/components/ui/UploadImage";
 import UserAvatarMenu from "@/components/layout/UserAvatarMenu";
+import LocationAddressButton from "@/components/layout/LocationAddressButton";
 import PointsBalanceChip from "@/components/layout/PointsBalanceChip";
 
 interface AppHeaderProps {
@@ -71,17 +72,7 @@ export default function AppHeader({
         return () => window.removeEventListener("moovy:open-search", handler);
     }, []);
 
-    // On homepage: show compact search bar when hero search scrolls out of view
-    const [heroSearchVisible, setHeroSearchVisible] = useState(true);
-    useEffect(() => {
-        if (!isHomepage) return;
-        const handler = (e: Event) => {
-            const visible = (e as CustomEvent).detail?.visible ?? true;
-            setHeroSearchVisible(visible);
-        };
-        window.addEventListener("moovy:hero-search-visibility", handler);
-        return () => window.removeEventListener("moovy:hero-search-visibility", handler);
-    }, [isHomepage]);
+    // El colapso de la pregunta al scrollear lo maneja el hero (tarjeta sticky).
 
     // On non-homepage pages: show subtle search bar only after user scrolls down
     const [hasScrolled, setHasScrolled] = useState(false);
@@ -221,30 +212,29 @@ export default function AppHeader({
     return (
         <>
             <header
-                className="fixed top-0 left-0 right-0 z-50 overflow-visible bg-white shadow-sm"
+                className={`fixed top-0 left-0 right-0 z-50 overflow-visible ${isHomepage ? "bg-[#e60012] lg:bg-white lg:shadow-sm" : isMarketplace ? "bg-[#7C3AED] lg:bg-white lg:shadow-sm" : "bg-white shadow-sm"}`}
                 style={{ paddingTop: 'env(safe-area-inset-top)' }}
             >
-                {/* Accent line — red or violet on marketplace */}
-                <div className={`h-1 bg-gradient-to-r ${isMarketplace ? "from-[#7C3AED] via-[#8B5CF6] to-[#7C3AED]" : "from-[#e60012] via-[#ff1a2e] to-[#e60012]"}`} />
+                {/* Accent line — red or violet. En home mobile se oculta: el header es
+                    rojo y una línea más brillante arriba rompería la tarjeta única. */}
+                <div className={`h-1 bg-gradient-to-r ${(isHomepage || isMarketplace) ? "hidden lg:block " : ""}${isMarketplace ? "from-[#7C3AED] via-[#8B5CF6] to-[#7C3AED]" : "from-[#e60012] via-[#ff1a2e] to-[#e60012]"}`} />
 
                 {/* Mobile Header - Single clean row */}
                 <div className="lg:hidden flex items-center justify-between h-14 px-4">
-                    {/* Left: Location or Greeting */}
+                    {/* Left: en HOME siempre la ubicación arriba (como el diseño);
+                        fuera de home, avatar si hay sesión. */}
                     <div className="flex items-center gap-2">
-                        {isLoggedIn && firstName ? (
+                        {isLoggedIn && firstName && !isHomepage ? (
                             <UserAvatarMenu firstName={firstName} isMarketplace={isMarketplace} size="sm" />
                         ) : (
-                            <div className="flex items-center gap-1 text-gray-600">
-                                <MapPin className={`w-4 h-4 ${isMarketplace ? "text-[#7C3AED]" : "text-[#e60012]"}`} />
-                                <span className="text-sm font-medium">Ushuaia</span>
-                            </div>
+                            <LocationAddressButton isHomepage={isHomepage} isMarketplace={isMarketplace} />
                         )}
                     </div>
 
                     {/* Center: Logo — switches to purple on marketplace */}
                     <Link href="/" className="absolute left-1/2 transform -translate-x-1/2">
                         <Image
-                            src={isMarketplace ? "/logo-moovy-purple.svg" : "/logo-moovy.svg"}
+                            src={(isHomepage || isMarketplace) ? "/logo-moovy-white.svg" : "/logo-moovy.svg"}
                             alt="Moovy"
                             width={280}
                             height={90}
@@ -253,25 +243,18 @@ export default function AppHeader({
                         />
                     </Link>
 
-                    {/* Right: Points + Orders + Cart */}
+                    {/* Right: Points + Cart (la campanita de notificaciones se pospone a
+                        Fase 2 — hoy un ícono de campana que abre "Mis pedidos" es engañoso). */}
                     <div className="flex items-center gap-0.5">
                         {isLoggedIn && <PointsBalanceChip />}
-                        {isLoggedIn && (
-                            <Link
-                                href="/mis-pedidos"
-                                className="relative p-2 text-gray-600 hover:text-[#e60012] transition"
-                            >
-                                <Bell className="w-5 h-5" />
-                            </Link>
-                        )}
 
                         <button
                             onClick={() => openCart()}
-                            className="relative p-2 text-gray-600 hover:text-[#e60012] transition"
+                            className={`relative p-2 transition ${(isHomepage || isMarketplace) ? "text-white hover:text-white" : "text-gray-600 hover:text-[#e60012]"}`}
                         >
                             <ShoppingBag className="w-6 h-6" />
                             {actualCartCount > 0 && (
-                                <span className="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-xs rounded-full flex items-center justify-center font-bold shadow-sm bg-[#e60012] text-white">
+                                <span className={`absolute top-0.5 right-0.5 min-w-[18px] h-[18px] text-xs rounded-full flex items-center justify-center font-bold shadow-sm ${isHomepage ? "bg-white text-[#e60012]" : isMarketplace ? "bg-white text-[#7C3AED]" : "bg-[#e60012] text-white"}`}>
                                     {actualCartCount > 99 ? "99+" : actualCartCount}
                                 </span>
                             )}
@@ -279,20 +262,9 @@ export default function AppHeader({
                     </div>
                 </div>
 
-                {/* Mobile: compact search bar — style varies by context */}
-                {/* Homepage (after scroll): red bg, prominent */}
-                {isHomepage && !heroSearchVisible && (
-                    <div className="lg:hidden px-4 pb-3 pt-1.5" style={{ backgroundColor: "#e60012" }}>
-                        <button
-                            type="button"
-                            onClick={() => setShowMobileSearch(true)}
-                            className="w-full flex items-center gap-3 px-4 py-2.5 bg-white rounded-2xl text-left shadow-lg shadow-black/10 transition active:scale-[0.98]"
-                        >
-                            <Search className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                            <span className="text-sm text-gray-400 font-medium truncate">¿Qué querés pedir?</span>
-                        </button>
-                    </div>
-                )}
+                {/* En home el buscador vive en la tarjeta sticky del hero, que colapsa la
+                    pregunta al scrollear (queda barra del logo + buscador). El header mobile
+                    es solo la barra del logo, del mismo rojo → una sola tarjeta continua. */}
                 {/* Other pages (except marketplace/buscar/homepage): subtle gray bar, only after scroll */}
                 {!isHomepage && !isMarketplace && !isBuscar && hasScrolled && (
                     <div className="lg:hidden px-4 pb-2 pt-1.5 bg-white border-b border-gray-100">
@@ -336,12 +308,7 @@ export default function AppHeader({
                         visible hasta que el usuario scrollea. Evita las 2 barras simultáneas. */}
                     <div
                         ref={searchRef}
-                        className={`flex-1 max-w-xl mx-6 relative transition-opacity duration-200 ${
-                            isHomepage && heroSearchVisible
-                                ? "opacity-0 pointer-events-none invisible"
-                                : "opacity-100"
-                        }`}
-                        aria-hidden={isHomepage && heroSearchVisible}
+                        className="flex-1 max-w-xl mx-6 relative"
                     >
                         <form onSubmit={handleSearchSubmit} className="relative">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -351,7 +318,7 @@ export default function AppHeader({
                                 onChange={(e) => handleSearchInputChange(e.target.value)}
                                 onFocus={() => { if (suggestions.length > 0) setShowResults(true); }}
                                 placeholder="Buscar productos, comercios..."
-                                tabIndex={isHomepage && heroSearchVisible ? -1 : 0}
+                                tabIndex={0}
                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] transition placeholder:text-gray-400"
                             />
                             {searchLoading && (
@@ -471,14 +438,6 @@ export default function AppHeader({
                     {/* Right */}
                     <div className="flex items-center gap-3 flex-shrink-0">
                         {isLoggedIn && <PointsBalanceChip />}
-                        {isLoggedIn && (
-                            <Link
-                                href="/mis-pedidos"
-                                className="relative p-2 text-gray-600 hover:text-[#e60012] transition rounded-full hover:bg-gray-50"
-                            >
-                                <Bell className="w-5 h-5" />
-                            </Link>
-                        )}
 
                         {/* Cart Button */}
                         <button

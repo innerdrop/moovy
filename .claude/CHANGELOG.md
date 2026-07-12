@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-07-11 (rama `feat/rediseno-home`)
+
+feat: rediseño de tienda, marketplace y onboarding (header unificado que colapsa, hero una-tarjeta, Promos del Mundial con cupones, Banda MOOVER, cards y footer nuevos), OPS de cupones, carrito de invitado con login al pagar, ubicación en el pill del header, campanita pospuesta a Fase 2, /puntos con landing de conversión + animaciones de scroll y secciones modernizadas (ejemplo claro, bonos con jerarquía, niveles scrolleables + detalle del programa), /empezar rediseñado dentro de (store) con header de la app, y fix de overflow horizontal en desktop
+
+**Archivos:** src/app/(store)/empezar/page.tsx, src/app/(store)/layout.tsx, src/app/(store)/marketplace/page.tsx, src/app/(store)/page.tsx, src/app/(store)/puntos/page.tsx, src/app/api/upload/route.ts, src/app/empezar/page.tsx, src/app/globals.css (+19 mas)
+
 ## 2026-07-09 (rama `feat/bloquear-publicidad`)
 
 feat: bloquear Publicidad + reorg panel comercio (Mi Comercio hub) + selector de tamano sin vehiculo y obligatorio + campo codigo de barras interno (buscar/escanear) + orden y paginacion arriba/abajo en la lista de productos

@@ -78,26 +78,29 @@ export default function PullToRefresh({ children, onRefresh }: PullToRefreshProp
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
         >
-            {/* Pull indicator */}
-            <div
-                className="flex items-center justify-center overflow-hidden transition-all duration-200 ease-out"
-                style={{
-                    height: refreshing ? 48 : pullDistance > 10 ? pullDistance : 0,
-                    opacity: showIndicator ? 1 : 0,
-                }}
-            >
-                {refreshing ? (
-                    <Loader2 className="w-5 h-5 text-[#e60012] animate-spin" />
-                ) : (
-                    <div
-                        className="w-5 h-5 border-2 border-[#e60012] border-t-transparent rounded-full transition-transform"
-                        style={{
-                            transform: `rotate(${progress * 360}deg)`,
-                            opacity: progress,
-                        }}
-                    />
-                )}
-            </div>
+            {/* Spinner flotante (overlay) — patrón de apps pro: un círculo que aparece
+                POR ENCIMA del contenido, sin empujar el header ni cortar la tarjeta de
+                búsqueda. No ocupa lugar en el layout, así nada se desplaza. */}
+            {showIndicator && (
+                <div
+                    className="fixed left-1/2 -translate-x-1/2 z-[60] pointer-events-none transition-opacity duration-200"
+                    style={{
+                        top: "calc(env(safe-area-inset-top) + 64px)",
+                        opacity: refreshing || pullDistance > 20 ? 1 : Math.max(0, progress),
+                    }}
+                >
+                    <div className="w-9 h-9 rounded-full bg-white shadow-[0_6px_16px_rgba(0,0,0,0.18)] flex items-center justify-center">
+                        {refreshing ? (
+                            <Loader2 className="w-5 h-5 text-[#e60012] animate-spin" />
+                        ) : (
+                            <div
+                                className="w-5 h-5 border-2 border-[#e60012] border-t-transparent rounded-full"
+                                style={{ transform: `rotate(${progress * 360}deg)` }}
+                            />
+                        )}
+                    </div>
+                </div>
+            )}
 
             {children}
         </div>

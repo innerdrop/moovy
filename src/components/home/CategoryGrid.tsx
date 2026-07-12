@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useRef, useEffect, useCallback, useState } from "react";
 import Link from "next/link";
 import { getCategoryIcon } from "@/lib/icons";
+
+// feat/rediseno-home: 3 categorías destacadas (tarjetas con imagen) + el resto como
+// grilla de íconos. Reemplaza la fila auto-scroll anterior por el patrón del diseño.
 
 interface Category {
     id: string;
@@ -17,135 +19,72 @@ interface CategoryGridProps {
 }
 
 export default function CategoryGrid({ categories }: CategoryGridProps) {
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const isPaused = useRef(false);
-    const rafId = useRef(0);
-    const prevTime = useRef(0);
-    const resumeTimer = useRef<ReturnType<typeof setTimeout>>(null);
-    const [ready, setReady] = useState(false);
-
-    useEffect(() => {
-        if (categories.length === 0) return;
-        const t = setTimeout(() => setReady(true), 300);
-        return () => clearTimeout(t);
-    }, [categories.length]);
-
-    const tick = useCallback((now: number) => {
-        const el = scrollRef.current;
-        if (el && !isPaused.current) {
-            const maxScroll = el.scrollWidth - el.clientWidth;
-            if (maxScroll > 0) {
-                if (prevTime.current) {
-                    const dt = Math.min(now - prevTime.current, 50);
-                    el.scrollLeft += (22 * dt) / 1000;
-                    // Al llegar al final, volver al inicio
-                    if (el.scrollLeft >= maxScroll) {
-                        el.scrollLeft = 0;
-                    }
-                }
-                prevTime.current = now;
-            }
-        } else {
-            prevTime.current = 0;
-        }
-        rafId.current = requestAnimationFrame(tick);
-    }, []);
-
-    useEffect(() => {
-        if (!ready) return;
-        rafId.current = requestAnimationFrame(tick);
-        return () => cancelAnimationFrame(rafId.current);
-    }, [ready, tick]);
-
-    const pause = useCallback(() => {
-        isPaused.current = true;
-        prevTime.current = 0;
-        if (resumeTimer.current) clearTimeout(resumeTimer.current);
-    }, []);
-
-    const resume = useCallback(() => {
-        if (resumeTimer.current) clearTimeout(resumeTimer.current);
-        resumeTimer.current = setTimeout(() => {
-            prevTime.current = 0;
-            isPaused.current = false;
-        }, 3000);
-    }, []);
-
     if (categories.length === 0) return null;
+    const featured = categories.slice(0, 3);
+    const more = categories.slice(3, 11);
 
     return (
-        <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
-            <h2 className="text-xl lg:text-2xl font-black text-gray-900 mb-4">
-                Explorá por categorías
-            </h2>
-            <style>{`
-                .catscroll { -ms-overflow-style: none; scrollbar-width: none; }
-                .catscroll::-webkit-scrollbar { display: none; }
-            `}</style>
-            {/* Mobile: horizontal scroll */}
-            <div
-                ref={scrollRef}
-                className="catscroll lg:hidden overflow-x-auto py-1 px-4"
-                onTouchStart={pause}
-                onTouchEnd={resume}
-                onMouseEnter={pause}
-                onMouseLeave={resume}
-            >
-                <div className="flex gap-2 w-max">
-                    {categories.map((cat) => (
-                        <Link
-                            key={cat.id}
-                            href={`/productos?categoria=${cat.slug}`}
-                            className="flex-shrink-0 group"
-                        >
-                            <div className="flex flex-col items-center gap-1.5 w-[74px]">
-                                <div className="w-[66px] h-[66px] rounded-2xl bg-gray-100 overflow-hidden flex items-center justify-center group-hover:bg-gray-200 group-hover:scale-105 transition-all duration-200">
-                                    <CategoryImage cat={cat} />
+        <div className="container mx-auto max-w-3xl lg:max-w-4xl">
+            {/* Categorías destacadas */}
+            {featured.length > 0 && (
+                <div className="px-4">
+                    <div className="grid grid-cols-3 gap-2.5 sm:gap-3">
+                        {featured.map((cat) => (
+                            <Link
+                                key={cat.id}
+                                href={`/productos?categoria=${cat.slug}`}
+                                className="group rounded-[20px] overflow-hidden bg-white border border-gray-100 shadow-[0_8px_24px_rgba(80,5,10,0.10)]"
+                            >
+                                <div className="h-[92px] bg-gray-100 overflow-hidden flex items-center justify-center">
+                                    {cat.image ? (
+                                        <img
+                                            src={cat.image}
+                                            alt={cat.name}
+                                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+                                            loading="lazy"
+                                        />
+                                    ) : (
+                                        <div className="w-14 h-14 flex items-center justify-center">
+                                            {getCategoryIcon(cat.icon || cat.slug)}
+                                        </div>
+                                    )}
                                 </div>
-                                <span className="text-xs font-bold text-gray-800 group-hover:text-[#e60012] transition-colors text-center leading-tight w-full truncate">
-                                    {cat.name}
-                                </span>
-                            </div>
-                        </Link>
-                    ))}
+                                <div className="px-2.5 py-2.5 text-center">
+                                    <span className="text-[12.5px] font-black text-gray-900 leading-tight">{cat.name}</span>
+                                </div>
+                            </Link>
+                        ))}
+                    </div>
                 </div>
-            </div>
-            {/* Desktop: flex centered — wraps naturally */}
-            <div className="hidden lg:flex flex-wrap justify-center gap-5 xl:gap-6">
-                {categories.map((cat) => (
-                    <Link
-                        key={cat.id}
-                        href={`/productos?categoria=${cat.slug}`}
-                        className="flex-shrink-0 group"
-                    >
-                        <div className="flex flex-col items-center gap-1.5 w-[100px]">
-                            <div className="w-[90px] h-[90px] rounded-2xl bg-gray-100 overflow-hidden flex items-center justify-center group-hover:bg-gray-200 group-hover:scale-105 transition-all duration-200">
-                                <CategoryImage cat={cat} />
-                            </div>
-                            <span className="text-xs font-bold text-gray-800 group-hover:text-[#e60012] transition-colors text-center leading-tight w-full truncate">
-                                {cat.name}
-                            </span>
-                        </div>
-                    </Link>
-                ))}
-            </div>
+            )}
+
+            {/* Más categorías — íconos */}
+            {more.length > 0 && (
+                <div className="px-4 pt-4">
+                    <div className="grid grid-cols-4 gap-2.5 sm:gap-3">
+                        {more.map((cat) => (
+                            <Link
+                                key={cat.id}
+                                href={`/productos?categoria=${cat.slug}`}
+                                className="group flex flex-col items-center gap-1.5"
+                            >
+                                <div className="w-full aspect-square max-w-[86px] rounded-[22px] bg-white border border-gray-100 shadow-[0_2px_10px_rgba(30,10,5,0.06)] flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
+                                    <div className="w-[62%] h-[62%] rounded-xl overflow-hidden flex items-center justify-center">
+                                        {cat.image ? (
+                                            <img src={cat.image} alt={cat.name} className="w-full h-full object-cover" loading="lazy" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                {getCategoryIcon(cat.icon || cat.slug)}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                                <span className="text-[11.5px] font-extrabold text-gray-700 text-center leading-tight w-full">{cat.name}</span>
+                            </Link>
+                        ))}
+                    </div>
+                </div>
+            )}
         </div>
     );
-}
-
-function CategoryImage({ cat }: { cat: Category }) {
-    if (cat.image) {
-        return (
-            <img
-                src={cat.image}
-                alt={cat.name}
-                className="w-full h-full object-contain"
-            />
-        );
-    }
-
-    const iconKey = cat.icon || cat.slug;
-    const icon = getCategoryIcon(iconKey);
-
-    return <div className="w-full h-full flex items-center justify-center p-1">{icon}</div>;
 }

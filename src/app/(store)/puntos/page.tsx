@@ -7,6 +7,7 @@ import Link from "next/link";
 import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { formatPrice } from "@/lib/delivery";
 import { toast } from "@/store/toast";
+import AnimateIn from "@/components/ui/AnimateIn";
 import {
     Gift,
     TrendingUp,
@@ -28,6 +29,7 @@ import {
     Users,
     Crown,
     X,
+    Info,
     Download
 } from "lucide-react";
 
@@ -429,360 +431,265 @@ export default function PuntosPage() {
     if (authStatus === "unauthenticated") {
         return (
             <div className="min-h-screen bg-white">
-                {/* Hero Section */}
-                <section className="px-4 py-16 lg:py-24 max-w-3xl mx-auto text-center">
-                    <div className="inline-block mb-4">
-                        <span className="text-sm font-medium text-gray-500 uppercase tracking-wide">
-                            Programa de Recompensas
+                {/* HERO — el bono de bienvenida es el titular (estrategia de conversión). */}
+                <section className="relative overflow-hidden bg-gradient-to-br from-[#a3000c] via-[#e60012] to-[#ff1a2e] text-white px-5 pt-14 pb-20 lg:pt-20 lg:pb-24">
+                    <div className="absolute -right-16 -top-16 w-72 h-72 rounded-full bg-white/[0.08] blur-3xl pointer-events-none" />
+                    <div className="relative max-w-2xl mx-auto text-center">
+                        <span className="inline-block bg-white/15 text-white text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-full mb-5">
+                            Programa MOOVER
                         </span>
-                    </div>
-
-                    <h1 className="text-4xl lg:text-5xl font-bold text-gray-900 mb-6 leading-tight">
-                        Comprá y ganá con{" "}
-                        <span
-                            className="text-[#e60012]"
-                            style={{ fontFamily: "'Junegull', sans-serif" }}
-                        >
-                            MOOVER
-                        </span>
-                    </h1>
-
-                    <p className="text-lg lg:text-xl text-gray-600 mb-8 leading-relaxed max-w-xl mx-auto">
-                        Cada compra te acerca a tu próximo descuento. Ganá siempre,
-                        canjeá cuando quieras.
-                    </p>
-
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Link
-                            href="/empezar"
-                            className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#e60012] text-white font-bold rounded-xl hover:bg-red-700 transition active:scale-95"
-                        >
-                            <UserPlus className="w-5 h-5" />
-                            Quiero ser MOOVER
-                        </Link>
-                        <Link
-                            href="/login"
-                            className="inline-flex items-center justify-center px-8 py-4 bg-gray-100 text-gray-900 font-semibold rounded-xl hover:bg-gray-200 transition"
-                        >
-                            Tengo cuenta
-                        </Link>
-                    </div>
-                </section>
-
-                {/* How it Works Section */}
-                <section className="px-4 py-16 bg-gray-50 border-t border-gray-200">
-                    <div className="max-w-3xl mx-auto">
-                        <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-12 text-center">
-                            Cómo Funciona
-                        </h2>
-
-                        <div className="space-y-8 lg:space-y-0 lg:grid lg:grid-cols-3 lg:gap-10">
-                            {/* Step 1 */}
-                            <div className="text-center">
-                                <div className="inline-flex items-center justify-center w-14 h-14 bg-[#e60012] text-white rounded-full text-xl font-bold mb-4">
-                                    1
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                    Comprá
-                                </h3>
-                                <p className="text-base text-gray-600 leading-relaxed">
-                                    Cada compra que recibís se convierte automáticamente en puntos.
-                                </p>
-                                <p className="text-base font-semibold text-gray-900 mt-3">
-                                    Ganás puntos con cada compra
-                                </p>
-                                <p className="text-xs text-gray-400 mt-1">
-                                    10 puntos por cada $1.000
-                                </p>
-                            </div>
-
-                            {/* Step 2 */}
-                            <div className="text-center">
-                                <div className="inline-flex items-center justify-center w-14 h-14 bg-[#e60012] text-white rounded-full text-xl font-bold mb-4">
-                                    2
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                    Acumulá
-                                </h3>
-                                <p className="text-base text-gray-600 leading-relaxed">
-                                    Tus puntos tienen valor real. 6 meses sin pedir y expiran.
-                                </p>
-                                <p className="text-base font-semibold text-gray-900 mt-3">
-                                    1 punto = $1 de descuento
-                                </p>
-                            </div>
-
-                            {/* Step 3 */}
-                            <div className="text-center">
-                                <div className="inline-flex items-center justify-center w-14 h-14 bg-[#e60012] text-white rounded-full text-xl font-bold mb-4">
-                                    3
-                                </div>
-                                <h3 className="text-xl font-bold text-gray-900 mb-2">
-                                    Canjeá
-                                </h3>
-                                <p className="text-base text-gray-600 leading-relaxed">
-                                    Usálos como descuento en tu próximo pedido.
-                                </p>
-                                <p className="text-base font-semibold text-gray-900 mt-3">
-                                    Hasta 20% de descuento
-                                </p>
-                            </div>
+                        <h1 className="text-4xl lg:text-5xl font-black leading-tight mb-4">
+                            Registrate gratis y arrancá con{" "}
+                            <span className="text-yellow-300">$1.000</span>{" "}
+                            para tu primer pedido
+                        </h1>
+                        <p className="text-lg text-white/85 mb-8 max-w-xl mx-auto">
+                            1.000 puntos de bienvenida, y cada compra suma más. En MOOVY tu plata rinde el doble.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <Link
+                                href="/empezar"
+                                className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-[#e60012] font-black rounded-xl hover:bg-gray-100 transition active:scale-95 shadow-lg"
+                            >
+                                <UserPlus className="w-5 h-5" />
+                                Quiero mis $1.000
+                            </Link>
+                            <Link
+                                href="/login"
+                                className="inline-flex items-center justify-center px-8 py-4 bg-white/15 text-white font-bold rounded-xl hover:bg-white/25 transition border border-white/25"
+                            >
+                                Ya tengo cuenta
+                            </Link>
                         </div>
-                    </div>
-                </section>
-
-                {/* Example Section */}
-                <section className="px-4 py-16">
-                    <div className="max-w-2xl mx-auto">
-                        <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-10 text-center">
-                            Te Mostramos un Ejemplo
-                        </h2>
-
-                        <div className="bg-gradient-to-br from-red-50 to-orange-50 border border-red-200 rounded-2xl p-6 lg:p-8">
-                            <div className="space-y-8">
-                                <div className="flex items-start gap-6">
-                                    <div className="flex-shrink-0">
-                                        <div className="flex items-center justify-center w-12 h-12 bg-[#e60012] text-white rounded-full font-bold">
-                                            🛍️
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="text-lg text-gray-900">
-                                            Si comprás por{" "}
-                                            <strong className="text-[#e60012]">$8,000</strong>
-                                        </p>
-                                        <p className="text-gray-600 mt-1">
-                                            (Tu pedido de almuerzo para toda la semana)
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-start gap-6">
-                                    <div className="flex-shrink-0">
-                                        <div className="flex items-center justify-center w-12 h-12 bg-[#e60012] text-white rounded-full font-bold">
-                                            ⭐
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="text-lg text-gray-900">
-                                            Ganás{" "}
-                                            <strong className="text-[#e60012]">80 puntos</strong>
-                                        </p>
-                                        <p className="text-gray-600 mt-1">
-                                            (10 puntos por cada $1,000)
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-start gap-6">
-                                    <div className="flex-shrink-0">
-                                        <div className="flex items-center justify-center w-12 h-12 bg-[#e60012] text-white rounded-full font-bold">
-                                            💳
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <p className="text-lg text-gray-900">
-                                            Esos puntos valen{" "}
-                                            <strong className="text-[#e60012]">$80</strong>
-                                        </p>
-                                        <p className="text-gray-600 mt-1">
-                                            (80 puntos × $1 cada punto)
-                                        </p>
-                                    </div>
-                                </div>
-
-                                <div className="border-t-2 border-red-300 pt-8">
-                                    <p className="text-center text-gray-900 text-lg">
-                                        <strong>En tu próximo pedido,</strong>
-                                        <br />
-                                        <span className="text-[#e60012] text-2xl font-bold">
-                                            tenés $80 de descuento listo
-                                        </span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Bonuses Section */}
-                <section className="px-4 py-16 bg-gray-50 border-t border-gray-200">
-                    <div className="max-w-2xl mx-auto">
-                        <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-10 text-center">
-                            Bonificaciones Extras
-                        </h2>
-
-                        <div className="space-y-4">
-                            {/* Welcome bonus */}
-                            <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                                <div className="flex items-start gap-4 mb-4">
-                                    <span className="text-4xl">🎁</span>
-                                    <div>
-                                        <h3 className="text-2xl font-bold text-gray-900">
-                                            Al registrarte
-                                        </h3>
-                                        <p className="text-gray-600 mt-1">
-                                            <strong className="text-[#e60012] text-lg">
-                                                1,000 puntos de bienvenida
-                                            </strong>
-                                            <br />
-                                            ($1,000 en descuentos) con tu primera compra de $5,000+
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Referral bonus */}
-                            <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                                <div className="flex items-start gap-4 mb-4">
-                                    <span className="text-4xl">👥</span>
-                                    <div>
-                                        <h3 className="text-2xl font-bold text-gray-900">
-                                            Invitá a amigos
-                                        </h3>
-                                        <p className="text-gray-600 mt-1">
-                                            <strong className="text-[#e60012] text-lg">
-                                                1,000 puntos por cada amigo
-                                            </strong>
-                                            <br />
-                                            Cuando tu amigo hace su primera compra de $8,000+
-                                        </p>
-                                        <p className="text-gray-600 mt-2 text-sm">
-                                            Además, tu amigo recibe 500 puntos extras de bienvenida
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Review bonus */}
-                            <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                                <div className="flex items-start gap-4 mb-4">
-                                    <span className="text-4xl">⭐</span>
-                                    <div>
-                                        <h3 className="text-2xl font-bold text-gray-900">
-                                            Dejá una reseña
-                                        </h3>
-                                        <p className="text-gray-600 mt-1">
-                                            <strong className="text-[#e60012] text-lg">
-                                                25 puntos por reseña
-                                            </strong>
-                                            <br />
-                                            Después de cada compra
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="mt-8 p-6 bg-blue-50 border border-blue-200 rounded-2xl">
-                            <p className="text-gray-700 text-center">
-                                <span className="block text-sm text-gray-600 mb-2">
-                                    💡 Nota
-                                </span>
-                                Los bonos de bienvenida se activan con tu primera compra de $5,000+.
-                                Los puntos por referidos se acreditan cuando tu amigo completa su primer pedido de $8,000+.
-                            </p>
-                        </div>
-                    </div>
-                </section>
-
-                {/* Levels Section */}
-                <section className="px-4 py-16">
-                    <div className="max-w-2xl mx-auto">
-                        <h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-10 text-center">
-                            Niveles Exclusivos
-                        </h2>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {/* MOOVER */}
-                            <div className="bg-gradient-to-r from-blue-50 to-cyan-50 border border-blue-200 rounded-2xl p-6">
-                                <p className="text-sm font-medium text-blue-600 uppercase tracking-wide mb-2">
-                                    🚀 Nivel Inicial
-                                </p>
-                                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                    MOOVER
-                                </h3>
-                                <p className="text-gray-600 mb-4">
-                                    Todos empiezan acá
-                                </p>
-                                <ul className="space-y-2 text-gray-700">
-                                    <li>✓ 10 puntos por cada $1,000</li>
-                                    <li>✓ Descuentos hasta 20%</li>
-                                    <li>✓ Referidos y bonificaciones</li>
-                                </ul>
-                            </div>
-
-                            {/* SILVER */}
-                            <div className="bg-gradient-to-r from-gray-100 to-slate-100 border border-gray-300 rounded-2xl p-6">
-                                <p className="text-sm font-medium text-gray-600 uppercase tracking-wide mb-2">
-                                    🥈 Nivel Silver
-                                </p>
-                                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                    MOOVER SILVER
-                                </h3>
-                                <p className="text-gray-600 mb-4">
-                                    5 pedidos entregados en 90 días
-                                </p>
-                                <ul className="space-y-2 text-gray-700">
-                                    <li>✓ 12.5 puntos por cada $1,000</li>
-                                    <li>✓ Badge Silver en tu perfil</li>
-                                    <li>✓ Destacado en comentarios</li>
-                                </ul>
-                            </div>
-
-                            {/* GOLD */}
-                            <div className="bg-gradient-to-r from-yellow-50 to-amber-50 border border-yellow-300 rounded-2xl p-6">
-                                <p className="text-sm font-medium text-yellow-700 uppercase tracking-wide mb-2">
-                                    🥇 Nivel Gold
-                                </p>
-                                <h3 className="text-2xl font-bold text-gray-900 mb-2">
-                                    MOOVER GOLD
-                                </h3>
-                                <p className="text-gray-600 mb-4">
-                                    15 pedidos entregados en 90 días
-                                </p>
-                                <ul className="space-y-2 text-gray-700">
-                                    <li>✓ 15 puntos por cada $1,000</li>
-                                    <li>✓ Badge Gold en tu perfil</li>
-                                    <li>✓ Soporte prioritario</li>
-                                </ul>
-                            </div>
-
-                            {/* BLACK */}
-                            <div className="bg-gradient-to-r from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-6 text-white">
-                                <p className="text-sm font-medium text-yellow-400 uppercase tracking-wide mb-2">
-                                    👑 Máximo Nivel
-                                </p>
-                                <h3 className="text-2xl font-bold text-white mb-2">
-                                    MOOVER BLACK
-                                </h3>
-                                <p className="text-gray-300 mb-4">
-                                    40 pedidos entregados en 90 días
-                                </p>
-                                <ul className="space-y-2 text-gray-200">
-                                    <li>✓ 20 puntos por cada $1,000</li>
-                                    <li>✓ Badge Black exclusivo</li>
-                                    <li>✓ Soporte VIP + eventos exclusivos</li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        <p className="text-center text-gray-500 text-sm mt-8">
-                            Los niveles se calculan automáticamente según tus pedidos entregados
-                            en los últimos 90 días. Si dejás de pedir, tu nivel puede bajar.
+                        <p className="text-white/60 text-xs mt-4">
+                            Los 1.000 puntos se activan con tu primera compra de $5.000+.
                         </p>
                     </div>
                 </section>
 
+                {/* URGENCIA — boost de lanzamiento ×2 (FOMO). Debe coincidir con el config real. */}
+                <section className="px-5 -mt-10 relative z-10">
+                    <div className="max-w-2xl mx-auto">
+                        <div className="bg-yellow-400 text-yellow-950 rounded-2xl px-5 py-4 flex items-center justify-center gap-3 shadow-[0_12px_30px_rgba(0,0,0,0.14)] font-black text-center text-sm sm:text-base">
+                            <span className="text-2xl">⚡</span>
+                            <span>Semana de lanzamiento: <span className="underline decoration-2">×2 puntos</span> en cada pedido. Por tiempo limitado.</span>
+                        </div>
+                    </div>
+                </section>
+
+                {/* How it Works Section */}
+                <AnimateIn animation="reveal">
+                <section className="px-4 py-8 bg-gray-50 border-t border-gray-100">
+                    <div className="max-w-4xl mx-auto">
+                        <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-[#e60012]">Simple y automático</p>
+                        <h2 className="text-2xl lg:text-3xl font-black text-gray-900 mb-6">
+                            Cómo funciona
+                        </h2>
+                        <div className="grid gap-3 sm:grid-cols-3 sm:gap-4">
+                            {[
+                                { n: 1, Icon: ShoppingBag, title: "Comprá", desc: "Cada pedido suma puntos, sin que hagas nada.", hl: "10 pts por cada $1.000" },
+                                { n: 2, Icon: Star, title: "Acumulá", desc: "Tus puntos valen plata de verdad.", hl: "1 punto = $1" },
+                                { n: 3, Icon: Gift, title: "Canjeá", desc: "Usalos como descuento en tu próximo pedido.", hl: "Hasta 20% off" },
+                            ].map(({ n, Icon, title, desc, hl }) => (
+                                <div key={n} className="relative flex sm:flex-col items-start gap-4 sm:gap-0 bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm">
+                                    <span className="absolute top-3 right-4 text-2xl font-black text-gray-100 select-none">0{n}</span>
+                                    <div className="w-12 h-12 rounded-xl bg-[#e60012]/10 flex items-center justify-center flex-shrink-0 sm:mb-3">
+                                        <Icon className="w-5 h-5 text-[#e60012]" />
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h3 className="text-base font-black text-gray-900 mb-1">{title}</h3>
+                                        <p className="text-sm text-gray-500 leading-snug mb-2.5">{desc}</p>
+                                        <span className="inline-block text-xs font-black text-[#e60012] bg-[#e60012]/[0.08] px-2.5 py-1 rounded-full">{hl}</span>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+                </AnimateIn>
+
+                {/* Example Section */}
+                <AnimateIn animation="reveal">
+                <section className="px-4 py-8">
+                    <div className="max-w-3xl mx-auto">
+                        <div className="mb-2 flex items-center gap-2">
+                            <span className="h-px w-6 bg-[#e60012]" />
+                            <p className="text-xs font-black uppercase tracking-[0.2em] text-[#e60012]">Hagamos números</p>
+                        </div>
+                        <h2 className="text-2xl lg:text-3xl font-black text-gray-900 mb-5">
+                            Un ejemplo real
+                        </h2>
+                        <div className="relative overflow-hidden rounded-3xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-6 lg:p-7 shadow-sm">
+                            <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[#e60012]/10 blur-3xl" />
+                            <div className="relative grid gap-3 sm:grid-cols-3 sm:gap-4">
+                                <div className="rounded-2xl border border-red-100 bg-white p-4 shadow-sm">
+                                    <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Comprás</p>
+                                    <p className="text-2xl font-black text-gray-900">$8.000</p>
+                                    <p className="mt-1 text-xs text-gray-400">tu pedido de la semana</p>
+                                </div>
+                                <div className="rounded-2xl border border-red-100 bg-white p-4 shadow-sm">
+                                    <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-gray-400">Ganás</p>
+                                    <p className="text-2xl font-black text-[#e60012]">80 pts</p>
+                                    <p className="mt-1 text-xs text-gray-400">10 pts por cada $1.000</p>
+                                </div>
+                                <div className="rounded-2xl bg-[#e60012] p-4 shadow-sm">
+                                    <p className="mb-1 text-[11px] font-bold uppercase tracking-wide text-white/70">Descontás</p>
+                                    <p className="text-2xl font-black text-white">$80</p>
+                                    <p className="mt-1 text-xs text-white/60">1 punto = $1</p>
+                                </div>
+                            </div>
+                            <div className="relative mt-5 flex items-center justify-center gap-2">
+                                <Sparkles className="h-4 w-4 text-[#e60012]" />
+                                <p className="font-black text-gray-900">$80 listos para tu próximo pedido</p>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                </AnimateIn>
+
+                {/* Bonuses Section */}
+                <AnimateIn animation="reveal">
+                <section className="px-4 py-8 bg-gray-50 border-t border-gray-100">
+                    <div className="max-w-4xl mx-auto">
+                        <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-[#7C3AED]">Regalos para vos</p>
+                        <h2 className="text-2xl lg:text-3xl font-black text-gray-900 mb-6">
+                            Bonos extra
+                        </h2>
+                        <div className="grid gap-4 lg:grid-cols-3">
+                            {/* Welcome — bono protagonista */}
+                            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#e60012] to-[#ff3547] p-6 text-white shadow-lg shadow-red-500/20 lg:col-span-2">
+                                <div className="pointer-events-none absolute -right-10 -top-10 h-44 w-44 rounded-full bg-white/10 blur-2xl" />
+                                <div className="pointer-events-none absolute right-6 bottom-4 text-[110px] leading-none opacity-10 select-none">🎁</div>
+                                <div className="relative">
+                                    <div className="mb-4 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-[11px] font-black uppercase tracking-wider backdrop-blur-sm">
+                                        <Gift className="h-3.5 w-3.5" /> Bono de bienvenida
+                                    </div>
+                                    <div className="flex items-end gap-2">
+                                        <span className="text-5xl lg:text-6xl font-black leading-none tracking-tight">1.000</span>
+                                        <span className="mb-1.5 text-xl font-black">pts</span>
+                                    </div>
+                                    <p className="mt-3 text-base font-black">= $1.000 en descuentos para tu primer pedido</p>
+                                    <p className="mt-1 text-sm text-white/75">Se activan con tu primera compra de $5.000 o más.</p>
+                                </div>
+                            </div>
+                            {/* Columna de apoyo — referido + reseña */}
+                            <div className="grid gap-4">
+                                {/* Referral */}
+                                <div className="relative overflow-hidden rounded-3xl border border-violet-100 bg-white p-5 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-[#7C3AED] text-white shadow-sm">
+                                            <Users className="h-6 w-6" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xl font-black text-[#7C3AED] leading-none">1.000 pts</p>
+                                            <p className="mt-1 text-sm font-black text-gray-900">Por cada amigo</p>
+                                        </div>
+                                    </div>
+                                    <p className="mt-3 text-xs leading-snug text-gray-500">Cuando hace su primera compra de $8.000+. Tu amigo también se lleva 500 pts.</p>
+                                </div>
+                                {/* Review */}
+                                <div className="relative overflow-hidden rounded-3xl border border-amber-100 bg-white p-5 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
+                                            <Star className="h-6 w-6" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xl font-black text-amber-600 leading-none">25 pts</p>
+                                            <p className="mt-1 text-sm font-black text-gray-900">Por cada reseña</p>
+                                        </div>
+                                    </div>
+                                    <p className="mt-3 text-xs leading-snug text-gray-500">Después de cada compra que recibís. Contanos qué te pareció.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                </AnimateIn>
+
+                {/* Levels Section */}
+                <AnimateIn animation="reveal">
+                <section className="px-4 py-8">
+                    <div className="max-w-4xl mx-auto">
+                        <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-amber-500">Tu estatus MOOVER</p>
+                        <h2 className="text-2xl lg:text-3xl font-black text-gray-900 mb-1">
+                            Subí de nivel, <span className="text-amber-500">ganá más</span>
+                        </h2>
+                        <p className="text-gray-500 mb-5">
+                            Cuanto más pedís, más rinde cada peso. Deslizá para ver los niveles.
+                        </p>
+                        <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pt-1 pb-3 -mr-4 pr-4 lg:mr-0 lg:pr-0">
+                            {[
+                                { emoji: "🚀", tag: "Inicial", name: "MOOVER", req: "Arrancás acá, sin pedidos", rate: "10", card: "bg-blue-50 border-blue-100", nameC: "text-gray-900", rateC: "text-blue-600", muted: "text-blue-400" },
+                                { emoji: "🥈", tag: "Silver", name: "MOOVER SILVER", req: "5 pedidos en 90 días", rate: "12,5", card: "bg-gray-50 border-gray-200", nameC: "text-gray-900", rateC: "text-gray-600", muted: "text-gray-400" },
+                                { emoji: "🥇", tag: "Gold", name: "MOOVER GOLD", req: "15 pedidos en 90 días", rate: "15", card: "bg-amber-50 border-amber-200", nameC: "text-gray-900", rateC: "text-amber-600", muted: "text-amber-500" },
+                                { emoji: "👑", tag: "Máximo", name: "MOOVER BLACK", req: "40 pedidos en 90 días", rate: "20", card: "bg-gray-900 border-gray-800", nameC: "text-white", rateC: "text-yellow-400", muted: "text-gray-400" },
+                            ].map((t) => (
+                                <div key={t.name} className={`flex-shrink-0 w-[152px] snap-start rounded-2xl border p-4 shadow-sm ${t.card}`}>
+                                    <div className="mb-2 flex items-center justify-between">
+                                        <span className="text-2xl">{t.emoji}</span>
+                                        <span className={`text-[10px] font-black uppercase tracking-wider ${t.muted}`}>{t.tag}</span>
+                                    </div>
+                                    <h3 className={`text-[15px] font-black leading-tight ${t.nameC}`}>{t.name}</h3>
+                                    <p className={`mb-3 min-h-[32px] text-[11px] leading-snug ${t.muted}`}>{t.req}</p>
+                                    <p className={`text-2xl font-black ${t.rateC}`}>{t.rate}</p>
+                                    <p className={`text-[11px] ${t.muted}`}>pts por cada $1.000</p>
+                                </div>
+                            ))}
+                        </div>
+                        <div className="mt-4 flex items-start gap-2 rounded-2xl bg-gray-50 border border-gray-100 p-4">
+                            <Info className="mt-0.5 h-4 w-4 flex-shrink-0 text-gray-400" />
+                            <p className="text-xs leading-relaxed text-gray-500">
+                                <strong className="text-gray-700">Los pedidos se acumulan.</strong> Tu nivel se
+                                mide por los pedidos entregados en los <strong className="text-gray-700">últimos 90 días</strong> (no es
+                                por día ni por semana). Mientras sigas pidiendo, mantenés tu nivel; si dejás de
+                                pedir, con el tiempo podés bajar.
+                            </p>
+                        </div>
+                    </div>
+                </section>
+                </AnimateIn>
+
+                {/* Program Details Section — reglas claras del programa */}
+                <AnimateIn animation="reveal">
+                <section className="px-4 py-8 bg-gray-50 border-t border-gray-100">
+                    <div className="max-w-4xl mx-auto">
+                        <p className="mb-2 text-xs font-black uppercase tracking-[0.2em] text-gray-400">Transparencia total</p>
+                        <h2 className="text-2xl lg:text-3xl font-black text-gray-900 mb-1">
+                            El programa en detalle
+                        </h2>
+                        <p className="text-gray-500 mb-6">
+                            Todo claro, sin letra chica escondida.
+                        </p>
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            {[
+                                { emoji: "✅", title: "Ganás al recibir tu pedido", desc: "Los puntos se acreditan cuando el pedido queda entregado. Si cancelás, no se suman." },
+                                { emoji: "💵", title: "1 punto = $1 de descuento", desc: "Canjeás desde 500 puntos y hasta el 20% de cada pedido. Vos elegís cuándo usarlos." },
+                                { emoji: "📅", title: "Tu nivel mira los últimos 90 días", desc: "Los pedidos se acumulan en una ventana móvil de 90 días. No hay que hacerlos todos juntos." },
+                                { emoji: "🤝", title: "Invitá y ganan los dos", desc: "Vos ganás 1.000 pts cuando tu amigo hace su primer pedido de $8.000+. Él arranca con 500 pts." },
+                                { emoji: "⚡", title: "×2 puntos de lanzamiento", desc: "Durante las primeras semanas todos tus puntos valen el doble. Aprovechá para arrancar fuerte." },
+                                { emoji: "⏳", title: "Se mantienen si seguís pidiendo", desc: "Tus puntos quedan disponibles mientras uses Moovy. Pedí de vez en cuando y no los perdés." },
+                            ].map((d) => (
+                                <div key={d.title} className="flex items-start gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm">
+                                    <span className="text-xl leading-none">{d.emoji}</span>
+                                    <div className="min-w-0">
+                                        <h3 className="text-sm font-black text-gray-900">{d.title}</h3>
+                                        <p className="mt-1 text-xs leading-snug text-gray-500">{d.desc}</p>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+                </AnimateIn>
+
                 {/* CTA Final Section */}
                 <section className="px-4 py-16 bg-gradient-to-r from-[#a3000c] via-[#e60012] to-[#ff1a2e] text-white">
                     <div className="max-w-2xl mx-auto text-center">
-                        <h2 className="text-3xl lg:text-4xl font-bold mb-6">
-                            ¿Listo para ser MOOVER?
+                        <h2 className="text-3xl lg:text-4xl font-black mb-4">
+                            Sumate a los MOOVERS de Ushuaia
                         </h2>
                         <p className="text-xl text-white/90 mb-8">
-                            Creá tu cuenta en 2 minutos y empezá a acumular puntos con tu
-                            primer pedido.
+                            Creá tu cuenta en 2 minutos y llevate $1.000 para tu primer pedido.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link
@@ -790,7 +697,7 @@ export default function PuntosPage() {
                                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-[#e60012] font-bold rounded-xl hover:bg-gray-100 transition active:scale-95"
                             >
                                 <UserPlus className="w-5 h-5" />
-                                Registrarme Ahora
+                                Registrarme y ganar $1.000
                             </Link>
                             <Link
                                 href="/login"
@@ -803,11 +710,10 @@ export default function PuntosPage() {
                 </section>
 
                 {/* Footer hashtag */}
-                <section className="px-4 py-12 text-center border-t border-gray-200">
-                    <p className="text-gray-600 text-lg">
-                        Compartí tu experiencia con{" "}
-                        <span className="text-[#e60012] font-bold">#SoyMoover</span>
-                    </p>
+                <section className="px-4 pt-8 pb-4 text-center border-t border-gray-100">
+                    <span className="inline-flex items-center gap-2 rounded-full bg-[#e60012]/[0.07] px-4 py-2 text-sm font-black text-[#e60012]">
+                        Compartí tu experiencia con #SoyMoover
+                    </span>
                 </section>
             </div>
         );

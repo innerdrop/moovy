@@ -1,84 +1,70 @@
 import Link from "next/link";
-import { ArrowRight, Store, Bike, Tag } from "lucide-react";
+import { ChevronRight, Store, Bike, Tag } from "lucide-react";
+
+// feat/rediseno-home: "Crecemos juntos" como lista de filas (glyph + título + desc +
+// chevron) + fila de medios de pago. NOTA: no se muestra "Efectivo" — el efectivo
+// está apagado para el lanzamiento (electrónico-only), mostrarlo sería una promesa falsa.
 
 const cards = [
     {
         title: "Registrá tu comercio",
-        desc: "Sumá tu local y llegá a nuevos clientes con delivery propio",
+        desc: "Cobrás al instante · las comisiones más bajas",
         href: "/comercio/registro",
         icon: Store,
-        gradient: "from-[#e60012] to-[#cc000f]",
-        iconBg: "bg-white/20",
-        glow: "shadow-red-500/30",
+        bg: "linear-gradient(135deg, #e60012, #cc000f)",
     },
     {
         title: "Sé repartidor MOOVY",
         desc: "Manejás tus tiempos, cobrás por cada viaje",
         href: "/repartidor/registro",
         icon: Bike,
-        gradient: "from-[#b5000e] to-[#a3000c]",
-        iconBg: "bg-white/20",
-        glow: "shadow-red-600/30",
+        bg: "linear-gradient(135deg, #b5000e, #a3000c)",
     },
     {
         title: "Vendé tus cosas",
         desc: "Publicá gratis en el marketplace de Ushuaia",
         href: "/vendedor/registro",
         icon: Tag,
-        gradient: "from-[#8B5CF6] to-[#6D28D9]",
-        iconBg: "bg-white/20",
-        glow: "shadow-violet-400/30",
+        bg: "linear-gradient(135deg, #8B5CF6, #6D28D9)",
     },
 ];
 
 export default function SupplySideCTA() {
     return (
-        <section className="py-8 lg:py-12 xl:py-14 px-4 md:px-6 lg:px-8">
-            <h2 className="text-xl lg:text-2xl xl:text-3xl font-extrabold text-gray-900 text-center mb-1">
-                Crecemos juntos
-            </h2>
-            <p className="text-sm lg:text-base text-gray-500 text-center mb-5 lg:mb-8">
-                Sumate al ecosistema MOOVY en Ushuaia
-            </p>
+        <section className="py-8 lg:py-10 px-4 md:px-6 lg:px-8">
+            <div className="container mx-auto max-w-3xl lg:max-w-4xl">
+                <h2 className="text-xl font-black text-gray-900 mb-3.5">Crecemos juntos</h2>
 
-            <div
-                className="flex gap-3 overflow-x-auto scrollbar-hide md:grid md:grid-cols-3 md:gap-4 lg:max-w-6xl mx-auto"
-                style={{ scrollbarWidth: "none" }}
-            >
-                {cards.map((card) => {
-                    const Icon = card.icon;
-                    return (
-                        <Link
-                            key={card.href}
-                            href={card.href}
-                            className={`
-                                flex-shrink-0 w-[170px] md:w-auto rounded-2xl p-4 md:p-5 text-white
-                                bg-gradient-to-br ${card.gradient}
-                                shadow-lg ${card.glow}
-                                transition-all duration-300 ease-out
-                                hover:scale-[1.03] hover:shadow-xl hover:shadow-red-500/25
-                                active:scale-[0.97]
-                                group relative overflow-hidden
-                            `}
-                        >
-                            {/* Decorative glow circle */}
-                            <div className="absolute -top-6 -right-6 w-24 h-24 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors duration-500" />
-                            <div className="absolute -bottom-8 -left-8 w-20 h-20 rounded-full bg-white/5 group-hover:bg-white/10 transition-colors duration-500" />
-
-                            <div className="relative z-10">
-                                <div className={`w-10 h-10 rounded-xl ${card.iconBg} flex items-center justify-center mb-3 group-hover:scale-110 transition-transform duration-300`}>
+                <div className="flex flex-col gap-2.5">
+                    {cards.map((c) => {
+                        const Icon = c.icon;
+                        return (
+                            <Link
+                                key={c.href}
+                                href={c.href}
+                                className="flex items-center gap-3.5 bg-white rounded-[18px] px-4 py-3.5 shadow-[0_3px_12px_rgba(30,10,5,0.06)] transition active:scale-[0.99] hover:shadow-md"
+                            >
+                                <div
+                                    className="flex-shrink-0 w-11 h-11 rounded-[14px] flex items-center justify-center"
+                                    style={{ background: c.bg }}
+                                >
                                     <Icon className="w-5 h-5 text-white" />
                                 </div>
-                                <h4 className="text-sm font-bold mb-1">{card.title}</h4>
-                                <p className="text-[11px] text-white/70 leading-relaxed mb-3">{card.desc}</p>
-                                <span className="inline-flex items-center gap-1 text-xs font-bold bg-white/15 border border-white/20 text-white px-3 py-1.5 rounded-lg group-hover:bg-white/25 transition-colors duration-300">
-                                    Empezar
-                                    <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform duration-300" />
-                                </span>
-                            </div>
-                        </Link>
-                    );
-                })}
+                                <div className="flex-1 min-w-0">
+                                    <h4 className="text-sm font-black text-gray-900">{c.title}</h4>
+                                    <p className="text-xs text-gray-400 font-semibold mt-0.5">{c.desc}</p>
+                                </div>
+                                <ChevronRight className="w-[18px] h-[18px] text-gray-300 flex-shrink-0" />
+                            </Link>
+                        );
+                    })}
+                </div>
+
+                {/* Medios de pago — solo MercadoPago */}
+                <div className="flex items-center justify-center gap-3 mt-5">
+                    <span className="text-[11.5px] font-bold text-gray-400">Pagás seguro con</span>
+                    <img src="/Mercado_Pago.svg.png" alt="MercadoPago" className="h-5 w-auto object-contain opacity-90" />
+                </div>
             </div>
         </section>
     );

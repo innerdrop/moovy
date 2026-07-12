@@ -1,7 +1,7 @@
 "use client";
 
 // Cart Modal Component - Centered modal with multi-vendor grouping
-import { X, Plus, Minus, Trash2, ShoppingBag, UserPlus, Store, User, Truck } from "lucide-react";
+import { X, Plus, Minus, Trash2, ShoppingBag, Store, User, Truck } from "lucide-react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useCartStore } from "@/store/cart";
@@ -52,39 +52,7 @@ export default function CartSidebar() {
 
                     {/* Items */}
                     <div className="flex-1 overflow-y-auto p-4">
-                        {!isLoggedIn ? (
-                            // Not logged in - show registration prompt
-                            <div className="text-center py-8">
-                                <div className="w-16 h-16 bg-[#e60012]/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <UserPlus className="w-8 h-8 text-[#e60012]" />
-                                </div>
-                                <h3 className="text-lg font-bold text-gray-900 mb-2">
-                                    ¡Registrate para comprar!
-                                </h3>
-                                <p className="text-gray-500 text-sm mb-6">
-                                    Para agregar productos y realizar tu primera compra, necesitás crear una cuenta.
-                                </p>
-                                <div className="space-y-3">
-                                    <Link
-                                        href="/empezar"
-                                        onClick={closeCart}
-                                        className="block w-full py-3 bg-[#e60012] text-white font-semibold rounded-xl hover:bg-[#cc000f] transition text-center"
-                                    >
-                                        Crear cuenta gratis
-                                    </Link>
-                                    <Link
-                                        href="/login"
-                                        onClick={closeCart}
-                                        className="block w-full py-3 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition text-center"
-                                    >
-                                        Ya tengo cuenta
-                                    </Link>
-                                </div>
-                                <p className="text-xs text-gray-400 mt-4">
-                                    ¡Ganá 250 puntos MOOVER con tu primera compra! 🎉
-                                </p>
-                            </div>
-                        ) : items.length === 0 ? (
+                        {items.length === 0 ? (
                             // Logged in but empty cart
                             <div className="text-center py-12">
                                 <ShoppingBag className="w-16 h-16 text-gray-300 mx-auto mb-4" />
@@ -176,8 +144,9 @@ export default function CartSidebar() {
                         )}
                     </div>
 
-                    {/* Footer - Only show if logged in and has items */}
-                    {isLoggedIn && items.length > 0 && (
+                    {/* Footer — visible con ítems (logueado o no). El login se pide recién
+                        al pagar: el invitado arma y ve su carrito, y se loguea en el checkout. */}
+                    {items.length > 0 && (
                         <div className="border-t p-4 space-y-4 flex-shrink-0">
                             {/* Clear Cart */}
                             <button
@@ -193,14 +162,37 @@ export default function CartSidebar() {
                                 <span className="text-moovy">{formatPrice(total)}</span>
                             </div>
 
-                            {/* Checkout Button */}
-                            <Link
-                                href="/checkout"
-                                onClick={closeCart}
-                                className="btn-primary w-full py-3 text-center block"
-                            >
-                                Ir al checkout
-                            </Link>
+                            {/* Checkout — logueado va directo; invitado pasa por login */}
+                            {isLoggedIn ? (
+                                <Link
+                                    href="/checkout"
+                                    onClick={closeCart}
+                                    className="btn-primary w-full py-3 text-center block"
+                                >
+                                    Ir al checkout
+                                </Link>
+                            ) : (
+                                <div className="space-y-2">
+                                    <Link
+                                        href="/login?callbackUrl=/checkout"
+                                        onClick={closeCart}
+                                        className="btn-primary w-full py-3 text-center block"
+                                    >
+                                        Iniciá sesión para pagar
+                                    </Link>
+                                    <p className="text-center text-xs text-gray-400">
+                                        ¿Primera vez?{" "}
+                                        <Link
+                                            href="/empezar"
+                                            onClick={closeCart}
+                                            className="text-[#e60012] font-semibold hover:underline"
+                                        >
+                                            Creá tu cuenta
+                                        </Link>{" "}
+                                        y ganá 250 puntos 🎉
+                                    </p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

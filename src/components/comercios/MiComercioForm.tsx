@@ -147,14 +147,10 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
     const [savingSocial, setSavingSocial] = useState(false);
 
     const handleSubmit = async (formData: FormData) => {
-        const ok = await confirm({
-            title: "Guardar perfil",
-            message: "¿Querés guardar los cambios en tu perfil de comercio?",
-            confirmLabel: "Guardar",
-            cancelLabel: "Cancelar",
-        });
-        if (!ok) return;
-
+        // Guardar es NO destructivo: se ejecuta directo (spinner + toast), sin modal
+        // de confirmación. El botón "Guardar" ya ES la acción — pedir "¿querés guardar?"
+        // encima es un doble paso que ninguna app seria hace. La confirmación se reserva
+        // para lo destructivo (Descartar).
         setIsLoading(true);
         setError("");
         formData.append("image", imageUrl);
@@ -188,14 +184,7 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
     };
 
     const handleSaveSchedule = async () => {
-        const ok = await confirm({
-            title: "Guardar horarios",
-            message: "¿Querés guardar los cambios en los horarios de atención?",
-            confirmLabel: "Guardar",
-            cancelLabel: "Cancelar",
-        });
-        if (!ok) return;
-
+        // Guardado directo, sin confirmación (misma lógica que el perfil).
         setSavingSchedule(true);
         setError("");
         // Horarios siempre activos — scheduleEnabled = true al guardar
@@ -551,14 +540,7 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
                 </p>
 
                 <form action={async (formData: FormData) => {
-                    const ok = await confirm({
-                        title: "Guardar redes sociales",
-                        message: "¿Querés guardar los cambios en tus redes sociales?",
-                        confirmLabel: "Guardar",
-                        cancelLabel: "Cancelar",
-                    });
-                    if (!ok) return;
-
+                    // Guardado directo, sin confirmación.
                     setSavingSocial(true);
                     const result = await updateMerchant(formData);
                     if (result?.error) { toast.error(result.error); setError(result.error); }

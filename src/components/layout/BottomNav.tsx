@@ -71,8 +71,12 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
 
     return (
         <>
-            <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] lg:hidden">
-                <div className="flex items-end justify-between h-16 max-w-lg mx-auto relative px-2">
+            {/* feat/rediseno-home: barra inferior como píldora flotante */}
+            <nav
+                className="fixed left-1/2 -translate-x-1/2 z-50 w-[calc(100%-24px)] max-w-[388px] bg-white/90 backdrop-blur-md border border-[#f0ece9] rounded-full shadow-[0_10px_32px_rgba(30,10,5,0.16)] lg:hidden"
+                style={{ bottom: 'max(12px, env(safe-area-inset-bottom))' }}
+            >
+                <div className="flex items-center justify-between h-[62px] relative px-2.5">
                     {items.map((item) => {
                         const isActive = pathname === item.href ||
                             (item.href !== "/" && pathname.startsWith(item.href));
@@ -101,7 +105,7 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                                         >
                                             <Icon className={`w-7 h-7 text-white ${isLoggedIn ? "fill-current" : ""}`} />
                                         </div>
-                                        <span className={`text-xs mt-1 font-bold ${isLoggedIn ? "text-[#e60012]" : "text-gray-400"}`}>
+                                        <span className={`text-[10px] mt-1 font-bold ${isLoggedIn ? "text-[#e60012]" : "text-gray-400"}`}>
                                             {item.label}
                                         </span>
                                     </Link>
@@ -129,9 +133,6 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                         );
                     })}
                 </div>
-
-                {/* Safe area padding */}
-                <div className="h-[env(safe-area-inset-bottom)]" />
             </nav>
             {/* Auth Required Modal */}
             {showAuthModal && (
@@ -178,3 +179,4 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
         </>
     );
 }
+                      

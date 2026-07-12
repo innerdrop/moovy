@@ -2019,11 +2019,13 @@ COPY public."AdPlacement" (id, "merchantId", type, status, "startsAt", "endsAt",
 --
 
 COPY public."Address" (id, "userId", label, street, number, apartment, neighborhood, city, province, "zipCode", latitude, longitude, "isDefault", "createdAt", "updatedAt", "deletedAt") FROM stdin;
-cmqz5vwoc00gaxhd8v0vglrcm	cmqz5vwo300g5xhd8ok66ryk2	Casa	Onas	250	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8078	-68.3098	t	2026-06-29 11:55:53.772	2026-06-29 11:55:53.772	\N
 cmqz5vwwy00ggxhd88dx3zolb	cmqz5vwws00gbxhd8xdblt14z	Casa	Deloqui	500	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8035	-68.3012	t	2026-06-29 11:55:54.082	2026-06-29 11:55:54.082	\N
 cmqz5vx5w00gmxhd8vmbf5m8b	cmqz5vx5l00ghxhd8xnar59ix	Casa	Yaganes	300	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8092	-68.307	t	2026-06-29 11:55:54.404	2026-06-29 11:55:54.404	\N
 cmr40aqu3000cmh52en2nv1mx	cmqz5vwfh00fzxhd8bchmmyw5	Prueba Comprador	Paseo de la Plaza	2065	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.82898400000001	-68.3487997	f	2026-07-02 21:18:19.227	2026-07-02 21:30:39.295	2026-07-02 21:30:39.294
 cmqz5vwfn00g4xhd871muduw0	cmqz5vwfh00fzxhd8bchmmyw5	Casa	Paseo de la Plaza	2065		\N	Ushuaia	Tierra del Fuego	\N	-54.82898400000001	-68.3487997	f	2026-06-29 11:55:53.459	2026-07-02 21:30:54.653	\N
+cmrgs2t200004e1n63bw9108t	cmqz5vwo300g5xhd8ok66ryk2	Depto	Paseo de la Plaza	2065	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.82898400000001	-68.3487997	f	2026-07-11 19:49:12.216	2026-07-11 19:49:32.205	2026-07-11 19:49:32.202
+cmqz5vwoc00gaxhd8v0vglrcm	cmqz5vwo300g5xhd8ok66ryk2	Casa	Onas	250	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.8078	-68.3098	f	2026-06-29 11:55:53.772	2026-07-11 19:50:39.375	\N
+cmrgs3vqh0007e1n6qzp7fc06	cmqz5vwo300g5xhd8ok66ryk2	Mi Casa	Paseo de la Plaza	2065	\N	\N	Ushuaia	Tierra del Fuego	\N	-54.82898400000001	-68.3487997	t	2026-07-11 19:50:02.346	2026-07-11 19:50:39.381	\N
 \.
 
 
@@ -2323,8 +2325,6 @@ COPY public."HeroSlide" (id, title, subtitle, "buttonText", "buttonLink", gradie
 --
 
 COPY public."HomeCategorySlot" (id, "categoryId", "order", image, icon, label, "isActive", "createdAt", "updatedAt") FROM stdin;
-cmr40tjso000gmh523yajlmub	cmqz5vqx1000hxhd86j3rab6t	1	\N	\N	\N	t	2026-07-02 21:32:56.567	2026-07-02 21:32:56.567
-cmr40tsjg000imh52rtffmtzg	cmqz5vqy3000lxhd8hcaqu9dk	2	\N	\N	\N	t	2026-07-02 21:33:07.901	2026-07-02 21:33:07.901
 \.
 
 
@@ -2396,7 +2396,7 @@ cmqz5vt6v0084xhd80bepwszu	Café Beagle	cafe-beagle	Café de especialidad y paste
 cmqz5vtiv009exhd8vvyf8nns	Farmacia del Canal	farmacia-del-canal	Farmacia con delivery rápido. Medicamentos y cuidado personal.	https://picsum.photos/seed/moovy-logo-farmacia-del-canal/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio7@somosmoovy.com	+5492901555007	Av. San Martín 640, Ushuaia	-54.8061	-68.3055	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:49.684	2026-06-29 11:55:49.684	Farmacia	cmqz5vtik0097xhd8n00sds6h	2026-06-29 11:55:49.687	2026-06-29 11:55:49.687	4.4	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:49.684	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:49.687	\N
 cmqz5vttb00aoxhd8gww43etq	Verdulería La Huerta Fueguina	verduleria-la-huerta	Frutas y verduras frescas, selección diaria.	https://picsum.photos/seed/moovy-logo-verduleria-la-huerta/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio8@somosmoovy.com	+5492901555008	Karukinka 210, Ushuaia	-54.7995	-68.3155	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:50.06	2026-06-29 11:55:50.06	Verdulería	cmqz5vtsy00ahxhd807lierxs	2026-06-29 11:55:50.063	2026-06-29 11:55:50.063	4.6	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:50.06	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:50.063	\N
 cmqz5vrhh001qxhd80605qjj8	Patagonia Drinks	patagonia-drinks	Las mejores bebidas del fin del mundo. Cervezas, gaseosas y más.	https://picsum.photos/seed/moovy-logo-patagonia-drinks/600/600	\N	t	f	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio1@somosmoovy.com	+5492901555001	San Martín 456, Ushuaia	-54.8069	-68.3042	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:47.04	2026-06-29 11:55:47.04	Kiosco	cmqz5vrgz001jxhd84w7eneza	2026-06-29 11:55:47.045	2026-07-06 23:22:37.811	4.7	\N	\N	\N	10	\N	0	\N	\N	t	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:47.04	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:47.045	\N
-cmqz5vswb006uxhd8c5bcq86n	Burger del Fin del Mundo	burger-fin-del-mundo	Hamburguesas smash con ingredientes locales.	https://picsum.photos/seed/moovy-logo-burger-fin-del-mundo/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio5@somosmoovy.com	+5492901555005	9 de Julio 120, Ushuaia	-54.8058	-68.3075	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:48.872	2026-06-29 11:55:48.872	Hamburguesería	cmqz5vsvy006nxhd8cea1yx8k	2026-06-29 11:55:48.876	2026-07-08 23:22:52.859	4.5	\N	\N	Burger del Fin del Mundo	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	+5492901222222	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:48.872	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:48.876	\N
+cmqz5vswb006uxhd8c5bcq86n	Burger del Fin del Mundo	burger-fin-del-mundo	Hamburguesas smash con ingredientes locales.	https://picsum.photos/seed/moovy-logo-burger-fin-del-mundo/600/600	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1783738853368-logo.webp	t	t	t	{"1":[{"open":"09:00","close":"22:00"}],"2":[{"open":"09:00","close":"22:00"}],"3":[{"open":"09:00","close":"22:00"}],"4":[{"open":"09:00","close":"22:00"}],"5":[{"open":"09:00","close":"23:00"}],"6":[{"open":"00:00","close":"23:59"}],"7":null}	f	comercio5@somosmoovy.com	+5492901555005	9 de Julio 120, Ushuaia	-54.8058	-68.3075	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:48.872	2026-06-29 11:55:48.872	Hamburguesería	cmqz5vsvy006nxhd8cea1yx8k	2026-06-29 11:55:48.876	2026-07-11 03:22:40.756	4.5	\N	\N	Burger del Fin del Mundo	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	+5492901222222	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:48.872	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:48.876	\N
 \.
 
 
@@ -3979,6 +3979,7 @@ COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoin
 
 COPY public."SavedCart" (id, "userId", items, "merchantId", "reminderCount", "lastRemindedAt", "recoveredAt", "cartValue", "createdAt", "updatedAt") FROM stdin;
 cmr3yq4hg0000mh52b79k92y7	cmqxvnefm0009127w2od9xv70	[{"id": "cmqz5vt740088xhd8njzv9jaq-default-1783024456446", "name": "Flat White", "type": "product", "image": "https://picsum.photos/seed/moovy-flat-white/600/600", "price": 2900, "quantity": 1, "productId": "cmqz5vt740088xhd8njzv9jaq", "merchantId": "cmqz5vt6v0084xhd80bepwszu"}]	\N	0	\N	\N	2900	2026-07-02 20:34:17.519	2026-07-02 20:34:17.519
+cmrgslj6o0009e1n6d892njy9	cmqz5vwfh00fzxhd8bchmmyw5	[{"id": "cmqz5vs80004exhd844e7zog3-default-1783800224678", "name": "Cordero Fueguino (1/2)", "type": "product", "image": "https://picsum.photos/seed/moovy-cordero-fueguino/600/600", "price": 28000, "quantity": 1, "productId": "cmqz5vs80004exhd844e7zog3", "merchantId": "cmqz5vs7q004axhd8fyr7ixm3", "merchantName": "La Estancia del Sur"}]	\N	0	\N	\N	28000	2026-07-11 20:03:45.886	2026-07-11 20:03:45.886
 \.
 
 
@@ -4079,12 +4080,12 @@ cmqz5vvwa00fjxhd8xtqudcev	repartidor3@somosmoovy.com	$2b$12$yl/hOmdNw3z0SofyaiHf
 cmqz5vw6e00frxhd8xzbnhvi3	repartidor4@somosmoovy.com	$2b$12$SCzlk3i5xewt6sCl6HzMlOzi6FTj2nomvuW61Jn149v/QANGQt5Ua	Nico Veloz	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vw6e00fsxhd8fi2f7iwm	\N	2026-06-29 11:55:53.127	2026-06-29 11:55:53.127	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vwws00gbxhd8xdblt14z	cliente3@somosmoovy.com	$2b$12$9q91L9dMys9zsNJgBBKjgO3rmqK5OFExmfJJEbUojP7g8AJLw4Ufa	Lucía Test	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwws00gcxhd8ifwc7bkh	\N	2026-06-29 11:55:54.076	2026-06-29 11:55:54.076	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vx5l00ghxhd8xnar59ix	cliente4@somosmoovy.com	$2b$12$EfMi32tg/BNF9KGFede11OJs3dScKvyk3ted7lL7Ds5MFgBQ80Hve	Marco Demo	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vx5l00gixhd8lk39samr	\N	2026-06-29 11:55:54.393	2026-06-29 11:55:54.393	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
+cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-07-11 21:53:29.247	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-11 21:53:29.246	\N
 cmqz5vva600f3xhd89zcsytov	repartidor1@somosmoovy.com	$2b$12$wM6iMD5E3RXXdUr5GYnjc.ywxwzoF08aXzL.JKLJSHm0NzMKtQ3RW	Mateo Rider	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vva600f4xhd8q48id7j2	\N	2026-06-29 11:55:51.966	2026-06-29 12:11:39.124	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
-cmqz5vwfh00fzxhd8bchmmyw5	cliente1@somosmoovy.com	$2b$12$7ZFsSIglT1XVS/UewQDNYO4T.UjlCul7h9mv6sCYTJ4N.xVVgJYNO	Juana Cliente	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwfh00g0xhd8w7w3k570	\N	2026-06-29 11:55:53.453	2026-07-02 21:17:16.559	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-02 21:17:16.557	\N
-cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-07-06 17:01:28.941	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
-cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.37Whxp97s8kSiR7D.jXmok.DPmVC8uu	 				COMERCIO	\N	\N	0	0	f	cmqz5vsvy006oxhd85im89bep	\N	2026-06-29 11:55:48.862	2026-07-08 23:22:52.859	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-07 14:53:34.731	\N
 cmqz5vrgz001jxhd84w7eneza	comercio1@somosmoovy.com	$2b$12$yF6/4feNZrmKkGW/zI752eg44jwODi1JejVllozBQ6DuoL3r0r.vm	Carlos Patagonia	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vrgz001kxhd8fe0upbjz	\N	2026-06-29 11:55:47.028	2026-07-06 23:20:58.373	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:20:58.372	\N
 cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-07-06 23:32:32.958	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:32:32.921	\N
+cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.37Whxp97s8kSiR7D.jXmok.DPmVC8uu	 				COMERCIO	\N	\N	0	0	f	cmqz5vsvy006oxhd85im89bep	\N	2026-06-29 11:55:48.862	2026-07-11 03:01:00.38	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-07 14:53:34.731	\N
+cmqz5vwfh00fzxhd8bchmmyw5	cliente1@somosmoovy.com	$2b$12$7ZFsSIglT1XVS/UewQDNYO4T.UjlCul7h9mv6sCYTJ4N.xVVgJYNO	Juana Cliente	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwfh00g0xhd8w7w3k570	\N	2026-06-29 11:55:53.453	2026-07-11 19:45:40.136	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-02 21:17:16.557	\N
 \.
 
 
@@ -4100,6 +4101,8 @@ cmr9gvuyi0001pygohno5fzyn	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd8
 cmr9ufs770001wqmnxf42ts4e	cmqz5vrgz001jxhd84w7eneza	LOGIN	User	cmqz5vrgz001jxhd84w7eneza	{"method":"credentials"}	\N	\N	2026-07-06 23:20:53.634
 cmr9um4gn0003wqmnj37zh32v	cmqz5vsvy006nxhd8cea1yx8k	LOGIN	User	cmqz5vsvy006nxhd8cea1yx8k	{"method":"credentials"}	\N	\N	2026-07-06 23:25:49.463
 cmr9uupfm0006wqmnjkz2y392	cmqz5vwo300g5xhd8ok66ryk2	LOGIN	User	cmqz5vwo300g5xhd8ok66ryk2	{"method":"credentials"}	\N	\N	2026-07-06 23:32:29.89
+cmrgry9gv0001e1n6gca9v1hy	cmqz5vwfh00fzxhd8bchmmyw5	LOGIN	User	cmqz5vwfh00fzxhd8bchmmyw5	{"method":"credentials"}	\N	\N	2026-07-11 19:45:40.205
+cmrgwhnd7000be1n6n9givedj	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd86fq6wm5d	{"method":"credentials"}	\N	\N	2026-07-11 21:52:43.146
 \.
 
 

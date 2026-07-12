@@ -10,7 +10,7 @@ import {
 
 export default function Footer() {
     return (
-        <footer className="bg-gray-900 text-white font-sans pt-10 pb-6 mt-6">
+        <footer className="bg-[#1c1917] text-white font-sans pt-10 pb-28 lg:pb-6 mt-6 rounded-t-[32px]">
             <div className="max-w-7xl mx-auto px-5">
                 {/* Top section: Brand + columns */}
                 <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-8">
@@ -87,8 +87,16 @@ export default function Footer() {
                 </div>
 
                 {/* Bottom bar */}
-                <div className="border-t border-gray-800 pt-5 text-center text-xs text-gray-500">
-                    <p>&copy; {new Date().getFullYear()} MOOVY. Todos los derechos reservados.</p>
+                <div className="border-t border-[#2c2825] pt-5 flex items-center justify-between gap-3 flex-wrap text-xs text-gray-500">
+                    <p>&copy; {new Date().getFullYear()} MOOVY · Ushuaia, TDF</p>
+                    <a
+                        href="https://instagram.com/somosmoovy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 hover:text-white transition"
+                    >
+                        <Instagram className="w-3.5 h-3.5" /> @somosmoovy
+                    </a>
                 </div>
             </div>
         </footer>

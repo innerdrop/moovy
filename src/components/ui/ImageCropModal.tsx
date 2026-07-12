@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, ZoomIn, ZoomOut, Check, RotateCcw } from "lucide-react";
 
 interface ImageCropModalProps {
@@ -27,6 +28,10 @@ export default function ImageCropModal({
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
     const [imageLoaded, setImageLoaded] = useState(false);
+    // Portal: el modal se renderiza en <body>, FUERA del <form> que lo invoca.
+    // Así ningún click/Enter/foco dentro del modal puede disparar el submit del form.
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => setMounted(true), []);
 
     // Load image
     useEffect(() => {
@@ -36,7 +41,13 @@ export default function ImageCropModal({
             imageRef.current = img;
             setImageLoaded(true);
         };
+        img.onerror = () => {
+            // Formato que el navegador no puede decodificar (raro con image/*): cerramos
+            // el modal en vez de quedar colgados. El server igual valida el archivo real.
+            onClose();
+        };
         img.src = imageSrc;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [imageSrc]);
 
     // Draw canvas
@@ -105,27 +116,47 @@ export default function ImageCropModal({
 
     const handleCrop = () => {
         const canvas = canvasRef.current;
-        if (!canvas) return;
+        const img = imageRef.current;
+        if (!canvas || !img) return;
 
-        // Create output canvas at desired size
-        const outCanvas = document.createElement("canvas");
         const outH = aspectRatio === 1 ? outputSize : Math.round(outputSize / aspectRatio);
+        const outCanvas = document.createElement("canvas");
         outCanvas.width = outputSize;
         outCanvas.height = outH;
 
         const outCtx = outCanvas.getContext("2d");
         if (!outCtx) return;
+        // Downscale de alta calidad (evita bordes dentados / pixelado).
+        outCtx.imageSmoothingEnabled = true;
+        outCtx.imageSmoothingQuality = "high";
 
-        // Copy from preview canvas to output canvas
-        const srcH = aspectRatio === 1 ? canvas.width : canvas.width / aspectRatio;
-        outCtx.drawImage(canvas, 0, 0, canvas.width, srcH, 0, 0, outputSize, outH);
+        // CLAVE de calidad: renderizamos el recorte desde la imagen ORIGINAL (imageRef),
+        // NO desde el canvas de preview (que está a resolución de pantalla). Reproducimos
+        // exactamente el encuadre del preview escalando por outputSize/previewSize, así
+        // la salida es un recorte nítido a resolución real, sin upscaling borroso.
+        const scale = outputSize / canvas.width;
+        const size = outputSize;
+        const h = outH;
+        const imgAspect = img.width / img.height;
+        let drawW: number, drawH: number;
+        if (imgAspect > aspectRatio) {
+            drawH = h * zoom;
+            drawW = drawH * imgAspect;
+        } else {
+            drawW = size * zoom;
+            drawH = drawW / imgAspect;
+        }
+        const drawX = (size - drawW) / 2 + offset.x * scale;
+        const drawY = (h - drawH) / 2 + offset.y * scale;
+
+        outCtx.drawImage(img, drawX, drawY, drawW, drawH);
 
         outCanvas.toBlob(
             (blob) => {
                 if (blob) onCrop(blob);
             },
             "image/jpeg",
-            0.85
+            0.9
         );
     };
 
@@ -138,13 +169,15 @@ export default function ImageCropModal({
     const canvasSize = 300;
     const canvasH = aspectRatio === 1 ? canvasSize : Math.round(canvasSize / aspectRatio);
 
-    return (
+    if (!mounted) return null;
+
+    return createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full overflow-hidden">
                 {/* Header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
                     <h3 className="font-bold text-gray-900">Ajustar imagen</h3>
-                    <button onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 transition rounded-lg hover:bg-gray-100">
+                    <button type="button" onClick={onClose} className="p-1.5 text-gray-400 hover:text-gray-600 transition rounded-lg hover:bg-gray-100">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
@@ -199,6 +232,7 @@ export default function ImageCropModal({
                         />
                         <ZoomIn className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <button
+                            type="button"
                             onClick={handleReset}
                             className="p-1.5 text-gray-400 hover:text-gray-600 transition rounded-lg hover:bg-gray-100 ml-1"
                             title="Restablecer"
@@ -214,12 +248,14 @@ export default function ImageCropModal({
                 {/* Actions */}
                 <div className="flex gap-3 px-5 py-4 border-t border-gray-100">
                     <button
+                        type="button"
                         onClick={onClose}
                         className="flex-1 px-4 py-2.5 text-sm font-medium text-gray-600 bg-gray-100 rounded-xl hover:bg-gray-200 transition"
                     >
                         Cancelar
                     </button>
                     <button
+                        type="button"
                         onClick={handleCrop}
                         className="flex-1 px-4 py-2.5 text-sm font-bold text-white bg-red-500 rounded-xl hover:bg-red-600 transition flex items-center justify-center gap-2"
                     >
@@ -228,6 +264,7 @@ export default function ImageCropModal({
                     </button>
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

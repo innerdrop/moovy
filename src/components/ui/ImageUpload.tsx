@@ -34,7 +34,10 @@ export default function ImageUpload({ value, onChange, disabled, compact, cropAs
             const formData = new FormData();
             formData.append("file", uploadBlob);
 
-            const response = await fetch("/api/upload", {
+            // En subidas con recorte pasamos maxWidth = tamaño del recorte, así el server
+            // no baja la resolución de una portada grande (1600px) al default (1200px).
+            const qs = cropAspect ? `?maxWidth=${cropOutputSize}` : "";
+            const response = await fetch(`/api/upload${qs}`, {
                 method: "POST",
                 body: formData,
             });
@@ -98,8 +101,8 @@ export default function ImageUpload({ value, onChange, disabled, compact, cropAs
                 img.src = event.target?.result as string;
                 img.onload = () => {
                     const canvas = document.createElement("canvas");
-                    const MAX_WIDTH = 1024;
-                    const MAX_HEIGHT = 1024;
+                    const MAX_WIDTH = 1600;
+                    const MAX_HEIGHT = 1600;
                     let width = img.width;
                     let height = img.height;
 
@@ -130,7 +133,7 @@ export default function ImageUpload({ value, onChange, disabled, compact, cropAs
                         } else {
                             reject(new Error("Canvas to Blob failed"));
                         }
-                    }, "image/jpeg", 0.7);
+                    }, "image/jpeg", 0.85);
                 };
                 img.onerror = (error) => reject(error);
             };

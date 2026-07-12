@@ -29,7 +29,6 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
     const image = product.images?.[0]?.url;
     const merchantName = product.merchant?.name || "";
     const addItem = useCartStore((s) => s.addItem);
-    const openCart = useCartStore((s) => s.openCart);
     const [added, setAdded] = useState(false);
 
     // Cerrado = pausa manual O fuera de horario. Respeta isCurrentlyOpen si vino calculado.
@@ -60,7 +59,7 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
     };
 
     return (
-        <div className="group border border-gray-100 rounded-xl overflow-hidden bg-white hover-lift tap-bounce">
+        <div className="group border border-gray-100 rounded-[18px] overflow-hidden bg-white hover-lift tap-bounce">
             <Link href={`/productos/${encodeURIComponent(product.slug)}`}>
                 <div className="aspect-square bg-gray-100 relative overflow-hidden">
                     {image ? (
@@ -74,48 +73,50 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
                             <Store className="w-12 h-12 text-gray-200" />
                         </div>
                     )}
-                    {product.isFeatured && (
+                    {/* Badge: Cerrado (prioridad) o Destacado */}
+                    {isClosed ? (
+                        <span className="absolute top-2 left-2 bg-red-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                            {closedLabel}
+                        </span>
+                    ) : product.isFeatured ? (
                         <span className="absolute top-2 left-2 bg-[#e60012] text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-sm">
                             Destacado
                         </span>
-                    )}
+                    ) : null}
                 </div>
             </Link>
 
-            <div className="p-3 relative">
-                {/* Add to cart button — funcional. Si la tienda está cerrada, el botón
-                    queda en gris y no agrega al carrito (rama feat/bloqueo-comercio-cerrado). */}
-                <button
-                    onClick={handleAdd}
-                    disabled={isClosed}
-                    title={isClosed ? `Tienda cerrada${product.merchant?.nextOpenLabel ? ` — ${product.merchant.nextOpenLabel}` : ""}` : undefined}
-                    className={`absolute -top-4 right-3 w-8 h-8 rounded-xl flex items-center justify-center text-lg font-bold shadow-md border-[3px] border-white transition-all z-10 ${
-                        isClosed
-                            ? "bg-gray-300 text-gray-500 cursor-not-allowed"
-                            : added
-                                ? "bg-green-500 text-white hover:scale-110"
-                                : "bg-[#e60012] hover:bg-[#cc000f] text-white hover:scale-110"
-                    }`}
-                >
-                    {added ? <Check className="w-4 h-4" /> : <Plus className="w-4 h-4" />}
-                </button>
-                {isClosed && (
-                    <span className="absolute top-2 left-2 bg-red-500/90 text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
-                        {closedLabel}
-                    </span>
-                )}
-
+            <div className="p-3">
                 {merchantName && (
-                    <p className="text-xs text-gray-400 font-medium mb-0.5 truncate">{merchantName}</p>
+                    <p className="text-[11px] text-gray-400 font-semibold mb-0.5 truncate">{merchantName}</p>
                 )}
                 <Link href={`/productos/${encodeURIComponent(product.slug)}`}>
-                    <h3 className="text-base font-bold text-gray-900 group-hover:text-[#e60012] transition line-clamp-2 leading-tight mb-1">
+                    <h3 className="text-sm font-bold text-gray-900 group-hover:text-[#e60012] transition line-clamp-2 leading-tight mb-2 min-h-[36px]">
                         {product.name}
                     </h3>
                 </Link>
-                <p className="text-lg font-extrabold text-[#e60012]">
-                    ${product.price.toLocaleString("es-AR")}
-                </p>
+
+                {/* Precio (negro) + botón "Agregar" (pill rojo) — como el diseño nuevo */}
+                <div className="flex items-center justify-between gap-2">
+                    <span className="text-[16.5px] font-black text-gray-900">
+                        ${product.price.toLocaleString("es-AR")}
+                    </span>
+                    <button
+                        onClick={handleAdd}
+                        disabled={isClosed}
+                        title={isClosed ? `Tienda cerrada${product.merchant?.nextOpenLabel ? ` — ${product.merchant.nextOpenLabel}` : ""}` : "Agregar al carrito"}
+                        className={`inline-flex items-center gap-1 text-xs font-black px-3 py-1.5 rounded-full transition active:scale-95 flex-shrink-0 ${
+                            isClosed
+                                ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                                : added
+                                    ? "bg-green-500 text-white"
+                                    : "bg-[#e60012] text-white shadow-[0_4px_10px_rgba(230,0,18,0.3)] hover:bg-[#cc000f]"
+                        }`}
+                    >
+                        {added ? <Check className="w-3.5 h-3.5" /> : <Plus className="w-3.5 h-3.5" strokeWidth={3} />}
+                        {isClosed ? "Cerrado" : added ? "Agregado" : "Agregar"}
+                    </button>
+                </div>
             </div>
         </div>
     );
