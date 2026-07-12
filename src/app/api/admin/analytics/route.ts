@@ -97,10 +97,12 @@ export async function GET(request: NextRequest): Promise<NextResponse<AnalyticsR
         const grossRevenue = periodOrders.reduce((sum, o) => sum + o.total, 0);
         const averageTicket = totalOrders > 0 ? grossRevenue / totalOrders : 0;
 
-        // Calculate MOOVY commission (8% merchant + 12% seller from orders)
-        // Simplified: assume average 8% on all orders delivered
+        // Estimación GRUESA del ingreso Moovy para este dashboard: ~10% (comisión
+        // canónica de comercio mes 2+ y de vendedor, ambas 10%). El ingreso REAL
+        // por pedido vive en SubOrder.moovyCommission (ver /ops/revenue); esto es
+        // solo un aproximado para la vista de analytics.
         const deliveredOrders = periodOrders.filter(o => o.status === "DELIVERED");
-        const moovyRevenue = deliveredOrders.reduce((sum, o) => sum + (o.total * 0.08), 0);
+        const moovyRevenue = deliveredOrders.reduce((sum, o) => sum + (o.total * 0.10), 0);
 
         const cancelledCount = periodOrders.filter(o => o.status === "CANCELLED").length;
         const cancellationRate = totalOrders > 0 ? (cancelledCount / totalOrders) * 100 : 0;

@@ -3,6 +3,21 @@
 > Punto de retome para la próxima sesión. Generado al pausar el trabajo del checklist pre-launch.
 > Leé este archivo al volver para reconstruir el contexto.
 
+## Dónde estamos (actualizado 2026-07-12 — CIERRE, sesión de diseño)
+
+**Sesión de rediseño de la tienda pública. 2 ramas cerradas.**
+
+- **`feat/rediseno-home`** (commit `90e69bd`, **deployada a main**): rediseño integral. Header unificado que colapsa al scrollear · hero de una sola tarjeta · Promos del Mundial con cupones + **CRUD de cupones nuevo en `/ops/cupones`** · Banda MOOVER · cards y footer nuevos · **carrito de invitado** (login recién al pagar) · ubicación en el pill del header (se sacó la barra "Entregar en") · **campanita del comprador removida** (Fase 2) · `/puntos` con landing de conversión + animaciones + secciones modernizadas · `/empezar` movido dentro de `(store)` para heredar el header de la app · fix de overflow horizontal en desktop.
+- **`feat-ajuste-categorias-home`** (cerrada a develop): se quitaron las pills de categoría del hero + se agrandaron las 3 categorías destacadas. ⚠️ **Verificar si se deployó a main** (el rediseño grande sí está; esta rama chica quedó en develop).
+
+**El hilo de diseño NO terminó** — sigue con el Home Builder. Orden (simple→complejo): (1) cargar cupones reales en OPS para encender Promos del Mundial · (2) revisar umbrales de nivel MOOVER (40 pedidos/90d puede ser inalcanzable) · (3) stagger en cards del home · (4) **Home Builder / Organizador de Secciones del Home** ← PRÓXIMA, `HomeSection` + registry + UI OPS, deploy `-SchemaOnly`, `.next-branch` ya preparado (`feat organizador-secciones-home`) · (5) sección "Página de Inicio" en OPS (organizador + categorías home con uploader + banners) · (6) separación B2B de `Category` (migración aditiva, toca dinero) · (7) centro de notificaciones de comprador (Fase 2).
+
+**⚠️ Artefacto del sandbox de Cowork (NO del proyecto)**: durante la sesión el `.git` visto desde el sandbox se corrompió con bytes NUL en `.git/HEAD` y `.git/config` (git nativo en Windows quedó bien; se reparó a mano). Origen: cortar un `finish.ps1` a la mitad + el espejo del mount. Si git tira "bad config line" o "failed to resolve HEAD", reescribir `.git/HEAD` con `ref: refs/heads/develop`. No escribir en `.git` desde el sandbox salvo para reparar. **Recomendación: no cortar `finish.ps1`/`devmain.ps1` a la mitad.**
+
+**Lo pre-launch (del checklist) sigue igual que el 07-07** — nada de esta sesión lo tocó. Ver bloque de abajo.
+
+---
+
 ## Dónde estamos (actualizado 2026-07-07 — CIERRE)
 
 **Sesión de operativos + pulido de diseño. 9 ramas cerradas** (todas -NoDB): `fix/cron-broadcasts-auth-401` (el cron "en rojo desde junio" comparaba el header entero contra el secreto → 401 eterno; fix 2 líneas) · `chore/limpiar-completed` (deuda de código = CERO) · `style/ops-sidebar-fijo` (patrón app-shell: página no scrollea, columnas independientes, sin barra) · `chore/og-card-hecha-en-ushuaia` (tarjeta WhatsApp + ?v=2) · `chore/pwa-icono-m-blanca` (ficha roja, M blanca, zona segura) · `fix/envio-gratis-badge` (el "Envío Gratis" salía de un campo legacy que el motor ignora — 4 componentes mentían precio; ahora sale de freeDeliveryMinimum real) · `feat/portada-comercio` (campo banner huérfano conectado: upload 16:5 guía 1600×500, header del perfil, tarjetas anchas de la home) · `style/cards-producto-compactas` (~20% menos, imagen 4:3) · docs.

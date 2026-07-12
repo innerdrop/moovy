@@ -1,5 +1,7 @@
 # Moovy — Estado del proyecto
-Última actualización: 2026-07-07
+Última actualización: 2026-07-12
+
+> **Sesión 2026-07-11/12 (diseño — resumen)**: rediseño integral de la tienda pública, **deployado a main**. Rama `feat/rediseno-home` (commit `90e69bd`): header unificado que colapsa al scrollear · hero de una sola tarjeta roja · Promos del Mundial (con cupones) + **CRUD de cupones nuevo en `/ops/cupones`** · Banda MOOVER · cards y footer nuevos · carrito de invitado (login recién al pagar) · ubicación en el pill del header (se sacó la barra "Entregar en") · campanita pospuesta a Fase 2 · `/puntos` con landing de conversión + animaciones de scroll + secciones modernizadas (ejemplo claro, bonos con jerarquía, niveles scrolleables + "el programa en detalle") · `/empezar` rediseñado DENTRO de `(store)` para heredar el header/nav de la app · fix de overflow horizontal en desktop. Rama chica `feat-ajuste-categorias-home` (cerrada a develop): se quitaron las pills de categoría bajo el buscador y se agrandaron las 3 categorías destacadas. **El hilo de diseño NO terminó**: sigue con el Home Builder (ver "Hilo de diseño" abajo; `.next-branch` ya preparado). ⚠️ Verificar si `feat-ajuste-categorias-home` llegó a deployarse a main (quedó en develop; el rediseño grande sí está en main).
 
 > **Sesión 2026-07-07 (resumen)**: 9 ramas de operativos+diseño (cron broadcasts arreglado tras meses en rojo, panel OPS app-shell, tarjeta social e ícono PWA nuevos, "Envío Gratis" mentiroso eliminado, PORTADAS de comercio conectadas, cards compactas, deuda de código en CERO). Incidente de infra resuelto y blindado (reinicio Hostinger + sin auto-arranque → docker unless-stopped + pm2 startup; falta UptimeRobot, 10 min founder). Verificados en prod: motor por distancia, crontab completo, zonas, flags docs. Detalle: HANDOFF_PENDIENTES + CHANGELOG.
 
@@ -20,8 +22,8 @@
 | Cortina "Próximamente" | ✅ Rediseñada: "Hecha en Ushuaia, para Ushuaia" + foto local en duotono rojo + fuegos artificiales canvas con física real (solo laterales). Deployada. 🟡 Verificar tarjeta social de WhatsApp (`og-moovy.png` puede tener texto viejo horneado) |
 | Direcciones del comprador | ✅ Límite de 2 (defensa server) + barra "Entregar en" bajo el header. Deployado |
 | Liberación fondos MP a Moovy | 🟡 **NUEVO**: el `marketplace_fee` queda en "dinero a liquidar" (calendario propio a nivel app, distinto del "al instante" de la cuenta). Gestionar plazo con ejecutivo comercial MP + dimensionar capital de trabajo para payouts |
-| Config Biblia | 🟡 Bajar reserva MP de 8% → **7,6%** en OPS (hoy Moovy regala ~0,4% de su parte por pedido). Timeouts driver/comercio ya re-sincronizados (`fix-ops-config` corrido en local y prod) |
-| Comisión vendedor (código) | 🟡 CLAUDE.md dice 10% pero el código tiene 12% en 2 lugares (tarea #17) |
+| Config Biblia | ✅ Reserva MP bajada a **7,6%** (founder, 07-12). Categorías de la home cargadas en `/ops/categorias` (07-12). Timeouts driver/comercio re-sincronizados |
+| Comisión vendedor | ✅ Valor de OPS en **10** (founder, 07-12). 🟡 Falta verificar que no quede 12% hardcodeado en el código (a chequear por Claude) |
 | Auditoría pre-launch del código | 🟡 En curso (capa 1 knip hecha). Seguir dominio por dominio |
 | Candado de lanzamiento | ✅ Cortina confirmada tras cada deploy |
 | Deploy a prod | ✅ **TODO deployado** (3 batches esta sesión: motor+emails · cortina+direcciones · equipamiento+split). Develop limpio |
@@ -62,11 +64,28 @@
 
 ---
 
+## Hilo de diseño / Home (activo — sesión 2026-07-11/12)
+
+El rediseño de la tienda ya está en main. Lo que quedó abierto de este hilo, de simple a complejo:
+
+1. **Cargar cupones reales en OPS** para encender "Promos del Mundial" (la sección ya funciona, falta data). CRUD en `/ops/cupones`.
+2. **Revisar umbrales de nivel MOOVER** — 40 pedidos en 90 días puede ser inalcanzable para Ushuaia. Definir escalones realistas (decisión founder + ajuste de `PointsConfig`/niveles).
+3. **Animación stagger** en las filas de cards del home (aparición en cascada al scrollear). Nice-to-have.
+4. **Home Builder — Organizador de Secciones del Home** ← PRÓXIMA del hilo. Modelo `HomeSection` + registry + UI en OPS para reordenar/prender-apagar secciones. `.next-branch` ya preparado (`feat organizador-secciones-home`). Requiere deploy `-SchemaOnly`.
+5. **Sección "Página de Inicio" en OPS** — el organizador de arriba + gestión de categorías del home (uploader de imagen/label) + banners.
+6. **Separación B2B de `Category`** — migración aditiva, sensible porque toca dinero/comisiones. Va con cuidado.
+7. **Centro de notificaciones (campanita del comprador)** — pospuesto a Fase 2 por decisión founder.
+
+Menor: si al ver las 3 categorías destacadas en prod se las quiere aún más anchas (2 por fila en vez de 3), es un ajuste de 1 minuto en `CategoryGrid.tsx`.
+
+---
+
 ## Métricas
 
 - **Issues 🔴 abiertos**: 1 (ISSUE-004 cleanup data, día del launch).
-- **Prod**: TODO deployado (2 devmains esta sesión) — develop limpio.
-- **Ramas cerradas esta sesión**: 11 (`fix/cortina-identidad-ushuaia`, `feat/direcciones-limite-y-chip-header`, `fix/direcciones-barra-entregar-en`, `fix/asignacion-sin-filtro-equipamiento`, `fix/split-mp-cada-parte-paga-lo-suyo`, `fix/comision-vendedor-10`, `feat/moover-boost-lanzamiento-y-defaults`, `fix/auditoria-estados-crons`, `fix/seller-api-db-auth`, `fix/carrito-un-solo-comercio`, `fix/merchant-reject-atomico`, `fix/driver-payout-centavos` — 12 con la del payout).
+- **Prod (07-12)**: rediseño de la tienda deployado a main (`feat/rediseno-home`). ⚠️ Confirmar si `feat-ajuste-categorias-home` (categorías del home) también se deployó — quedó cerrada a develop.
+- **Ramas cerradas sesión 07-11/12 (diseño)**: 2 — `feat/rediseno-home` (rediseño integral + OPS de cupones), `feat-ajuste-categorias-home` (pills fuera + categorías destacadas más grandes).
+- **Ramas cerradas sesión 07-06/07 (histórico)**: 11 (`fix/cortina-identidad-ushuaia`, `feat/direcciones-limite-y-chip-header`, `fix/direcciones-barra-entregar-en`, `fix/asignacion-sin-filtro-equipamiento`, `fix/split-mp-cada-parte-paga-lo-suyo`, `fix/comision-vendedor-10`, `feat/moover-boost-lanzamiento-y-defaults`, `fix/auditoria-estados-crons`, `fix/seller-api-db-auth`, `fix/carrito-un-solo-comercio`, `fix/merchant-reject-atomico`, `fix/driver-payout-centavos` — 12 con la del payout).
 - **Auditoría pre-launch de código: CERRADA** (7 dominios, 4 críticos resueltos el mismo día).
 - **Bugs cazados en prueba real de prod**: 2 de dinero (equipamiento + split MP), verificados con pagos reales tras el fix.
 - **Ciclo E2E verificado en prod**: pago → split → asignación → PIN doble → DELIVERED → puntos idempotentes.

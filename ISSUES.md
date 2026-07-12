@@ -1,5 +1,5 @@
 # Moovy — Issues
-Última actualización: 2026-07-07
+Última actualización: 2026-07-12
 
 > **Fuente única de tareas pendientes.** Para histórico completo de issues resueltos en sprints anteriores → `.claude/CHANGELOG.md`.
 
@@ -21,6 +21,19 @@
 
 ## 🟡 IMPORTANTES (no bloquean lanzamiento)
 
+### Hilo de diseño / Home builder (sesión 2026-07-11/12) — ABIERTO
+
+El rediseño de la tienda ya está en main. Lo que quedó abierto de este hilo (simple → complejo):
+
+- **Cargar cupones reales en OPS** para encender "Promos del Mundial" (sección ya funciona, falta data). CRUD en `/ops/cupones`.
+- **Revisar umbrales de nivel MOOVER** — 40 pedidos en 90 días puede ser inalcanzable para Ushuaia (80k hab). Decisión founder + ajuste de niveles/`PointsConfig`.
+- **Animación stagger** en las filas de cards del home (cascada al scrollear). Nice-to-have.
+- **Home Builder — Organizador de Secciones del Home** ← PRÓXIMA del hilo. Modelo `HomeSection` + registry + UI OPS drag/toggle. `.next-branch` ya preparado (`feat organizador-secciones-home`). Deploy `-SchemaOnly`.
+- **Sección "Página de Inicio" en OPS** — organizador + gestión de categorías del home (uploader imagen/label) + banners.
+- **Separación B2B de `Category`** — migración aditiva, sensible (toca dinero/comisiones). Con cuidado.
+- **Centro de notificaciones (campanita del comprador)** — pospuesto a Fase 2 por decisión founder (la campanita del header del comprador se removió en el rediseño).
+- Menor: categorías destacadas más anchas (2 por fila) si al verlas en prod se prefiere — ajuste chico en `CategoryGrid.tsx`.
+
 ### Observaciones del checklist pre-launch pendientes (sesión 2026-06-09)
 > Detalle vivo + secuencia de ramas en `docs/HANDOFF_PENDIENTES.md`.
 
@@ -28,7 +41,7 @@
 
 - ✅ **`daily-revenue-summary` en el crontab del VPS** — VERIFICADO 2026-07-07: la línea ya estaba (`0 12 * * *` = 9 AM ART). Crontab completo: los 18 crons del código presentes + backup diario de DB (retención 30d). Pendiente de la misma pasada: confirmar en `/ops/crons` que broadcast y daily-revenue-summary corran en verde, y que el email de ingresos LLEGUE (si no llega → revisar SMTP prod).
 - ✅ **Cron "broadcast" en rojo / "Nunca corrió"** — RESUELTO (rama `fix/cron-broadcasts-auth-401`, 2026-07-07): el endpoint comparaba el header completo ("Bearer xxx") contra el secreto pelado → 401 eterno a crontab Y al "Ejecutar ahora". Fix de 2 líneas (extraer token como los otros 17). Verificar post-deploy: corridas OK en /ops/crons en ~10 min.
-- **Categorías de la home: tarea OPERATIVA** — configurar slots activos en `/ops/categorias` (en prod no hay ninguno).
+- ✅ **Categorías de la home** — HECHO (founder, 2026-07-12): slots activos configurados en `/ops/categorias`.
 - **Zonas de cobertura** — pintar/confirmar en `/ops/zonas-delivery`.
 - **A re-probar** (sin bug conocido, solo verificar): s2-2a-11 (bonus bienvenida pendiente), s2-2b-01 (email "registro recibido" al comercio), s3-3c-01 (errores OPS en toast no genérico), s4-4c-04 (variantes de producto), s7-7a-02 (bloqueo de pedido fuera de zona).
 - ✅ **500 en `/api/comercios/soporte/notificaciones`** — VERIFICADO 2026-07-07: responde 200 `{"count":0}`. Se arregló de rebote con los deploys (probablemente `fix/merchant-api-db-auth`). Cerrado sin rama.
@@ -39,7 +52,7 @@
 
 - ✅ **Deployar el batch** — HECHO 2026-07-02 (+ 2 batches más el 07-05/06: cortina+direcciones y equipamiento+split). Re-seed `DeliveryRate` ✓, cleanups ✓, `fix-ops-config` en local y prod ✓ (timeouts re-sincronizados), cortina ✓.
 - **Auditoría pre-launch del código (depuración total antes de main)** — EN CURSO. Capa 1 (knip) hecha; seguir dominio por dominio: pagos → motor logístico → comisiones/puntos → config OPS → auth → estados → crons. Cada dominio: hallazgos al registro; críticos se arreglan, el resto se archiva o difiere.
-- ✅ **Comisión vendedor marketplace 10%** — HECHO (rama `fix/comision-vendedor-10`, 2026-07-06). Alcance ampliado: también comercio 10% + tiers 10/9/8/7 en T&C, `/nosotros` y `/comisiones` (que prometía "0% lanzamiento" — REVISAR FOUNDER). **Pendiente post-deploy: setear 10 en `/ops/config-biblia` (el valor vivo en StoreSettings de prod sigue en 12) + deploy MODO SCHEMA.**
+- ✅ **Comisión vendedor marketplace 10%** — HECHO (rama `fix/comision-vendedor-10`, 2026-07-06). Alcance ampliado: también comercio 10% + tiers 10/9/8/7 en T&C, `/nosotros` y `/comisiones` (que prometía "0% lanzamiento" — REVISAR FOUNDER). ✅ **Valor de OPS seteado a 10** (founder, 2026-07-12). ✅ **Código verificado (Claude, 07-12): NO había bug de dinero activo** — el único caller del cálculo real (`orders/route.ts`) siempre pasa el valor de OPS (10%). ✅ **RESUELTO** (rama `fix/comision-vendedor-default-10`, 07-12): el default latente `sellerCommissionRate = 12` en `src/lib/orders/order-totals.ts` pasó a `10` (+ 2 comentarios stale del mismo archivo alineados a 10% canon), y el dashboard de analytics (`admin/analytics/route.ts`) dejó de estimar con 8% fijo + comentario "12% seller" (ahora ~10% con nota de que el ingreso real vive en `SubOrder.moovyCommission` / `/ops/revenue`).
 - **Config de OPS: verificar que cada parámetro funcione (no fantasma)** + ficha de documentación por parámetro accesible desde el ⓘ del panel.
 - **Seguimientos de emails** — fusionar redundantes (3 reembolsos, 2 reportes diarios, 2 avisos de nuevo repartidor); crear "subiste de nivel MOOVER"; cablear los de owner (necesitan sus crons).
 - **Repartidor cancela pedido aceptado** + motivo obligatorio + reasignación instantánea (estudiar bien antes de implementar).
@@ -72,16 +85,25 @@
 
 - **Qué pasó**: reinicio PROGRAMADO del VPS por Hostinger (avisado por email — CONFIRMADO por el founder). El contenedor `moovy-db` se apagó limpio a las 10:35 UTC y NO volvió a levantarse porque tenía `RestartPolicy=no`; pm2 tampoco tenía startup habilitado. Todo lo que toca DB dio 500 hasta el arranque manual (12:18 UTC). Lección: los mails de mantenimiento de Hostinger ahora son inofensivos (auto-arranque configurado en ambas capas), pero conviene leerlos igual.
 - ✅ **Fix inmediato aplicado**: `docker update --restart unless-stopped moovy-db` (verificar que quedó). DB arriba, schema in sync, pm2 recargado.
-- 🔴 **PRE-LAUNCH NUEVO: monitor externo de uptime (tarea founder, 10 min)** — nadie se enteró de ~2h de caída total. El endpoint YA EXISTE: `GET /api/health` (chequea DB + socket, 503 si degradado, no lo tapa la cortina). Falta: cuenta en UptimeRobot (o similar) → monitor HTTP a `https://somosmoovy.com/api/health` cada 1-5 min → alerta a email/celular. Sin esto NO se lanza (escenario 6 del pre-mortem).
+- ✅ **Monitor externo de uptime** — HECHO (founder, 2026-07-12): UptimeRobot apuntando a `GET /api/health`. Ya avisa si el sitio se cae.
 - ✅ **Resurrección de pm2 configurada** (2026-07-07): `pm2 startup` NO estaba habilitado (un reboot del VPS dejaba app+DB muertas). Hecho: servicio systemd `pm2-root` habilitado + `pm2 save`. Ambas capas (Docker y pm2) ahora se auto-levantan.
 
 ### Sesión 2026-07-03 → 06 — pendientes nuevos (de las pruebas reales en prod)
 
-- **Bajar reserva MP a 7,6% en la Biblia (OPS)** — en prod está en 8%: Moovy se auto-descuenta de más y le regala ~0,4% de su parte al comercio en cada pedido. 1 minuto, sin deploy.
+- ✅ **Reserva MP a 7,6% en la Biblia (OPS)** — HECHO (founder, 2026-07-12). (Reemplaza la nota vieja de "queda en 8%": el founder terminó bajándola a 7,6%.)
 - **Liberación del `marketplace_fee` retenida por MP** — la comisión de marketplace queda en "dinero a liquidar" con calendario propio a nivel aplicación (la config "al instante" de la cuenta NO aplica). Gestionar el plazo con el ejecutivo comercial de MP. Mientras: dimensionar capital de trabajo para payouts de drivers.
 - ✅ **Ciclo logístico completo en prod** — VERIFICADO 2026-07-06: aviso de viaje al driver (post-fix equipamiento) → PIN retiro → PIN entrega → DELIVERED → earn de puntos corrió idempotente (`pointsEarned=0`, correcto para montos de prueba; con $1.000+ acredita visible). Quedan como verificaciones menores: motor de envío a distintas distancias + reembolso automático al vencer la ventana de búsqueda (tarea #8).
 - ✅ **Tarjeta social de WhatsApp** — VERIFICADA VIEJA y REGENERADA (rama `chore/og-card-hecha-en-ushuaia`, 2026-07-07): arte original reciclado con el lema nuevo + `?v=2` en metadata para forzar re-scrape. Verificar tarjeta nueva post-deploy compartiendo el link.
 - ✅ **`driverPayoutAmount` redondeaba a pesos enteros** — RESUELTO (rama `fix/driver-payout-centavos`): snapshot inmutable (order-totals), estimación de la oferta (assignment-engine) y preview del quote (delivery.ts) ahora redondean a centavos (regla PAGOS). El precio del envío al cliente sigue en pesos enteros (deliberado).
+
+## ✅ Resueltos esta sesión (2026-07-11/12) — Rediseño de la tienda
+
+| Tema | Rama | Resumen |
+|---|---|---|
+| Rediseño integral de la tienda pública | `feat/rediseno-home` (commit `90e69bd`, **en main**) | Header unificado que colapsa al scrollear (la pregunta se desvanece, queda logo + buscador) · hero de una sola tarjeta roja (se eliminó el corte header/hero) · Promos del Mundial con cupones + **CRUD de cupones nuevo en `/ops/cupones`** (item en OpsSidebar) · Banda MOOVER (gated logged-out) · cards de comercio/producto y footer nuevos · **carrito de invitado** (se puede armar/ver sin login, login recién al pagar) · ubicación de entrega movida al pill "Ushuaia" del header (se sacó la barra "Entregar en") · **campanita del comprador removida** (pospuesta a Fase 2) · `/puntos` con landing orientado a conversión ($1.000 de bienvenida) + animaciones de scroll (`AnimateIn` + reduced-motion) + secciones modernizadas (ejemplo claro con branding, bonos con jerarquía, niveles scrolleables + "el programa en detalle") · `/empezar` movido DENTRO de `(store)` para heredar header/nav de la app + hero rojo + card de comprar blanca con acentos rojos · fix de overflow horizontal en desktop (blob del hero escapaba de `overflow-hidden` por `lg:static`). Fixes de perfil de comercio: se quitó el doble "Guardar" (sin `confirm()` en los saves) + compresión de imagen sin perder calidad. |
+| Ajuste de categorías del home | `feat-ajuste-categorias-home` (cerrada a develop) | Se quitaron las pills de categoría bajo el buscador del hero (ya están abajo como tarjetas con imagen en `CategoryGrid`) + se agrandaron las 3 categorías destacadas (imagen 92→118/130px + label más grande). ⚠️ Verificar si se deployó a main. |
+
+> **NOTA (artefacto del sandbox de Cowork, NO del proyecto)**: durante esta sesión el `.git` visto desde el sandbox se corrompió con bytes NUL en `.git/HEAD` y `.git/config` (git nativo en Windows quedó bien; se reparó reescribiendo esas líneas). Fue por cortar un `finish.ps1` a la mitad + el espejo del mount. Si en la próxima sesión git tira "bad config line" o "failed to resolve HEAD", es lo mismo: reescribir `.git/HEAD` con `ref: refs/heads/develop`. No tocar `.git` desde el sandbox salvo para reparar.
 
 ## ✅ Resueltos esta sesión (2026-07-03)
 

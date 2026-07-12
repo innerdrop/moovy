@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-07-12 (rama `fix/comision-vendedor-default-10`)
+
+fix: comisión de vendedor — el default latente pasa de 12% a 10% (canon). En src/lib/orders/order-totals.ts el parámetro sellerCommissionRate tenía default 12 (nunca se ejecutaba porque orders/route.ts siempre pasa el valor de OPS, pero era una bomba si un futuro caller lo omitía); ahora 10, con 2 comentarios del mismo archivo alineados a 10%. Además el dashboard de analytics (admin/analytics/route.ts) dejó de estimar el ingreso Moovy con 8% fijo + comentario "12% seller" (números viejos) — ahora ~10% con nota de que el ingreso real vive en SubOrder.moovyCommission (/ops/revenue). Sin cambios de comportamiento en el cobro real ni de schema.
+
+**Archivos:** ISSUES.md, PROJECT_STATUS.md, docs/HANDOFF_PENDIENTES.md, src/app/api/admin/analytics/route.ts, src/lib/orders/order-totals.ts
+
 ## 2026-07-12 (rama `feat/ajuste-categorias-home`)
 
 feat: ajustes del home — se quitan las pills de categorías bajo el buscador (ya están abajo como tarjetas con imagen) y se agrandan las 3 categorías destacadas (imagen más alta + label)

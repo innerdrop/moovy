@@ -81,7 +81,7 @@ export interface SubOrderFinancialSnapshotInput {
     /** Si es un SubOrder de seller marketplace, su id; sino null */
     sellerId: string | null;
     /**
-     * Rate del seller cuando aplica (default 12). Solo se usa si sellerId != null.
+     * Rate del seller cuando aplica (default 10, canon). Solo se usa si sellerId != null.
      * El comercio usa getEffectiveCommissionWithSource(merchantId) internamente.
      */
     sellerCommissionRate?: number;
@@ -149,7 +149,7 @@ export async function buildSubOrderFinancialSnapshot(
         operationalCost,
         merchantId,
         sellerId,
-        sellerCommissionRate = 12,
+        sellerCommissionRate = 10,
         precomputedMerchantRate,
         precomputedMerchantSource,
         zoneSnapshot,
@@ -182,7 +182,7 @@ export async function buildSubOrderFinancialSnapshot(
     // ── Reparto Financiero — Merchant / Seller ──────────────────────────────
     // Solo merchant pasa por la cascada de getEffectiveCommissionWithSource
     // (override > first-month > tier > fallback). Seller usa el rate del Biblia
-    // configurado en StoreSettings (12% por default desde día 1).
+    // configurado en StoreSettings (10% por default desde día 1, canon).
     let merchantCommissionRate: number | null = null;
     let merchantCommissionSource: CommissionSource | null = null;
 
