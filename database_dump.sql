@@ -778,6 +778,23 @@ CREATE TABLE public."HomeCategorySlot" (
 ALTER TABLE public."HomeCategorySlot" OWNER TO postgres;
 
 --
+-- Name: HomeSection; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."HomeSection" (
+    id text NOT NULL,
+    key text NOT NULL,
+    label text NOT NULL,
+    "order" integer DEFAULT 0 NOT NULL,
+    enabled boolean DEFAULT true NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."HomeSection" OWNER TO postgres;
+
+--
 -- Name: Listing; Type: TABLE; Schema: public; Owner: postgres
 --
 
@@ -2326,6 +2343,24 @@ COPY public."HeroSlide" (id, title, subtitle, "buttonText", "buttonLink", gradie
 
 COPY public."HomeCategorySlot" (id, "categoryId", "order", image, icon, label, "isActive", "createdAt", "updatedAt") FROM stdin;
 cmrhwtsaa0001evvy1jwx92fz	cmqz5vqyn000oxhd8fpc7qxgz	1	\N	\N	\N	t	2026-07-12 14:49:55.569	2026-07-12 14:49:55.569
+\.
+
+
+--
+-- Data for Name: HomeSection; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."HomeSection" (id, key, label, "order", enabled, "createdAt", "updatedAt") FROM stdin;
+cmrj9cpzt00003sm4b5fqujbb	promo-banner	Banner promocional	10	t	2026-07-13 13:28:20.633	2026-07-13 13:54:18.542
+cmrj9cpzt00013sm48u91hiyv	promos-mundial	Promos del Mundial	20	f	2026-07-13 13:28:20.633	2026-07-13 13:54:18.542
+cmrj9cpzt00023sm4ttwp0b1q	lo-mas-pedido	Lo más pedido	30	t	2026-07-13 13:28:20.633	2026-07-13 13:54:18.542
+cmrj9cpzt00033sm4yb8v3b18	banda-moover	Banda MOOVER	40	t	2026-07-13 13:28:20.633	2026-07-13 13:54:18.542
+cmrj9cpzt00043sm4qwivqce5	explora-mapa	Explorá Ushuaia	50	t	2026-07-13 13:28:20.633	2026-07-13 13:54:18.542
+cmrj9cpzt00053sm4pe4bwvej	nuevos	Nuevos en MOOVY	60	t	2026-07-13 13:28:20.633	2026-07-13 13:54:18.542
+cmrj9cpzt00063sm4s7wz8mq1	marketplace	Marketplace	70	t	2026-07-13 13:28:20.633	2026-07-13 13:54:18.542
+cmrj9cpzt00073sm4wcas2gmn	hero-carousel	Carrusel de banners (hero)	80	t	2026-07-13 13:28:20.633	2026-07-13 13:54:18.542
+cmrj9cpzt00083sm4uiwk2roh	discovery-mas-pedidos	Los más pedidos	90	t	2026-07-13 13:28:20.633	2026-07-13 13:54:18.542
+cmrj9cpzt00093sm4gfs59wxu	discovery-mejor-calificados	Mejor calificados	100	t	2026-07-13 13:28:20.633	2026-07-13 13:54:18.542
 \.
 
 
@@ -4386,6 +4421,14 @@ ALTER TABLE ONLY public."HomeCategorySlot"
 
 
 --
+-- Name: HomeSection HomeSection_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."HomeSection"
+    ADD CONSTRAINT "HomeSection_pkey" PRIMARY KEY (id);
+
+
+--
 -- Name: ListingImage ListingImage_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -5282,6 +5325,20 @@ CREATE UNIQUE INDEX "HomeCategorySlot_categoryId_key" ON public."HomeCategorySlo
 --
 
 CREATE INDEX "HomeCategorySlot_order_idx" ON public."HomeCategorySlot" USING btree ("order");
+
+
+--
+-- Name: HomeSection_key_key; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE UNIQUE INDEX "HomeSection_key_key" ON public."HomeSection" USING btree (key);
+
+
+--
+-- Name: HomeSection_order_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "HomeSection_order_idx" ON public."HomeSection" USING btree ("order");
 
 
 --

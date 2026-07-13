@@ -1987,6 +1987,26 @@ model HomeCategorySlot {
   @@index([order])
 }
 
+// ─── HomeSection ──────────────────────────────────────────────────────────
+// Home Builder (feat/home-builder-pagina-inicio): controla el ORDEN y el
+// prendido/apagado de las secciones MOVIBLES del home desde OPS
+// (/ops/pagina-inicio). Las keys válidas y su render viven en el registry
+// `src/lib/home/sections.ts` (fuente de verdad). Hero + "Abiertos ahora" y
+// Footer/CTAs NO están acá: son fijos. El `enabled` es un candado ADICIONAL —
+// cada sección conserva su guard de "hay datos" (ej: Promos solo si hay cupones),
+// así que nada aparece vacío aunque esté enabled.
+model HomeSection {
+  id        String   @id @default(cuid())
+  key       String   @unique // debe existir en el registry (sections.ts)
+  label     String            // nombre visible en OPS
+  order     Int      @default(0)
+  enabled   Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([order])
+}
+
 // ─── UserActivityLog ──────────────────────────────────────────────────────
 // Registra TODAS las acciones del usuario en su cuenta.
 // Distinto de AuditLog (que registra acciones de admin).

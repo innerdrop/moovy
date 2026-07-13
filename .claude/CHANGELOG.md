@@ -10,6 +10,12 @@
 
 ---
 
+## 2026-07-13 (rama `feat/home-builder-pagina-inicio`)
+
+feat: Home Builder — organizador de secciones del home desde OPS. Nuevo modelo HomeSection (key/label/order/enabled) + registry canónico src/lib/home/sections.ts (fuente de verdad de las keys válidas + resolveHomeLayout). La home (src/app/(store)/page.tsx) deja el orden clavado en el código y renderiza las secciones MOVIBLES según order/enabled de la DB, con Hero + "Abiertos ahora" y CTAs + Footer FIJOS; cada sección conserva su guard de "hay datos" (el enabled de OPS es un candado adicional) y hay fallback al orden por defecto del registry si la tabla está vacía. API admin /api/ops/home-sections (GET siembra idempotente las filas faltantes, PUT valida keys contra el registry + upsert en tx Serializable). Página OPS /ops/pagina-inicio: arrastrar-para-reordenar + flechas + interruptor visible/oculta + accesos directos a categorías/hero/banners/destacados, con estados loading/error/guardado. Item nuevo en el sidebar (grupo Marketing). Script scripts/verify-home-sections.ts. Requiere prisma db push (tabla HomeSection) — deploy MODO SCHEMA, no -NoDB.
+
+**Archivos:** .claude/CLAUDE.md, ISSUES.md, prisma/schema.prisma, scripts/verify-home-sections.ts, src/app/(store)/page.tsx, src/app/api/ops/home-sections/route.ts, src/app/ops/(protected)/pagina-inicio/page.tsx, src/components/ops/OpsSidebar.tsx (+1 mas)
+
 ## 2026-07-12 (rama `fix/comision-vendedor-default-10`)
 
 fix: comisión de vendedor — el default latente pasa de 12% a 10% (canon). En src/lib/orders/order-totals.ts el parámetro sellerCommissionRate tenía default 12 (nunca se ejecutaba porque orders/route.ts siempre pasa el valor de OPS, pero era una bomba si un futuro caller lo omitía); ahora 10, con 2 comentarios del mismo archivo alineados a 10%. Además el dashboard de analytics (admin/analytics/route.ts) dejó de estimar el ingreso Moovy con 8% fijo + comentario "12% seller" (números viejos) — ahora ~10% con nota de que el ingreso real vive en SubOrder.moovyCommission (/ops/revenue). Sin cambios de comportamiento en el cobro real ni de schema.

@@ -26,6 +26,8 @@ import NewMerchantsRow from "@/components/home/NewMerchantsRow";
 import ExploraUshuaiaMap from "@/components/home/ExploraUshuaiaMap";
 import AnimateIn from "@/components/ui/AnimateIn";
 import { checkMerchantSchedule, getMerchantOpenViewModel } from "@/lib/merchant-schedule";
+import { Fragment, type ReactNode } from "react";
+import { resolveHomeLayout } from "@/lib/home/sections";
 
 // Configuration
 const IS_MAINTENANCE_MODE = process.env.MAINTENANCE_MODE === "true";
@@ -207,6 +209,19 @@ async function getActiveCoupons() {
   }
 }
 
+/** Home Builder: orden + enabled de las secciones movibles (OPS). Si la tabla
+ *  no existe todavía (pre-migración) devuelve [] → la home cae al orden por
+ *  defecto del registry (todo enabled). NUNCA rompe el render. */
+async function getHomeSections() {
+  try {
+    return await prisma.homeSection.findMany({
+      select: { key: true, order: true, enabled: true },
+    });
+  } catch {
+    return [];
+  }
+}
+
 /** Top merchants by order count (most popular) */
 async function getMostOrderedMerchantIds(): Promise<string[]> {
   try {
@@ -341,6 +356,7 @@ export default async function LiveStoreView() {
     slides,
     topMerchantIds,
     activeCoupons,
+    homeSectionRows,
   ] = await Promise.all([
     getHomeCategories(settings?.maxCategoriesHome ?? 8),
     getAllActiveMerchants(),
@@ -349,6 +365,7 @@ export default async function LiveStoreView() {
     getHeroSlides(),
     getMostOrderedMerchantIds(),
     getActiveCoupons(),
+    getHomeSections(),
   ]);
 
   // Hero Banner OPS settings
@@ -425,25 +442,24 @@ export default async function LiveStoreView() {
     topMerchantIds
   );
 
-  return (
-    <div>
-      {/* ── 1. HERO (red) + ABIERTOS AHORA (filterable by category pills) ── */}
-      <HomeFeed
-        merchants={enrichedMerchants as any}
-        categories={categories as any}
-      />
+  // ── Home Builder: nodo renderizable por cada sección MOVIBLE. Cada uno mantiene
+  //    su propio guard de "hay datos" (queda null si no hay) — el enabled de OPS
+  //    es un candado ADICIONAL encima. Hero + "Abiertos ahora" y CTAs + Footer NO
+  //    están acá: son FIJOS. El orden/visibilidad se resuelve con resolveHomeLayout.
+  const sectionNodes: Record<string, ReactNode> = {
+    "promo-banner": promoSlides.length > 0
+      ? <PromoBanner slides={promoSlides} interval={5000} />
+      : null,
 
-      {/* ── 4. PROMO BANNER CAROUSEL (OPS configurable) ── */}
-      {promoSlides.length > 0 && <PromoBanner slides={promoSlides} interval={5000} />}
-
-      {/* ── 4b. PROMOS DEL MUNDIAL — cupones reales y vigentes (se oculta si no hay) ── */}
-      {activeCoupons.length > 0 && (
+    "promos-mundial": activeCoupons.length > 0
+      ? (
         <AnimateIn animation="reveal">
           <PromosMundial coupons={activeCoupons as any} />
         </AnimateIn>
-      )}
+      )
+      : null,
 
-      {/* ── 6. PRODUCTOS — Lo más pedido (fondo crema + borde redondeado, como el diseño) ── */}
+    "lo-mas-pedido": (
       <AnimateIn animation="reveal" delay={100}>
         <section className="py-8 lg:py-12 xl:py-14 bg-[#fdf9f3] rounded-t-[32px]">
           <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
@@ -479,26 +495,30 @@ export default async function LiveStoreView() {
           </div>
         </section>
       </AnimateIn>
+    ),
 
-      {/* ── 6b. BANDA MOOVER — invita a crear cuenta (solo no logueados) ── */}
+    "banda-moover": (
       <AnimateIn animation="reveal">
         <MooverBand />
       </AnimateIn>
+    ),
 
-      {/* ── 7. EXPLORÁ USHUAIA — mapa interactivo ── */}
+    "explora-mapa": (
       <AnimateIn animation="reveal">
         <ExploraUshuaiaMap merchants={enrichedMerchants as any} />
       </AnimateIn>
+    ),
 
-      {/* ── 7b. NUEVOS EN MOOVY — chips píldora (oculto si <2 o ya en otra fila) ── */}
-      {newMerchants.length > 0 && (
+    "nuevos": newMerchants.length > 0
+      ? (
         <AnimateIn animation="reveal">
           <NewMerchantsRow merchants={newMerchants as any} />
         </AnimateIn>
-      )}
+      )
+      : null,
 
-      {/* ── 8. MARKETPLACE — invitación compacta ── */}
-      {recentListings.length > 0 && (
+    "marketplace": recentListings.length > 0
+      ? (
         <AnimateIn animation="reveal">
           <section
             className="py-7 lg:py-9"
@@ -561,10 +581,11 @@ export default async function LiveStoreView() {
             </div>
           </section>
         </AnimateIn>
-      )}
+      )
+      : null,
 
-      {/* ── 8b. OPS Hero Banner + filas de discovery (extras fuera del diseño base) ── */}
-      {hasOpsSlides && (
+    "hero-carousel": hasOpsSlides
+      ? (
         <div className="py-2 lg:py-4">
           <div className="container mx-auto px-4 md:px-6 lg:px-8 max-w-7xl">
             <div className="rounded-2xl overflow-hidden shadow-md">
@@ -576,9 +597,11 @@ export default async function LiveStoreView() {
             </div>
           </div>
         </div>
-      )}
+      )
+      : null,
 
-      {mostOrdered.length > 0 && (
+    "discovery-mas-pedidos": mostOrdered.length > 0
+      ? (
         <AnimateIn animation="reveal">
           <MerchantDiscoveryRow
             title="Los más pedidos"
@@ -588,9 +611,11 @@ export default async function LiveStoreView() {
             accentColor="bg-orange-500"
           />
         </AnimateIn>
-      )}
+      )
+      : null,
 
-      {bestRated.length > 0 && (
+    "discovery-mejor-calificados": bestRated.length > 0
+      ? (
         <AnimateIn animation="reveal">
           <MerchantDiscoveryRow
             title="Mejor calificados"
@@ -600,17 +625,38 @@ export default async function LiveStoreView() {
             accentColor="bg-yellow-500"
           />
         </AnimateIn>
-      )}
+      )
+      : null,
+  };
+
+  // Orden + visibilidad efectivos (OPS → registry por defecto si la tabla está vacía).
+  const homeLayout = resolveHomeLayout(homeSectionRows);
+
+  return (
+    <div>
+      {/* ── HERO (red) + ABIERTOS AHORA — FIJO arriba (no movible) ── */}
+      <HomeFeed
+        merchants={enrichedMerchants as any}
+        categories={categories as any}
+      />
+
+      {/* ── Secciones MOVIBLES — orden y visibilidad desde OPS (/ops/pagina-inicio).
+             Cada nodo ya trae su guard de "hay datos"; el enabled es candado extra. ── */}
+      {homeLayout
+        .filter((s) => s.enabled)
+        .map((s) => (
+          <Fragment key={s.key}>{sectionNodes[s.key] ?? null}</Fragment>
+        ))}
 
       {/* TrustBar (fila de métodos de pago) removido: estaba duplicado con la fila
           de "Crecemos juntos". Queda una sola, y solo con MercadoPago. */}
 
-      {/* ── 10. SUPPLY-SIDE CTAs ── */}
+      {/* ── SUPPLY-SIDE CTAs — FIJO abajo ── */}
       <AnimateIn animation="reveal" delay={100}>
         <SupplySideCTA />
       </AnimateIn>
 
-      {/* ── 11. FOOTER ── */}
+      {/* ── FOOTER — FIJO abajo ── */}
       <Footer />
     </div>
   );
