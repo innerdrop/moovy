@@ -111,6 +111,7 @@ const navSections: NavSection[] = [
             { href: "/ops/hero", icon: ImageIcon, label: "Hero Banners" },
             { href: "/ops/banner-promo", icon: Megaphone, label: "Banner Promo" },
             { href: "/ops/cupones", icon: Ticket, label: "Cupones" },
+            { href: "/ops/recompensas", icon: Gift, label: "Recompensas" },
             { href: "/ops/destacados", icon: Star, label: "Destacados" },
         ],
     },

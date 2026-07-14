@@ -10,6 +10,7 @@ import { usePointsCelebration } from "@/store/pointsCelebration";
 import { formatPrice } from "@/lib/delivery";
 import { MAX_SAVED_ADDRESSES } from "@/lib/addresses";
 import PointsWidget from "@/components/checkout/PointsWidget";
+import RewardPicker from "@/components/checkout/RewardPicker";
 import {
     MapPin,
     Truck,
@@ -130,6 +131,7 @@ export default function CheckoutPage() {
     // Points state
     const [pointsUsed, setPointsUsed] = useState(0);
     const [discountAmount, setDiscountAmount] = useState(0);
+    const [selectedRewardId, setSelectedRewardId] = useState<string | null>(null);
 
     // ISSUE-054: suscripción "avisame cuando haya repartidor"
     const [availabilitySubscribed, setAvailabilitySubscribed] = useState(false);
@@ -668,6 +670,7 @@ export default function CheckoutPage() {
                     // Points data
                     pointsUsed,
                     discountAmount,
+                    rewardId: selectedRewardId,
                     // Scheduled delivery
                     // fix/bugs-checkout-pre-launch: pickup nunca es scheduled. Si state quedó stale, forzar.
                     deliveryType: isPickup ? "IMMEDIATE" : deliveryType,
@@ -1217,14 +1220,30 @@ export default function CheckoutPage() {
                                         Método de Pago
                                     </h2>
 
-                                    {/* POINTS WIDGET */}
-                                    <div className="mb-6 lg:mb-8">
+                                    {/* CANJE DE PUNTOS: recompensas de UN TOQUE + slider (mutuamente exclusivos) */}
+                                    <div className="mb-6 lg:mb-8 space-y-4">
+                                        <RewardPicker
+                                            subtotal={subtotal}
+                                            deliveryCost={deliveryCost}
+                                            selectedRewardId={selectedRewardId}
+                                            onSelect={(reward, discount) => {
+                                                if (reward) {
+                                                    setSelectedRewardId(reward.id);
+                                                    setDiscountAmount(discount);
+                                                    setPointsUsed(0); // limpia el slider
+                                                } else {
+                                                    setSelectedRewardId(null);
+                                                    setDiscountAmount(0);
+                                                }
+                                            }}
+                                        />
                                         <PointsWidget
                                             orderTotal={subtotal}
                                             pointsApplied={pointsUsed}
                                             onApplyPoints={(points, discount) => {
                                                 setPointsUsed(points);
                                                 setDiscountAmount(discount);
+                                                if (points > 0) setSelectedRewardId(null); // limpia la recompensa
                                             }}
                                         />
                                     </div>

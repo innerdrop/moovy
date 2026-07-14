@@ -1918,6 +1918,28 @@ model CouponUsage {
   @@index([userId])
 }
 
+// feat/moover-canje-recompensas: catálogo de recompensas canjeables con puntos.
+// El usuario las canjea de UN TOQUE en el checkout (sin código): al tocar una,
+// se descuentan `pointsCost` puntos y se aplica el beneficio a ESE pedido.
+// Editable desde /ops/recompensas. type: FREE_DELIVERY (envío gratis) |
+// FIXED_AMOUNT (value = $ de descuento sobre el subtotal).
+model Reward {
+  id          String   @id @default(cuid())
+  label       String              // "Envío gratis", "Chocolate gratis ($1.000)"
+  icon        String   @default("🎁")
+  description String?
+  pointsCost  Int                 // puntos que cuesta canjearla
+  type        String              // "FREE_DELIVERY" | "FIXED_AMOUNT"
+  value       Float    @default(0) // FIXED_AMOUNT: $ de descuento; FREE_DELIVERY: ignora
+  isActive    Boolean  @default(true)
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([order])
+}
+
 // ─── Order Chat (comunicación directa entre roles dentro de un pedido) ───
 
 model OrderChat {

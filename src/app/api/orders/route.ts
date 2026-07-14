@@ -192,6 +192,7 @@ export async function POST(request: Request) {
             customerNotes,
             pointsUsed,
             discountAmount,
+            rewardId,
             merchantId,
             deliveryType,
             scheduledSlotStart,
@@ -686,6 +687,33 @@ export async function POST(request: Request) {
             }
 
             finalTotal = Math.max(0, finalTotal - validDiscount);
+        }
+
+        // feat/moover-canje-recompensas: recompensa de UN TOQUE, mutuamente exclusiva
+        // con el slider de puntos. Ambos tipos se resuelven como un descuento + gasto
+        // de `pointsCost` puntos (el REDEEM de más abajo deduce validPointsUsed). En
+        // FREE_DELIVERY el descuento = el envío: el cliente paga $0 de envío pero el
+        // repartidor cobra igual desde el snapshot inmutable → lo absorbe Moovy.
+        // Validación AUTORITATIVA server-side (activa + saldo); el cliente no decide nada.
+        if (rewardId && validPointsUsed === 0) {
+            const reward = await prisma.reward.findUnique({ where: { id: rewardId } });
+            if (!reward || !reward.isActive) {
+                return NextResponse.json({ error: "Esa recompensa ya no está disponible." }, { status: 400 });
+            }
+            const balance = await getUserPointsBalance(session.user.id);
+            if (balance < reward.pointsCost) {
+                return NextResponse.json({ error: "No te alcanzan los puntos para esa recompensa." }, { status: 400 });
+            }
+            let rewardDiscount = 0;
+            if (reward.type === "FREE_DELIVERY") rewardDiscount = isPickup ? 0 : validatedDeliveryFee;
+            else if (reward.type === "FIXED_AMOUNT") rewardDiscount = Math.min(reward.value, subtotal);
+            rewardDiscount = Math.max(0, Math.min(rewardDiscount, finalTotal));
+            if (rewardDiscount <= 0) {
+                return NextResponse.json({ error: "Esa recompensa no aplica a este pedido." }, { status: 400 });
+            }
+            validDiscount = rewardDiscount;
+            validPointsUsed = reward.pointsCost;
+            finalTotal = Math.max(0, finalTotal - rewardDiscount);
         }
 
         // Get or create address

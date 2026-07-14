@@ -47,6 +47,8 @@ export const CreateOrderSchema = z.object({
     customerNotes: z.string().max(500).nullish(),
     pointsUsed: z.number().int().min(0).default(0),
     discountAmount: z.number().min(0).default(0),
+    // feat/moover-canje-recompensas: recompensa elegida de un toque en el checkout.
+    rewardId: z.string().nullish(),
     merchantId: z.string().optional(),
     deliveryType: z.enum(["IMMEDIATE", "SCHEDULED"]).default("IMMEDIATE"),
     scheduledSlotStart: z.string().datetime().optional(),
