@@ -650,7 +650,9 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
           <NumInput label="Bono referido" name="refereeBonus" value={config.points.refereeBonus}
             onChange={(n, v) => updateField("points", n, v)} min={0} max={10000} unit="pts"
             info="Puntos extra para el usuario referido." />
-          {/* chore/biblia-limpieza-fantasmas: input "Bono reseña" removido (feature dormido) */}
+          <NumInput label="Bono reseña" name="reviewBonus" value={config.points.reviewBonus}
+            onChange={(n, v) => updateField("points", n, v)} min={0} max={10000} unit="pts"
+            info="Puntos por dejar reseña de un pedido entregado (una vez por pedido)." />
         </div>
 
         <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Activación de bonos</h3>

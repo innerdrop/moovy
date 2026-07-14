@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { checkContent, COMMENT_LIMITS } from "@/lib/moderation";
 import { logAudit } from "@/lib/audit";
 import { sendAdminReviewPendingEmail } from "@/lib/email-admin-ops";
+import { awardReviewBonus } from "@/lib/points";
 
 // POST - Rate a delivered order
 export async function POST(
@@ -165,11 +166,17 @@ export async function POST(
             })();
         }
 
+        // feat/moover-bono-resena: bono por reseña, una sola vez por pedido.
+        const reviewPoints = await awardReviewBonus(userId, orderId);
+
         return NextResponse.json({
             success: true,
-            message: "¡Gracias por tu calificación!",
+            message: reviewPoints > 0
+                ? `¡Gracias por tu calificación! Ganaste ${reviewPoints.toLocaleString("es-AR")} puntos.`
+                : "¡Gracias por tu calificación!",
             newDriverRating: result.toFixed(1),
             moderationStatus,
+            pointsEarned: reviewPoints,
         });
     } catch (error) {
         if (error instanceof Error && error.message === "ALREADY_RATED") {

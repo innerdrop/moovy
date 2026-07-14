@@ -587,6 +587,19 @@ export default function PuntosPage() {
                                     </div>
                                     <p className="mt-3 text-xs leading-snug text-gray-500">Cuando hace su primera compra. Tu amigo también se lleva 2.500 pts.</p>
                                 </div>
+                                {/* Reseña */}
+                                <div className="relative overflow-hidden rounded-3xl border border-amber-100 bg-white p-5 shadow-sm">
+                                    <div className="flex items-center gap-3">
+                                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
+                                            <Star className="h-6 w-6" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-xl font-black text-amber-600 leading-none">1.000 pts</p>
+                                            <p className="mt-1 text-sm font-black text-gray-900">Por cada reseña</p>
+                                        </div>
+                                    </div>
+                                    <p className="mt-3 text-xs leading-snug text-gray-500">Después de recibir tu pedido, contanos qué te pareció.</p>
+                                </div>
                             </div>
                         </div>
                     </div>

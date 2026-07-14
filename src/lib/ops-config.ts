@@ -42,8 +42,8 @@ export interface PointsMooverConfig {
   signupBonus: number;
   referralBonus: number;
   refereeBonus: number;
-  // chore/biblia-limpieza-fantasmas (2026-06-06): reviewBonus removido (feature
-  // de reseñas dormido). La columna sigue en la DB; solo dejamos de exponerla.
+  // feat/moover-bono-resena: reactivado. Puntos por dejar reseña de un pedido.
+  reviewBonus: number;
   minPurchaseForBonus: number;
   minReferralPurchase: number;
   tierWindowDays: number;
@@ -191,7 +191,7 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
       signupBonus: pointsConfig?.signupBonus ?? 1000,
       referralBonus: pointsConfig?.referralBonus ?? 1000,
       refereeBonus: (pointsConfig as any)?.refereeBonus ?? 500,
-      // chore/biblia-limpieza-fantasmas: reviewBonus ya no se expone al panel
+      reviewBonus: (pointsConfig as any)?.reviewBonus ?? 1000,
       minPurchaseForBonus: (pointsConfig as any)?.minPurchaseForBonus ?? 5000,
       minReferralPurchase: (pointsConfig as any)?.minReferralPurchase ?? 8000,
       tierWindowDays: (pointsConfig as any)?.tierWindowDays ?? 90,
@@ -352,7 +352,7 @@ export async function updatePointsConfig(
   if (data.referralBonus !== undefined)
     updateData.referralBonus = data.referralBonus;
   if (data.refereeBonus !== undefined) updateData.refereeBonus = data.refereeBonus;
-  // chore/biblia-limpieza-fantasmas: reviewBonus ya no se edita desde el panel
+  if (data.reviewBonus !== undefined) updateData.reviewBonus = data.reviewBonus;
   if (data.minPurchaseForBonus !== undefined)
     updateData.minPurchaseForBonus = data.minPurchaseForBonus;
   if (data.minReferralPurchase !== undefined)

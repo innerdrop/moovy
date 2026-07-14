@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { checkContent, COMMENT_LIMITS } from "@/lib/moderation";
 import { logAudit } from "@/lib/audit";
 import { sendAdminReviewPendingEmail } from "@/lib/email-admin-ops";
+import { awardReviewBonus } from "@/lib/points";
 
 export async function POST(
     request: NextRequest,
@@ -160,11 +161,18 @@ export async function POST(
             })();
         }
 
+        // feat/moover-bono-resena: bono por reseña, una sola vez por pedido
+        // (idempotente aunque el user califique comercio + repartidor + vendedor).
+        const reviewPoints = await awardReviewBonus(userId, orderId);
+
         return NextResponse.json({
             success: true,
-            message: "¡Gracias por tu calificación!",
+            message: reviewPoints > 0
+                ? `¡Gracias por tu calificación! Ganaste ${reviewPoints.toLocaleString("es-AR")} puntos.`
+                : "¡Gracias por tu calificación!",
             newMerchantRating: result.toFixed(1),
             moderationStatus,
+            pointsEarned: reviewPoints,
         });
     } catch (error) {
         if (error instanceof Error && error.message === "ALREADY_RATED") {

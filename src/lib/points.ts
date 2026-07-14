@@ -14,9 +14,9 @@ interface PointsConfig {
     signupBonus: number;
     referralBonus: number;
     refereeBonus: number;
-    // chore/biblia-limpieza-fantasmas (2026-06-06): `reviewBonus` removido — feature
-    // de reseñas dormido, nunca se otorgaba. La columna sigue en la DB (no se toca
-    // el schema), solo dejamos de exponerla/usarla.
+    // feat/moover-bono-resena: reactivado. Puntos por dejar reseña de un pedido
+    // entregado (una vez por pedido). La columna ya existía en la DB.
+    reviewBonus: number;
     minPurchaseForBonus: number;      // Min 1st purchase to activate bonuses
     minReferralPurchase: number;      // Min purchase for referral to count
     // feat/moover-boost-lanzamiento: boost de earn por tiempo limitado (ej. ×2
@@ -36,7 +36,7 @@ const defaultConfig: PointsConfig = {
     signupBonus: 2500,                // $2.500 de bienvenida, igual para todos (Biblia v5)
     referralBonus: 3500,              // $3.500 al que invita (tras 1er pedido del referido)
     refereeBonus: 2500,               // $2.500 al invitado
-    // chore/biblia-limpieza-fantasmas: reviewBonus removido (feature dormido)
+    reviewBonus: 1000,                // $1.000 por dejar reseña (una vez por pedido)
     minPurchaseForBonus: 5000,        // $5,000 min 1st purchase to activate
     minReferralPurchase: 8000,        // $8,000 min for referral to count
     earnBoostMultiplier: 1,           // 1 = boost apagado (conservador)
@@ -237,7 +237,7 @@ export async function getPointsConfig(): Promise<PointsConfig> {
             signupBonus: config.signupBonus,
             referralBonus: config.referralBonus,
             refereeBonus: (config as any).refereeBonus ?? defaultConfig.refereeBonus,
-            // chore/biblia-limpieza-fantasmas: reviewBonus ya no se expone
+            reviewBonus: (config as any).reviewBonus ?? defaultConfig.reviewBonus,
             minPurchaseForBonus: (config as any).minPurchaseForBonus ?? defaultConfig.minPurchaseForBonus,
             minReferralPurchase: (config as any).minReferralPurchase ?? defaultConfig.minReferralPurchase,
             // feat/moover-boost-lanzamiento: `as any` para sobrevivir a un Prisma
@@ -269,7 +269,7 @@ const POINTS_TX_RETRY_BASE_MS = 50;
 
 export async function recordPointsTransaction(
     userId: string,
-    type: "EARN" | "REDEEM" | "BONUS" | "EXPIRE" | "ADJUSTMENT",
+    type: "EARN" | "REDEEM" | "BONUS" | "EXPIRE" | "ADJUSTMENT" | "REVIEW",
     amount: number,
     description: string,
     orderId?: string
@@ -335,6 +335,72 @@ export async function recordPointsTransaction(
     }
 
     return false;
+}
+
+/**
+ * feat/moover-bono-resena: otorga el bono por reseña UNA sola vez por pedido
+ * (idempotente). Un pedido tiene hasta 3 ratings (comercio/repartidor/vendedor);
+ * el bono se otorga solo en el PRIMERO. La idempotencia se resuelve dentro de la
+ * misma tx Serializable (chequeo del tx REVIEW previo por orderId), así dos ratings
+ * casi simultáneos nunca lo duplican. Devuelve los puntos otorgados (0 si ya estaba
+ * dado o el bono está en 0). Nunca throwea hacia afuera.
+ */
+export async function awardReviewBonus(userId: string, orderId: string): Promise<number> {
+    const config = await getPointsConfig();
+    const bonus = config.reviewBonus ?? 0;
+    if (bonus <= 0) return 0;
+
+    for (let attempt = 1; attempt <= POINTS_TX_MAX_RETRIES; attempt++) {
+        try {
+            const awarded = await prisma.$transaction(
+                async (tx) => {
+                    // Idempotencia: si ya existe un tx REVIEW para este pedido, no repetir.
+                    const existing = await tx.pointsTransaction.findFirst({
+                        where: { orderId, type: "REVIEW" },
+                        select: { id: true },
+                    });
+                    if (existing) return 0;
+
+                    const user = await tx.user.findUnique({
+                        where: { id: userId },
+                        select: { pointsBalance: true },
+                    });
+                    if (!user) throw new Error("User not found");
+
+                    const newBalance = (user.pointsBalance || 0) + bonus;
+                    await tx.user.update({
+                        where: { id: userId },
+                        data: { pointsBalance: newBalance, updatedAt: new Date() },
+                    });
+                    await tx.pointsTransaction.create({
+                        data: {
+                            userId,
+                            orderId,
+                            type: "REVIEW",
+                            amount: bonus,
+                            balanceAfter: newBalance,
+                            description: "Bono por dejar tu reseña",
+                        },
+                    });
+                    return bonus;
+                },
+                { isolationLevel: "Serializable" }
+            );
+            return awarded;
+        } catch (error: any) {
+            const isSerializationFailure =
+                error?.code === "P2034" ||
+                error?.meta?.code === "40001" ||
+                /could not serialize/i.test(error?.message || "");
+            if (isSerializationFailure && attempt < POINTS_TX_MAX_RETRIES) {
+                await new Promise((r) => setTimeout(r, POINTS_TX_RETRY_BASE_MS * attempt));
+                continue;
+            }
+            console.error("[Points] Error awarding review bonus:", error);
+            return 0;
+        }
+    }
+    return 0;
 }
 
 /**
@@ -735,7 +801,7 @@ export async function updatePointsConfig(newConfig: Partial<PointsConfig>): Prom
             signupBonus: config.signupBonus,
             referralBonus: config.referralBonus,
             refereeBonus: (config as any).refereeBonus ?? defaultConfig.refereeBonus,
-            // chore/biblia-limpieza-fantasmas: reviewBonus ya no se expone
+            reviewBonus: (config as any).reviewBonus ?? defaultConfig.reviewBonus,
             minPurchaseForBonus: (config as any).minPurchaseForBonus ?? defaultConfig.minPurchaseForBonus,
             minReferralPurchase: (config as any).minReferralPurchase ?? defaultConfig.minReferralPurchase,
             earnBoostMultiplier: (config as any).earnBoostMultiplier ?? defaultConfig.earnBoostMultiplier,
