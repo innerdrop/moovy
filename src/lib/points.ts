@@ -1,6 +1,6 @@
 // Points System - Core Logic (Biblia Financiera v3)
 // Earn: 10 pts por $1,000 (0.01 pts/$1). Valor: 1 pt = $1. Cashback ~1%.
-// Niveles por pedidos DELIVERED en 90 días: MOOVER(0), SILVER(5), GOLD(15), BLACK(40)
+// Niveles por pedidos DELIVERED en 90 días: MOOVER(0), SILVER(3), GOLD(10), BLACK(22) — editables OPS
 // Earn rates: MOOVER ×1, SILVER ×1.25, GOLD ×1.5, BLACK ×2
 import { prisma } from "@/lib/prisma";
 import { sendReferralActivatedEmail } from "@/lib/email-admin-ops";
@@ -25,16 +25,17 @@ interface PointsConfig {
     earnBoostUntil: Date | null;
 }
 
-// Biblia Financiera v3 defaults
+// Biblia Financiera v5 defaults (fallback de código; los valores VIVOS están en la
+// DB PointsConfig y se editan desde /ops/config-biblia).
 const defaultConfig: PointsConfig = {
     pointsPerDollar: 0.01,            // 10 points per $1,000 spent (0.01 pts/$1)
     minPurchaseForPoints: 0,          // No minimum for earning
     pointsValue: 1,                   // Each point = $1 ARS (1% cashback at base level)
     minPointsToRedeem: 500,           // Min 500 points to use ($500)
-    maxDiscountPercent: 20,           // Max 20% discount with points
-    signupBonus: 1000,                // 1,000 points signup (boost month: doubled)
-    referralBonus: 1000,              // 1,000 points for referring (after referral's 1st DELIVERED order)
-    refereeBonus: 500,                // 500 points bonus for being referred
+    maxDiscountPercent: 50,           // Max 50% discount with points (Biblia v5)
+    signupBonus: 2500,                // $2.500 de bienvenida, igual para todos (Biblia v5)
+    referralBonus: 3500,              // $3.500 al que invita (tras 1er pedido del referido)
+    refereeBonus: 2500,               // $2.500 al invitado
     // chore/biblia-limpieza-fantasmas: reviewBonus removido (feature dormido)
     minPurchaseForBonus: 5000,        // $5,000 min 1st purchase to activate
     minReferralPurchase: 8000,        // $8,000 min for referral to count
@@ -62,17 +63,36 @@ interface LevelConfig {
     earnMultiplier: number; // Applied to base pointsPerDollar
 }
 
-/** Sorted highest-first for matching */
+/** Umbrales por defecto (Biblia v5: SILVER 3 / GOLD 10 / BLACK 22 — alcanzables en
+ *  Ushuaia; antes 5/15/40, BLACK era inalcanzable). Editables desde OPS vía
+ *  PointsConfig.tierConfigJson. Sorted highest-first for matching. */
 const LEVEL_CONFIGS: LevelConfig[] = [
-    { name: "BLACK", minOrders: 40, earnMultiplier: 2.0 },   // 20 pts/$1K
-    { name: "GOLD", minOrders: 15, earnMultiplier: 1.5 },    // 15 pts/$1K
-    { name: "SILVER", minOrders: 5, earnMultiplier: 1.25 },   // 12.5 pts/$1K
-    { name: "MOOVER", minOrders: 0, earnMultiplier: 1.0 },    // 10 pts/$1K
+    { name: "BLACK", minOrders: 22, earnMultiplier: 2.0 },   // 20 pts/$1K
+    { name: "GOLD", minOrders: 10, earnMultiplier: 1.5 },    // 15 pts/$1K
+    { name: "SILVER", minOrders: 3, earnMultiplier: 1.25 },  // 12.5 pts/$1K
+    { name: "MOOVER", minOrders: 0, earnMultiplier: 1.0 },   // 10 pts/$1K
 ];
+
+/** Resuelve los umbrales efectivos: defaults + override de OPS (tierConfigJson,
+ *  formato {"SILVER":3,"GOLD":10,"BLACK":22}). Los multiplicadores quedan fijos
+ *  (canon). Devuelve ordenado de mayor a menor para el matching. */
+function resolveLevelConfigs(tierConfigJson?: string | null): LevelConfig[] {
+    const configs = LEVEL_CONFIGS.map((l) => ({ ...l }));
+    if (tierConfigJson) {
+        try {
+            const parsed = JSON.parse(tierConfigJson);
+            for (const lc of configs) {
+                const v = parsed?.[lc.name];
+                if (typeof v === "number" && v >= 0) lc.minOrders = v;
+            }
+        } catch { /* JSON inválido → defaults */ }
+    }
+    return configs.sort((a, b) => b.minOrders - a.minOrders);
+}
 
 /**
  * Get user level based on DELIVERED orders in the last 90 days.
- * Biblia v3: MOOVER(0), SILVER(5), GOLD(15), BLACK(40)
+ * Biblia v5: MOOVER(0), SILVER(3), GOLD(10), BLACK(22) — editables desde OPS.
  */
 export async function getUserLevel(userId: string): Promise<{
     level: UserLevel;
@@ -85,14 +105,16 @@ export async function getUserLevel(userId: string): Promise<{
     // se lee de PointsConfig.tierWindowDays (columna ya existente en el schema,
     // default 90). Antes estaba hardcodeada en 90. No hay cambio de schema.
     let windowDays = 90;
+    let levelConfigs = LEVEL_CONFIGS;
     try {
         const cfg = await prisma.pointsConfig.findUnique({
             where: { id: "points_config" },
-            select: { tierWindowDays: true },
+            select: { tierWindowDays: true, tierConfigJson: true },
         });
         windowDays = cfg?.tierWindowDays ?? 90;
+        levelConfigs = resolveLevelConfigs(cfg?.tierConfigJson);
     } catch (cfgError) {
-        console.error("[Points] Error loading tierWindowDays, using 90:", cfgError);
+        console.error("[Points] Error loading tier config, using defaults:", cfgError);
     }
     const windowStart = new Date();
     windowStart.setDate(windowStart.getDate() - windowDays);
@@ -108,8 +130,8 @@ export async function getUserLevel(userId: string): Promise<{
         });
 
         // Find current level (configs sorted highest first)
-        let currentLevel = LEVEL_CONFIGS[LEVEL_CONFIGS.length - 1]; // MOOVER default
-        for (const lc of LEVEL_CONFIGS) {
+        let currentLevel = levelConfigs[levelConfigs.length - 1]; // MOOVER default
+        for (const lc of levelConfigs) {
             if (deliveredCount >= lc.minOrders) {
                 currentLevel = lc;
                 break;
@@ -117,8 +139,8 @@ export async function getUserLevel(userId: string): Promise<{
         }
 
         // Find next level
-        const currentIdx = LEVEL_CONFIGS.indexOf(currentLevel);
-        const nextLevelConfig = currentIdx > 0 ? LEVEL_CONFIGS[currentIdx - 1] : null;
+        const currentIdx = levelConfigs.indexOf(currentLevel);
+        const nextLevelConfig = currentIdx > 0 ? levelConfigs[currentIdx - 1] : null;
 
         return {
             level: currentLevel.name,
@@ -136,7 +158,7 @@ export async function getUserLevel(userId: string): Promise<{
             ordersInWindow: 0,
             earnMultiplier: 1.0,
             nextLevel: "SILVER",
-            ordersToNextLevel: 5,
+            ordersToNextLevel: 3,
         };
     }
 }

@@ -622,7 +622,7 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
             info="Cuántos puntos gana el comprador por cada $1 gastado. 1 = 1 punto por peso." />
           <NumInput label="Valor del punto" name="pointsValue" value={config.points.pointsValue}
             onChange={(n, v) => updateField("points", n, v)} min={0.001} max={1} step={0.001} unit="ARS"
-            info="Cuántos ARS vale cada punto al canjear. 0.015 = 1.5 centavos por punto." />
+            info="Cuántos ARS vale cada punto al canjear. 1 = 1 peso por punto (canon Moovy)." />
           <NumInput label="Máx descuento" name="maxDiscountPercent" value={config.points.maxDiscountPercent}
             onChange={(n, v) => updateField("points", n, v)} min={1} max={100} step={1} unit="%"
             info="Porcentaje máximo del pedido que se puede pagar con puntos." />

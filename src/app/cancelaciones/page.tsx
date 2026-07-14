@@ -152,9 +152,6 @@ export default function CancelacionesPage() {
                                 original. El plazo de acreditación depende del medio de pago utilizado (tarjeta
                                 de crédito: 1-2 estados de cuenta; tarjeta de débito: 5-10 días hábiles; dinero
                                 en cuenta MP: inmediato)</li>
-                            <li><strong>Pagos en efectivo:</strong> Si el pedido fue cancelado antes de la entrega,
-                                no se cobra al comprador. Si ya se realizó un pago parcial, se gestionará el
-                                reembolso por transferencia o crédito en la plataforma</li>
                             <li><strong>Puntos MOOVER:</strong> Los puntos utilizados en el pedido se restituyen
                                 automáticamente al saldo del comprador</li>
                         </ul>

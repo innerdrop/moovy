@@ -81,13 +81,13 @@ export default function MooverPage() {
                 // antes había valores inventados — 1 pt/$ era 100× el rate real).
                 setConfig({
                     pointsPerDollar: 0.01,
-                    signupBonus: 1000,
-                    referralBonus: 1000,
-                    refereeBonus: 500,
+                    signupBonus: 2500,
+                    referralBonus: 3500,
+                    refereeBonus: 2500,
                     minPointsToRedeem: 500,
-                    maxDiscountPercent: 20,
+                    maxDiscountPercent: 50,
                     pointsValue: 1,
-                    pointsExpire: true
+                    pointsExpire: false
                 });
                 setLevels(MOOVER_LEVELS.map(l => ({
                     ...l,
@@ -234,7 +234,7 @@ export default function MooverPage() {
                             </div>
                             <h3 className="font-bold text-gray-900 text-lg mb-2">Invitando Amigos</h3>
                             <p className="text-gray-500 text-sm mb-3">Cuando tu amigo hace su primera compra, los dos ganan puntos.</p>
-                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">+{config?.referralBonus ?? 500} puntos</span>
+                            <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">+{config?.referralBonus ?? 3500} puntos</span>
                         </div>
 
                         <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 hover:shadow-lg hover:-translate-y-1 transition-all">
@@ -243,7 +243,7 @@ export default function MooverPage() {
                             </div>
                             <h3 className="font-bold text-gray-900 text-lg mb-2">Bono de Bienvenida</h3>
                             <p className="text-gray-500 text-sm mb-3">Al registrarte y hacer tu primera compra, recibís puntos extra.</p>
-                            <span className="text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full">+{config?.signupBonus ?? 1000} puntos</span>
+                            <span className="text-xs font-bold text-red-600 bg-red-50 px-3 py-1 rounded-full">+{config?.signupBonus ?? 2500} puntos</span>
                         </div>
                     </div>
                 </div>
@@ -328,7 +328,7 @@ export default function MooverPage() {
                             </div>
                             <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100">
                                 <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
-                                <span className="text-sm text-gray-700">Máximo {config?.maxDiscountPercent ?? 20}% de descuento por pedido</span>
+                                <span className="text-sm text-gray-700">Máximo {config?.maxDiscountPercent ?? 50}% de descuento por pedido</span>
                             </div>
                             <div className="flex items-center gap-3 bg-white p-4 rounded-xl border border-gray-100">
                                 <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />

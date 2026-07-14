@@ -48,7 +48,7 @@ export default function TerminosMooverPage() {
                         </div>
                     </div>
                     <p className="text-sm text-gray-600">
-                        Podés usar tus puntos en el checkout para obtener descuentos de hasta el 20% del subtotal. Mínimo 500 puntos para canjear.
+                        Podés usar tus puntos en el checkout para obtener descuentos de hasta el 50% del subtotal. Mínimo 500 puntos para canjear.
                     </p>
                 </section>
 
@@ -67,28 +67,28 @@ export default function TerminosMooverPage() {
                             <p className="text-xs text-purple-700 font-semibold mb-1">Niveles MOOVER (acumulan más puntos por compra)</p>
                             <ul className="text-xs text-purple-600 space-y-1">
                                 <li>• <strong>MOOVER</strong> (default): 10 pts / $1.000</li>
-                                <li>• <strong>SILVER</strong> (5 entregas en 90 días): 12,5 pts / $1.000</li>
-                                <li>• <strong>GOLD</strong> (15 entregas en 90 días): 15 pts / $1.000</li>
-                                <li>• <strong>BLACK</strong> (40 entregas en 90 días): 20 pts / $1.000</li>
+                                <li>• <strong>SILVER</strong> (3 entregas en 90 días): 12,5 pts / $1.000</li>
+                                <li>• <strong>GOLD</strong> (10 entregas en 90 días): 15 pts / $1.000</li>
+                                <li>• <strong>BLACK</strong> (22 entregas en 90 días): 20 pts / $1.000</li>
                             </ul>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-amber-50 rounded-lg border border-amber-200">
                             <div>
                                 <span className="text-sm text-gray-700">Bono de bienvenida</span>
-                                <p className="text-xs text-amber-600">Se activa con tu 1ra compra de $5,000+</p>
+                                <p className="text-xs text-amber-600">Se activa con tu primer pedido</p>
                             </div>
-                            <span className="font-bold text-[#e60012]">+1,000 puntos</span>
+                            <span className="font-bold text-[#e60012]">+2.500 puntos</span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-red-50 rounded-lg border border-red-200">
                             <div>
                                 <span className="text-sm text-gray-700">Por referir un amigo</span>
-                                <p className="text-xs text-red-600">Cuando tu amigo compra $8,000+</p>
+                                <p className="text-xs text-red-600">Cuando tu amigo hace su primer pedido</p>
                             </div>
-                            <span className="font-bold text-[#e60012]">+1,000 puntos</span>
+                            <span className="font-bold text-[#e60012]">+3.500 puntos</span>
                         </div>
                         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <span className="text-sm text-gray-700">Tu amigo referido recibe</span>
-                            <span className="font-bold text-[#e60012]">+500 puntos</span>
+                            <span className="font-bold text-[#e60012]">+2.500 puntos</span>
                         </div>
                     </div>
                 </section>
@@ -110,7 +110,7 @@ export default function TerminosMooverPage() {
                         </li>
                         <li className="flex items-start gap-2">
                             <span className="text-red-600 font-bold">•</span>
-                            <span>Vos ganás <strong>1,000 puntos</strong> y tu amigo gana <strong>500 puntos</strong> de bienvenida.</span>
+                            <span>Vos ganás <strong>3.500 puntos</strong> y tu amigo gana <strong>2.500 puntos</strong> de bienvenida.</span>
                         </li>
                         <li className="flex items-start gap-2">
                             <span className="text-red-600 font-bold">•</span>
@@ -156,7 +156,7 @@ export default function TerminosMooverPage() {
                         <li>• Los puntos se acreditan cuando el pedido es entregado (DELIVERED).</li>
                         <li>• Si cancelás un pedido pagado con puntos, los puntos se devuelven automáticamente.</li>
                         <li>• El contador de "puntos del mes" por referidos se reinicia el 1° de cada mes.</li>
-                        <li>• <strong>Los puntos vencen a los 6 meses sin actividad</strong> en la cuenta (sin nuevos pedidos).</li>
+                        <li>• <strong>Tus puntos no vencen mientras uses Moovy.</strong></li>
                         <li>• Moovy se reserva el derecho de modificar estos términos con aviso previo.</li>
                         <li>• El uso fraudulento resultará en la cancelación de la cuenta.</li>
                         <li>• El tratamiento de tu balance de puntos se rige por nuestra <a href="/privacidad" className="underline font-medium">Política de Privacidad</a> y la Ley 25.326.</li>

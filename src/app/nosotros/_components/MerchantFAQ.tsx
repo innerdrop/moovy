@@ -21,7 +21,7 @@ const ITEMS: FAQItem[] = [
     },
     {
         q: "¿Cuánta comisión cobran?",
-        a: "8%. Nada escondido. Es la más baja del mercado.",
+        a: "10%, y el primer mes es 0%. Nada escondido. De las más bajas del mercado.",
     },
     {
         q: "¿Quién me ayuda si tengo dudas?",

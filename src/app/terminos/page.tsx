@@ -264,16 +264,12 @@ export default function TerminosPage() {
             </h2>
             <div className="space-y-3 text-slate-700">
               <p>
-                <strong>Métodos de pago:</strong> MOOVY acepta dos formas de pago:
+                <strong>Métodos de pago:</strong> MOOVY opera con pago electrónico:
               </p>
               <ol className="list-decimal list-inside space-y-2 ml-2">
                 <li>
                   <strong>MercadoPago Checkout Pro:</strong> Tarjeta de crédito,
                   débito, transferencia y otros medios digitales
-                </li>
-                <li>
-                  <strong>Efectivo en la puerta:</strong> El repartidor cobra al
-                  momento de entrega
                 </li>
               </ol>
 
@@ -290,18 +286,18 @@ export default function TerminosPage() {
                   Comercios: <strong>10%</strong> de la venta (configurable)
                 </li>
                 <li>
-                  Repartidores: <strong>20%</strong> del delivery fee
+                  Repartidores: <strong>80%</strong> del costo del envío
                 </li>
                 <li>
                   Puntos MOOVER: podés canjearlos por descuento, hasta un{" "}
-                  <strong>20%</strong> del subtotal del pedido (mínimo de
+                  <strong>50%</strong> del subtotal del pedido (mínimo de
                   canje 500 puntos)
                 </li>
               </ul>
 
               <p>
                 <strong>Compra exitosa:</strong> Al confirmar el pago via
-                MercadoPago o elegir efectivo, se genera el pedido y el comercio
+                MercadoPago, se genera el pedido y el comercio
                 recibe notificación para preparar.
               </p>
 
@@ -370,12 +366,6 @@ export default function TerminosPage() {
               </p>
 
               <p>
-                <strong>Efectivo:</strong> Si pagás en efectivo, debes tener el
-                monto exacto o mayor. El repartidor puede rechazar el pedido si
-                no tiene cambio.
-              </p>
-
-              <p>
                 <strong>Política de cliente ausente (no-show):</strong> cuando
                 el repartidor llega a tu domicilio, te notificamos por push y/o
                 email con el PIN de entrega. Tenés <strong>10 minutos</strong>{" "}
@@ -383,9 +373,7 @@ export default function TerminosPage() {
                 en ese plazo, el repartidor puede marcar &quot;cliente no
                 responde&quot; y el pedido vuelve al comercio. El cobro se
                 mantiene al 100% (es responsabilidad tuya estar disponible cuando
-                el repartidor llegó a tiempo). Esta política es estándar en la
-                industria del delivery (Rappi, PedidosYa, Glovo aplican la misma
-                regla).
+                el repartidor llegó a tiempo).
               </p>
 
               <p>

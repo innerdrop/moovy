@@ -1290,7 +1290,7 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
                 <p style="margin: 0 0 4px 0; color: #1a1a1a; font-size: 36px; font-weight: 700;">1.285 <span style="font-size: 16px; font-weight: 500; color: #b45309;">pts</span></p>
                 <p style="margin: 0; color: #92400e; font-size: 13px;">Nivel <strong>SILVER</strong></p>
             </div>
-            ${emailInfoBox(`<p style="margin: 0; color: #555; font-size: 14px;"><strong>1 punto = $1 ARS.</strong> Podés canjearlos como descuento en tu próxima compra (hasta 20% del subtotal, desde 500 puntos).</p>`)}
+            ${emailInfoBox(`<p style="margin: 0; color: #555; font-size: 14px;"><strong>1 punto = $1 ARS.</strong> Podés canjearlos como descuento en tu próxima compra (hasta 50% del subtotal, desde 500 puntos).</p>`)}
             ${emailButton('Ver mis puntos', `${baseUrl}/puntos`, 'red')}
         `),
     },
@@ -1357,14 +1357,14 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
         priority: 'P2',
         status: 'implemented',
         trigger: 'Cron diario POST /api/cron/points-expiring-reminder',
-        subject: '⏳ Tenés 1.250 puntos MOOVER por vencer',
+        subject: '⭐ Tenés 1.250 puntos MOOVER para usar',
         functionName: 'sendPointsExpiringEmail',
         file: 'src/lib/email-admin-ops.ts',
         generatePreview: () => emailLayout(`
-            <div style="text-align: center; margin-bottom: 20px;">${emailBadge('⏳ Puntos por vencer', '#fffbeb', '#92400e')}</div>
-            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">Tus puntos MOOVER están por vencer</h2>
+            <div style="text-align: center; margin-bottom: 20px;">${emailBadge('⭐ Tus puntos MOOVER', '#fffbeb', '#92400e')}</div>
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">Tenés puntos MOOVER esperándote</h2>
             <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
-                ${SAMPLE.buyerName}, tu último pedido fue hace 5 meses. Si no hacés un nuevo pedido en los próximos <strong>30 días</strong>, tus puntos vencen.
+                ${SAMPLE.buyerName}, tu último pedido fue hace un tiempo. Todavía tenés puntos MOOVER acumulados para usar como descuento en tu próxima compra.
             </p>
             <div style="text-align: center; margin: 24px 0;">
                 <p style="color: #999; font-size: 12px; text-transform: uppercase; margin: 0 0 10px 0;">Tu saldo actual</p>
@@ -1405,7 +1405,7 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
         priority: 'P0',
         status: 'implemented',
         trigger: 'activatePendingBonuses en src/lib/points.ts (primer DELIVERED del referee)',
-        subject: `🎁 Tu amigo hizo su primer pedido — sumaste 1.000 pts`,
+        subject: `🎁 Tu amigo hizo su primer pedido — sumaste 3.500 pts`,
         functionName: 'sendReferralActivatedEmail',
         file: 'src/lib/email-admin-ops.ts',
         generatePreview: () => emailLayout(`
@@ -1416,7 +1416,7 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
             </p>
             <div style="text-align: center; margin: 24px 0;">
                 <p style="color: #999; font-size: 12px; text-transform: uppercase; margin: 0 0 10px 0;">Ganaste</p>
-                <p style="color: #059669; font-size: 36px; font-weight: 700; margin: 0;">+1.000 pts</p>
+                <p style="color: #059669; font-size: 36px; font-weight: 700; margin: 0;">+3.500 pts</p>
             </div>
             ${emailButton('Invitar a más amigos', `${baseUrl}/mi-perfil/invitar`, 'red')}
         `),

@@ -242,14 +242,14 @@ export async function sendPointsExpiringEmail(data: {
 
     const html = emailLayout(`
         <div style="text-align: center; margin-bottom: 20px;">
-            ${emailBadge('⏳ Puntos por vencer', '#fffbeb', '#92400e')}
+            ${emailBadge('⭐ Tus puntos MOOVER', '#fffbeb', '#92400e')}
         </div>
         <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600; text-align: center;">
-            Hola ${data.firstName}, tus puntos MOOVER están por vencer
+            Hola ${data.firstName}, tenés puntos MOOVER esperándote
         </h2>
         <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
-            Tu último pedido fue el <strong>${lastActivityFormatted}</strong>. Si no hacés un nuevo
-            pedido en los próximos <strong>${data.daysUntilExpiry} días</strong>, tus puntos vencen.
+            Tu último pedido fue el <strong>${lastActivityFormatted}</strong>. Todavía tenés puntos
+            MOOVER acumulados para usar como descuento en tu próxima compra.
         </p>
 
         ${emailDivider()}
@@ -263,8 +263,8 @@ export async function sendPointsExpiringEmail(data: {
         ${emailDivider()}
 
         <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 0 0 16px 0;">
-            Podés usarlos en tu próxima compra — 1 punto = $1 de descuento, hasta el 20% del pedido.
-            Con un solo pedido reiniciás el contador y los mantenés vigentes 6 meses más.
+            Podés usarlos en tu próxima compra — 1 punto = $1 de descuento, hasta el 50% del pedido.
+            Tus puntos no vencen mientras sigas usando Moovy.
         </p>
 
         ${emailButton('Ver comercios y canjear', `${baseUrl}/tienda`, 'red')}
@@ -272,7 +272,7 @@ export async function sendPointsExpiringEmail(data: {
 
     return sendEmail({
         to: data.email,
-        subject: `⏳ Tenés ${pointsFormatted} puntos MOOVER por vencer`,
+        subject: `⭐ Tenés ${pointsFormatted} puntos MOOVER para usar`,
         html,
         tag: 'points_expiring',
     });
@@ -304,8 +304,8 @@ export async function sendDriverAutoActivatedEmail(data: {
         `, 'success')}
 
         <p style="color: #555; font-size: 14px; line-height: 1.7; margin: 16px 0 0 0;">
-            Primeras 10 entregas: solo pedidos con Mercado Pago (sin efectivo) para que te familiarices
-            con el flujo. Después se habilitan los pedidos en efectivo con límite progresivo.
+            Todos los pedidos se pagan con Mercado Pago, así que cobrás de forma simple y segura
+            desde tu primera entrega.
         </p>
 
         ${emailButton('Entrar al panel', `${baseUrl}/repartidor`, 'green')}

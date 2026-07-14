@@ -310,7 +310,7 @@ export default function InvitarAmigosPage() {
                                     <div className="w-7 h-7 rounded-full bg-[#e60012] text-white flex items-center justify-center text-xs font-bold flex-shrink-0">3</div>
                                     <div>
                                         <p className="text-sm font-medium text-gray-800">Los dos ganan puntos</p>
-                                        <p className="text-xs text-gray-400">Tu amigo recibe 100 puntos y vos ganás 50</p>
+                                        <p className="text-xs text-gray-400">Tu amigo recibe 2.500 puntos y vos ganás 3.500</p>
                                     </div>
                                 </div>
                             </div>

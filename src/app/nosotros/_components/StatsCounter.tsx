@@ -19,7 +19,7 @@ interface Stat {
 const STATS: Stat[] = [
     { target: 80, suffix: "k", label: "Habitantes en Ushuaia" },
     { target: 0, suffix: "%", pct: true, label: "Retención de tu dinero" },
-    { target: 8, suffix: "%", pct: true, label: "Comisión a comercios" },
+    { target: 10, suffix: "%", pct: true, label: "Comisión a comercios" },
     { target: 80, suffix: "%", pct: true, label: "Para repartidores" },
 ];
 

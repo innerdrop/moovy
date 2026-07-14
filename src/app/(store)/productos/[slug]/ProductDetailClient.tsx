@@ -455,15 +455,6 @@ export default function ProductDetailClient() {
                                 <p className="text-xs text-gray-500">Tarjeta, débito o dinero en cuenta</p>
                             </div>
                         </div>
-                        <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
-                                <Banknote className="w-4 h-4 text-emerald-600" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium text-gray-900">Efectivo</p>
-                                <p className="text-xs text-gray-500">Pagás al recibir tu pedido</p>
-                            </div>
-                        </div>
                         {merchant && (merchant.minOrderAmount ?? 0) > 0 && (
                             <div className="flex items-center gap-3">
                                 <div className="w-8 h-8 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
@@ -760,10 +751,6 @@ export default function ProductDetailClient() {
                             <div className="flex items-center gap-3 text-sm lg:text-base text-gray-600">
                                 <CreditCard className="w-4 h-4 text-blue-500 flex-shrink-0 lg:w-5 lg:h-5" />
                                 <span>Mercado Pago — tarjeta, débito o dinero en cuenta</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm lg:text-base text-gray-600">
-                                <Banknote className="w-4 h-4 text-emerald-500 flex-shrink-0 lg:w-5 lg:h-5" />
-                                <span>Efectivo al recibir</span>
                             </div>
                             {merchant && (merchant.minOrderAmount ?? 0) > 0 && (
                                 <div className="flex items-center gap-3 text-sm lg:text-base text-amber-600 font-medium">

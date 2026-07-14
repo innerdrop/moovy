@@ -211,7 +211,7 @@ export default function PuntosPage() {
     };
 
     const handleShare = async () => {
-        const shareText = `¡Unite a Moovy! Usá mi código ${referralCode} y ganá 500 puntos de regalo. #SoyMoover`;
+        const shareText = `¡Unite a Moovy! Usá mi código ${referralCode} y ganá 2.500 puntos de regalo. #SoyMoover`;
         const fullText = `${shareText} ${referralLink}`;
 
         // Check if on mobile
@@ -440,11 +440,11 @@ export default function PuntosPage() {
                         </span>
                         <h1 className="text-4xl lg:text-5xl font-black leading-tight mb-4">
                             Registrate gratis y arrancá con{" "}
-                            <span className="text-yellow-300">$1.000</span>{" "}
+                            <span className="text-yellow-300">$2.500</span>{" "}
                             para tu primer pedido
                         </h1>
                         <p className="text-lg text-white/85 mb-8 max-w-xl mx-auto">
-                            1.000 puntos de bienvenida, y cada compra suma más. En MOOVY tu plata rinde el doble.
+                            2.500 puntos de bienvenida, y cada compra suma más. En MOOVY tu plata rinde el doble.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-3 justify-center">
                             <Link
@@ -452,7 +452,7 @@ export default function PuntosPage() {
                                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-[#e60012] font-black rounded-xl hover:bg-gray-100 transition active:scale-95 shadow-lg"
                             >
                                 <UserPlus className="w-5 h-5" />
-                                Quiero mis $1.000
+                                Quiero mis $2.500
                             </Link>
                             <Link
                                 href="/login"
@@ -462,7 +462,7 @@ export default function PuntosPage() {
                             </Link>
                         </div>
                         <p className="text-white/60 text-xs mt-4">
-                            Los 1.000 puntos se activan con tu primera compra de $5.000+.
+                            Los 2.500 puntos se activan con tu primer pedido.
                         </p>
                     </div>
                 </section>
@@ -489,7 +489,7 @@ export default function PuntosPage() {
                             {[
                                 { n: 1, Icon: ShoppingBag, title: "Comprá", desc: "Cada pedido suma puntos, sin que hagas nada.", hl: "10 pts por cada $1.000" },
                                 { n: 2, Icon: Star, title: "Acumulá", desc: "Tus puntos valen plata de verdad.", hl: "1 punto = $1" },
-                                { n: 3, Icon: Gift, title: "Canjeá", desc: "Usalos como descuento en tu próximo pedido.", hl: "Hasta 20% off" },
+                                { n: 3, Icon: Gift, title: "Canjeá", desc: "Usalos como descuento en tu próximo pedido.", hl: "Hasta 50% off" },
                             ].map(({ n, Icon, title, desc, hl }) => (
                                 <div key={n} className="relative flex sm:flex-col items-start gap-4 sm:gap-0 bg-white rounded-2xl border border-gray-100 p-4 sm:p-5 shadow-sm">
                                     <span className="absolute top-3 right-4 text-2xl font-black text-gray-100 select-none">0{n}</span>
@@ -565,14 +565,14 @@ export default function PuntosPage() {
                                         <Gift className="h-3.5 w-3.5" /> Bono de bienvenida
                                     </div>
                                     <div className="flex items-end gap-2">
-                                        <span className="text-5xl lg:text-6xl font-black leading-none tracking-tight">1.000</span>
+                                        <span className="text-5xl lg:text-6xl font-black leading-none tracking-tight">2.500</span>
                                         <span className="mb-1.5 text-xl font-black">pts</span>
                                     </div>
-                                    <p className="mt-3 text-base font-black">= $1.000 en descuentos para tu primer pedido</p>
-                                    <p className="mt-1 text-sm text-white/75">Se activan con tu primera compra de $5.000 o más.</p>
+                                    <p className="mt-3 text-base font-black">= $2.500 en descuentos para tu primer pedido</p>
+                                    <p className="mt-1 text-sm text-white/75">Se activan con tu primer pedido.</p>
                                 </div>
                             </div>
-                            {/* Columna de apoyo — referido + reseña */}
+                            {/* Columna de apoyo — referido */}
                             <div className="grid gap-4">
                                 {/* Referral */}
                                 <div className="relative overflow-hidden rounded-3xl border border-violet-100 bg-white p-5 shadow-sm">
@@ -581,24 +581,11 @@ export default function PuntosPage() {
                                             <Users className="h-6 w-6" />
                                         </div>
                                         <div className="min-w-0">
-                                            <p className="text-xl font-black text-[#7C3AED] leading-none">1.000 pts</p>
+                                            <p className="text-xl font-black text-[#7C3AED] leading-none">3.500 pts</p>
                                             <p className="mt-1 text-sm font-black text-gray-900">Por cada amigo</p>
                                         </div>
                                     </div>
-                                    <p className="mt-3 text-xs leading-snug text-gray-500">Cuando hace su primera compra de $8.000+. Tu amigo también se lleva 500 pts.</p>
-                                </div>
-                                {/* Review */}
-                                <div className="relative overflow-hidden rounded-3xl border border-amber-100 bg-white p-5 shadow-sm">
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm">
-                                            <Star className="h-6 w-6" />
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-xl font-black text-amber-600 leading-none">25 pts</p>
-                                            <p className="mt-1 text-sm font-black text-gray-900">Por cada reseña</p>
-                                        </div>
-                                    </div>
-                                    <p className="mt-3 text-xs leading-snug text-gray-500">Después de cada compra que recibís. Contanos qué te pareció.</p>
+                                    <p className="mt-3 text-xs leading-snug text-gray-500">Cuando hace su primera compra. Tu amigo también se lleva 2.500 pts.</p>
                                 </div>
                             </div>
                         </div>
@@ -620,9 +607,9 @@ export default function PuntosPage() {
                         <div className="flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pt-1 pb-3 -mr-4 pr-4 lg:mr-0 lg:pr-0">
                             {[
                                 { emoji: "🚀", tag: "Inicial", name: "MOOVER", req: "Arrancás acá, sin pedidos", rate: "10", card: "bg-blue-50 border-blue-100", nameC: "text-gray-900", rateC: "text-blue-600", muted: "text-blue-400" },
-                                { emoji: "🥈", tag: "Silver", name: "MOOVER SILVER", req: "5 pedidos en 90 días", rate: "12,5", card: "bg-gray-50 border-gray-200", nameC: "text-gray-900", rateC: "text-gray-600", muted: "text-gray-400" },
-                                { emoji: "🥇", tag: "Gold", name: "MOOVER GOLD", req: "15 pedidos en 90 días", rate: "15", card: "bg-amber-50 border-amber-200", nameC: "text-gray-900", rateC: "text-amber-600", muted: "text-amber-500" },
-                                { emoji: "👑", tag: "Máximo", name: "MOOVER BLACK", req: "40 pedidos en 90 días", rate: "20", card: "bg-gray-900 border-gray-800", nameC: "text-white", rateC: "text-yellow-400", muted: "text-gray-400" },
+                                { emoji: "🥈", tag: "Silver", name: "MOOVER SILVER", req: "3 pedidos en 90 días", rate: "12,5", card: "bg-gray-50 border-gray-200", nameC: "text-gray-900", rateC: "text-gray-600", muted: "text-gray-400" },
+                                { emoji: "🥇", tag: "Gold", name: "MOOVER GOLD", req: "10 pedidos en 90 días", rate: "15", card: "bg-amber-50 border-amber-200", nameC: "text-gray-900", rateC: "text-amber-600", muted: "text-amber-500" },
+                                { emoji: "👑", tag: "Máximo", name: "MOOVER BLACK", req: "22 pedidos en 90 días", rate: "20", card: "bg-gray-900 border-gray-800", nameC: "text-white", rateC: "text-yellow-400", muted: "text-gray-400" },
                             ].map((t) => (
                                 <div key={t.name} className={`flex-shrink-0 w-[152px] snap-start rounded-2xl border p-4 shadow-sm ${t.card}`}>
                                     <div className="mb-2 flex items-center justify-between">
@@ -663,9 +650,9 @@ export default function PuntosPage() {
                         <div className="grid gap-3 sm:grid-cols-2">
                             {[
                                 { emoji: "✅", title: "Ganás al recibir tu pedido", desc: "Los puntos se acreditan cuando el pedido queda entregado. Si cancelás, no se suman." },
-                                { emoji: "💵", title: "1 punto = $1 de descuento", desc: "Canjeás desde 500 puntos y hasta el 20% de cada pedido. Vos elegís cuándo usarlos." },
+                                { emoji: "💵", title: "1 punto = $1 de descuento", desc: "Canjeás desde 500 puntos y hasta el 50% de cada pedido. Vos elegís cuándo usarlos." },
                                 { emoji: "📅", title: "Tu nivel mira los últimos 90 días", desc: "Los pedidos se acumulan en una ventana móvil de 90 días. No hay que hacerlos todos juntos." },
-                                { emoji: "🤝", title: "Invitá y ganan los dos", desc: "Vos ganás 1.000 pts cuando tu amigo hace su primer pedido de $8.000+. Él arranca con 500 pts." },
+                                { emoji: "🤝", title: "Invitá y ganan los dos", desc: "Vos ganás 3.500 pts cuando tu amigo hace su primera compra. Él arranca con 2.500 pts." },
                                 { emoji: "⚡", title: "×2 puntos de lanzamiento", desc: "Durante las primeras semanas todos tus puntos valen el doble. Aprovechá para arrancar fuerte." },
                                 { emoji: "⏳", title: "Se mantienen si seguís pidiendo", desc: "Tus puntos quedan disponibles mientras uses Moovy. Pedí de vez en cuando y no los perdés." },
                             ].map((d) => (
@@ -689,7 +676,7 @@ export default function PuntosPage() {
                             Sumate a los MOOVERS de Ushuaia
                         </h2>
                         <p className="text-xl text-white/90 mb-8">
-                            Creá tu cuenta en 2 minutos y llevate $1.000 para tu primer pedido.
+                            Creá tu cuenta en 2 minutos y llevate $2.500 para tu primer pedido.
                         </p>
                         <div className="flex flex-col sm:flex-row gap-4 justify-center">
                             <Link
@@ -697,7 +684,7 @@ export default function PuntosPage() {
                                 className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-[#e60012] font-bold rounded-xl hover:bg-gray-100 transition active:scale-95"
                             >
                                 <UserPlus className="w-5 h-5" />
-                                Registrarme y ganar $1.000
+                                Registrarme y ganar $2.500
                             </Link>
                             <Link
                                 href="/login"
@@ -870,7 +857,7 @@ export default function PuntosPage() {
                         <div className="bg-amber-50 rounded-xl p-3 text-center border border-amber-100">
                             <p className="text-[10px] uppercase tracking-wider text-amber-700 font-bold mb-1">Máximo</p>
                             <p className="text-lg font-bold text-gray-900 leading-tight">
-                                {pointsConfig?.maxDiscountPercent ?? 20}%
+                                {pointsConfig?.maxDiscountPercent ?? 50}%
                             </p>
                             <p className="text-[10px] text-gray-500 mt-0.5">Del subtotal</p>
                         </div>
@@ -924,7 +911,7 @@ export default function PuntosPage() {
                         </button>
                     </div>
                     <p className="text-xs text-gray-400 mt-2">
-                        Compartí tu código y ganá 1,000 puntos por cada amigo que se
+                        Compartí tu código y ganá 3.500 puntos por cada amigo que se
                         registre
                     </p>
                 </div>
@@ -1042,7 +1029,7 @@ export default function PuntosPage() {
                                         Refiriendo amigos
                                     </p>
                                     <p className="text-gray-500 text-xs">
-                                        1,000 puntos por cada amigo
+                                        3.500 puntos por cada amigo
                                     </p>
                                 </div>
                                 {expandedItem === "referidos" ? (
@@ -1058,8 +1045,8 @@ export default function PuntosPage() {
                                         primera compra:
                                     </p>
                                     <ul className="list-disc list-inside space-y-1 text-xs">
-                                        <li>Vos ganás 1,000 puntos cuando tu amigo compra $8,000+</li>
-                                        <li>Tu amigo gana 500 puntos extras de bienvenida</li>
+                                        <li>Vos ganás 3.500 puntos cuando tu amigo hace su primera compra</li>
+                                        <li>Tu amigo gana 2.500 puntos extras de bienvenida</li>
                                         <li>¡No hay límite! Invitá a todos los que quieras</li>
                                     </ul>
                                 </div>
@@ -1076,7 +1063,7 @@ export default function PuntosPage() {
                                     Bono de bienvenida
                                 </p>
                                 <p className="text-gray-500 text-xs">
-                                    1,000 puntos con tu primera compra ✓
+                                    2.500 puntos con tu primer pedido ✓
                                 </p>
                             </div>
                         </div>
@@ -1093,34 +1080,6 @@ export default function PuntosPage() {
                         obtener un descuento. ¡Cuantos más puntos uses, mayor será tu
                         ahorro!
                     </p>
-                </div>
-
-                {/* Catalog Teaser */}
-                <div className="mt-4 bg-gradient-to-r from-red-600 to-indigo-600 rounded-xl p-4 text-white relative overflow-hidden">
-                    <div className="absolute top-0 right-0 opacity-20">
-                        <Gift className="w-24 h-24 -mt-4 -mr-4" />
-                    </div>
-                    <div className="relative">
-                        <span className="text-xs bg-yellow-400 text-yellow-900 px-2 py-0.5 rounded-full font-bold">
-                            PRÓXIMAMENTE
-                        </span>
-                        <h3 className="font-bold text-lg mt-2">🎁 Catálogo de Canje</h3>
-                        <p className="text-sm text-white/80 mt-1">
-                            Muy pronto podrás canjear tus puntos por productos exclusivos,
-                            experiencias únicas y mucho más.
-                        </p>
-                        <div className="flex gap-2 mt-3">
-                            <div className="bg-white/20 rounded-lg px-3 py-1 text-xs">
-                                🎧 Auriculares
-                            </div>
-                            <div className="bg-white/20 rounded-lg px-3 py-1 text-xs">
-                                🎫 Descuentos
-                            </div>
-                            <div className="bg-white/20 rounded-lg px-3 py-1 text-xs">
-                                🎁 Sorpresas
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 {/* Transaction History */}
@@ -1248,7 +1207,7 @@ export default function PuntosPage() {
                             </div>
 
                             <p className="text-xs text-gray-400 mt-4">
-                                Compartí tu código para que otros ganen 500 puntos
+                                Compartí tu código para que otros ganen 2.500 puntos
                             </p>
                         </div>
                     </div>
@@ -1473,7 +1432,7 @@ export default function PuntosPage() {
                                     </div>
                                     <ul className="text-sm text-gray-600 space-y-1">
                                         <li>✓ 10 puntos por cada $1,000 gastados</li>
-                                        <li>✓ Descuentos hasta 20% del subtotal</li>
+                                        <li>✓ Descuentos hasta 50% del subtotal</li>
                                     </ul>
                                 </div>
 
@@ -1483,7 +1442,7 @@ export default function PuntosPage() {
                                         <span className="text-3xl">🥈</span>
                                         <div>
                                             <p className="font-bold text-gray-900">MOOVER SILVER</p>
-                                            <p className="text-xs text-gray-500">5 pedidos en 90 días</p>
+                                            <p className="text-xs text-gray-500">3 pedidos en 90 días</p>
                                         </div>
                                     </div>
                                     <ul className="text-sm text-gray-600 space-y-1">
@@ -1498,7 +1457,7 @@ export default function PuntosPage() {
                                         <span className="text-3xl">🥇</span>
                                         <div>
                                             <p className="font-bold text-gray-900">MOOVER GOLD</p>
-                                            <p className="text-xs text-gray-500">15 pedidos en 90 días</p>
+                                            <p className="text-xs text-gray-500">10 pedidos en 90 días</p>
                                         </div>
                                     </div>
                                     <ul className="text-sm text-gray-600 space-y-1">
@@ -1513,7 +1472,7 @@ export default function PuntosPage() {
                                         <span className="text-3xl">👑</span>
                                         <div>
                                             <p className="font-bold text-white">MOOVER BLACK</p>
-                                            <p className="text-xs text-gray-400">40 pedidos en 90 días</p>
+                                            <p className="text-xs text-gray-400">22 pedidos en 90 días</p>
                                         </div>
                                     </div>
                                     <ul className="text-sm text-gray-300 space-y-1">

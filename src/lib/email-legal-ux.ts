@@ -560,7 +560,7 @@ export async function sendPointsEarnedEmail(data: {
 
         ${emailInfoBox(`
             <p style="margin: 0; color: #555; font-size: 14px; line-height: 1.7;">
-                <strong>1 punto = $1 ARS.</strong> Pod\u00e9s canjearlos como descuento en tu pr\u00f3xima compra (hasta 20% del subtotal, desde 500 puntos).
+                <strong>1 punto = $1 ARS.</strong> Pod\u00e9s canjearlos como descuento en tu pr\u00f3xima compra (hasta 50% del subtotal, desde 500 puntos).
                 ${data.newBalance >= 500 ? `<br><span style="color: #059669; font-weight: 600;">\u2713 Ya pod\u00e9s usarlos: ten\u00e9s hasta $${discountValue} en descuento.</span>` : `<br>Te faltan ${(500 - data.newBalance).toLocaleString("es-AR")} pts para llegar al m\u00ednimo de canje.`}
             </p>
         `)}

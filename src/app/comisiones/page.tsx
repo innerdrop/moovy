@@ -41,7 +41,7 @@ const pricingCards = [
     details: [
       "Pago instantáneo al instante",
       "Sin retención de dinero",
-      "Tarifa Fundador 5% (primeros 10)",
+      "Primer mes con 0% de comisión",
       "Sin cargo de configuración",
       "Dashboard de ventas en tiempo real",
       "Soporte por WhatsApp",
@@ -80,7 +80,7 @@ const pricingCards = [
       "Sin cargo por usar la app",
       "Delivery desde $50 (según zona)",
       "Puntos MOOVER en cada compra",
-      "$0.01 por punto (máx 50% desc)",
+      "$1 por punto (máx 50% desc)",
       "Compra en múltiples comercios",
       "Tracking en tiempo real",
     ],
@@ -114,7 +114,7 @@ const pricingCards = [
 // Our commitments data (no competitor comparisons)
 const commitments = [
   { metric: "Comisión Comercio", value: "10%", detail: "Sin cargos ocultos ni sorpresas" },
-  { metric: "Tarifa Fundador", value: "5%", detail: "Primeros 10 comercios por categoría, 12 meses" },
+  { metric: "Primer mes", value: "0%", detail: "Comisión gratis los primeros 30 días" },
   { metric: "Pago a Comercios", value: "Instantáneo", detail: "El dinero es tuyo desde que se confirma la venta" },
   { metric: "Retención de Dinero", value: "0%", detail: "Nunca retenemos un peso" },
   { metric: "Cargo al Comprador", value: "$0", detail: "Sin cargos extra por usar MOOVY" },
@@ -136,8 +136,8 @@ const faqSections = [
         a: "La comisión del 10% cubre: plataforma tecnológica, procesamiento de pagos, servicio de delivery, soporte 24/7 y herramientas de marketing. Es todo incluido.",
       },
       {
-        q: "¿Cuál es la Tarifa Fundador?",
-        a: "Los primeros 10 comercios en cada categoría pagan solo 5% de comisión durante el primer año. Después se ajusta al 10%. Queremos recompensar a los pioneros que confían en MOOVY.",
+        q: "¿El primer mes es gratis?",
+        a: "Sí. Tu primer mes tiene 0% de comisión (30 días desde que te aprobamos). A partir del mes 2 aplica el 10%, que puede bajar según tu volumen de ventas.",
       },
       {
         q: "¿Hay costo de configuración o mensualidad?",
@@ -183,11 +183,11 @@ const faqSections = [
       },
       {
         q: "¿Cómo funcionan los puntos MOOVER?",
-        a: "Ganás 1 punto por cada $1 gastado. Cada punto = $0.01 de descuento. Máximo 50% del valor del pedido como descuento con puntos. Nunca expiran.",
+        a: "Ganás 10 puntos por cada $1.000 gastado. Cada punto = $1 de descuento. Máximo 50% del valor del pedido como descuento con puntos. No vencen mientras uses Moovy.",
       },
       {
         q: "¿Hay bonificación por referidos?",
-        a: "Sí. Invitá amigos, ellos usan tu código, ambos reciben 200 puntos ($2 de crédito).",
+        a: "Sí. Invitá amigos con tu código: vos ganás 3.500 puntos y tu amigo 2.500 cuando hace su primer pedido.",
       },
     ],
   },
@@ -339,15 +339,15 @@ export default function ComisionesPage() {
           </div>
         </section>
 
-        {/* Tarifa Fundador Section */}
+        {/* Primer mes gratis */}
         <section className="px-4 py-12 max-w-6xl mx-auto">
           <div className="bg-gradient-to-r from-red-600 to-red-700 rounded-2xl p-8 md:p-12 text-white">
             <div className="flex items-start gap-4 mb-6">
               <MoovyIconInstantPay className="w-8 h-8 flex-shrink-0 mt-1" />
               <div>
-                <h3 className="text-3xl font-bold mb-2">Tarifa Fundador 🚀</h3>
+                <h3 className="text-3xl font-bold mb-2">Tu primer mes, gratis 🚀</h3>
                 <p className="text-red-100">
-                  Pagas solo 5% de comisión durante el primer año
+                  0% de comisión durante los primeros 30 días
                 </p>
               </div>
             </div>
@@ -356,11 +356,11 @@ export default function ComisionesPage() {
               <ul className="space-y-3 text-red-50">
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                  <span>Solo para los 10 primeros comercios en cada categoría</span>
+                  <span>Probá MOOVY sin pagar comisión el primer mes</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
-                  <span>5% de comisión en lugar de 10% durante 12 meses</span>
+                  <span>Desde el mes 2, 10% (baja según tu volumen de ventas)</span>
                 </li>
                 <li className="flex items-center gap-3">
                   <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
@@ -371,14 +371,6 @@ export default function ComisionesPage() {
                   <span>Prioritario en búsquedas durante el primer mes</span>
                 </li>
               </ul>
-            </div>
-
-            <div className="mb-6 p-4 bg-white/15 rounded-lg border border-white/20">
-              <p className="text-sm text-red-50 mb-2 font-semibold">⏱️ URGENCIA:</p>
-              <p className="text-red-100">
-                Solo quedan 3 lugares disponibles para Almacenes. Registrate ahora para asegurar tu
-                Tarifa Fundador.
-              </p>
             </div>
 
             <Link

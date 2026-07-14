@@ -10,14 +10,23 @@ interface PointsWidgetProps {
     onApplyPoints: (points: number, discount: number) => void;
 }
 
-// Conversion rate: 100 points = $1.50 discount (1.5% return)
-const POINTS_TO_DISCOUNT_RATE = 0.015;
-const MAX_DISCOUNT_PERCENT = 15; // Max 15% of order total
-const MIN_POINTS_TO_REDEEM = 500; // Minimum 500 points to use
+// fix/moover-valor-punto-checkout: los valores del canje (valor del punto, tope %,
+// mínimo) se leen del config REAL (/api/points?config=true) para que el widget
+// muestre EXACTAMENTE lo que el servidor descuenta. Antes usaba 1 pt = $0,015 y
+// tope 15% hardcodeados — distinto del canon (1 pt = $1) → el cliente veía un
+// descuento que no coincidía con el cobrado. Fallbacks conservadores por si falla
+// el fetch (el servidor igual re-topea en orders/route.ts, así que nunca se cobra
+// de más).
+const DEFAULT_POINTS_VALUE = 1;   // 1 punto = $1
+const DEFAULT_MAX_DISCOUNT = 50;  // 50% del subtotal (editable en OPS)
+const DEFAULT_MIN_REDEEM = 500;   // mínimo 500 puntos
 
 export default function PointsWidget({ orderTotal, pointsApplied, onApplyPoints }: PointsWidgetProps) {
     const [loading, setLoading] = useState(true);
     const [balance, setBalance] = useState(0);
+    const [pointsValue, setPointsValue] = useState(DEFAULT_POINTS_VALUE);
+    const [maxDiscountPercent, setMaxDiscountPercent] = useState(DEFAULT_MAX_DISCOUNT);
+    const [minPointsToRedeem, setMinPointsToRedeem] = useState(DEFAULT_MIN_REDEEM);
     const [selectedPoints, setSelectedPoints] = useState(0);
     const [wantsToUsePoints, setWantsToUsePoints] = useState(false);
 
@@ -28,10 +37,15 @@ export default function PointsWidget({ orderTotal, pointsApplied, onApplyPoints 
     const loadBalance = async () => {
         setLoading(true);
         try {
-            const res = await fetch("/api/points");
+            const res = await fetch("/api/points?config=true");
             if (res.ok) {
                 const data = await res.json();
                 setBalance(data.balance || 0);
+                if (data.config) {
+                    if (typeof data.config.pointsValue === "number" && data.config.pointsValue > 0) setPointsValue(data.config.pointsValue);
+                    if (typeof data.config.maxDiscountPercent === "number") setMaxDiscountPercent(data.config.maxDiscountPercent);
+                    if (typeof data.config.minPointsToRedeem === "number") setMinPointsToRedeem(data.config.minPointsToRedeem);
+                }
             }
         } catch (error) {
             console.error("Error loading points:", error);
@@ -41,17 +55,18 @@ export default function PointsWidget({ orderTotal, pointsApplied, onApplyPoints 
     };
 
     const calculateDiscount = (points: number) => {
-        return Math.round(points * POINTS_TO_DISCOUNT_RATE);
+        return Math.round(points * pointsValue);
     };
 
-    // Max discount cannot exceed 15% of order total OR user balance value
-    const maxDiscountByPercent = Math.floor(orderTotal * (MAX_DISCOUNT_PERCENT / 100));
-    const maxDiscountByBalance = Math.floor(balance * POINTS_TO_DISCOUNT_RATE);
+    // El tope y el valor del punto salen del config real (igual que el servidor):
+    // el descuento no puede superar maxDiscountPercent% del subtotal ni el saldo.
+    const maxDiscountByPercent = Math.floor(orderTotal * (maxDiscountPercent / 100));
+    const maxDiscountByBalance = Math.floor(balance * pointsValue);
     const maxDiscount = Math.min(maxDiscountByPercent, maxDiscountByBalance);
-    const maxUsablePoints = Math.ceil(maxDiscount / POINTS_TO_DISCOUNT_RATE);
+    const maxUsablePoints = Math.ceil(maxDiscount / (pointsValue || 1));
 
     // Check if user has enough points to redeem
-    const canRedeem = balance >= MIN_POINTS_TO_REDEEM;
+    const canRedeem = balance >= minPointsToRedeem;
 
     if (loading) {
         return (
@@ -61,8 +76,8 @@ export default function PointsWidget({ orderTotal, pointsApplied, onApplyPoints 
         );
     }
 
-    // Case 1: No points available
-    if (balance < 100) {
+    // Case 1: No llega al mínimo para canjear
+    if (balance < minPointsToRedeem) {
         return (
             <div className="bg-gray-50 rounded-xl p-4 lg:p-6 text-sm lg:text-base text-gray-500 flex items-center gap-3">
                 <Gift className="w-5 h-5 lg:w-6 lg:h-6 text-gray-400 flex-shrink-0" />

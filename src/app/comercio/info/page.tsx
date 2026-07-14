@@ -15,11 +15,11 @@ import {
 export const metadata: Metadata = {
     title: "Sumá tu comercio a MOOVY | Delivery en Ushuaia",
     description:
-        "Sumá tu comercio a MOOVY. Comisiones desde 8%, cobrás al instante y tu primer mes es gratis. Delivery propio en Ushuaia.",
+        "Sumá tu comercio a MOOVY. Comisiones del 10%, cobrás al instante y tu primer mes es gratis. Delivery propio en Ushuaia.",
     openGraph: {
         title: "Sumá tu comercio a MOOVY",
         description:
-            "Comisiones desde 8%, cobro instantáneo, primer mes gratis y soporte local en Ushuaia.",
+            "Comisiones del 10%, cobro instantáneo, primer mes gratis y soporte local en Ushuaia.",
     },
 };
 
@@ -32,7 +32,7 @@ const benefits = [
     },
     {
         icon: TrendingUp,
-        title: "Comisiones desde el 8%",
+        title: "Comisiones del 10%",
         description:
             "Las más bajas del mercado. Primer mes gratis para que pruebes sin riesgo.",
     },
