@@ -1296,6 +1296,9 @@ model PointsConfig {
   reviewBonus          Int      @default(25)
   pointsExpireDays     Int?
   refereeBonus         Int      @default(500)
+  // feat/moover-referido-residual: residual de por vida al referidor.
+  referralResidualBonus Int     @default(1000) // puntos por hito
+  referralResidualEvery Int     @default(10)   // cada cuántos pedidos entregados del referido
   minPurchaseForBonus  Float    @default(5000)
   minReferralPurchase  Float    @default(8000)
   tierWindowDays       Int      @default(90)
@@ -1328,6 +1331,10 @@ model Referral {
   referrerPoints Int      @default(50)
   refereePoints  Int      @default(100)
   status         String   @default("COMPLETED")
+  // feat/moover-referido-residual: cuántos hitos de residual (cada N pedidos del
+  // referido) ya se le pagaron al referidor. Idempotencia: solo se paga
+  // (floor(pedidos/N) - residualsPaid) hitos nuevos por vez.
+  residualsPaid  Int      @default(0)
   createdAt      DateTime @default(now())
   referee        User     @relation("ReferralReferee", fields: [refereeId], references: [id], onDelete: Cascade)
   referrer       User     @relation("ReferralReferrer", fields: [referrerId], references: [id], onDelete: Cascade)

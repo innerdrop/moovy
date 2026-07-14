@@ -653,6 +653,12 @@ export default function BibliaConfigClient({ initialConfig }: Props) {
           <NumInput label="Bono reseña" name="reviewBonus" value={config.points.reviewBonus}
             onChange={(n, v) => updateField("points", n, v)} min={0} max={10000} unit="pts"
             info="Puntos por dejar reseña de un pedido entregado (una vez por pedido)." />
+          <NumInput label="Residual referido (pts)" name="referralResidualBonus" value={config.points.referralResidualBonus}
+            onChange={(n, v) => updateField("points", n, v)} min={0} max={10000} unit="pts"
+            info="Puntos al referidor por cada hito de pedidos de su referido (de por vida)." />
+          <NumInput label="Residual cada N pedidos" name="referralResidualEvery" value={config.points.referralResidualEvery}
+            onChange={(n, v) => updateField("points", n, v)} min={1} max={100} unit="pedidos"
+            info="Cada cuántos pedidos entregados del referido se paga el residual." />
         </div>
 
         <h3 className="text-xs font-bold text-slate-600 uppercase tracking-wider">Activación de bonos</h3>

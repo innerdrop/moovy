@@ -44,6 +44,9 @@ export interface PointsMooverConfig {
   refereeBonus: number;
   // feat/moover-bono-resena: reactivado. Puntos por dejar reseña de un pedido.
   reviewBonus: number;
+  // feat/moover-referido-residual: residual de por vida al referidor.
+  referralResidualBonus: number;
+  referralResidualEvery: number;
   minPurchaseForBonus: number;
   minReferralPurchase: number;
   tierWindowDays: number;
@@ -192,6 +195,8 @@ export async function getFullOpsConfig(): Promise<FullOpsConfig> {
       referralBonus: pointsConfig?.referralBonus ?? 1000,
       refereeBonus: (pointsConfig as any)?.refereeBonus ?? 500,
       reviewBonus: (pointsConfig as any)?.reviewBonus ?? 1000,
+      referralResidualBonus: (pointsConfig as any)?.referralResidualBonus ?? 1000,
+      referralResidualEvery: (pointsConfig as any)?.referralResidualEvery ?? 10,
       minPurchaseForBonus: (pointsConfig as any)?.minPurchaseForBonus ?? 5000,
       minReferralPurchase: (pointsConfig as any)?.minReferralPurchase ?? 8000,
       tierWindowDays: (pointsConfig as any)?.tierWindowDays ?? 90,
@@ -353,6 +358,8 @@ export async function updatePointsConfig(
     updateData.referralBonus = data.referralBonus;
   if (data.refereeBonus !== undefined) updateData.refereeBonus = data.refereeBonus;
   if (data.reviewBonus !== undefined) updateData.reviewBonus = data.reviewBonus;
+  if (data.referralResidualBonus !== undefined) updateData.referralResidualBonus = data.referralResidualBonus;
+  if (data.referralResidualEvery !== undefined) updateData.referralResidualEvery = data.referralResidualEvery;
   if (data.minPurchaseForBonus !== undefined)
     updateData.minPurchaseForBonus = data.minPurchaseForBonus;
   if (data.minReferralPurchase !== undefined)

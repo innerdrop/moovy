@@ -17,6 +17,9 @@ interface PointsConfig {
     // feat/moover-bono-resena: reactivado. Puntos por dejar reseña de un pedido
     // entregado (una vez por pedido). La columna ya existía en la DB.
     reviewBonus: number;
+    // feat/moover-referido-residual: residual de por vida al referidor.
+    referralResidualBonus: number;    // puntos por hito
+    referralResidualEvery: number;    // cada cuántos pedidos entregados del referido
     minPurchaseForBonus: number;      // Min 1st purchase to activate bonuses
     minReferralPurchase: number;      // Min purchase for referral to count
     // feat/moover-boost-lanzamiento: boost de earn por tiempo limitado (ej. ×2
@@ -37,6 +40,8 @@ const defaultConfig: PointsConfig = {
     referralBonus: 3500,              // $3.500 al que invita (tras 1er pedido del referido)
     refereeBonus: 2500,               // $2.500 al invitado
     reviewBonus: 1000,                // $1.000 por dejar reseña (una vez por pedido)
+    referralResidualBonus: 1000,      // $1.000 al referidor por hito
+    referralResidualEvery: 10,        // cada 10 pedidos entregados del referido
     minPurchaseForBonus: 5000,        // $5,000 min 1st purchase to activate
     minReferralPurchase: 8000,        // $8,000 min for referral to count
     earnBoostMultiplier: 1,           // 1 = boost apagado (conservador)
@@ -238,6 +243,8 @@ export async function getPointsConfig(): Promise<PointsConfig> {
             referralBonus: config.referralBonus,
             refereeBonus: (config as any).refereeBonus ?? defaultConfig.refereeBonus,
             reviewBonus: (config as any).reviewBonus ?? defaultConfig.reviewBonus,
+            referralResidualBonus: (config as any).referralResidualBonus ?? defaultConfig.referralResidualBonus,
+            referralResidualEvery: (config as any).referralResidualEvery ?? defaultConfig.referralResidualEvery,
             minPurchaseForBonus: (config as any).minPurchaseForBonus ?? defaultConfig.minPurchaseForBonus,
             minReferralPurchase: (config as any).minReferralPurchase ?? defaultConfig.minReferralPurchase,
             // feat/moover-boost-lanzamiento: `as any` para sobrevivir a un Prisma
@@ -597,6 +604,100 @@ export async function activatePendingBonuses(
 }
 
 /**
+ * feat/moover-referido-residual: paga al REFERIDOR un residual de por vida por cada
+ * N pedidos ENTREGADOS de su referido (un solo nivel, atado a pedidos reales pagados
+ * → se autofinancia). Se llama cuando un pedido del referido pasa a DELIVERED.
+ * Idempotente: solo paga los hitos NUEVOS (floor(pedidosEntregados / N) − residualsPaid)
+ * dentro de una tx Serializable que actualiza el contador `residualsPaid`, así dos
+ * entregas casi simultáneas nunca duplican. Devuelve los puntos otorgados (0 si el
+ * user no fue referido, no hay hito nuevo, o el bono está en 0). Nunca throwea afuera.
+ */
+export async function processReferralResidual(refereeUserId: string): Promise<number> {
+    try {
+        const referral = await prisma.referral.findUnique({
+            where: { refereeId: refereeUserId },
+            select: { residualsPaid: true },
+        });
+        if (!referral) return 0; // el user no fue referido por nadie
+
+        const config = await getPointsConfig();
+        const bonus = config.referralResidualBonus ?? 0;
+        const every = config.referralResidualEvery ?? 0;
+        if (bonus <= 0 || every <= 0) return 0;
+
+        const deliveredCount = await prisma.order.count({
+            where: { userId: refereeUserId, status: "DELIVERED", deletedAt: null },
+        });
+        const milestonesDue = Math.floor(deliveredCount / every);
+        if (milestonesDue <= referral.residualsPaid) return 0; // sin hitos nuevos
+
+        for (let attempt = 1; attempt <= POINTS_TX_MAX_RETRIES; attempt++) {
+            try {
+                const awarded = await prisma.$transaction(
+                    async (tx) => {
+                        // Re-leer el contador dentro de la tx (idempotencia + carrera).
+                        const fresh = await tx.referral.findUnique({
+                            where: { refereeId: refereeUserId },
+                            select: { residualsPaid: true, referrerId: true },
+                        });
+                        if (!fresh) return 0;
+                        const newMilestones = milestonesDue - fresh.residualsPaid;
+                        if (newMilestones <= 0) return 0;
+
+                        const total = newMilestones * bonus;
+                        const referrer = await tx.user.findUnique({
+                            where: { id: fresh.referrerId },
+                            select: { pointsBalance: true },
+                        });
+                        if (!referrer) return 0;
+
+                        const newBalance = (referrer.pointsBalance || 0) + total;
+                        await tx.user.update({
+                            where: { id: fresh.referrerId },
+                            data: { pointsBalance: newBalance, updatedAt: new Date() },
+                        });
+                        await tx.pointsTransaction.create({
+                            data: {
+                                userId: fresh.referrerId,
+                                type: "REFERRAL_RESIDUAL",
+                                amount: total,
+                                balanceAfter: newBalance,
+                                description:
+                                    newMilestones === 1
+                                        ? "Ganaste puntos porque tu referido siguió pidiendo"
+                                        : `Ganaste puntos por ${newMilestones} hitos de tu referido`,
+                            },
+                        });
+                        await tx.referral.update({
+                            where: { refereeId: refereeUserId },
+                            data: { residualsPaid: milestonesDue },
+                        });
+                        return total;
+                    },
+                    { isolationLevel: "Serializable" }
+                );
+                return awarded;
+            } catch (error: any) {
+                const isSerializationFailure =
+                    error?.code === "P2034" ||
+                    error?.meta?.code === "40001" ||
+                    /could not serialize/i.test(error?.message || "");
+                if (isSerializationFailure && attempt < POINTS_TX_MAX_RETRIES) {
+                    await new Promise((r) => setTimeout(r, POINTS_TX_RETRY_BASE_MS * attempt));
+                    continue;
+                }
+                console.error("[Points] Error processing referral residual:", error);
+                return 0;
+            }
+        }
+        return 0;
+    } catch (error) {
+        console.error("[Points] Error in processReferralResidual:", error);
+        return 0;
+    }
+}
+
+/**
  * Award points when order is DELIVERED. Idempotent: if Order.pointsEarned is already set,
  * returns without doing anything. Sets Order.pointsEarned to the amount awarded so that
  * cancel/reject/refund paths can revert correctly.
@@ -660,6 +761,14 @@ export async function awardOrderPointsIfDelivered(
             await activatePendingBonuses(order.userId, order.subtotal, orderId);
         } catch (bonusError) {
             console.error("[Points] Error activating bonuses after DELIVERED:", bonusError);
+        }
+
+        // feat/moover-referido-residual: si este user fue referido, pagar al referidor
+        // el residual por los hitos nuevos (no rompe el flujo del pedido si falla).
+        try {
+            await processReferralResidual(order.userId);
+        } catch (residualError) {
+            console.error("[Points] Error processing referral residual after DELIVERED:", residualError);
         }
 
         return { awarded: earned, skipped: false };
@@ -802,6 +911,8 @@ export async function updatePointsConfig(newConfig: Partial<PointsConfig>): Prom
             referralBonus: config.referralBonus,
             refereeBonus: (config as any).refereeBonus ?? defaultConfig.refereeBonus,
             reviewBonus: (config as any).reviewBonus ?? defaultConfig.reviewBonus,
+            referralResidualBonus: (config as any).referralResidualBonus ?? defaultConfig.referralResidualBonus,
+            referralResidualEvery: (config as any).referralResidualEvery ?? defaultConfig.referralResidualEvery,
             minPurchaseForBonus: (config as any).minPurchaseForBonus ?? defaultConfig.minPurchaseForBonus,
             minReferralPurchase: (config as any).minReferralPurchase ?? defaultConfig.minReferralPurchase,
             earnBoostMultiplier: (config as any).earnBoostMultiplier ?? defaultConfig.earnBoostMultiplier,

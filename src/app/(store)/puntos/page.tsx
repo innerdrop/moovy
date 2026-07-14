@@ -586,6 +586,7 @@ export default function PuntosPage() {
                                         </div>
                                     </div>
                                     <p className="mt-3 text-xs leading-snug text-gray-500">Cuando hace su primera compra. Tu amigo también se lleva 2.500 pts.</p>
+                                    <p className="mt-2 text-xs font-black text-[#7C3AED]">+ 1.000 pts cada 10 pedidos que haga tu amigo, ¡de por vida!</p>
                                 </div>
                                 {/* Reseña */}
                                 <div className="relative overflow-hidden rounded-3xl border border-amber-100 bg-white p-5 shadow-sm">
