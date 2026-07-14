@@ -56,6 +56,7 @@ async function seedStoreSettings() {
     freeDeliveryMinimum: null,                      // Sin delivery gratis al lanzar
     riderCommissionPercent: 80,                     // Repartidor: 80% del costo viaje
     operationalCostPercent: 5,                      // 5% subtotal (MP 3.81% + margen 1.19%)
+    mpReservePercent: 7.6,                          // Reserva MP (acreditacion al instante) — split "cada parte paga lo suyo"
 
     // Zonas (Biblia v3) — DEPRECADO desde rama feat/zonas-delivery-multiplicador.
     // La fuente de verdad ahora es la tabla DeliveryZone con polígonos editables
@@ -145,34 +146,27 @@ async function seedPointsConfig() {
   console.log("\n🎯 [PointsConfig] Configurando Puntos MOOVER...");
 
   const data = {
-    // Biblia v3: 10 pts por $1.000 (0.01 pts/$1)
+    // Biblia v5: 10 pts por $1.000 (0.01 pts/$1). 1 punto = $1. Cashback ~1%.
     pointsPerDollar: 0.01,
     minPurchaseForPoints: 0,        // Sin minimo para ganar puntos
     pointsValue: 1,                 // 1 punto = $1 ARS
     minPointsToRedeem: 500,         // Minimo 500 pts para canjear ($500)
-    maxDiscountPercent: 20,         // Max 20% del subtotal con puntos
-    signupBonus: 1000,              // 1.000 pts bienvenida (boost mes 1: se duplica)
-    referralBonus: 1000,            // 1.000 pts para quien refiere
-    refereeBonus: 500,              // 500 pts para el referido
-    reviewBonus: 25,                // 25 pts por resena
-    minPurchaseForBonus: 5000,      // $5K min 1ra compra para activar bonus
-    minReferralPurchase: 8000,      // $8K min para que cuente la referencia
+    maxDiscountPercent: 50,         // Max 50% del subtotal con puntos (Biblia v5)
+    signupBonus: 2500,              // $2.500 bienvenida (igual para todos, tras 1er pedido)
+    referralBonus: 3500,            // $3.500 al que invita
+    refereeBonus: 2500,             // $2.500 al invitado
+    reviewBonus: 1000,              // $1.000 por resena (una vez por pedido)
+    referralResidualBonus: 1000,    // $1.000 al referidor por hito
+    referralResidualEvery: 10,      // cada 10 pedidos entregados del referido
+    minPurchaseForBonus: 0,         // bienvenida se activa con el 1er pedido (sin minimo alto)
+    minReferralPurchase: 5000,      // piso anti-abuso del referido (no advertido; bloquea farmeo con pedidos de $1)
     tierWindowDays: 90,             // Ventana 90 dias para niveles
-    tierConfigJson: JSON.stringify({
-      // Niveles por pedidos DELIVERED en 90 dias
-      levels: [
-        { name: "MOOVER", minOrders: 0,  earnMultiplier: 1.0,  ptsPerThousand: 10 },
-        { name: "SILVER", minOrders: 5,  earnMultiplier: 1.25, ptsPerThousand: 12.5 },
-        { name: "GOLD",   minOrders: 15, earnMultiplier: 1.5,  ptsPerThousand: 15 },
-        { name: "BLACK",  minOrders: 40, earnMultiplier: 2.0,  ptsPerThousand: 20 },
-      ],
-      // Expiracion: 6 meses sin pedidos
-      expirationMonthsInactive: 6,
-      // Boost lanzamiento: duplicar puntos 30 dias
-      launchBoostEnabled: true,
-      launchBoostMultiplier: 2.0,
-      launchBoostDays: 30,
-    }),
+    // Formato FLAT que lee resolveLevelConfigs en points.ts: nivel -> minOrders.
+    tierConfigJson: JSON.stringify({ SILVER: 3, GOLD: 10, BLACK: 22 }),
+    // Boost de lanzamiento: OFF en el seed. Se prende el DIA del launch desde
+    // /ops/config-biblia (earnBoostMultiplier = 2 + earnBoostUntil = +30 dias).
+    earnBoostMultiplier: 1,
+    earnBoostUntil: null as Date | null,
   };
 
   await prisma.pointsConfig.upsert({
@@ -181,10 +175,10 @@ async function seedPointsConfig() {
     create: { id: "points_config", ...data },
   });
 
-  console.log("   ✅ PointsConfig configurado");
-  console.log("   → Earn rate base: 10 pts/$1.000 (~1% cashback)");
-  console.log("   → Signup bonus: 1.000 pts | Referral: 1.000 + 500 pts");
-  console.log("   → Boost lanzamiento: ACTIVO (puntos x2 por 30 dias)");
+  console.log("   ✅ PointsConfig configurado (Biblia v5)");
+  console.log("   → Earn: 10 pts/$1.000 (~1% cashback) · canje hasta 50% · 1 pt = $1");
+  console.log("   → Bienvenida $2.500 · Referido $3.500+$2.500 · Residual $1.000/10 · Resena $1.000");
+  console.log("   → Niveles SILVER 3 / GOLD 10 / BLACK 22 · Boost lanzamiento: OFF (prender el dia del launch)");
 }
 
 async function seedMerchantLoyaltyTiers() {
@@ -405,8 +399,30 @@ async function printSummary() {
 // MAIN
 // ═══════════════════════════════════════════════════════════════════
 
+async function seedRewards() {
+  console.log("\n🎁 [Rewards] Configurando catálogo de recompensas...");
+
+  // PRECIO EN PARIDAD con los puntos (1 pt = $1). Los descuentos fijos llevan un
+  // nudge chico (~10%) para incentivar el canje; el envío gratis va a paridad
+  // porque es el más caro para Moovy (absorbe el envío). NUNCA barato tipo
+  // "$1.000 por 100 pts" (sería 10× fuga vs el slider).
+  const rewards = [
+    { label: "Envío gratis", icon: "🚚", description: "Tu próximo envío, gratis.", pointsCost: 2500, type: "FREE_DELIVERY", value: 0, order: 1, isActive: true },
+    { label: "$1.000 de descuento", icon: "🍫", description: "Como un chocolate, gratis.", pointsCost: 900, type: "FIXED_AMOUNT", value: 1000, order: 2, isActive: true },
+    { label: "$2.500 de descuento", icon: "🥤", description: "Una gaseosa grande, invita Moovy.", pointsCost: 2250, type: "FIXED_AMOUNT", value: 2500, order: 3, isActive: true },
+  ];
+
+  for (const r of rewards) {
+    // Upsert por label → idempotente (re-correr el seed no duplica).
+    const existing = await prisma.reward.findFirst({ where: { label: r.label } });
+    if (existing) await prisma.reward.update({ where: { id: existing.id }, data: r });
+    else await prisma.reward.create({ data: r });
+    console.log(`   ✅ ${r.icon} ${r.label} — ${r.pointsCost} pts`);
+  }
+}
+
 async function main() {
-  console.log("🚀 MOOVY — Seed Biblia Financiera v3");
+  console.log("🚀 MOOVY — Seed Biblia Financiera v5");
   console.log(`   Modo: ${isMonth2 ? "--month2 (comisiones normales)" : "LANZAMIENTO (mes 1, comision 0%)"}`);
 
   try {
@@ -414,6 +430,7 @@ async function main() {
     await seedPointsConfig();
     await seedMerchantLoyaltyTiers();
     await seedMoovyConfig();
+    await seedRewards();
     await printSummary();
 
     console.log("✅ Todos los parametros fueron configurados exitosamente.\n");

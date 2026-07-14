@@ -8,6 +8,7 @@ import { QRCodeSVG, QRCodeCanvas } from "qrcode.react";
 import { formatPrice } from "@/lib/delivery";
 import { toast } from "@/store/toast";
 import AnimateIn from "@/components/ui/AnimateIn";
+import RewardsVitrina from "@/components/puntos/RewardsVitrina";
 import {
     Gift,
     TrendingUp,
@@ -605,6 +606,11 @@ export default function PuntosPage() {
                         </div>
                     </div>
                 </section>
+                </AnimateIn>
+
+                {/* Vidriera de recompensas — "con tus puntos podés..." */}
+                <AnimateIn animation="reveal">
+                    <RewardsVitrina />
                 </AnimateIn>
 
                 {/* Levels Section */}
