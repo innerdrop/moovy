@@ -10,6 +10,38 @@
 
 ---
 
+## 2026-07-15 (rama `feat/centro-lanzamiento`)
+
+feat: Centro de Lanzamiento en OPS (reemplaza recordatorios manuales)
+
+Nueva pantalla /ops/centro-lanzamiento que consolida en un solo lugar todo lo
+del lanzamiento, con estado en vivo (nada que recordar) + acciones de un click:
+
+- Comisión mes 1: informativo. Es AUTOMÁTICO per-merchant (isInFirstMonthFree
+  sobre createdAt) — muestra qué comercios están en mes gratis y días restantes.
+- Boost de puntos: botón "Activar ×2 por 30 días" (setea earnBoostUntil). Se apaga
+  SOLO al vencer la fecha (getActiveEarnBoost). Nada que verificar el día 31.
+- Publicidad Fase 2: contador de comercios activos vs umbral (5) + toggle del flag
+  merchant.publicidad (reusa /api/admin/features).
+- Precio nafta: edición inline (reusa /api/admin/ops-config, section delivery).
+
+API única /api/admin/launch (GET estado consolidado + POST activar/desactivar boost
+con audit vía logConfigChange). Sin cambios de schema (deploy -NoDB).
+
+Seed limpiado: los 2 "recordatorios" engañosos (comisión día 30, boost día 31) se
+reemplazaron por un puntero al Centro — eran cosas ya automáticas.
+
+Verificación: scripts/verify-centro-lanzamiento.ts (ejercita las lecturas/lógica
+del boost contra DB real, sin mutar). Link en OpsSidebar (Rocket, en Operaciones).
+
+**Archivos:** .claude/CLAUDE.md, ISSUES.md, PROJECT_STATUS.md, scripts/seed-biblia-launch.ts, scripts/verify-centro-lanzamiento.ts, src/app/api/admin/launch/route.ts, src/app/ops/(protected)/centro-lanzamiento/CentroLanzamientoClient.tsx, src/app/ops/(protected)/centro-lanzamiento/page.tsx (+1 mas)
+
+## 2026-07-15 (rama `feat/centro-lanzamiento`) — EN CURSO, pendiente cierre/deploy
+
+feat: Centro de Lanzamiento en OPS (reemplaza los recordatorios manuales del seed). Sin cambios de schema → deploy `-NoDB`. Nueva pantalla `/ops/centro-lanzamiento` (link con Rocket en el grupo Operaciones del sidebar) que consolida TODO lo del lanzamiento con estado en vivo + acciones de un click. Filosofía: lo que puede ser automático NO se hace a mano. (1) COMISIÓN MES 1: tarjeta informativa — es automática per-merchant (`isInFirstMonthFree(createdAt)`); lista los comercios en mes gratis con días restantes. Sin acción. (2) BOOST DE PUNTOS: un botón "Activar ×2 por 30 días" (setea `earnBoostUntil = hoy+30d`); se apaga SOLO al vencer (`getActiveEarnBoost`), nada que verificar el día 31. (3) PUBLICIDAD FASE 2: contador de comercios activos (`isActive + approvalStatus APPROVED`) vs umbral 5 + toggle del flag `merchant.publicidad` (reusa `/api/admin/features`). (4) PRECIO NAFTA: edición inline (reusa `/api/admin/ops-config` section delivery). API única `/api/admin/launch` (GET estado consolidado + POST activar/desactivar boost con audit vía `logConfigChange`). SEED LIMPIADO: los 2 "recordatorios post-lanzamiento" engañosos (comisión día 30 con `--month2`, boost día 31) se reemplazaron por un puntero al Centro — ambos ya eran automáticos. CLAUDE.md: bullet canónico agregado. Verificación: `scripts/verify-centro-lanzamiento.ts` (ejercita boost/mes-gratis/flag/nafta contra DB real, sin mutar). PENDIENTE en la máquina de Mauro: `npx tsc --noEmit --skipLibCheck` (en Windows; el sandbox tenía el mount corrupto) → `scripts/verify-centro-lanzamiento.ts` → `finish.ps1` → `devmain.ps1 -NoDB`.
+
+**Archivos:** src/app/api/admin/launch/route.ts, src/app/ops/(protected)/centro-lanzamiento/page.tsx, src/app/ops/(protected)/centro-lanzamiento/CentroLanzamientoClient.tsx, src/components/ops/OpsSidebar.tsx, scripts/seed-biblia-launch.ts, scripts/verify-centro-lanzamiento.ts, .claude/CLAUDE.md
+
 ## 2026-07-14 (rama `feat/moover-desafios`)
 
 feat: vidriera de recompensas en /puntos + seed de lanzamiento completo (sin cambios de schema). VIDRIERA: componente RewardsVitrina (autocontenido, lee /api/rewards; si no hay recompensas activas no renderiza) montado en el landing de /puntos → "Con tus puntos podés: 🚚 envío gratis · 🍫 $1.000 · ...". Es solo aspiracional; el canje real es de un toque en el checkout. SEED DE LANZAMIENTO (scripts/seed-biblia-launch.ts, un comando deja TODO OPS listo, idempotente): PointsConfig actualizado a Biblia v5 (canje 50%, bienvenida 2500, referido 3500/2500, residual 1000/cada 10, reseña 1000, niveles SILVER 3/GOLD 10/BLACK 22 en formato flat que lee resolveLevelConfigs, boost de lanzamiento OFF para prender el día del launch); StoreSettings suma mpReservePercent 7.6; y nuevo seedRewards con el catálogo de arranque (Envío gratis 2500 pts · $1.000 900 pts · $2.500 2250 pts). IMPORTANTE (dinero): las recompensas se precian EN PARIDAD con los puntos (1 pt = $1) con un nudge chico en los descuentos fijos — NUNCA barato tipo "$1.000 por 100 pts", que sería 10× fuga vs el slider. Uso: npx tsx scripts/seed-biblia-launch.ts (agrega --month2 para comisiones normales). Nota: la rama se llama moover-desafios pero los desafíos se descartaron para el lanzamiento; el trabajo real es la vidriera + el seed.

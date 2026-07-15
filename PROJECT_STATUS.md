@@ -1,5 +1,7 @@
 # Moovy — Estado del proyecto
-Última actualización: 2026-07-12
+Última actualización: 2026-07-15
+
+> **Sesión 2026-07-14/15 (MOOVER v5 + Centro de Lanzamiento — resumen)**: cierre integral del programa MOOVER + hub de lanzamiento. **7 ramas** (6 cerradas a develop, la última en curso). (1) `fix/moover-valor-punto-checkout`: cazado un BUG DE DINERO — el PointsWidget del checkout usaba 1 pt = $0,015 y tope 15% hardcodeados (≠ servidor); ahora lee el config real (1 pt = $1). Además se alineó TODO el contenido user-facing a la Biblia v5 (fuera efectivo, fuera nombres de competidores, split repartidor 80%, canje 50%, niveles 3/10/22, bienvenida $2.500, referido $3.500/$2.500) y se borró copy de features no construidas. (2) `feat/moover-bono-resena`: bono por reseña ($1.000, idempotente por pedido). (3) `feat/moover-referido-residual`: residual de por vida ($1.000 cada 10 pedidos entregados del referido, idempotente + race-safe) — **requirió `prisma db push`**. (4) `feat/moover-canje-recompensas`: canje de puntos por recompensas de UN TOQUE en el checkout (sin códigos, sin billetera) — modelo `Reward` + CRUD en `/ops/recompensas` + `RewardPicker` en checkout — **requirió `prisma db push`**. (5) `feat/moover-desafios` (nombre heredado; los desafíos se DESCARTARON por complejidad): vidriera aspiracional en `/puntos` + **seed de lanzamiento** que con UN comando (`npx tsx scripts/seed-biblia-launch.ts`) deja TODO OPS listo (PointsConfig v5, mpReservePercent 7,6, catálogo de recompensas en PARIDAD con los puntos). (6) `feat/centro-lanzamiento` (⚠️ EN CURSO — construida, falta cerrar/deployar): `/ops/centro-lanzamiento` reemplaza los recordatorios manuales por estado en vivo + 1 click (comisión mes 1 automática, boost ×2 con un botón que se apaga solo, publicidad Fase 2 con contador+toggle, precio nafta inline). Deliverables docs: Biblia v5 (`.docx`) + simulador de crecimiento (`.xlsx`) actualizados. **Los mínimos anti-abuso quedaron en $5.000 bienvenida / $8.000 referido** en el default de código (revisar si se quieren en 0).
 
 > **Sesión 2026-07-11/12 (diseño — resumen)**: rediseño integral de la tienda pública, **deployado a main**. Rama `feat/rediseno-home` (commit `90e69bd`): header unificado que colapsa al scrollear · hero de una sola tarjeta roja · Promos del Mundial (con cupones) + **CRUD de cupones nuevo en `/ops/cupones`** · Banda MOOVER · cards y footer nuevos · carrito de invitado (login recién al pagar) · ubicación en el pill del header (se sacó la barra "Entregar en") · campanita pospuesta a Fase 2 · `/puntos` con landing de conversión + animaciones de scroll + secciones modernizadas (ejemplo claro, bonos con jerarquía, niveles scrolleables + "el programa en detalle") · `/empezar` rediseñado DENTRO de `(store)` para heredar el header/nav de la app · fix de overflow horizontal en desktop. Rama chica `feat-ajuste-categorias-home` (cerrada a develop): se quitaron las pills de categoría bajo el buscador y se agrandaron las 3 categorías destacadas. **El hilo de diseño NO terminó**: sigue con el Home Builder (ver "Hilo de diseño" abajo; `.next-branch` ya preparado). ⚠️ Verificar si `feat-ajuste-categorias-home` llegó a deployarse a main (quedó en develop; el rediseño grande sí está en main).
 
@@ -51,6 +53,7 @@
 
 ## Próximas tareas (orden)
 
+0. **Cerrar/deployar `feat/centro-lanzamiento`** (rama en curso, sin schema): en Windows correr `npx tsc --noEmit --skipLibCheck` + `npx tsx scripts/verify-centro-lanzamiento.ts` → `.\scripts\finish.ps1` → `.\scripts\devmain.ps1 -NoDB`. Después, si aún no se corrió, `npx tsx scripts/seed-biblia-launch.ts` deja TODO OPS del lanzamiento cargado de una (incluido el catálogo de recompensas).
 1. **Operativos de OPS/VPS** (~1h, sin código): crontab `daily-revenue-summary` + re-verificar cron broadcast · categorías home en `/ops/categorias` · zonas de cobertura en `/ops/zonas-delivery` · decidir flags `merchant.doc.*` · re-verificar 500 de soporte-notificaciones.
 2. **Verificaciones en prod** (~30 min): motor de envío a distintas distancias · reembolso automático al vencer ventana de búsqueda (tarea #8) · tarjeta WhatsApp (`og-moovy.png`, puede tener texto viejo horneado).
 3. **Gestionar con MP la liberación del `marketplace_fee`** (ejecutivo comercial, ID de la app). Dimensionar caja para payouts mientras tanto.
@@ -58,7 +61,7 @@
 5. **Organización de documentos**: reorg `docs/` + jubilar las 3 biblias viejas + sumar docs de esta sesión (Plan Maestro, comparativa competitiva).
 6. Seguimientos de emails / OPS docs por parámetro (#13) / repartidor cancela pedido (#12) — sin cambios.
 7. **Checklist pre-launch (296 items)** con todo lo anterior verde → ISSUE-004 el día antes → `abrir-tienda.ps1`.
-8. **Día del launch**: prender boost ×2 en la Biblia (multiplicador 2 + fecha a 30 días).
+8. **Día del launch**: prender boost ×2 con UN click desde `/ops/centro-lanzamiento` (ya no se edita la Biblia a mano; setea multiplicador 2 + fecha a 30 días y se apaga solo).
 
 **Reserva MP: decisión founder — queda en 8%** (colchón deliberado a favor del comercio; Moovy absorbe ~0,4% extra de su parte por pedido).
 
@@ -83,6 +86,7 @@ Menor: si al ver las 3 categorías destacadas en prod se las quiere aún más an
 ## Métricas
 
 - **Issues 🔴 abiertos**: 1 (ISSUE-004 cleanup data, día del launch).
+- **Ramas sesión 07-14/15 (MOOVER v5 + Centro)**: 7 — `fix/moover-valor-punto-checkout`, `feat/moover-bono-resena`, `feat/moover-referido-residual`, `feat/moover-canje-recompensas`, `feat/moover-desafios` (cerradas a develop) + `feat/centro-lanzamiento` (⚠️ en curso, falta cerrar/deployar). 2 requirieron `prisma db push` (residual + recompensas). 1 bug de dinero cazado (valor del punto en el checkout).
 - **Prod (07-12)**: rediseño de la tienda deployado a main (`feat/rediseno-home`). ⚠️ Confirmar si `feat-ajuste-categorias-home` (categorías del home) también se deployó — quedó cerrada a develop.
 - **Ramas cerradas sesión 07-11/12 (diseño)**: 2 — `feat/rediseno-home` (rediseño integral + OPS de cupones), `feat-ajuste-categorias-home` (pills fuera + categorías destacadas más grandes).
 - **Ramas cerradas sesión 07-06/07 (histórico)**: 11 (`fix/cortina-identidad-ushuaia`, `feat/direcciones-limite-y-chip-header`, `fix/direcciones-barra-entregar-en`, `fix/asignacion-sin-filtro-equipamiento`, `fix/split-mp-cada-parte-paga-lo-suyo`, `fix/comision-vendedor-10`, `feat/moover-boost-lanzamiento-y-defaults`, `fix/auditoria-estados-crons`, `fix/seller-api-db-auth`, `fix/carrito-un-solo-comercio`, `fix/merchant-reject-atomico`, `fix/driver-payout-centavos` — 12 con la del payout).

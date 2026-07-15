@@ -1,5 +1,5 @@
 # Moovy — Issues
-Última actualización: 2026-07-12
+Última actualización: 2026-07-15
 
 > **Fuente única de tareas pendientes.** Para histórico completo de issues resueltos en sprints anteriores → `.claude/CHANGELOG.md`.
 
@@ -26,7 +26,7 @@
 El rediseño de la tienda ya está en main. Lo que quedó abierto de este hilo (simple → complejo):
 
 - **Cargar cupones reales en OPS** para encender "Promos del Mundial" (sección ya funciona, falta data). CRUD en `/ops/cupones`.
-- **Revisar umbrales de nivel MOOVER** — 40 pedidos en 90 días puede ser inalcanzable para Ushuaia (80k hab). Decisión founder + ajuste de niveles/`PointsConfig`.
+- ✅ **Revisar umbrales de nivel MOOVER** — RESUELTO (sesión 07-14/15): bajados a **SILVER 3 / GOLD 10 / BLACK 22** pedidos en 90d (BLACK 40 era inalcanzable para Ushuaia). Editables desde OPS vía `PointsConfig.tierConfigJson` formato flat.
 - **Animación stagger** en las filas de cards del home (cascada al scrollear). Nice-to-have.
 - ✅ **Home Builder — Organizador de Secciones del Home** — IMPLEMENTADO (rama `feat/home-builder-pagina-inicio`, 07-12): modelo `HomeSection` (key/label/order/enabled) + registry `src/lib/home/sections.ts` (fuente de verdad de keys + `resolveHomeLayout`) + home refactorizada para renderizar según orden/enabled de DB (Hero y Footer fijos; cada sección conserva su guard de "hay datos") + API admin `/api/ops/home-sections` (GET siembra idempotente, PUT upsert en tx Serializable) + página OPS `/ops/pagina-inicio` (arrastrar + flechas + interruptor visible/oculta + accesos directos a categorías/hero/banners/destacados) + item en el sidebar. Verificación estática OK (keys registry == keys del render). **PENDIENTE en la máquina de Mauro**: `npx prisma generate` → `tsc` → `scripts/verify-home-sections.ts` contra DB. **Deploy MODO SCHEMA** (tabla nueva), no `-NoDB`.
 - **Sección "Página de Inicio" en OPS** — organizador + gestión de categorías del home (uploader imagen/label) + banners.
@@ -95,6 +95,19 @@ El rediseño de la tienda ya está en main. Lo que quedó abierto de este hilo (
 - ✅ **Ciclo logístico completo en prod** — VERIFICADO 2026-07-06: aviso de viaje al driver (post-fix equipamiento) → PIN retiro → PIN entrega → DELIVERED → earn de puntos corrió idempotente (`pointsEarned=0`, correcto para montos de prueba; con $1.000+ acredita visible). Quedan como verificaciones menores: motor de envío a distintas distancias + reembolso automático al vencer la ventana de búsqueda (tarea #8).
 - ✅ **Tarjeta social de WhatsApp** — VERIFICADA VIEJA y REGENERADA (rama `chore/og-card-hecha-en-ushuaia`, 2026-07-07): arte original reciclado con el lema nuevo + `?v=2` en metadata para forzar re-scrape. Verificar tarjeta nueva post-deploy compartiendo el link.
 - ✅ **`driverPayoutAmount` redondeaba a pesos enteros** — RESUELTO (rama `fix/driver-payout-centavos`): snapshot inmutable (order-totals), estimación de la oferta (assignment-engine) y preview del quote (delivery.ts) ahora redondean a centavos (regla PAGOS). El precio del envío al cliente sigue en pesos enteros (deliberado).
+
+## ✅ Resueltos esta sesión (2026-07-14/15) — MOOVER v5 + Centro de Lanzamiento
+
+| Tema | Rama | Resumen |
+|---|---|---|
+| BUG de dinero: valor del punto en el checkout + alineación de contenido a Biblia v5 | `fix/moover-valor-punto-checkout` | El `PointsWidget` del checkout descontaba con 1 pt = $0,015 y tope 15% HARDCODEADOS (≠ servidor) → ahora lee `/api/points?config=true` (1 pt = $1, tope `maxDiscountPercent`) y muestra EXACTO lo que se descuenta. Además se alineó TODO el contenido user-facing a v5: fuera efectivo, fuera nombres de competidores, split repartidor 80%, canje 50%, niveles 3/10/22, bienvenida $2.500, referido $3.500/$2.500; se borró copy de features no construidas y 4 componentes muertos con copy prohibido. Sin schema. |
+| Bono por reseña MOOVER | `feat/moover-bono-resena` | `awardReviewBonus(userId, orderId)` = $1.000 una sola vez por pedido (idempotente en tx Serializable, aunque califique comercio+driver+seller). Cableado en los 3 endpoints de rating + tarjeta en `/puntos`. Reactiva la columna `reviewBonus` dormida. Sin schema. Verif: `verify-review-bonus.ts`. |
+| Referido residual de por vida | `feat/moover-referido-residual` | El referidor gana $1.000 cada 10 pedidos ENTREGADOS de su referido, para siempre. `processReferralResidual` en tx Serializable (idempotente + race-safe vía `Referral.residualsPaid`), enganchado en `awardOrderPointsIfDelivered` fire-and-forget. **Requirió `prisma db push`** (aditivo). Verif: `verify-referido-residual.ts`. |
+| Canje de puntos por recompensas de UN TOQUE | `feat/moover-canje-recompensas` | Modelo `Reward` + CRUD `/ops/recompensas` + `RewardPicker` en checkout (sin códigos, un toque, instantáneo). Reparto autoritativo server-side en `POST /api/orders`. `FREE_DELIVERY` lo absorbe Moovy (driver cobra del snapshot). Recompensas EN PARIDAD con los puntos (evita fuga 10×). **Requirió `prisma db push`**. Verif: `verify-recompensas.ts`. |
+| Vidriera de recompensas + seed de lanzamiento | `feat/moover-desafios` (desafíos DESCARTADOS) | `RewardsVitrina` en `/puntos` (aspiracional). `seed-biblia-launch.ts`: UN comando deja TODO OPS listo (PointsConfig v5, mpReservePercent 7,6, catálogo de recompensas en paridad). Idempotente. Sin schema. |
+| Centro de Lanzamiento en OPS | `feat/centro-lanzamiento` ⚠️ EN CURSO | `/ops/centro-lanzamiento` reemplaza los recordatorios manuales por estado en vivo + 1 click (comisión mes 1 automática, boost ×2 con un botón que se apaga solo, publicidad Fase 2 contador+toggle, nafta inline). API `/api/admin/launch`. Seed limpiado de recordatorios engañosos. Sin schema (deploy `-NoDB`). **FALTA cerrar/deployar en Windows**: `tsc` → `verify-centro-lanzamiento.ts` → `finish.ps1` → `devmain.ps1 -NoDB`. |
+
+> **Acción OPS post-deploy**: correr `npx tsx scripts/seed-biblia-launch.ts` deja TODOS los parámetros de puntos/recompensas/reserva MP cargados de una (ya NO hace falta setear reviewBonus/signupBonus/etc. a mano como decían los CHANGELOG de las ramas individuales). Recordá el `npx prisma db push` local si la base de tu máquina no tiene las columnas nuevas (residual + Reward).
 
 ## ✅ Resueltos esta sesión (2026-07-11/12) — Rediseño de la tienda
 

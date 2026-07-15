@@ -1434,7 +1434,9 @@ CREATE TABLE public."PointsConfig" (
     "tierConfigJson" text,
     "updatedAt" timestamp(3) without time zone NOT NULL,
     "earnBoostMultiplier" double precision DEFAULT 1 NOT NULL,
-    "earnBoostUntil" timestamp(3) without time zone
+    "earnBoostUntil" timestamp(3) without time zone,
+    "referralResidualBonus" integer DEFAULT 1000 NOT NULL,
+    "referralResidualEvery" integer DEFAULT 10 NOT NULL
 );
 
 
@@ -1603,11 +1605,33 @@ CREATE TABLE public."Referral" (
     "referrerPoints" integer DEFAULT 50 NOT NULL,
     "refereePoints" integer DEFAULT 100 NOT NULL,
     status text DEFAULT 'COMPLETED'::text NOT NULL,
-    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "residualsPaid" integer DEFAULT 0 NOT NULL
 );
 
 
 ALTER TABLE public."Referral" OWNER TO postgres;
+
+--
+-- Name: Reward; Type: TABLE; Schema: public; Owner: postgres
+--
+
+CREATE TABLE public."Reward" (
+    id text NOT NULL,
+    label text NOT NULL,
+    icon text DEFAULT '🎁'::text NOT NULL,
+    description text,
+    "pointsCost" integer NOT NULL,
+    type text NOT NULL,
+    value double precision DEFAULT 0 NOT NULL,
+    "isActive" boolean DEFAULT true NOT NULL,
+    "order" integer DEFAULT 0 NOT NULL,
+    "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    "updatedAt" timestamp(3) without time zone NOT NULL
+);
+
+
+ALTER TABLE public."Reward" OWNER TO postgres;
 
 --
 -- Name: SavedCart; Type: TABLE; Schema: public; Owner: postgres
@@ -2136,6 +2160,11 @@ cmqz5vqyn000oxhd8fpc7qxgz	Kiosco	kiosco	\N	https://pub-8e9cd8ba192646df98fa6e7ad
 --
 
 COPY public."ConfigAuditLog" (id, "adminUserId", "adminEmail", "configType", "fieldChanged", "oldValue", "newValue", "createdAt") FROM stdin;
+cmrm3ebnu0000xcpyzu8yebw1	cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	STORE_SETTINGS	delivery	{"fuelPricePerLiter":1658,"fuelConsumptionPerKm":0.06,"maintenanceFactor":1.35,"maxDeliveryDistance":15,"freeDeliveryMinimum":null,"riderCommissionPercent":80,"operationalCostPercent":5,"zoneMultipliers":{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35},"climateMultipliers":{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3},"activeClimateCondition":"normal","demandMultipliers":{"normal":1,"alta":1.2,"pico":1.4},"activeDemandCondition":"normal"}	{"fuelPricePerLiter":1702}	2026-07-15 13:04:56.201
+cmrm3f4uu0001xcpyiivzgphv	cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	POINTS_CONFIG	launch-boost	{"earnBoostMultiplier":1,"earnBoostUntil":null}	{"earnBoostMultiplier":2,"earnBoostUntil":"2026-08-14T13:05:34.028Z"}	2026-07-15 13:05:34.039
+cmrm3fdqp0002xcpy1yemyp0i	cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	POINTS_CONFIG	launch-boost	{"earnBoostMultiplier":2,"earnBoostUntil":"2026-08-14T13:05:34.028Z"}	{"earnBoostMultiplier":1,"earnBoostUntil":null}	2026-07-15 13:05:45.553
+cmrm3g9vk0003xcpyvqj1va5n	cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	STORE_SETTINGS	delivery	{"fuelPricePerLiter":1702,"fuelConsumptionPerKm":0.06,"maintenanceFactor":1.35,"maxDeliveryDistance":15,"freeDeliveryMinimum":null,"riderCommissionPercent":80,"operationalCostPercent":5,"zoneMultipliers":{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35},"climateMultipliers":{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3},"activeClimateCondition":"normal","demandMultipliers":{"normal":1,"alta":1.2,"pico":1.4},"activeDemandCondition":"normal"}	{"fuelPricePerLiter":1500}	2026-07-15 13:06:27.2
+cmrm3glk30004xcpyppfj7kbz	cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	STORE_SETTINGS	delivery	{"fuelPricePerLiter":1500,"fuelConsumptionPerKm":0.06,"maintenanceFactor":1.35,"maxDeliveryDistance":15,"freeDeliveryMinimum":null,"riderCommissionPercent":80,"operationalCostPercent":5,"zoneMultipliers":{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35},"climateMultipliers":{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3},"activeClimateCondition":"normal","demandMultipliers":{"normal":1,"alta":1.2,"pico":1.4},"activeDemandCondition":"normal"}	{"fuelPricePerLiter":1702,"fuelConsumptionPerKm":0.06,"maintenanceFactor":1.35,"maxDeliveryDistance":15,"freeDeliveryMinimum":null,"riderCommissionPercent":80,"operationalCostPercent":5,"zoneMultipliers":{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35},"climateMultipliers":{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3},"activeClimateCondition":"normal","demandMultipliers":{"normal":1,"alta":1.2,"pico":1.4},"activeDemandCondition":"normal"}	2026-07-15 13:06:42.339
 \.
 
 
@@ -2326,6 +2355,16 @@ COPY public."Favorite" (id, "userId", "merchantId", "productId", "listingId", "c
 --
 
 COPY public."FeatureFlag" (id, key, label, description, scope, "isActive", "createdAt", "updatedAt", "lastToggledByUserId", "lastToggledAt") FROM stdin;
+cmrm3x0zd000081oupk3gamn0	merchant.publicidad	Publicidad	Permite a los comercios pagar por destacar productos o aparecer en banners. Mientras este OFF, el item 'Publicidad' no aparece en el menu del comercio y la pagina /comercios/publicidad redirige al dashboard.	MERCHANT	f	2026-07-15 13:19:28.826	2026-07-15 13:19:28.826	\N	\N
+cmrm3x103000181oukyhynmyg	merchant.paquetes	Paquetes B2B	Permite a los comercios adquirir paquetes pre-armados de productos (combos de proveedores). Mientras este OFF, los items 'Adquirir paquetes' e 'Historial de paquetes' no aparecen en el menu y las paginas correspondientes redirigen al dashboard.	MERCHANT	f	2026-07-15 13:19:28.851	2026-07-15 13:19:28.851	\N	\N
+cmrm3x10h000281oukel6xeza	merchant.tracking-en-vivo	Tracking en vivo del driver	Muestra al comercio el mapa con la ubicacion en tiempo real del repartidor que retiro su pedido. Si esta OFF, el comercio solo ve el estado de texto (DRIVER_ASSIGNED, PICKED_UP, etc.) sin mapa.	MERCHANT	f	2026-07-15 13:19:28.865	2026-07-15 13:19:28.865	\N	\N
+cmrm3x10r000381ouvjv1pqve	merchant.doc.cuit	Documento: CUIT	Si esta ON, se le pide el CUIT al comercio y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	t	2026-07-15 13:19:28.875	2026-07-15 13:19:28.875	\N	\N
+cmrm3x112000481ouvzlmwx3f	merchant.doc.bank-account	Documento: CBU/Alias bancario	Si esta ON, se le pide el CBU o Alias bancario al comercio y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	t	2026-07-15 13:19:28.886	2026-07-15 13:19:28.886	\N	\N
+cmrm3x119000581ougnakiczq	merchant.doc.constancia-afip	Documento: Constancia de Inscripcion AFIP	Si esta ON, se le pide la Constancia de Inscripcion AFIP al comercio y es obligatoria para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	t	2026-07-15 13:19:28.893	2026-07-15 13:19:28.893	\N	\N
+cmrm3x11i000681outxjzlbn5	merchant.doc.habilitacion-municipal	Documento: Habilitacion Municipal	Si esta ON, se le pide la Habilitacion Municipal al comercio y es obligatoria para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	t	2026-07-15 13:19:28.902	2026-07-15 13:19:28.902	\N	\N
+cmrm3x11r000781oualp7iqui	merchant.doc.registro-sanitario	Documento: Registro Sanitario / Bromatologico	Si esta ON, se le pide el Registro Sanitario a los comercios gastronomicos y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion. Solo aplica a rubros de comida.	MERCHANT	t	2026-07-15 13:19:28.911	2026-07-15 13:19:28.911	\N	\N
+cmrm3x120000881ouy0m0ky3p	seller.paquetes	Paquetes para vendedores	Permite a los vendedores del marketplace adquirir paquetes B2B. Mientras este OFF, los items relacionados no aparecen en el menu del vendedor.	SELLER	f	2026-07-15 13:19:28.92	2026-07-15 13:19:28.92	\N	\N
+cmrm3x127000981oudj0hy5v7	buyer.scheduled-delivery	Pedidos programados	Habilita la opcion de programar entregas a una franja horaria futura (ej: 'entregar entre 20:00 y 21:00'). Mientras este OFF, todos los pedidos son entrega inmediata.	BUYER	f	2026-07-15 13:19:28.928	2026-07-15 13:19:28.928	\N	\N
 \.
 
 
@@ -2473,10 +2512,10 @@ COPY public."MerchantDocumentChangeRequest" (id, "merchantId", "documentField", 
 --
 
 COPY public."MerchantLoyaltyConfig" (id, tier, "minOrdersPerMonth", "commissionRate", "badgeText", "badgeColor", "benefitsJson", "displayOrder", "createdAt", "updatedAt") FROM stdin;
-cmqz5vr0v0010xhd8ix98ppsa	BRONCE	0	10	Nuevo	gray	[]	1	2026-06-29 11:55:46.448	2026-06-29 11:55:46.448
-cmqz5vr130011xhd811robxcc	PLATA	30	9	Destacado	blue	["Comisión reducida 9%"]	2	2026-06-29 11:55:46.455	2026-06-29 11:55:46.455
-cmqz5vr160012xhd8f9e1ifz4	ORO	80	8	Popular	yellow	["Comisión reducida 8%"]	3	2026-06-29 11:55:46.459	2026-06-29 11:55:46.459
-cmqz5vr190013xhd8806wb7x1	DIAMANTE	200	7	Elite	purple	["Comisión reducida 7%"]	4	2026-06-29 11:55:46.462	2026-06-29 11:55:46.462
+cmqz5vr0v0010xhd8ix98ppsa	BRONCE	0	10	Comercio Verificado	gray	["Comision estandar 10%","Soporte prioritario","Panel de estadisticas basico"]	1	2026-06-29 11:55:46.448	2026-07-14 19:58:11.171
+cmqz5vr130011xhd811robxcc	PLATA	10	9	Comercio Destacado	blue	["Comision reducida 9%","Badge visible en la tienda","Prioridad en busqueda","Reporte semanal de ventas"]	2	2026-06-29 11:55:46.455	2026-07-14 19:58:11.18
+cmqz5vr160012xhd8f9e1ifz4	ORO	25	8	Comercio Popular	yellow	["Comision reducida 8%","Badge dorado visible","Posicion destacada en home","Soporte VIP","1 push notification gratis/mes"]	3	2026-06-29 11:55:46.459	2026-07-14 19:58:11.184
+cmqz5vr190013xhd8806wb7x1	DIAMANTE	50	7	Comercio Elite	purple	["Comision minima 7%","Badge diamante exclusivo","Posicion #1 en su categoria","Soporte dedicado","2 push notifications gratis/mes","Acceso anticipado a nuevas funciones"]	4	2026-06-29 11:55:46.462	2026-07-14 19:58:11.189
 \.
 
 
@@ -2494,14 +2533,23 @@ cmqz5vqwj000exhd8dxavtvdw	signup_bonus	100	Bonus registro	2026-06-29 11:55:46.29
 cmqz5vqwn000fxhd8ap5lm932	min_points_to_redeem	100	Mínimo para canjear	2026-06-29 11:55:46.296
 cmqz9c3jg0001lqdygbjevmud	max_delivery_distance_km	50	Distancia máxima de entrega en kilómetros	2026-07-01 17:36:59.669
 cmqz9c3jm0002lqdylx1bxkuo	min_order_amount_ars	500	Monto mínimo de pedido en pesos argentinos	2026-07-01 17:36:59.673
-cmr2britk000j2uz20oio8ot8	seller_commission_pct	10	Porcentaje de comisión predeterminado para vendedores	2026-07-01 17:36:59.677
-cmr2brits000k2uz2c3vyj8zb	driver_commission_pct	15	Porcentaje de comisión predeterminado para repartidores	2026-07-01 17:36:59.681
 cmqz5vqvy000axhd8s8sn6enu	max_assignment_attempts	5	Intentos máximos para asignar un repartidor antes de escalar a ops	2026-07-01 17:36:59.686
 cmqz9c3j20000lqdyox7kns5z	assignment_rating_radius_meters	300	Radio en metros para priorizar repartidores por rating	2026-07-01 17:36:59.69
 cmqz9c3jr0003lqdy8ra7d5qa	scheduled_notify_before_minutes	30	Minutos antes de un pedido programado para notificar al comercio	2026-07-01 17:36:59.693
 cmqz9c3jw0004lqdyzpla3v7g	scheduled_cancel_if_no_confirm_minutes	10	Minutos para cancelar automáticamente si no hay confirmación de pedido programado	2026-07-01 17:36:59.698
-cmqz5vqvn0009xhd8y3mez5lm	driver_response_timeout_seconds	60	Segundos que un repartidor tiene para aceptar/rechazar una oferta	2026-07-02 12:12:40.378
-cmqz5vqur0008xhd8laxp5obt	merchant_confirm_timeout_seconds	300	Segundos que un comercio tiene para confirmar un pedido nuevo	2026-07-02 12:12:40.412
+cmqz5vqur0008xhd8laxp5obt	merchant_confirm_timeout_seconds	300	Timeout para que el comercio confirme un pedido (5 min)	2026-07-14 19:58:11.195
+cmqz5vqvn0009xhd8y3mez5lm	driver_response_timeout_seconds	60	Timeout para que el repartidor acepte un pedido (1 min)	2026-07-14 19:58:11.201
+cmr2britk000j2uz20oio8ot8	seller_commission_pct	12	Comision marketplace sellers (12%)	2026-07-14 19:58:11.205
+cmr2brits000k2uz2c3vyj8zb	driver_commission_pct	20	Porcentaje Moovy del viaje (100% - 80% rider = 20%)	2026-07-14 19:58:11.21
+cmrl2pwy70008mevmxlb5r268	merchant_commission_pct	0	Comision merchants (0% mes 1 lanzamiento)	2026-07-14 19:58:11.216
+cmrl2pwyd0009mevm1ik7f6oa	fuel_price_reference	1658	Precio nafta super YPF Ushuaia - referencia para delivery fee	2026-07-14 19:58:11.222
+cmrl2pwyi000amevmovufg73t	usd_ars_reference	1400	Cotizacion dolar oficial referencia (cierre abril 2026)	2026-07-14 19:58:11.227
+cmrl2pwym000bmevmmz8tgre0	max_delivery_radius_km	15	Radio maximo de entrega en km	2026-07-14 19:58:11.231
+cmrl2pwyq000cmevmfes8istw	mp_fee_percent	3.81	Comision real MercadoPago (3.15% + IVA 21%)	2026-07-14 19:58:11.234
+cmrl2pwyt000dmevm0tb86c4f	launch_boost_active	true	Boost lanzamiento: puntos x2 durante 30 dias	2026-07-14 19:58:11.238
+cmrl2pwyx000emevm3gc5bdxy	launch_boost_start_date	2026-07-14	Fecha inicio del boost de lanzamiento	2026-07-14 19:58:11.241
+cmrl2pwz0000fmevmcpkyojjx	merchant_free_month_active	true	Mes gratis para merchants (0% comision)	2026-07-14 19:58:11.245
+cmrl2pwz4000gmevm91gvlg83	merchant_free_month_start_date	2026-07-14	Fecha inicio del mes gratis merchants	2026-07-14 19:58:11.248
 \.
 
 
@@ -2634,8 +2682,8 @@ COPY public."PlaybookStep" (id, "checklistId", content, "order", required, "crea
 -- Data for Name: PointsConfig; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."PointsConfig" (id, "pointsPerDollar", "minPurchaseForPoints", "pointsValue", "minPointsToRedeem", "maxDiscountPercent", "signupBonus", "referralBonus", "reviewBonus", "pointsExpireDays", "refereeBonus", "minPurchaseForBonus", "minReferralPurchase", "tierWindowDays", "tierConfigJson", "updatedAt", "earnBoostMultiplier", "earnBoostUntil") FROM stdin;
-points_config	1	0	0.01	100	50	100	200	10	\N	100	5000	8000	90	\N	2026-07-06 23:15:15.786	1	\N
+COPY public."PointsConfig" (id, "pointsPerDollar", "minPurchaseForPoints", "pointsValue", "minPointsToRedeem", "maxDiscountPercent", "signupBonus", "referralBonus", "reviewBonus", "pointsExpireDays", "refereeBonus", "minPurchaseForBonus", "minReferralPurchase", "tierWindowDays", "tierConfigJson", "updatedAt", "earnBoostMultiplier", "earnBoostUntil", "referralResidualBonus", "referralResidualEvery") FROM stdin;
+points_config	0.01	0	1	500	50	2500	3500	1000	\N	2500	0	5000	90	{"SILVER":3,"GOLD":10,"BLACK":22}	2026-07-15 13:05:45.548	1	\N	1000	10
 \.
 
 
@@ -4005,7 +4053,18 @@ COPY public."RatingReport" (id, "orderId", "reporterUserId", target, reason, "cr
 -- Data for Name: Referral; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoints", "refereePoints", status, "createdAt") FROM stdin;
+COPY public."Referral" (id, "referrerId", "refereeId", "codeUsed", "referrerPoints", "refereePoints", status, "createdAt", "residualsPaid") FROM stdin;
+\.
+
+
+--
+-- Data for Name: Reward; Type: TABLE DATA; Schema: public; Owner: postgres
+--
+
+COPY public."Reward" (id, label, icon, description, "pointsCost", type, value, "isActive", "order", "createdAt", "updatedAt") FROM stdin;
+cmrl2pwzd000hmevmpjpb0jun	Envío gratis	🚚	Tu próximo envío, gratis.	2500	FREE_DELIVERY	0	t	1	2026-07-14 19:58:11.258	2026-07-14 19:58:11.258
+cmrl2pwzl000imevm8e2nxr4e	$1.000 de descuento	🍫	Como un chocolate, gratis.	900	FIXED_AMOUNT	1000	t	2	2026-07-14 19:58:11.265	2026-07-14 19:58:11.265
+cmrl2pwzr000jmevmvs6l9p84	$2.500 de descuento	🥤	Una gaseosa grande, invita Moovy.	2250	FIXED_AMOUNT	2500	t	3	2026-07-14 19:58:11.272	2026-07-14 19:58:11.272
 \.
 
 
@@ -4048,7 +4107,7 @@ cmqz5vv1200egxhd8raq97j04	cmqz5vv0p00e9xhd8vtohx0lr	Patagonia Outdoor	Equipamien
 --
 
 COPY public."StoreSettings" (id, "isOpen", "closedMessage", "isMaintenanceMode", "maintenanceMessage", "fuelPricePerLiter", "fuelConsumptionPerKm", "baseDeliveryFee", "maintenanceFactor", "freeDeliveryMinimum", "maxDeliveryDistance", "storeName", "storeAddress", "originLat", "originLng", "whatsappNumber", phone, email, schedule, "updatedAt", "promoPopupButtonText", "promoPopupDismissable", "promoPopupEnabled", "promoPopupImage", "promoPopupLink", "promoPopupMessage", "promoPopupTitle", "showComerciosCard", "showRepartidoresCard", "tiendaMaintenance", "maxCategoriesHome", "heroSliderEnabled", "heroSliderInterval", "heroSliderShowArrows", "supportChatEnabled", "promoBannerButtonLink", "promoBannerButtonText", "promoBannerEnabled", "promoBannerImage", "promoBannerSubtitle", "promoBannerTitle", "promoBannerCtaPosition", "promoSlidesJson", "riderCommissionPercent", "zoneMultipliersJson", "climateMultipliersJson", "activeClimateCondition", "demandMultipliersJson", "activeDemandCondition", "operationalCostPercent", "excludedZonesJson", "defaultMerchantCommission", "defaultSellerCommission", "mpReservePercent", "cashMpOnlyDeliveries", "cashLimitL1", "cashLimitL2", "cashLimitL3", "maxOrdersPerSlot", "slotDurationMinutes", "minAnticipationHours", "maxAnticipationHours", "operatingHoursStart", "operatingHoursEnd", "merchantConfirmTimeoutSec", "driverResponseTimeoutSec", "adPricePlatino", "adPriceDestacado", "adPricePremium", "adPriceHeroBanner", "adPriceBannerPromo", "adPriceProducto", "adLaunchDiscountPercent", "adMaxHeroBannerSlots", "adMaxDestacadosSlots", "adMaxProductosSlots", "adMinDurationDays", "adDiscount3Months", "adDiscount6Months", "adPaymentMethods", "adCancellation48hFullRefund", "adCancellationAdminFeePercent", "heroBackgroundsJson", "bankName", "bankAccountHolder", "bankCbu", "bankAlias", "bankCuit") FROM stdin;
-settings	t	Volvemos pronto	f	Próximamente en Ushuaia.	1591	0.06	500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-07-12 15:02:38.708	Ver m??s	t	f	\N	\N	\N	\N	t	t	f	6	t	5000	t	t	/productos?categoria=pizzas	Ver locales	t	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	abajo-izquierda	[{"id":"slide-1783868076095-inykr","title":"","subtitle":"","buttonText":"","buttonLink":"/productos?categoria=promos","image":"https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/promo/promo-1783868551893-rsgbh2.png","ctaPosition":"abajo-izquierda","enabled":true,"order":0}]	80	{"ZONA_A":1.0,"ZONA_B":1.15,"ZONA_C":1.35}	{"normal":1.0,"lluvia_leve":1.15,"temporal_fuerte":1.30}	normal	{"normal":1.0,"alta":1.20,"pico":1.40}	normal	5	[]	10	12	8	10	15000	25000	40000	15	120	1.5	48	09:00	22:00	300	60	150000	95000	55000	250000	180000	25000	50	3	8	12	7	10	20	["mercadopago","transferencia"]	t	10	{}					
+settings	t	Volvemos pronto	f	Próximamente en Ushuaia.	1702	0.06	1500	1.35	\N	15	Moovy Ushuaia	Ushuaia, Tierra del Fuego	-54.8019	-68.303	\N	\N	\N	\N	2026-07-15 13:06:42.327	Ver m??s	t	f	\N	\N	\N	\N	t	t	f	6	t	5000	t	t	/productos?categoria=pizzas	Ver locales	t	\N	2x1 en locales seleccionados de 20hs a 23hs.	Noches de\nPizza & Pelis	abajo-izquierda	[{"id":"slide-1783868076095-inykr","title":"","subtitle":"","buttonText":"","buttonLink":"/productos?categoria=promos","image":"https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/promo/promo-1783868551893-rsgbh2.png","ctaPosition":"abajo-izquierda","enabled":true,"order":0}]	80	{"ZONA_A":1,"ZONA_B":1.15,"ZONA_C":1.35}	{"normal":1,"lluvia_leve":1.15,"temporal_fuerte":1.3}	normal	{"normal":1,"alta":1.2,"pico":1.4}	normal	5	[]	0	12	7.6	10	15000	25000	40000	15	120	1.5	48	09:00	22:00	300	60	150000	50000	100000	250000	180000	25000	50	3	8	12	7	10	20	["mercadopago","transferencia"]	t	10	{}					
 \.
 
 
@@ -4116,7 +4175,7 @@ cmqz5vvwa00fjxhd8xtqudcev	repartidor3@somosmoovy.com	$2b$12$yl/hOmdNw3z0SofyaiHf
 cmqz5vw6e00frxhd8xzbnhvi3	repartidor4@somosmoovy.com	$2b$12$SCzlk3i5xewt6sCl6HzMlOzi6FTj2nomvuW61Jn149v/QANGQt5Ua	Nico Veloz	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vw6e00fsxhd8fi2f7iwm	\N	2026-06-29 11:55:53.127	2026-06-29 11:55:53.127	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vwws00gbxhd8xdblt14z	cliente3@somosmoovy.com	$2b$12$9q91L9dMys9zsNJgBBKjgO3rmqK5OFExmfJJEbUojP7g8AJLw4Ufa	Lucía Test	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwws00gcxhd8ifwc7bkh	\N	2026-06-29 11:55:54.076	2026-06-29 11:55:54.076	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vx5l00ghxhd8xnar59ix	cliente4@somosmoovy.com	$2b$12$EfMi32tg/BNF9KGFede11OJs3dScKvyk3ted7lL7Ds5MFgBQ80Hve	Marco Demo	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vx5l00gixhd8lk39samr	\N	2026-06-29 11:55:54.393	2026-06-29 11:55:54.393	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
-cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-07-11 21:53:29.247	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-11 21:53:29.246	\N
+cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-07-14 19:53:01.797	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-11 21:53:29.246	\N
 cmqz5vva600f3xhd89zcsytov	repartidor1@somosmoovy.com	$2b$12$wM6iMD5E3RXXdUr5GYnjc.ywxwzoF08aXzL.JKLJSHm0NzMKtQ3RW	Mateo Rider	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vva600f4xhd8q48id7j2	\N	2026-06-29 11:55:51.966	2026-06-29 12:11:39.124	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vrgz001jxhd84w7eneza	comercio1@somosmoovy.com	$2b$12$yF6/4feNZrmKkGW/zI752eg44jwODi1JejVllozBQ6DuoL3r0r.vm	Carlos Patagonia	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vrgz001kxhd8fe0upbjz	\N	2026-06-29 11:55:47.028	2026-07-06 23:20:58.373	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:20:58.372	\N
 cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-07-06 23:32:32.958	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:32:32.921	\N
@@ -4139,6 +4198,7 @@ cmr9um4gn0003wqmnj37zh32v	cmqz5vsvy006nxhd8cea1yx8k	LOGIN	User	cmqz5vsvy006nxhd8
 cmr9uupfm0006wqmnjkz2y392	cmqz5vwo300g5xhd8ok66ryk2	LOGIN	User	cmqz5vwo300g5xhd8ok66ryk2	{"method":"credentials"}	\N	\N	2026-07-06 23:32:29.89
 cmrgry9gv0001e1n6gca9v1hy	cmqz5vwfh00fzxhd8bchmmyw5	LOGIN	User	cmqz5vwfh00fzxhd8bchmmyw5	{"method":"credentials"}	\N	\N	2026-07-11 19:45:40.205
 cmrgwhnd7000be1n6n9givedj	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd86fq6wm5d	{"method":"credentials"}	\N	\N	2026-07-11 21:52:43.146
+cmrl2jaai0001v7uc2sjbhx47	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd86fq6wm5d	{"method":"credentials"}	\N	\N	2026-07-14 19:53:01.912
 \.
 
 
@@ -4690,6 +4750,14 @@ ALTER TABLE ONLY public."RatingReport"
 
 ALTER TABLE ONLY public."Referral"
     ADD CONSTRAINT "Referral_pkey" PRIMARY KEY (id);
+
+
+--
+-- Name: Reward Reward_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
+--
+
+ALTER TABLE ONLY public."Reward"
+    ADD CONSTRAINT "Reward_pkey" PRIMARY KEY (id);
 
 
 --
@@ -5906,6 +5974,20 @@ CREATE INDEX "RatingReport_target_idx" ON public."RatingReport" USING btree (tar
 --
 
 CREATE UNIQUE INDEX "Referral_refereeId_key" ON public."Referral" USING btree ("refereeId");
+
+
+--
+-- Name: Reward_isActive_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "Reward_isActive_idx" ON public."Reward" USING btree ("isActive");
+
+
+--
+-- Name: Reward_order_idx; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX "Reward_order_idx" ON public."Reward" USING btree ("order");
 
 
 --

@@ -48,6 +48,7 @@ import {
     Calculator,
     Ticket,
     Home,
+    Rocket,
 } from "lucide-react";
 
 interface OpsSidebarProps {
@@ -64,6 +65,7 @@ const navSections: NavSection[] = [
         title: "Operaciones",
         items: [
             { href: "/ops/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+            { href: "/ops/centro-lanzamiento", icon: Rocket, label: "Centro de Lanzamiento" },
             { href: "/ops/live", icon: Radio, label: "En Vivo", badge: "live-indicator" },
             { href: "/ops/pedidos", icon: ShoppingCart, label: "Pedidos" },
             { href: "/ops/soporte", icon: MessageCircle, label: "Soporte", badge: "support-unread" },

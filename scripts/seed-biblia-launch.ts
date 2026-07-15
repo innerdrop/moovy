@@ -30,9 +30,11 @@ const prisma = new PrismaClient();
 const FUEL_PRICE_PER_LITER = 1658;
 
 /**
- * Comision merchants mes 1: 0% (30 dias gratis, estrategia adquisicion).
- * RECORDATORIO: Despues del dia 30, cambiar a 8 ejecutando:
- *   npx tsx scripts/seed-biblia-launch.ts --month2
+ * Comision merchants: el mes gratis es AUTOMATICO per-merchant.
+ * Cada comercio paga 0% sus primeros 30 dias desde su propio createdAt
+ * (isInFirstMonthFree en src/lib/merchant-loyalty.ts) y pasa a 10%/tier solo.
+ * NO hay que "activar el mes 2" a mano: el flag --month2 solo cambia el
+ * FALLBACK global de StoreSettings, que ya es 10 igual. Se deja por compat.
  */
 const MERCHANT_COMMISSION_MONTH1 = 0;
 const MERCHANT_COMMISSION_NORMAL = 10;
@@ -379,11 +381,11 @@ async function printSummary() {
   console.log("");
 
   if (!isMonth2) {
-    console.log("  ⚠️  RECORDATORIOS POST-LANZAMIENTO:");
-    console.log("    • Dia 30: ejecutar con --month2 para activar comision 10%");
-    console.log("    • Dia 31: verificar que boost de puntos se desactive");
-    console.log("    • Fase 2 (5+ comercios): activar seccion publicidad");
-    console.log("    • Verificar precio nafta si cambia y re-ejecutar");
+    console.log("  ✅ TODO LO DEL LANZAMIENTO SE MANEJA DESDE /ops/centro-lanzamiento");
+    console.log("    • Comision mes 1 → AUTOMATICA per-comercio (0% sus primeros 30 dias). Nada que hacer.");
+    console.log("    • Boost de puntos → 1 click en el Centro. Se apaga SOLO al vencer la fecha.");
+    console.log("    • Publicidad Fase 2 → toggle en el Centro cuando tengas 5+ comercios activos.");
+    console.log("    • Precio nafta → editable en el Centro si cambia el surtidor.");
     console.log("");
   }
 
