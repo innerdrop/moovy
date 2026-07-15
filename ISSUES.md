@@ -8,7 +8,7 @@
 ## 🔴 CRÍTICOS (bloquean lanzamiento)
 
 ### ISSUE-004 — Limpiar data de prueba antes del lanzamiento público
-**Estado**: 🔴 ABIERTO — se resuelve con `scripts/clean-db-pre-launch.ts` el día antes del lanzamiento.
+**Estado**: ✅ RESUELTO (2026-07-15) — se corrió `clean-db-pre-launch.ts --execute` en prod (VPS) tras backup verificado de 36 MB (`backup_pre_limpieza_20260715_145026.sql`). Dry-run mostró 290.246 registros (288K eran CronRunLog); post-limpieza: **comercios 0, usuarios 1 (admin maurod@me.com), recompensas 3** (catálogo v5 sembrado con `seed-biblia-launch.ts`). Config OPS preservada intacta (StoreSettings, PointsConfig, tiers, DeliveryRate, categorías, zonas). Prod limpio y listo para cargar comercios reales.
 **Qué falta**:
 1. ✅ Script ya escrito y validado el 2026-04-24 — `scripts/clean-db-pre-launch.ts` (modo dry-run default; con `--execute` pide confirmación interactiva "SI BORRAR")
 2. ⏳ Ejecutar primero en DB local contra copia de producción

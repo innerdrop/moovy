@@ -29,7 +29,7 @@
 | Auditoría pre-launch del código | 🟡 En curso (capa 1 knip hecha). Seguir dominio por dominio |
 | Candado de lanzamiento | ✅ Cortina confirmada tras cada deploy |
 | Deploy a prod | ✅ **TODO deployado** (3 batches esta sesión: motor+emails · cortina+direcciones · equipamiento+split). Develop limpio |
-| Data cleanup pre-launch | 🔴 ABIERTO (script listo, se ejecuta el día del launch — ISSUE-004) |
+| Data cleanup pre-launch | ✅ HECHO (2026-07-15): `clean-db-pre-launch` corrido en prod tras backup de 36 MB. Post: comercios 0 / usuarios 1 / recompensas 3. Config OPS intacta. Base limpia para datos reales |
 | Organización de documentos | 🟡 Planificada (índice armado). Falta ejecutar |
 
 **Veredicto (cierre 07-06, 2º devmain)**: sesión histórica. Ciclo completo verificado en prod con plata real (pago→split→asignación→PINs→entrega→puntos), 2 bugs de dinero cazados y arreglados el mismo día, **auditoría pre-launch de código CERRADA** (7 dominios, 4 críticos resueltos y deployados), multi-vendor deshabilitado por decisión founder (un pedido = un local), boost MOOVER configurable listo para el día del launch. La deuda de código pre-launch quedó en ~cero (resta 1 chore cosmético). Lo que separa del checklist final ya no es código: operativos de OPS + verificaciones de prod + gestión con MP + reorg de docs.
@@ -85,7 +85,7 @@ Menor: si al ver las 3 categorías destacadas en prod se las quiere aún más an
 
 ## Métricas
 
-- **Issues 🔴 abiertos**: 1 (ISSUE-004 cleanup data, día del launch).
+- **Issues 🔴 abiertos**: 0 — ISSUE-004 (cleanup de data de prueba) RESUELTO en prod el 2026-07-15 (comercios 0 / usuarios 1 / recompensas 3, config intacta).
 - **Ramas sesión 07-14/15 (MOOVER v5 + Centro)**: 7 — `fix/moover-valor-punto-checkout`, `feat/moover-bono-resena`, `feat/moover-referido-residual`, `feat/moover-canje-recompensas`, `feat/moover-desafios` (cerradas a develop) + `feat/centro-lanzamiento` (⚠️ en curso, falta cerrar/deployar). 2 requirieron `prisma db push` (residual + recompensas). 1 bug de dinero cazado (valor del punto en el checkout).
 - **Prod (07-12)**: rediseño de la tienda deployado a main (`feat/rediseno-home`). ⚠️ Confirmar si `feat-ajuste-categorias-home` (categorías del home) también se deployó — quedó cerrada a develop.
 - **Ramas cerradas sesión 07-11/12 (diseño)**: 2 — `feat/rediseno-home` (rediseño integral + OPS de cupones), `feat-ajuste-categorias-home` (pills fuera + categorías destacadas más grandes).
