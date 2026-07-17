@@ -285,7 +285,7 @@ export function AdminNotesSection({ userId, currentAdminId }: AdminNotesSectionP
                         value={newContent}
                         onChange={(e) => setNewContent(e.target.value.slice(0, MAX_LEN))}
                         onKeyDown={handleNewKeyDown}
-                        placeholder="Ej: 'Llamé al comercio por reclamo del pedido #MOV-123. Aclaró que el retraso fue por el clima. Cerrado sin compensación.'"
+                        placeholder="Ej: 'Llamé al comercio por reclamo del pedido #PED-123. Aclaró que el retraso fue por el clima. Cerrado sin compensación.'"
                         rows={3}
                         disabled={creating}
                         className="w-full resize-y min-h-[72px] text-sm text-gray-900 bg-transparent border-0 focus:ring-0 focus:outline-none placeholder:text-gray-400 disabled:opacity-50"

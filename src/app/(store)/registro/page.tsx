@@ -1,7 +1,7 @@
 "use client";
 
 // Client Registration Page
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -31,16 +31,14 @@ function RegistrationForm() {
     const [success, setSuccess] = useState(false);
 
     // Form Fields
-    const [firstName, setFirstName] = useState("");
-    const [lastName, setLastName] = useState("");
+    const [fullName, setFullName] = useState("");
     const [email, setEmail] = useState("");
     const [phone, setPhone] = useState("");
     const [password, setPassword] = useState("");
-    const [confirmPassword, setConfirmPassword] = useState("");
     const [referralCode, setReferralCode] = useState("");
-    const [acceptTerms, setAcceptTerms] = useState(false);
-    const [acceptPrivacy, setAcceptPrivacy] = useState(false);
-    const [age18Confirmed, setAge18Confirmed] = useState(false);
+    // feat/registro-simplificado: una sola tilde legal (Términos + Privacidad + +18).
+    // Marketing sigue SEPARADO y opt-in (Ley 26.951).
+    const [acceptLegal, setAcceptLegal] = useState(false);
     const [marketingConsent, setMarketingConsent] = useState(false);
 
     useEffect(() => {
@@ -76,27 +74,72 @@ function RegistrationForm() {
         setReferralCode(cleaned ? `MOV-${cleaned}` : "");
     };
 
+    // feat/referido-pin-y-pedido-prefijo: 4 casillas tipo PIN para el sufijo (los 4
+    // caracteres tras "MOV-"). La fuente de verdad sigue siendo referralCode; cada
+    // casilla mapea a un caracter del sufijo. Elimina el bug de encimado del prefijo.
+    const pinRefs = useRef<(HTMLInputElement | null)[]>([]);
+
+    const handlePinChange = (index: number, raw: string) => {
+        const ch = raw
+            .toUpperCase()
+            .replace(/[^ABCDEFGHJKLMNPQRSTUVWXYZ23456789]/g, "")
+            .slice(-1);
+        const arr = [0, 1, 2, 3].map((k) => referralSuffix[k] || "");
+        arr[index] = ch;
+        const next = arr.join(""); // izquierda-empaquetado (sin huecos)
+        handleReferralSuffixChange(next);
+        // Foco a la próxima casilla vacía (según el largo real).
+        if (ch) pinRefs.current[Math.min(next.length, 3)]?.focus();
+    };
+
+    const handlePinKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Backspace" && !referralSuffix[index] && index > 0) {
+            pinRefs.current[index - 1]?.focus();
+        } else if (e.key === "ArrowLeft" && index > 0) {
+            pinRefs.current[index - 1]?.focus();
+        } else if (e.key === "ArrowRight" && index < 3) {
+            pinRefs.current[index + 1]?.focus();
+        }
+    };
+
+    // Pegar el código completo (ej. "MOV-AB23" o "AB23") llena las 4 casillas.
+    const handlePinPaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
+        e.preventDefault();
+        const text = e.clipboardData
+            .getData("text")
+            .trim()
+            .toUpperCase()
+            .replace(/^MOV-?/, "");
+        handleReferralSuffixChange(text);
+        const len = Math.min(
+            text.replace(/[^ABCDEFGHJKLMNPQRSTUVWXYZ23456789]/g, "").length,
+            4,
+        );
+        setTimeout(() => pinRefs.current[Math.min(len, 3)]?.focus(), 0);
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
 
-        if (password !== confirmPassword) {
-            setError("Las contraseñas no coinciden");
+        if (fullName.trim().length < 2) {
+            setError("Ingresá tu nombre y apellido.");
             return;
         }
 
-        if (password.length < 8) {
-            setError("La contraseña debe tener al menos 8 caracteres");
+        // Fuerza de contraseña (espejo del backend: 8+ con mayúscula, minúscula y número).
+        if (
+            password.length < 8 ||
+            !/[a-z]/.test(password) ||
+            !/[A-Z]/.test(password) ||
+            !/\d/.test(password)
+        ) {
+            setError("La contraseña necesita al menos 8 caracteres, con una mayúscula, una minúscula y un número.");
             return;
         }
 
-        if (!acceptTerms || !acceptPrivacy) {
-            setError("Debés aceptar los Términos y Condiciones y la Política de Privacidad");
-            return;
-        }
-
-        if (!age18Confirmed) {
-            setError("Tenés que confirmar que sos mayor de 18 años para registrarte (Ley 25.326)");
+        if (!acceptLegal) {
+            setError("Para continuar tenés que aceptar los Términos, la Política de Privacidad y confirmar que sos mayor de 18 años.");
             return;
         }
 
@@ -118,15 +161,14 @@ function RegistrationForm() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    firstName,
-                    lastName,
+                    name: fullName.trim(),
                     email,
                     phone,
                     password,
                     referralCode: referralCode.trim() || undefined,
                     acceptTerms: true,
                     acceptPrivacy: true,
-                    age18Confirmed,
+                    age18Confirmed: true,
                     marketingConsent,
                 }),
             });
@@ -202,41 +244,25 @@ function RegistrationForm() {
                 <div className="bg-white rounded-2xl lg:rounded-3xl shadow-xl lg:shadow-none border border-gray-100 p-6 sm:p-8 lg:p-0">
                     <form onSubmit={handleSubmit} className="space-y-5">
 
-                        {/* Name Fields Row */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Nombre
-                                    <InfoTooltip text="Tu nombre real como figura en tu DNI." />
-                                </label>
-                                <div className="relative">
-                                    <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                        <User className="w-5 h-5 text-gray-400" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        value={firstName}
-                                        onChange={(e) => setFirstName(e.target.value)}
-                                        placeholder="Ej. Juan"
-                                        className="input input-with-icon"
-                                        required
-                                        autoComplete="given-name"
-                                    />
+                        {/* Nombre y apellido (un solo campo) */}
+                        <div>
+                            <label className="block text-sm font-semibold text-gray-700 mb-2">
+                                Nombre y apellido
+                                <InfoTooltip text="Tu nombre completo como figura en tu DNI." />
+                            </label>
+                            <div className="relative">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+                                    <User className="w-5 h-5 text-gray-400" />
                                 </div>
-                            </div>
-                            <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    Apellido
-                                    <InfoTooltip text="Tu apellido familiar." />
-                                </label>
                                 <input
                                     type="text"
-                                    value={lastName}
-                                    onChange={(e) => setLastName(e.target.value)}
-                                    placeholder="Ej. Pérez"
-                                    className="input"
+                                    value={fullName}
+                                    onChange={(e) => setFullName(e.target.value)}
+                                    placeholder="Ej. Juan Pérez"
+                                    className="input input-with-icon"
                                     required
-                                    autoComplete="family-name"
+                                    autoFocus
+                                    autoComplete="name"
                                 />
                             </div>
                         </div>
@@ -280,7 +306,7 @@ function RegistrationForm() {
                         <div>
                             <label className="block text-sm font-semibold text-gray-700 mb-2">
                                 Contraseña
-                                <InfoTooltip text="Mínimo 6 caracteres." />
+                                <InfoTooltip text="Al menos 8 caracteres, con una mayúscula, una minúscula y un número." />
                             </label>
                             <div className="relative">
                                 <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
@@ -305,78 +331,68 @@ function RegistrationForm() {
                                     {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                                 </button>
                             </div>
-                        </div>
-
-                        {/* Confirm Password */}
-                        <div>
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Confirmar contraseña
-                            </label>
-                            <div className="relative">
-                                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                                    <Lock className="w-5 h-5 text-gray-400" />
-                                </div>
-                                <input
-                                    type={showPassword ? "text" : "password"}
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    placeholder="••••••••"
-                                    className="input input-with-icon"
-                                    required
-                                    minLength={8}
-                                    autoComplete="new-password"
-                                />
-                            </div>
                             <p className="text-xs text-gray-500 mt-2 ml-1">
-                                * Todos los campos marcados arriba son obligatorios
+                                8+ caracteres, con una mayúscula, una minúscula y un número.
                             </p>
                         </div>
 
                         <hr className="border-gray-100 my-4" />
 
                         {/* Referral Code (Optional)
-                            Rama fix/referral-code-formato-forzado (2026-05-17):
-                            - El input es un campo controlado que pasa cada
-                              tecla por formatReferralCode(): auto-uppercase,
-                              filtra caracteres ambiguos, fuerza el prefijo
-                              MOV-, limita a 8 caracteres.
-                            - Feedback visual inline: verde + check cuando
-                              está completo y válido, rojo + alerta si tiene
-                              contenido pero todavía no es válido, neutro si
-                              está vacío.
-                            - Helper text aclara el formato y maxLength=8
-                              previene caracteres extra. */}
+                            feat/referido-pin-y-pedido-prefijo (2026-07-15):
+                            - Prefijo "MOV-" FIJO como etiqueta (evoca MOOVER) + 4
+                              casillas tipo PIN para el sufijo. Reemplaza el input
+                              anterior con prefijo superpuesto (que se encimaba en
+                              prod porque el prefijo era más ancho que el padding).
+                            - referralCode sigue siendo la fuente de verdad; cada
+                              casilla mapea a un char del sufijo. Auto-avance entre
+                              casillas + soporte de pegar el código completo.
+                            - Feedback visual inline: verde + check cuando está
+                              completo y válido, rojo + alerta si tiene contenido
+                              pero todavía no es válido, neutro si está vacío. */}
                         <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
                             <label className="block text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
                                 <Gift className="w-4 h-4 text-blue-500" />
                                 ¿Tenés un código de referido?
                                 <span className="text-xs font-normal text-gray-500 bg-white px-2 py-0.5 rounded-full border border-gray-200">Opcional</span>
                             </label>
-                            <div className="relative">
-                                <span className="absolute left-3 top-1/2 -translate-y-1/2 font-mono font-bold tracking-wider text-gray-500 pointer-events-none select-none">
+                            {/* feat/referido-pin-y-pedido-prefijo: prefijo "MOV-" FIJO como
+                                etiqueta + 4 casillas tipo PIN. Sin superposición posible.
+                                Auto-avance entre casillas y soporte de pegar el código completo. */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-mono font-bold tracking-wider text-gray-500 select-none text-lg">
                                     MOV-
                                 </span>
-                                <input
-                                    type="text"
-                                    value={referralSuffix}
-                                    onChange={(e) => handleReferralSuffixChange(e.target.value)}
-                                    placeholder="AB23"
-                                    maxLength={4}
-                                    className={`input uppercase font-mono tracking-wider pl-14 pr-10 ${
-                                        referralCodeShowError
-                                            ? "border-red-300 focus:border-red-500 focus:ring-red-200 bg-red-50/30"
-                                            : referralCodeValid
-                                                ? "border-green-400 focus:border-green-500 focus:ring-green-200 bg-green-50/30"
-                                                : "border-blue-200 focus:border-blue-500 focus:ring-blue-200"
-                                    }`}
-                                    autoComplete="off"
-                                    aria-invalid={referralCodeShowError}
-                                />
+                                <div className="flex items-center gap-2">
+                                    {[0, 1, 2, 3].map((i) => (
+                                        <input
+                                            key={i}
+                                            ref={(el) => { pinRefs.current[i] = el; }}
+                                            type="text"
+                                            inputMode="text"
+                                            value={referralSuffix[i] || ""}
+                                            onChange={(e) => handlePinChange(i, e.target.value)}
+                                            onKeyDown={(e) => handlePinKeyDown(i, e)}
+                                            onPaste={handlePinPaste}
+                                            maxLength={1}
+                                            aria-label={`Carácter ${i + 1} del código de referido`}
+                                            aria-invalid={referralCodeShowError}
+                                            autoComplete="off"
+                                            className={`w-11 h-12 text-center text-lg font-mono font-bold uppercase rounded-xl border-2 focus:outline-none focus:ring-2 transition ${
+                                                referralCodeShowError
+                                                    ? "border-red-300 focus:border-red-500 focus:ring-red-200 bg-red-50/30"
+                                                    : referralCodeValid
+                                                        ? "border-green-400 focus:border-green-500 focus:ring-green-200 bg-green-50/30"
+                                                        : "border-blue-200 focus:border-blue-500 focus:ring-blue-200 bg-white"
+                                            }`}
+                                        />
+                                    ))}
+                                </div>
                                 {referralCodeValid && (
-                                    <Check className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-green-600" />
+                                    <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
                                 )}
                                 {referralCodeShowError && (
-                                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-red-500" />
+                                    <AlertCircle className="w-5 h-5 text-red-500 flex-shrink-0" />
                                 )}
                             </div>
                             {referralCodeShowError ? (
@@ -394,49 +410,27 @@ function RegistrationForm() {
                             )}
                         </div>
 
-                        {/* Legal Consent */}
+                        {/* Legal Consent — feat/registro-simplificado: una sola tilde
+                            obligatoria (Términos + Privacidad + +18). Marketing SEPARADO
+                            y opt-in (Ley 26.951). */}
                         <div className="space-y-3">
                             <label className="flex items-start gap-3 cursor-pointer">
                                 <input
                                     type="checkbox"
-                                    checked={acceptTerms}
-                                    onChange={(e) => setAcceptTerms(e.target.checked)}
+                                    checked={acceptLegal}
+                                    onChange={(e) => setAcceptLegal(e.target.checked)}
                                     className="mt-1 w-4 h-4 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
                                 />
                                 <span className="text-sm text-gray-600">
-                                    Acepto los{" "}
+                                    Soy mayor de 18 años y acepto los{" "}
                                     <Link href="/terminos" className="text-[#e60012] underline font-medium" target="_blank">
                                         Términos y Condiciones
                                     </Link>{" "}
-                                    de MOOVY. <span className="text-red-500">*</span>
-                                </span>
-                            </label>
-
-                            <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={acceptPrivacy}
-                                    onChange={(e) => setAcceptPrivacy(e.target.checked)}
-                                    className="mt-1 w-4 h-4 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
-                                />
-                                <span className="text-sm text-gray-600">
-                                    Acepto la{" "}
+                                    y la{" "}
                                     <Link href="/privacidad" className="text-[#e60012] underline font-medium" target="_blank">
                                         Política de Privacidad
                                     </Link>{" "}
-                                    y el tratamiento de mis datos personales conforme la Ley 25.326. <span className="text-red-500">*</span>
-                                </span>
-                            </label>
-
-                            <label className="flex items-start gap-3 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={age18Confirmed}
-                                    onChange={(e) => setAge18Confirmed(e.target.checked)}
-                                    className="mt-1 w-4 h-4 rounded border-gray-300 text-[#e60012] focus:ring-[#e60012]"
-                                />
-                                <span className="text-sm text-gray-600">
-                                    Declaro bajo juramento que soy mayor de 18 años. <span className="text-red-500">*</span>
+                                    (Ley 25.326). <span className="text-red-500">*</span>
                                 </span>
                             </label>
 
@@ -457,7 +451,7 @@ function RegistrationForm() {
                         {/* Submit */}
                         <button
                             type="submit"
-                            disabled={isLoading || success || !acceptTerms || !acceptPrivacy || !age18Confirmed}
+                            disabled={isLoading || success || !acceptLegal}
                             className="btn-primary w-full flex items-center justify-center gap-2 py-4 text-lg mt-4 shadow-lg shadow-red-500/20 hover:shadow-red-500/30 transition-shadow"
                         >
                             {isLoading ? (

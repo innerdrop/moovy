@@ -89,14 +89,16 @@ async function getOpsSettings() {
     };
 }
 
-// Helper to generate order number (MOV-XXXX format)
+// Helper to generate order number (PED-XXXX format)
+// feat/referido-pin-y-pedido-prefijo: el pedido usa PED- (pedido) para NO
+// confundirse con el código de referido MOV- (que evoca el programa MOOVER).
 function generateOrderNumber(): string {
     const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // Avoid confusing chars like 0/O, 1/I
     let code = "";
     for (let i = 0; i < 4; i++) {
         code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
-    return `MOV-${code}`;
+    return `PED-${code}`;
 }
 
 // ISSUE-031: dispara el push especial de bienvenida al primer pedido de un merchant.

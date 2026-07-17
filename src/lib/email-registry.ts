@@ -42,7 +42,7 @@ const SAMPLE = {
     sellerName: 'Ana Martínez',
     sellerDisplayName: 'Las Vasijas de Ana',
     sellerEmail: 'ana@ejemplo.com',
-    orderNumber: 'MOV-20260320-001',
+    orderNumber: 'PED-20260320-001',
     referralCode: 'MARIA2026',
     total: 4500,
     subtotal: 3800,
@@ -702,7 +702,7 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
             <div style="text-align: center; margin-bottom: 20px;">${emailBadge('🟠 Pedidos Sin Repartidor', '#fffbeb', '#92400e')}</div>
             <h2 style="color: #111827; margin-top: 0; text-align: center;">3 pedidos sin repartidor asignado</h2>
             ${emailAlertBox('<p style="margin: 0; font-size: 14px;"><strong>3 pedidos</strong> están esperando repartidor. El más antiguo lleva <strong>12 minutos</strong>.</p>', 'warning')}
-            ${emailInfoBox('<p style="color: #718096; font-size: 14px; margin: 0;"><strong>Pedidos:</strong> #MOV-001, #MOV-002, #MOV-003</p>')}
+            ${emailInfoBox('<p style="color: #718096; font-size: 14px; margin: 0;"><strong>Pedidos:</strong> #PED-001, #PED-002, #PED-003</p>')}
             ${emailButton('Ver pedidos en OPS', `${baseUrl}/ops/pedidos`, 'red')}
         `),
     },
@@ -1470,7 +1470,7 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
         priority: 'P0',
         status: 'implemented',
         trigger: 'refundOrderIfPaid() en src/lib/order-refund.ts cuando se cancela pedido pagado MP',
-        subject: 'Te devolvimos $X,XXX — pedido MOV-XXXX',
+        subject: 'Te devolvimos $X,XXX — pedido PED-XXXX',
         functionName: 'sendOrderRefundedEmail',
         file: 'src/lib/email-legal-ux.ts',
         generatePreview: () => emailLayout(`

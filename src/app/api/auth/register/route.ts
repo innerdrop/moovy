@@ -35,8 +35,20 @@ export async function POST(request: NextRequest) {
         const data = await request.json();
         // V-010 FIX: No logging of PII in registration
 
+        // feat/registro-simplificado: un solo campo `name` (nombre y apellido).
+        // Compat: si viniera firstName/lastName (caller viejo) se respeta. De acá
+        // sale el nombre para toda la creación de la cuenta; firstName/lastName se
+        // derivan del nombre completo para seguir poblando esas columnas.
+        const fullName =
+            typeof data.name === "string" && data.name.trim()
+                ? data.name.trim()
+                : `${(data.firstName || "").trim()} ${(data.lastName || "").trim()}`.trim();
+        const nameParts = fullName.split(/\s+/);
+        const firstName = (data.firstName && data.firstName.trim()) || nameParts[0] || fullName;
+        const lastName = (data.lastName && data.lastName.trim()) || nameParts.slice(1).join(" ");
+
         // Validate required fields
-        if (!data.firstName || !data.lastName || !data.email || !data.password) {
+        if (!fullName || fullName.length < 2 || !data.email || !data.password) {
             return NextResponse.json(
                 { error: "Todos los campos obligatorios deben ser completados." },
                 { status: 400 }
@@ -57,8 +69,6 @@ export async function POST(request: NextRequest) {
                 { status: 400 }
             );
         }
-
-        const fullName = `${data.firstName.trim()} ${data.lastName.trim()}`;
 
         // Validate email format
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -197,8 +207,8 @@ export async function POST(request: NextRequest) {
                     email: data.email,
                     password: hashedPassword,
                     name: fullName,
-                    firstName: data.firstName,
-                    lastName: data.lastName,
+                    firstName,
+                    lastName,
                     phone: data.phone || null,
                     role: 'USER',
                     pointsBalance: 0,  // Start with 0, bonus is pending
@@ -274,7 +284,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Send welcome email (non-blocking)
-        sendWelcomeEmail(data.email, data.firstName, newUserReferralCode);
+        sendWelcomeEmail(data.email, firstName, newUserReferralCode);
 
         return NextResponse.json({
             success: true,

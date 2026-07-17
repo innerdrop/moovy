@@ -10,6 +10,36 @@
 
 ---
 
+## 2026-07-17 (rama `feat/referido-pin-y-pedido-prefijo`)
+
+feat: pedido PED-XXXX + referido tipo PIN + registro simplificado
+
+Tres mejoras en el registro/identificadores:
+
+1) PEDIDO → PED-XXXX (antes MOV-XXXX, idéntico al código de referido → confuso +
+   footgun). El referido se queda con MOV- (evoca MOOVER). Cambio en
+   generateOrderNumber() + ejemplos cosméticos (email-registry, notifications,
+   AdminNotesSection). Se propaga solo (nº dinámico). Cero migración (prod limpio).
+
+2) CAMPO DE REFERIDO → 4 casillas tipo PIN con prefijo "MOV-" fijo. Arregla el bug
+   de encimado del prefijo con el placeholder en prod. Auto-avance, backspace/flechas
+   navegan, y pegar el código completo llena las 4. Formato MOV-XXXX sin cambios.
+
+3) REGISTRO SIMPLIFICADO (bajó la fricción a la mitad):
+   - "Nombre" + "Apellido" → un solo campo "Nombre y apellido" (el backend acepta
+     `name` y deriva first/last para seguir poblando esas columnas; compat con callers
+     viejos que manden firstName/lastName).
+   - Se sacó "Confirmar contraseña" (ya está el ojito mostrar/ocultar).
+   - Las 3 tildes obligatorias (Términos + Privacidad + +18) → UNA sola tilde
+     combinada. Marketing sigue SEPARADO y opt-in (Ley 26.951).
+   - Tooltip de contraseña corregido (8+ con mayúscula/minúscula/número, espejo del
+     backend) + hint inline + validación de fuerza en el cliente (evita rebote 400).
+   - Autofocus en el primer campo.
+
+Sin cambios de schema (deploy -NoDB). CLAUDE.md actualizado (prefijos + registro).
+
+**Archivos:** .claude/CLAUDE.md, docs/MOOVY_Config_Biblia_y_Logistica.docx, src/app/(store)/registro/page.tsx, src/app/api/auth/register/route.ts, src/app/api/orders/route.ts, src/components/ops/AdminNotesSection.tsx, src/lib/email-registry.ts, src/lib/notifications.ts
+
 ## 2026-07-15 (rama `feat/centro-lanzamiento`)
 
 feat: Centro de Lanzamiento en OPS (reemplaza recordatorios manuales)

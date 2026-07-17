@@ -126,7 +126,7 @@ const STATUS_MESSAGES: Record<string, MessageBuilder> = {
  *
  * @param userId - The buyer's user ID
  * @param status - The new order status
- * @param orderNumber - The order number (e.g. "MOV-A1B2")
+ * @param orderNumber - The order number (e.g. "PED-A1B2")
  * @param context - Optional extra context for enriched messages
  */
 /**
