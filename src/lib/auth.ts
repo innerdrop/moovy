@@ -1,6 +1,7 @@
 // NextAuth.js Configuration for Moovy - SECURED
 import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+import Google from "next-auth/providers/google";
 import bcrypt from "bcryptjs";
 import { checkRateLimit, resetRateLimit, auditLog } from "@/lib/security";
 import { logUserActivity, ACTIVITY_ACTIONS } from "@/lib/user-activity";
@@ -70,6 +71,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     // Check for soft delete
                     if (user.deletedAt) {
                         throw new Error("Esta cuenta ha sido eliminada. Contactá a soporte.");
+                    }
+
+                    // feat/login-google: cuenta sin contraseña = alta por Google. No se
+                    // puede entrar con email/contraseña; hay que usar el botón de Google.
+                    if (!user.password) {
+                        throw new Error('Esta cuenta usa Google para ingresar. Tocá "Continuá con Google".');
                     }
 
                     // ISSUE-062: bloqueo persistente. Si está bloqueado, no validamos password.
@@ -236,7 +243,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                             msg.startsWith("Cuenta bloqueada") ||
                             msg.startsWith("Tu cuenta fue bloqueada") ||
                             msg.startsWith("Contraseña incorrecta") ||
-                            msg.startsWith("Esta cuenta ha sido eliminada");
+                            msg.startsWith("Esta cuenta ha sido eliminada") ||
+                            msg.startsWith("Esta cuenta usa Google");
                         if (isUserFacing) {
                             console.warn("[Auth] User-facing error:", msg);
                             throw error;
@@ -247,25 +255,97 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                 }
             },
         }),
+        // feat/login-google: proveedor Google. NextAuth corre con JWT + sin adapter,
+        // así que el alta/vinculación del usuario se hace a mano en el callback signIn.
+        // Se agrega SOLO si las credenciales existen — así un entorno sin configurar
+        // no rompe el login por credenciales (fail-safe).
+        ...(process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
+            ? [
+                  Google({
+                      clientId: process.env.AUTH_GOOGLE_ID,
+                      clientSecret: process.env.AUTH_GOOGLE_SECRET,
+                  }),
+              ]
+            : []),
     ],
     callbacks: {
-        async jwt({ token, user, trigger }) {
+        async signIn({ user, account }) {
+            // feat/login-google: al entrar con Google hacemos el upsert de nuestro
+            // usuario (no hay adapter que lo cree). Rechazamos cuentas eliminadas.
+            if (account?.provider === "google") {
+                try {
+                    const { upsertGoogleUser } = await import("@/lib/google-signin");
+                    const { readReferralCodeFromCookie, clearReferralCookie } = await import("@/lib/referral-cookie");
+                    // Atribución de referido: la cookie moovy_ref sobrevive el viaje a
+                    // Google (la URL/formulario no). Se creó al caer en un link de referido
+                    // o al tocar "Continuá con Google" con un código puesto.
+                    const referredByCode = await readReferralCodeFromCookie();
+                    const res = await upsertGoogleUser({
+                        email: user.email,
+                        name: user.name,
+                        image: (user as any).image,
+                        referredByCode,
+                    });
+                    // Si se creó la cuenta y se atribuyó el referido, limpiamos la cookie.
+                    if (res.ok && res.created && referredByCode) {
+                        await clearReferralCookie();
+                    }
+                    // false → NextAuth manda a la página de error (/login).
+                    return res.ok;
+                } catch (err) {
+                    console.error("[Auth] Google signIn upsert failed:", err);
+                    return false;
+                }
+            }
+            return true;
+        },
+        async jwt({ token, user, account, trigger }) {
             if (user) {
-                token.id = user.id || "";
-                token.role = (user as any).role;
-                token.roles = (user as any).roles || [token.role];
-                token.referralCode = (user as any).referralCode;
-                token.merchantId = (user as any).merchantId;
+                if (account?.provider === "google") {
+                    // OAuth: el `user` trae email pero no nuestros campos de DB.
+                    // Cargamos el usuario real (ya creado/linkeado en signIn) y
+                    // derivamos roles igual que en authorize().
+                    try {
+                        const { prisma } = await import("@/lib/prisma");
+                        const dbUser = await prisma.user.findUnique({
+                            where: { email: (user.email || "").toLowerCase() },
+                            select: { id: true, role: true, referralCode: true },
+                        });
+                        if (dbUser) {
+                            const { computeUserAccess } = await import("@/lib/roles");
+                            const access = await computeUserAccess(dbUser.id);
+                            const roles: string[] = ["USER"];
+                            if (access?.isAdmin) roles.push("ADMIN");
+                            if (access && access.merchant.status !== "none") roles.push("COMERCIO");
+                            if (access && access.driver.status !== "none") roles.push("DRIVER");
+                            if (access && access.seller.status !== "none") roles.push("SELLER");
+                            token.id = dbUser.id;
+                            token.role = dbUser.role;
+                            token.roles = [...new Set([...roles, dbUser.role].filter(Boolean))];
+                            token.referralCode = dbUser.referralCode;
+                            token.merchantId = access?.merchant.merchantId ?? null;
+                        }
+                    } catch (err) {
+                        console.error("[Auth] Google jwt hydrate failed:", err);
+                    }
+                } else {
+                    token.id = user.id || "";
+                    token.role = (user as any).role;
+                    token.roles = (user as any).roles || [token.role];
+                    token.referralCode = (user as any).referralCode;
+                    token.merchantId = (user as any).merchantId;
+                }
                 token.loginAt = Date.now();
 
                 // Log successful login on sign-in
                 if (trigger === "signIn") {
+                    const uid = (token.id as string) || user.id || "";
                     logUserActivity({
-                        userId: user.id || "",
+                        userId: uid,
                         action: ACTIVITY_ACTIONS.LOGIN,
                         entityType: "User",
-                        entityId: user.id || "",
-                        metadata: { method: "credentials" },
+                        entityId: uid,
+                        metadata: { method: account?.provider === "google" ? "google" : "credentials" },
                     }).catch((err) => console.error("[Auth] Failed to log login activity:", err));
                 }
             }

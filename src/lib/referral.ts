@@ -26,6 +26,19 @@ export const REFERRAL_CODE_REGEX = /^MOV-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{4}$/
 export const REFERRAL_CODE_LENGTH = 8;
 
 /**
+ * Genera un código de referido nuevo con el formato canónico MOV-XXXX.
+ * feat/login-google: exportado para que el alta por Google use el mismo
+ * generador que el registro por email (mismo formato compartible).
+ */
+export function generateReferralCode(): string {
+    let suffix = "";
+    for (let i = 0; i < 4; i++) {
+        suffix += REFERRAL_CHARS.charAt(Math.floor(Math.random() * REFERRAL_CHARS.length));
+    }
+    return `MOV-${suffix}`;
+}
+
+/**
  * Valida si un código tiene el formato canónico exacto.
  *
  * @example

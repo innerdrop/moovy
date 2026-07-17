@@ -57,6 +57,14 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
         }
 
+        // feat/login-google: los usuarios que entran con Google no tienen contraseña.
+        if (!user.password) {
+            return NextResponse.json(
+                { error: "Tu cuenta usa Google para ingresar, no tiene contraseña que cambiar." },
+                { status: 400 }
+            );
+        }
+
         // Verify current password
         const isValidPassword = await bcrypt.compare(currentPassword, user.password);
         if (!isValidPassword) {

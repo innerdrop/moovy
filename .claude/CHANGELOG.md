@@ -10,6 +10,67 @@
 
 ---
 
+## 2026-07-17 (rama `feat/login-google`)
+
+feat: login/registro con Google (OAuth) para compradores
+
+"Continuá con Google" de un toque en /registro y /login (solo portal cliente).
+El de mayor impacto en conversión: sin contraseña, trae nombre + email.
+
+SCHEMA (requiere prisma db push): User.password pasa a String? (los usuarios de
+Google no tienen contraseña). Deploy MODO SCHEMA (-SchemaOnly), NO -NoDB.
+
+AUTH (src/lib/auth.ts): proveedor Google agregado (fail-safe: solo si AUTH_GOOGLE_ID
+y AUTH_GOOGLE_SECRET están seteadas, así un entorno sin credenciales no rompe el login
+por credenciales). Como corremos JWT + sin adapter, el alta/vinculación del usuario se
+hace a mano: callback signIn → upsertGoogleUser (src/lib/google-signin.ts), y el callback
+jwt hidrata id/rol/roles/referralCode desde nuestra DB para usuarios de Google. El login
+por credenciales ahora rechaza cuentas sin contraseña ("usá Google"). change-password
+también guarda contra cuentas sin contraseña.
+
+ALTA POR GOOGLE (google-signin.ts): mismo trato que el registro por email — password null,
+emailVerified (Google ya lo verificó), bono de bienvenida pendiente (signupBonus de la
+Biblia), referralCode MOV-XXXX único (generateReferralCode ahora exportado en referral.ts),
+consentimiento registrado (Términos + Privacidad + +18, Ley 25.326). Marketing NO se asume
+(Ley 26.951 opt-in). Cuenta soft-deleted → rechazada (no se resucita). Email existente →
+se vincula (mismo email verificado).
+
+UI: botón con logo oficial de Google + aviso "Al continuar aceptás Términos, Privacidad y
++18" (patrón estándar de social login) + divisor "o con tu email". En login solo aparece
+para el portal cliente (no comercio/repartidor/ops).
+
+ATRIBUCIÓN DE REFERIDOS (funciona para email Y Google): el código viajaba bien por email
+(en el body) pero se perdía con Google (el viaje a google.com pierde URL + formulario).
+Solución estándar: cookie de ÚLTIMO-TOQUE (moovy_ref, 60 días, src/lib/referral-cookie.ts).
+(1) Al caer en /registro?ref=CODE se guarda la cookie (y pisa la anterior = último-toque);
+si no hay ?ref, se recupera la cookie (caso "click hoy, registro después"). (2) Al tocar
+"Continuá con Google" se guarda el código en la cookie antes de redirigir. (3) El alta por
+Google lee la cookie server-side (signIn callback) y crea el Referral igual que el email.
+CONFIRMACIÓN VISIBLE: endpoint /api/referral/resolve devuelve el nombre del referidor, y el
+registro muestra "🎁 Te invitó [Nombre]. Vas a sumar puntos extra" — la persona VE a quién
+le da los puntos y puede cambiar el código antes de registrarse (clave en una ciudad chica).
+La cookie se limpia al atribuir. Sin schema para esta parte.
+
+FIX + REDISEÑO DE LOGINS (PortalLoginForm compartido): el "registrate" del login de
+COMERCIO iba al form del COMPRADOR (/registro) — bug. Ahora cada portal manda a SU
+registro: comercio → /comercio/registro, repartidor → /repartidor/registro (antes /empezar),
+comprador → /registro (ya estaba bien). Además modernización visual pareja con el registro
+nuevo: inputs h-12 redondeados con ícono, botón Google y submit más limpios, tarjeta rounded-3xl.
+Respeta el color de cada portal (comercio azul, repartidor verde, ops rojo).
+
+REDISEÑO DEL REGISTRO (más moderno, aprobado con mockup): header limpio + teaser "$2.500 de
+bienvenida", Google arriba, campos con ícono e input rounded, una sola tilde legal + marketing
+opt-in. EL CÓDIGO DE REFERIDO DEJÓ DE SER CAJITAS PIN: si viene por link → chip elegante
+"🎁 Te invitó [Nombre] · cambiar"; si lo pone a mano → link discreto "¿Tenés un código?" que
+abre UN input único con prefijo MOV- (sin superposición, con pegar). Desktop con panel de
+marca (logo + 3 beneficios). Se quitaron los 4 inputs tipo PIN y sus handlers.
+
+PENDIENTE en la máquina de Mauro: cargar AUTH_GOOGLE_ID/AUTH_GOOGLE_SECRET en .env local
+(hecho) y en el VPS; prisma generate + prisma db push local; probar el flujo (Google + link
+de referido + código manual) + mirar el rediseño; deploy -SchemaOnly. CLAUDE.md actualizado.
+
+**Archivos:** .claude/CLAUDE.md, prisma/schema.prisma, scripts/test-login.ts, src/app/(store)/registro/page.tsx, src/app/api/auth/change-password/route.ts, src/app/api/referral/resolve/route.ts, src/components/auth/PortalLoginForm.tsx, src/lib/auth.ts (+3 mas)
+
 ## 2026-07-17 (rama `feat/referido-pin-y-pedido-prefijo`)
 
 feat: pedido PED-XXXX + referido tipo PIN + registro simplificado

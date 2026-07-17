@@ -66,6 +66,12 @@ async function testLogin() {
         console.log("✅ PASO 2b: No está suspendido");
     }
 
+    if (!user.password) {
+        console.log("❌ PASO 3: Este usuario no tiene contraseña (entra con Google)");
+        await prisma.$disconnect();
+        return;
+    }
+
     const isValid = await bcrypt.compare(password, user.password);
     if (!isValid) {
         console.log("❌ PASO 3: Password NO coincide");
