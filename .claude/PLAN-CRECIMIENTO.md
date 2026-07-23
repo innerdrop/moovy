@@ -25,6 +25,11 @@
 - Se abre el candado a los consumidores (`abrir-tienda.ps1`).
 - Se **prende la auto-registración pública** de comercios y repartidores (los formularios `/comercio/registro` y `/repartidor/registro` ya están construidos y esperando).
 - La oferta ya está cargada → se abre con tiendas llenas y repartidores listos, no con las góndolas vacías.
+- **BLOQUEANTE LEGAL antes de prender la auto-registración**: TyC de comercio y de repartidor
+  redactados y publicados (con abogado): esquema de comisiones y criterios de tiers, política de
+  cambios con preaviso, y a qué remiten las tildes legales de los registros. En la etapa
+  lead-capture NO se publican TyC comerciales (rama `fix/copy-legal-prelanzamiento`): los números
+  de la cortina son "valores de lanzamiento, sujetos a confirmación al momento del alta".
 
 ---
 

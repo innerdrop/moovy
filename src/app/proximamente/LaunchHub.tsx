@@ -152,19 +152,18 @@ function Chooser({ onPick }: { onPick: (v: View) => void }) {
                         ¡Vamos!
                     </button>
 
-                    {/* Pie mínimo: Instagram (única red con perfil real) + firma local.
-                        Un renglón, sin robarle foco al CTA. */}
-                    <div className="mt-7 flex items-center justify-center gap-2 pb-1 text-[12px] font-semibold text-white/60">
+                    {/* Pie en dos niveles: la red arriba (accionable), el copyright
+                        abajo (informativo, más tenue). */}
+                    <div className="mt-7 pb-1 text-center">
                         <a
                             href="https://instagram.com/somosmoovy"
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 text-white/80 transition hover:text-white"
+                            className="inline-flex items-center gap-1.5 text-[13px] font-bold text-white/85 transition hover:text-white"
                         >
-                            <Instagram className="h-4 w-4" strokeWidth={2} /> @somosmoovy
+                            <Instagram className="h-[17px] w-[17px]" strokeWidth={2} /> Seguinos en Instagram
                         </a>
-                        <span aria-hidden>·</span>
-                        <span>Hecha en Ushuaia, Tierra del Fuego</span>
+                        <p className="mt-2 text-[11px] font-medium text-white/45">Ushuaia, Tierra del Fuego · 2026</p>
                     </div>
                 </div>
             </div>
@@ -412,6 +411,11 @@ function LeadForm({ role, accent }: { role: "COMERCIO" | "DRIVER"; accent: strin
             <button type="submit" disabled={status === "loading"} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[16px] font-black text-white transition hover:brightness-95 disabled:opacity-60" style={{ backgroundColor: accent }}>
                 {status === "loading" ? (<><Loader2 className="h-5 w-5 animate-spin" /> Enviando…</>) : (isComercio ? "Quiero que me contacten" : "Quiero repartir")}
             </button>
+            {/* Finalidad de los datos (Ley 25.326) + canal REAL para ejercer el
+                borrado (prometer el derecho sin canal es incumplimiento) */}
+            <p className="text-center text-[11px] leading-relaxed text-gray-400">
+                Usamos tus datos solo para contactarte por Moovy. Podés pedir que los borremos cuando quieras escribiendo a <a href="mailto:somosmoovy@gmail.com" className="underline decoration-gray-300 underline-offset-2 hover:text-gray-600">somosmoovy@gmail.com</a>.
+            </p>
         </form>
     );
 }
@@ -433,6 +437,9 @@ function WorldFooter({ formId, cta }: { formId: string; cta: string }) {
                 <span className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black text-white" style={{ backgroundColor: RED }}>M</span>
                 Moovy · Ushuaia, Tierra del Fuego
             </div>
+            <p className="mx-auto mt-3 max-w-[44ch] text-[10.5px] leading-relaxed text-gray-300">
+                La información publicada es orientativa de pre-lanzamiento y puede actualizarse. Las condiciones se confirman al momento del alta.
+            </p>
         </div>
     );
 }
@@ -560,7 +567,7 @@ function ComercioWorld({ onBack }: { onBack: () => void }) {
                         <div className="mt-4">
                             <LeadForm role="COMERCIO" accent={RED} />
                         </div>
-                        <p className="mt-3 text-center text-[11px] text-gray-400">Desde el mes 2, comisión del 10% que baja a medida que vendés</p>
+                        <p className="mt-3 text-center text-[11px] text-gray-400">Oferta de lanzamiento para comercios nuevos. Desde el mes 2, comisión del 10% que baja a medida que vendés.</p>
                     </div>
                 </div>
 
@@ -570,7 +577,7 @@ function ComercioWorld({ onBack }: { onBack: () => void }) {
                         <TrendingUp className="h-4 w-4" style={{ color: RED }} /> Cuanto más vendés, menos comisión
                     </p>
                     <p className="mt-1.5 text-[15.5px] leading-relaxed text-gray-600">
-                        Premiamos a los que más crecen: tu comisión arranca en 10% y baja a medida que vendés más. En otras apps te cobran cada vez más; en Moovy, al revés.
+                        Premiamos a los que más crecen: tu comisión arranca en 10% y baja a medida que vendés más.
                     </p>
                     {/* Niveles con marco rojo sutil (#FFD4D7); el 7% remata en rojo
                         pleno con estrella. */}
@@ -592,6 +599,11 @@ function ComercioWorld({ onBack }: { onBack: () => void }) {
                             );
                         })}
                     </div>
+                    {/* Cláusula de vigencia (Ley 24.240 art. 8: la publicidad integra el
+                        contrato — los números van SIEMPRE con condición + vigencia) */}
+                    <p className="mt-4 text-[11px] leading-relaxed text-gray-400">
+                        Comisiones según volumen de ventas. Valores de lanzamiento, sujetos a confirmación al momento del alta.
+                    </p>
                 </div>
 
                 {/* Cobrás al instante — tarjeta destacada: sin íconos, con un "$"
@@ -844,6 +856,10 @@ function MooverWorld({ onBack }: { onBack: () => void }) {
                         <button type="submit" disabled={status === "loading"} className="flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[16px] font-black text-white transition hover:brightness-95 disabled:opacity-60" style={{ backgroundColor: RED }}>
                             {status === "loading" ? (<><Loader2 className="h-5 w-5 animate-spin" /> Enviando…</>) : ("Avisame cuando abran")}
                         </button>
+                        {/* Finalidad de los datos (Ley 25.326) + canal real de borrado */}
+                        <p className="text-center text-[11px] leading-relaxed text-gray-400">
+                            Usamos tu email solo para avisarte del lanzamiento. Podés pedir que lo borremos cuando quieras escribiendo a <a href="mailto:somosmoovy@gmail.com" className="underline decoration-gray-300 underline-offset-2 hover:text-gray-600">somosmoovy@gmail.com</a>.
+                        </p>
                     </form>
                 )}
 
@@ -872,10 +888,13 @@ function MooverWorld({ onBack }: { onBack: () => void }) {
                     </p>
                 </div>
 
-                <div className="mt-8 flex items-center justify-center gap-2 pb-2 text-[12px] font-semibold text-gray-400">
+                <div className="mt-8 flex items-center justify-center gap-2 text-[12px] font-semibold text-gray-400">
                     <span className="flex h-6 w-6 items-center justify-center rounded-full text-[11px] font-black text-white" style={{ backgroundColor: RED }}>M</span>
                     Moovy · Ushuaia, Tierra del Fuego
                 </div>
+                <p className="mx-auto mt-3 max-w-[44ch] pb-2 text-center text-[10.5px] leading-relaxed text-gray-300">
+                    Los beneficios publicados son orientativos de pre-lanzamiento y pueden actualizarse.
+                </p>
             </div>
         </section>
     );

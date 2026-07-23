@@ -10,6 +10,32 @@
 
 ---
 
+## 2026-07-23 (rama `fix/copy-legal-prelanzamiento`)
+
+fix: blindaje legal del copy de la cortina (números con condición + vigencia, sin comparativas)
+
+La publicidad integra el contrato (Ley 24.240 art. 8): todo número publicado en la cortina lleva
+ahora condición y vigencia. Cláusula bajo la escalera de comisiones ("Comisiones según volumen de
+ventas. Valores de lanzamiento, sujetos a confirmación al momento del alta"), "oferta de
+lanzamiento para comercios nuevos" en la letra chica del form de comercio, y línea general de
+cierre en los tres mundos ("información orientativa de pre-lanzamiento, puede actualizarse").
+
+Se eliminó la publicidad comparativa ("en otras apps te cobran cada vez más" → solo hablamos de
+Moovy). Finalidad de datos (Ley 25.326) en los 3 formularios: "usamos tus datos solo para
+contactarte por Moovy; podés pedir que los borremos cuando quieras" + CANAL REAL para ejercer el borrado
+(mailto:somosmoovy@gmail.com — la única casilla operativa hoy; prometer el derecho sin canal es
+incumplimiento; la baja se ejecuta desde OPS lista de espera con el botón de borrar).
+
+Decisión concejo: en etapa lead-capture NO se publican TyC comerciales (atan condiciones antes de
+tiempo) ni se linkea /terminos (no cubre el esquema comercial); las condiciones vinculantes se
+confirman al alta, por escrito. TyC de comercio y repartidor con abogado quedan como BLOQUEANTE
+de la etapa pública (anotado en PLAN-CRECIMIENTO). Regla acumulada #34 en CLAUDE.md.
+
+Footer del chooser: "© 2026 Moovy · somosmoovy.com" reemplaza a "Hecha en Ushuaia, Tierra del
+Fuego". Sin schema. Deploy -NoDB.
+
+**Archivos:** .claude/CLAUDE.md, .claude/PLAN-CRECIMIENTO.md, src/app/proximamente/LaunchHub.tsx
+
 ## 2026-07-23 (rama `feat/preguntas-lead-repartidor`)
 
 feat: 3 preguntas opcionales al lead repartidor (paso 2, post-envío de datos)
@@ -92,6 +118,22 @@ Fase 2, modelada como grupos de opciones para escalar a todos los rubros de comi
 SCHEMA: PreLaunchLead + rubro + businessName (aditivo). Deploy -SchemaOnly (NO -NoDB).
 
 **Archivos:** .claude/CLAUDE.md, .claude/PLAN-CRECIMIENTO.md, prisma/schema.prisma, public/backpack-3d.png, public/bike-icon.png, public/car-icon.png, public/comercio-3d.png, public/imagenes_repartidor.png (+10 mas)
+
+## 2026-07-22 (rama `fix/copy-legal-prelanzamiento`)
+
+fix: blindaje legal del copy de la cortina (Ley 24.240 art. 8 + Ley 25.326). Los números
+publicados llevan condición + vigencia: cláusula bajo la escalera de comisiones ("según volumen
+de ventas; valores de lanzamiento, sujetos a confirmación al momento del alta"), "oferta de
+lanzamiento para comercios nuevos" en la letra chica del form, y línea general en los cierres
+("información orientativa de pre-lanzamiento"). Se eliminó la publicidad comparativa ("en otras
+apps te cobran cada vez más"). Finalidad de datos en los 3 forms ("usamos tus datos solo para
+contactarte; podés pedir que los borremos"). SIN TyC comerciales en etapa lead-capture (decisión
+concejo: publicar condiciones contractuales ahora ata antes de tiempo; se confirman al alta) y
+SIN link a /terminos (no cubre el esquema comercial). TyC comercio/repartidor con abogado quedó
+como BLOQUEANTE de la etapa pública en PLAN-CRECIMIENTO. Footer del chooser: "© 2026 Moovy ·
+somosmoovy.com" (salió "Hecha en Ushuaia, Tierra del Fuego"). Regla acumulada #34 en CLAUDE.md.
+
+---
 
 ## 2026-07-21 (rama `feat/rediseno-registro-comercio-repartidor`)
 
