@@ -15,10 +15,21 @@ export default async function PreLaunchLeadsPage() {
 
     const comercios = leads.filter((l) => l.role === "COMERCIO").length;
     const drivers = leads.filter((l) => l.role === "DRIVER").length;
+    const clientes = leads.filter((l) => l.role === "CLIENTE").length;
+
+    // Mapa explícito de roles (nunca ternario binario: CLIENTE se mostraba
+    // como "Repartidor")
+    const ROLE_BADGE: Record<string, { label: string; cls: string }> = {
+        COMERCIO: { label: "Comercio", cls: "bg-red-50 text-[#e60012]" },
+        DRIVER: { label: "Repartidor", cls: "bg-green-50 text-green-700" },
+        CLIENTE: { label: "Cliente", cls: "bg-amber-50 text-amber-700" },
+    };
 
     const exportable = leads.map((l) => ({
         role: l.role,
         name: l.name,
+        businessName: l.businessName,
+        rubro: l.rubro,
         email: l.email,
         whatsapp: l.whatsapp,
         consentAt: l.consentAt ? l.consentAt.toISOString() : null,
@@ -34,13 +45,13 @@ export default async function PreLaunchLeadsPage() {
                 <div>
                     <h1 className="text-2xl font-black text-slate-800">Lista de espera (pre-lanzamiento)</h1>
                     <p className="text-sm text-slate-500">
-                        Comercios y repartidores que se anotaron desde la cortina para que los contactemos al lanzar.
+                        Comercios, repartidores y clientes que se anotaron desde la cortina para que los contactemos al lanzar.
                     </p>
                 </div>
                 <ExportLeadsButton leads={exportable} />
             </div>
 
-            <div className="grid grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-4 gap-3 mb-6">
                 <div className="rounded-xl border border-slate-100 bg-white p-4 text-center">
                     <p className="text-xs font-bold uppercase text-slate-400">Total</p>
                     <p className="text-2xl font-black text-slate-800">{leads.length}</p>
@@ -52,6 +63,10 @@ export default async function PreLaunchLeadsPage() {
                 <div className="rounded-xl border border-slate-100 bg-white p-4 text-center">
                     <p className="text-xs font-bold uppercase text-slate-400">Repartidores</p>
                     <p className="text-2xl font-black text-green-600">{drivers}</p>
+                </div>
+                <div className="rounded-xl border border-slate-100 bg-white p-4 text-center">
+                    <p className="text-xs font-bold uppercase text-slate-400">Clientes</p>
+                    <p className="text-2xl font-black text-amber-600">{clientes}</p>
                 </div>
             </div>
 
@@ -66,6 +81,7 @@ export default async function PreLaunchLeadsPage() {
                             <tr className="border-b border-slate-100 text-left text-xs uppercase text-slate-400">
                                 <th className="px-4 py-3">Rol</th>
                                 <th className="px-4 py-3">Nombre</th>
+                                <th className="px-4 py-3">Comercio / Rubro</th>
                                 <th className="px-4 py-3">Email</th>
                                 <th className="px-4 py-3">WhatsApp</th>
                                 <th className="px-4 py-3">Fecha</th>
@@ -76,17 +92,21 @@ export default async function PreLaunchLeadsPage() {
                             {leads.map((l) => (
                                 <tr key={l.id} className="border-b border-slate-50 last:border-0">
                                     <td className="px-4 py-3">
-                                        <span
-                                            className={`rounded-full px-2 py-0.5 text-xs font-bold ${
-                                                l.role === "COMERCIO"
-                                                    ? "bg-red-50 text-[#e60012]"
-                                                    : "bg-green-50 text-green-700"
-                                            }`}
-                                        >
-                                            {l.role === "COMERCIO" ? "Comercio" : "Repartidor"}
+                                        <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${(ROLE_BADGE[l.role] ?? { cls: "bg-slate-100 text-slate-600" }).cls}`}>
+                                            {(ROLE_BADGE[l.role] ?? { label: l.role }).label}
                                         </span>
                                     </td>
                                     <td className="px-4 py-3 text-slate-700">{l.name || "—"}</td>
+                                    <td className="px-4 py-3 text-slate-700">
+                                        {l.businessName || l.rubro ? (
+                                            <>
+                                                {l.businessName || "—"}
+                                                {l.rubro && <span className="block text-xs text-slate-400">{l.rubro}</span>}
+                                            </>
+                                        ) : (
+                                            "—"
+                                        )}
+                                    </td>
                                     <td className="px-4 py-3 text-slate-700">{l.email}</td>
                                     <td className="px-4 py-3 text-slate-700">{l.whatsapp || "—"}</td>
                                     <td className="px-4 py-3 text-slate-500">{fmt(l.createdAt)}</td>

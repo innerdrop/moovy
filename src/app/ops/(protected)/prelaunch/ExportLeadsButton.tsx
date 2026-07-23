@@ -6,10 +6,19 @@
 type Lead = {
     role: string;
     name: string | null;
+    businessName: string | null;
+    rubro: string | null;
     email: string;
     whatsapp: string | null;
     consentAt: string | null;
     createdAt: string;
+};
+
+// Mapa explícito (CLIENTE existía y caía como "Repartidor" en el ternario)
+const ROLE_LABEL: Record<string, string> = {
+    COMERCIO: "Comercio",
+    DRIVER: "Repartidor",
+    CLIENTE: "Cliente",
 };
 
 function csvCell(v: string | null): string {
@@ -19,11 +28,13 @@ function csvCell(v: string | null): string {
 
 export default function ExportLeadsButton({ leads }: { leads: Lead[] }) {
     const download = () => {
-        const header = ["Rol", "Nombre", "Email", "WhatsApp", "Consentimiento", "Fecha alta"];
+        const header = ["Rol", "Nombre", "Comercio", "Rubro", "Email", "WhatsApp", "Consentimiento", "Fecha alta"];
         const rows = leads.map((l) =>
             [
-                l.role === "COMERCIO" ? "Comercio" : "Repartidor",
+                ROLE_LABEL[l.role] ?? l.role,
                 l.name,
+                l.businessName,
+                l.rubro,
                 l.email,
                 l.whatsapp,
                 l.consentAt,

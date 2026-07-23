@@ -33,6 +33,8 @@ import {
     PersonStanding,
     Car,
     Star,
+    Share2,
+    Instagram,
 } from "lucide-react";
 
 type View = "chooser" | "comercio" | "repartidor" | "moover";
@@ -149,9 +151,47 @@ function Chooser({ onPick }: { onPick: (v: View) => void }) {
                     >
                         ¡Vamos!
                     </button>
+
+                    {/* Pie mínimo: Instagram (única red con perfil real) + firma local.
+                        Un renglón, sin robarle foco al CTA. */}
+                    <div className="mt-7 flex items-center justify-center gap-2 pb-1 text-[12px] font-semibold text-white/60">
+                        <a
+                            href="https://instagram.com/somosmoovy"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-white/80 transition hover:text-white"
+                        >
+                            <Instagram className="h-4 w-4" strokeWidth={2} /> @somosmoovy
+                        </a>
+                        <span aria-hidden>·</span>
+                        <span>Hecha en Ushuaia, Tierra del Fuego</span>
+                    </div>
                 </div>
             </div>
         </section>
+    );
+}
+
+// Botón compartir (Web Share API + fallback WhatsApp). SIN prometer puntos por
+// compartir: no hay mecánica que rastree shares (veto Puntos/Legal).
+function ShareMoovyButton({ message }: { message: string }) {
+    const share = () => {
+        const url = "https://somosmoovy.com";
+        if (typeof navigator !== "undefined" && navigator.share) {
+            navigator.share({ title: "Moovy", text: message, url }).catch(() => { /* cancelado */ });
+        } else {
+            window.open(`https://wa.me/?text=${encodeURIComponent(`${message} ${url}`)}`, "_blank", "noopener");
+        }
+    };
+    return (
+        <button
+            type="button"
+            onClick={share}
+            className="mx-auto mt-5 flex h-12 w-full max-w-[300px] items-center justify-center gap-2 rounded-2xl text-[15px] font-black text-white transition hover:brightness-95"
+            style={{ backgroundColor: RED }}
+        >
+            <Share2 className="h-[18px] w-[18px]" strokeWidth={2.4} /> Compartí Moovy
+        </button>
     );
 }
 
@@ -253,6 +293,14 @@ function LeadForm({ role, accent }: { role: "COMERCIO" | "DRIVER"; accent: strin
                 </div>
                 <p className="mt-3 text-[16px] font-black text-gray-900">¡Listo! Ya quedaste anotado.</p>
                 <p className="mt-1 text-[14px] text-gray-500">Te contactamos para sumarte a Moovy. Gracias por querer ser de los primeros.</p>
+                <ShareMoovyButton
+                    message={
+                        isComercio
+                            ? "Estoy sumando mi comercio a Moovy, el delivery hecho en Ushuaia: primer mes sin comisión y cobrás al instante. Sumate 👉"
+                            : "Me anoté para repartir en Moovy, el delivery hecho en Ushuaia: cobrás al instante y manejás tus horarios. Sumate 👉"
+                    }
+                />
+                <p className="mt-2 text-[12px] text-gray-400">Si conocés a alguien más, pasale el dato.</p>
             </div>
         );
     }
@@ -694,6 +742,9 @@ function MooverWorld({ onBack }: { onBack: () => void }) {
                         </div>
                         <p className="mt-3 text-[16px] font-black text-[#a32d2d]">¡Listo! Ya quedaste anotado.</p>
                         <p className="mt-1 text-[14px] text-[#8a5a5a]">Te avisamos apenas Moovy abra en Ushuaia.</p>
+                        {/* Compartir en el pico de entusiasmo (post-registro) */}
+                        <ShareMoovyButton message="Moovy está por llegar a Ushuaia: delivery hecho acá, por gente de acá. Anotate para ser de los primeros 👉" />
+                        <p className="mt-2 text-[12px] text-[#8a5a5a]">Cuanto más seamos, antes abrimos.</p>
                     </div>
                 ) : (
                     <form onSubmit={submit} noValidate className="mt-7 space-y-3">

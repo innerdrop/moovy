@@ -10,6 +10,26 @@
 
 ---
 
+## 2026-07-23 (rama `fix/lista-espera-cliente-y-compartir`)
+
+fix: lista de espera muestra CLIENTE como cliente + botón "Compartí Moovy" post-registro
+
+OPS /ops/prelaunch: el rol CLIENTE se mostraba como "Repartidor" (ternario binario
+COMERCIO-o-Repartidor anterior a la existencia del rol CLIENTE). Mapa explícito de roles en la
+tabla y en el CSV, contador de Clientes (grid de 4), columna Comercio/Rubro en la tabla y
+businessName + rubro agregados al export.
+
+COMPARTIR post-registro en los TRES forms (componente ShareMoovyButton: Web Share API con
+fallback a WhatsApp), con mensaje propio por rol (comercio: primer mes sin comisión / repartidor:
+al instante y tus horarios / cliente: sé de los primeros). SIN prometer puntos por compartir
+(veto Puntos/Legal: no existe mecánica que rastree shares; prometer recompensa no verificable es
+deuda + reclamos al lanzamiento).
+
+CHOOSER: pie mínimo con Instagram @somosmoovy (única red con perfil real) + "Hecha en Ushuaia,
+Tierra del Fuego", debajo del ¡Vamos!.
+
+**Archivos:** src/app/ops/(protected)/prelaunch/ExportLeadsButton.tsx, src/app/ops/(protected)/prelaunch/page.tsx, src/app/proximamente/LaunchHub.tsx
+
 ## 2026-07-23 (rama `feat/rediseno-registro-comercio-repartidor`)
 
 feat: cortina como hub "elegí tu mundo" + estrategia piloto (lead-capture) + registros a página única
