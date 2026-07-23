@@ -134,7 +134,12 @@ export default auth(async (request) => {
         // 2. Ya tiene la cookie de preview valida -> pasa de largo
         const hasPreview = previewToken && request.cookies.get(PREVIEW_COOKIE)?.value === previewToken;
 
-        // 3. Sin acceso: mostrar la cortina (rewrite interno, mantiene la URL, status 200)
+        // 3. Sin acceso: mostrar la cortina (rewrite interno, mantiene la URL, status 200).
+        //    Etapa piloto (feat/rediseno-registro-comercio-repartidor): SOLO la cortina es
+        //    publica. La cortina junta INTERESADOS (lead-capture: comercio/repartidor/cliente);
+        //    la auto-registracion de comercios/repartidores y sus paneles NO se exponen
+        //    todavia. El socio piloto (Pixel Point) entra con ?preview=TOKEN, que ya saltea
+        //    el candado. La auto-registracion publica se prende en la etapa de lanzamiento.
         if (!hasPreview && pathname !== '/proximamente') {
             return NextResponse.rewrite(new URL('/proximamente', request.url));
         }

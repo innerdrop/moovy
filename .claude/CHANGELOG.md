@@ -10,6 +10,91 @@
 
 ---
 
+## 2026-07-23 (rama `feat/rediseno-registro-comercio-repartidor`)
+
+feat: cortina como hub "elegí tu mundo" + estrategia piloto (lead-capture) + registros a página única
+
+CORTINA → HUB (src/app/proximamente/LaunchHub.tsx). Reemplaza el teaser de un solo form por una
+experiencia de marca. Slogan "TODO SE MUEVE" (sub tienda "Tu antojo manda"). Hero rojo con foto de
+Ushuaia + tres caminos MONOBRAND rojo Moovy + neutros (decisión founder 2026-07-22: sin azul/verde
+por-portal en la cortina). Header blanco con logo rojo; repartidor con hero rojo full-bleed y
+formulario primero (patrón partner de delivery); comercio con slide de claims, escalera de
+comisiones animada (latido secuencial, estrella en el 7%) y oferta+form UNIDOS (franja roja
+"30 DÍAS GRATIS" como encabezado del LeadForm). Botón "¡Vamos!" que se ilumina y destella al
+elegir opción. Se sacaron los fuegos y las franjas del Mundial. Texto de lectura a 15.5-17px.
+Kickers "COMERCIOS/REPARTIDORES/MOOVERS FUNDADORES". Bandas de color full-bleed (rojo "Cómo
+funciona"/"Cómo arrancás", gris "Todo en un solo panel"/"Repartir con Moovy es") + cierres con
+CTA con latido y mini-footer de marca. Repartidor: requisitos genéricos por revisión legal (doc
+según vehículo se define en el panel). Sin prometer ingresos ni volumen.
+
+ESTRATEGIA PILOTO — lead-capture, NO auto-registración (decisión founder). Comercio y repartidor
+en el hub terminan en LeadForm (POST /api/prelaunch/signup, roles COMERCIO/DRIVER/CLIENTE) que junta
+interesados; PreLaunchLead sumó rubro + businessName para priorizar altas por rubro. Cliente/moover
+deja su mail (waitlist). La auto-registración (páginas /comercio/registro y /repartidor/registro,
+rediseñadas a página única) queda SOLO por preview para el piloto y se prende públicamente en la
+etapa de lanzamiento. El candado (proxy.ts) expone SOLO /proximamente; el socio piloto (Pixel Point:
+kiosco + panchería) entra con ?preview=.
+
+REGISTROS a página única. Quitada la ilustración 3D del form de comercio (ya vive en la página de
+info). "Volver al inicio" ahora va a /proximamente (la tienda del consumidor no está habilitada).
+Ambos conservan endpoints, flujo "desde perfil", validación CUIT/CBU, autocompletado de dirección.
+
+COPY + FORMS del hub: sin repeticiones ("Algo nuevo llega a Ushuaia", sin "Ushuaia, Argentina" bajo
+el slogan, sin "protegidos por ley"); validación propia en LeadForm y waitlist moover (noValidate,
+campo en rojo + mensaje rojo por campo, se limpia al tipear) — chau globos nativos del navegador.
+
+PLAN de crecimiento canónico en .claude/PLAN-CRECIMIENTO.md (3 etapas piloto→invitación→público +
+roadmap de catálogo por fases + feature "opciones de personalización por producto" anotada como
+Fase 2, modelada como grupos de opciones para escalar a todos los rubros de comida).
+
+SCHEMA: PreLaunchLead + rubro + businessName (aditivo). Deploy -SchemaOnly (NO -NoDB).
+
+**Archivos:** .claude/CLAUDE.md, .claude/PLAN-CRECIMIENTO.md, prisma/schema.prisma, public/backpack-3d.png, public/bike-icon.png, public/car-icon.png, public/comercio-3d.png, public/imagenes_repartidor.png (+10 mas)
+
+## 2026-07-21 (rama `feat/rediseno-registro-comercio-repartidor`)
+
+feat: cortina como hub "elegí tu mundo" + registros a página única + estrategia piloto (lead-capture)
+
+CORTINA → HUB (src/app/proximamente/LaunchHub.tsx): reemplaza el teaser de un solo form
+por una experiencia de marca. Slogan "TODO SE MUEVE" (sub tienda "Tu antojo manda"). Hero
+rojo con foto de Ushuaia + tres caminos. Botón "¡Vamos!" que se ilumina y destella al elegir.
+Se sacaron los fuegos y las franjas del Mundial. MONOBRAND (decisión founder 2026-07-22): los
+tres mundos usan SOLO rojo Moovy + neutros (crema/rosados/carbón) — se probó azul Beagle
+#1D4ED8 (comercio) y verde lenga #0F8A4D (repartidor) y se descartó para no inventar
+significados de color aún no definidos (PortalLoginForm interno conserva azul/verde). Header
+blanco compartido (Volver + logo rojo a la derecha). Kickers "COMERCIOS/REPARTIDORES/MOOVERS
+FUNDADORES". Mundo comercio: hero tipográfico "Vendé más. / Pagá menos." + slide rotativo de
+claims + pieza única oferta+form (franja roja "30 DÍAS GRATIS" como encabezado del LeadForm),
+escalera de comisiones 10→7% con cajas que crecen + latido secuencial + estrella en el 7%,
+tarjeta "Cobrás al instante" con $ de marca de agua y resaltador rosado, banda roja "Cómo
+funciona", banda gris "Todo en un solo panel". Mundo repartidor (form-first estilo partner):
+hero rojo full-bleed con slide de promesas sin box, form que muerde el hero, tiles de
+vehículos, bloque carbón "1°" (sé de los primeros), banda roja "Cómo arrancás", banda gris
+"Repartir con Moovy es", requisitos genéricos por revisión legal (la doc exacta según vehículo
+se define en el panel; no enumerar evita prometer menos de lo real). Mundo moover: titular
+doble + bandas "Ser MOOVER tiene premio" / "Lo que necesites, a tu puerta". Cierres con CTA
+con latido que vuelve al form + mini-footer de marca. Tipografía de lectura subida a 15.5-17px
+(estándar industria). Validación propia en todos los forms (noValidate, campo en rojo +
+mensaje por campo, se limpia al tipear) — sin globos nativos del navegador.
+
+ESTRATEGIA PILOTO (decisión founder): lead-capture, NO auto-registración. Comercio y repartidor
+en el hub → LeadForm (POST /api/prelaunch/signup) que junta interesados; PreLaunchLead sumó
+rubro + businessName para priorizar altas por rubro. Cliente/moover deja mail. La auto-registración
+(páginas /comercio/registro y /repartidor/registro, rediseñadas a página única) queda SOLO por
+preview para el piloto; se prende públicamente en la etapa de lanzamiento. Candado (proxy.ts)
+expone SOLO /proximamente. Socio piloto: Pixel Point (kiosco + panchería), entra por ?preview=.
+
+REGISTROS a página única: quitada la ilustración 3D del form de comercio (ya vive en la página de
+info). "Volver al inicio" ahora va a /proximamente (la tienda del consumidor no está habilitada).
+
+PLAN: .claude/PLAN-CRECIMIENTO.md (3 etapas piloto→invitación→público + roadmap de catálogo por
+fases + feature "opciones de personalización por producto" anotada como Fase 2, modelada como
+grupos de opciones para escalar a todos los rubros de comida).
+
+SCHEMA: PreLaunchLead + rubro + businessName (aditivo). Deploy -SchemaOnly (NO -NoDB).
+
+---
+
 ## 2026-07-17 (rama `feat/login-google`)
 
 feat: login/registro con Google (OAuth) para compradores

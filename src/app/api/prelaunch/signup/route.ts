@@ -15,10 +15,12 @@ import { applyRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 
 const SignupSchema = z.object({
-    role: z.enum(["COMERCIO", "DRIVER"]),
+    role: z.enum(["COMERCIO", "DRIVER", "CLIENTE"]),
     email: z.string().email("Ingresá un email válido").max(120),
     whatsapp: z.string().max(30).optional().nullable(),
     name: z.string().max(80).optional().nullable(),
+    rubro: z.string().max(60).optional().nullable(),
+    businessName: z.string().max(120).optional().nullable(),
     consent: z.boolean().refine((v) => v === true, {
         message: "Necesitamos tu OK para poder contactarte.",
     }),
@@ -54,6 +56,8 @@ export async function POST(request: NextRequest) {
     const email = parsed.data.email.trim().toLowerCase();
     const whatsapp = parsed.data.whatsapp?.trim() || null;
     const name = parsed.data.name?.trim() || null;
+    const rubro = parsed.data.rubro?.trim() || null;
+    const businessName = parsed.data.businessName?.trim() || null;
 
     const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
     const userAgent = request.headers.get("user-agent")?.slice(0, 300) || null;
@@ -67,6 +71,8 @@ export async function POST(request: NextRequest) {
                 email,
                 whatsapp,
                 name,
+                rubro,
+                businessName,
                 consent: true,
                 consentAt: now,
                 ipAddress,
@@ -77,6 +83,8 @@ export async function POST(request: NextRequest) {
                 // Si se reanota, actualizamos contacto y refrescamos consentimiento.
                 whatsapp: whatsapp ?? undefined,
                 name: name ?? undefined,
+                rubro: rubro ?? undefined,
+                businessName: businessName ?? undefined,
                 consent: true,
                 consentAt: now,
             },

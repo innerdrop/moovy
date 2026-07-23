@@ -1865,10 +1865,12 @@ model ConsentLog {
 // consentimiento explícito (Ley 25.326 AAIP / Ley 26.951). NO son datos fiscales.
 model PreLaunchLead {
   id         String    @id @default(cuid())
-  role       String // "COMERCIO" | "DRIVER"
+  role       String // "COMERCIO" | "DRIVER" | "CLIENTE"
   name       String?
   email      String
   whatsapp   String? // opcional
+  rubro        String? // rubro del comercio interesado (para priorizar altas por rubro)
+  businessName String? // nombre del comercio/negocio (lead de comercio)
   consent    Boolean   @default(false)
   consentAt  DateTime?
   ipAddress  String?
