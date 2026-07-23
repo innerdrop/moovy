@@ -8,6 +8,7 @@
  */
 
 import { emailLayout, emailButton, emailBadge, emailInfoBox, emailAlertBox, baseUrl } from "./email";
+import { buildPrelaunchLeadEmail } from "./email-prelaunch";
 
 // ─── Tipos ──────────────────────────────────────────────────────────────────
 
@@ -1714,6 +1715,51 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
             </p>
             ${emailButton("Completar mi pedido", `https://somosmoovy.com/checkout`, "red")}
         `),
+    },
+    // ── Pre-lanzamiento: confirmación de pre-registro (feat/notificacion-telegram-leads) ──
+    // Los tres usan el MISMO builder que el envío real (buildPrelaunchLeadEmail):
+    // el preview de OPS es exactamente lo que recibe el lead.
+    {
+        id: 'prelaunch_lead_comercio',
+        number: 320,
+        name: 'Pre-registro recibido — comercio',
+        category: 'Onboarding y Aprobación',
+        recipient: 'comercio',
+        priority: 'P1',
+        status: 'implemented',
+        trigger: 'POST /api/prelaunch/signup (solo lead NUEVO, fire-and-forget)',
+        subject: 'Recibimos tu pre-registro en Moovy 🎉',
+        functionName: 'sendPrelaunchLeadEmail',
+        file: 'src/lib/email-prelaunch.ts',
+        generatePreview: () => buildPrelaunchLeadEmail('COMERCIO', { name: SAMPLE.merchantContact, businessName: SAMPLE.merchantName }).html,
+    },
+    {
+        id: 'prelaunch_lead_repartidor',
+        number: 321,
+        name: 'Pre-registro recibido — repartidor',
+        category: 'Onboarding y Aprobación',
+        recipient: 'repartidor',
+        priority: 'P1',
+        status: 'implemented',
+        trigger: 'POST /api/prelaunch/signup (solo lead NUEVO, fire-and-forget)',
+        subject: 'Ya estás en la lista de repartidores fundadores',
+        functionName: 'sendPrelaunchLeadEmail',
+        file: 'src/lib/email-prelaunch.ts',
+        generatePreview: () => buildPrelaunchLeadEmail('DRIVER', { name: SAMPLE.driverName }).html,
+    },
+    {
+        id: 'prelaunch_lead_cliente',
+        number: 322,
+        name: 'Pre-registro recibido — cliente (waitlist)',
+        category: 'Onboarding y Aprobación',
+        recipient: 'comprador',
+        priority: 'P1',
+        status: 'implemented',
+        trigger: 'POST /api/prelaunch/signup (solo lead NUEVO, fire-and-forget)',
+        subject: 'Sos de los primeros MOOVERS 🛍️',
+        functionName: 'sendPrelaunchLeadEmail',
+        file: 'src/lib/email-prelaunch.ts',
+        generatePreview: () => buildPrelaunchLeadEmail('CLIENTE', {}).html,
     },
 ];
 

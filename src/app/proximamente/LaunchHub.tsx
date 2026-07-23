@@ -271,6 +271,7 @@ function LeadForm({ role, accent }: { role: "COMERCIO" | "DRIVER"; accent: strin
                 setError(data.error || "No pudimos guardar tus datos. Probá de nuevo.");
                 return;
             }
+            setWasExisting(Boolean(data.existing));
             setStatus("success");
         } catch {
             setStatus("error");
@@ -278,6 +279,8 @@ function LeadForm({ role, accent }: { role: "COMERCIO" | "DRIVER"; accent: strin
         }
     };
 
+    // ¿El email ya estaba anotado? (el server actualiza los datos igual; la UI lo avisa)
+    const [wasExisting, setWasExisting] = useState(false);
     // Paso 2 del repartidor (preguntas opcionales post-envío)
     const [followup, setFollowup] = useState<"ask" | "done">("ask");
     const [fuVehicle, setFuVehicle] = useState("");
@@ -329,8 +332,8 @@ function LeadForm({ role, accent }: { role: "COMERCIO" | "DRIVER"; accent: strin
                     <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: accent }}>
                         <Check className="h-6 w-6 text-white" />
                     </div>
-                    <p className="mt-3 text-[16px] font-black text-gray-900">¡Listo! Ya quedaste anotado.</p>
-                    <p className="mt-1 text-[14px] text-gray-500">¿Nos contás un poco más? Es opcional y tardás 10 segundos.</p>
+                    <p className="mt-3 text-[16px] font-black text-gray-900">{wasExisting ? "¡Ya estabas anotado!" : "¡Listo! Ya quedaste anotado."}</p>
+                    <p className="mt-1 text-[14px] text-gray-500">{wasExisting ? "Actualizamos tus datos de contacto. ¿Nos contás un poco más? Es opcional." : "¿Nos contás un poco más? Es opcional y tardás 10 segundos."}</p>
                     <div className="mt-4 space-y-3 text-left">
                         <select className={`${inputBase} appearance-none border-gray-200 focus:border-gray-400 ${fuVehicle ? "" : "text-gray-400"}`} value={fuVehicle} onChange={(e) => setFuVehicle(e.target.value)}>
                             <option value="">¿Con qué repartirías?</option>
@@ -369,8 +372,8 @@ function LeadForm({ role, accent }: { role: "COMERCIO" | "DRIVER"; accent: strin
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: accent }}>
                     <Check className="h-6 w-6 text-white" />
                 </div>
-                <p className="mt-3 text-[16px] font-black text-gray-900">{isComercio ? "¡Listo! Ya quedaste anotado." : "¡Gracias! Con eso nos ayudás un montón."}</p>
-                <p className="mt-1 text-[14px] text-gray-500">Te contactamos para sumarte a Moovy. Gracias por querer ser de los primeros.</p>
+                <p className="mt-3 text-[16px] font-black text-gray-900">{isComercio ? (wasExisting ? "¡Ya estabas anotado!" : "¡Listo! Ya quedaste anotado.") : "¡Gracias! Con eso nos ayudás un montón."}</p>
+                <p className="mt-1 text-[14px] text-gray-500">{isComercio && wasExisting ? "Actualizamos tus datos de contacto. Te contactamos para sumarte a Moovy." : "Te contactamos para sumarte a Moovy. Gracias por querer ser de los primeros."}</p>
                 <ShareMoovyButton
                     message={
                         isComercio
@@ -398,7 +401,8 @@ function LeadForm({ role, accent }: { role: "COMERCIO" | "DRIVER"; accent: strin
             )}
             <input className={input("name")} placeholder="Nombre y apellido" value={name} onChange={(e) => { setName(e.target.value); clearFieldError("name"); }} autoComplete="name" />
             <FieldError id="name" />
-            <input className={input("whatsapp")} type="tel" placeholder="WhatsApp" value={whatsapp} onChange={(e) => { setWhatsapp(e.target.value); clearFieldError("whatsapp"); }} />
+            <input className={input("whatsapp")} type="tel" placeholder="WhatsApp (ej: 2901 123456)" value={whatsapp} onChange={(e) => { setWhatsapp(e.target.value); clearFieldError("whatsapp"); }} />
+            <p className="-mt-1.5 px-1 text-[12px] text-gray-400">Sin el 0 del código de área y sin el 15.</p>
             <FieldError id="whatsapp" />
             <input className={input("email")} type="email" placeholder="Email" value={email} onChange={(e) => { setEmail(e.target.value); clearFieldError("email"); }} autoComplete="email" />
             <FieldError id="email" />
@@ -773,6 +777,7 @@ function MooverWorld({ onBack }: { onBack: () => void }) {
     const [error, setError] = useState("");
     const [emailError, setEmailError] = useState("");
     const [consentError, setConsentError] = useState(false);
+    const [wasExisting, setWasExisting] = useState(false);
 
     const submit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -806,6 +811,7 @@ function MooverWorld({ onBack }: { onBack: () => void }) {
                 setError(data.error || "No pudimos guardar tu mail. Probá de nuevo.");
                 return;
             }
+            setWasExisting(Boolean(data.existing));
             setStatus("success");
         } catch {
             setStatus("error");
@@ -831,7 +837,7 @@ function MooverWorld({ onBack }: { onBack: () => void }) {
                         <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: RED }}>
                             <Check className="h-6 w-6 text-white" />
                         </div>
-                        <p className="mt-3 text-[16px] font-black text-[#a32d2d]">¡Listo! Ya quedaste anotado.</p>
+                        <p className="mt-3 text-[16px] font-black text-[#a32d2d]">{wasExisting ? "¡Ya estabas en la lista!" : "¡Listo! Ya quedaste anotado."}</p>
                         <p className="mt-1 text-[14px] text-[#8a5a5a]">Te avisamos apenas Moovy abra en Ushuaia.</p>
                         {/* Compartir en el pico de entusiasmo (post-registro) */}
                         <ShareMoovyButton message="Moovy está por llegar a Ushuaia: delivery hecho acá, por gente de acá. Anotate para ser de los primeros 👉" />

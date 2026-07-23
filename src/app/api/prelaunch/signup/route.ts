@@ -13,6 +13,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
+import { sendTelegramNotification } from "@/lib/telegram";
+import { sendPrelaunchLeadEmail } from "@/lib/email-prelaunch";
 
 const SignupSchema = z.object({
     role: z.enum(["COMERCIO", "DRIVER", "CLIENTE"]),
@@ -74,6 +76,14 @@ export async function POST(request: NextRequest) {
     const now = new Date();
 
     try {
+        // ¿El lead ya existía? (el paso 2 del repartidor y las re-anotaciones
+        // re-postean al mismo endpoint: email de bienvenida solo al ALTA; a
+        // Telegram va el alta, y las re-anotaciones SOLO si algo cambió)
+        const existing = await prisma.preLaunchLead.findUnique({
+            where: { email_role: { email, role } },
+            select: { id: true, name: true, whatsapp: true, rubro: true, businessName: true, vehicle: true, worksOtherApp: true, earningsRange: true },
+        });
+
         await prisma.preLaunchLead.upsert({
             where: { email_role: { email, role } },
             create: {
@@ -106,7 +116,62 @@ export async function POST(request: NextRequest) {
                 consentAt: now,
             },
         });
-        return NextResponse.json({ success: true });
+
+        // Avisos fire-and-forget (regla #32): si Telegram o el email fallan, el
+        // lead ya quedó guardado y la respuesta no cambia.
+        //   - Lead NUEVO → Telegram + email de bienvenida.
+        //   - Re-anotación → SOLO Telegram y SOLO si algo cambió (sin cambios =
+        //     silencio; email nunca se re-envía). El paso 2 del repartidor entra
+        //     acá: llega un aviso con las respuestas de las preguntas.
+        const ROLE_EMOJI: Record<string, string> = { COMERCIO: "🏪", DRIVER: "🛵", CLIENTE: "🛍️" };
+        const ROLE_LABEL: Record<string, string> = { COMERCIO: "COMERCIO", DRIVER: "REPARTIDOR", CLIENTE: "CLIENTE" };
+
+        if (!existing) {
+            void (async () => {
+                try {
+                    const total = await prisma.preLaunchLead.count({ where: { role } });
+                    const lines = [
+                        `${ROLE_EMOJI[role]} Nuevo lead ${ROLE_LABEL[role]} (#${total})`,
+                        businessName ? `Negocio: ${businessName}${rubro ? ` (${rubro})` : ""}` : rubro ? `Rubro: ${rubro}` : null,
+                        name ? `Nombre: ${name}` : null,
+                        whatsapp ? `WhatsApp: ${whatsapp}` : null,
+                        `Email: ${email}`,
+                    ].filter(Boolean);
+                    await sendTelegramNotification(lines.join("\n"));
+                } catch (e) {
+                    console.error("[prelaunch/signup] telegram error:", e);
+                }
+                try {
+                    await sendPrelaunchLeadEmail(role, email, { name, businessName });
+                } catch (e) {
+                    console.error("[prelaunch/signup] email error:", e);
+                }
+            })();
+        } else {
+            // Diff de lo que vino vs lo guardado: solo campos enviados que cambiaron.
+            const fmtBool = (v: boolean | null) => (v == null ? null : v ? "Sí" : "No");
+            const cambios: string[] = [];
+            const diff = (label: string, nuevo: string | null, viejo: string | null) => {
+                if (nuevo != null && nuevo !== viejo) cambios.push(`${label}: ${viejo || "—"} → ${nuevo}`);
+            };
+            diff("Nombre", name, existing.name);
+            diff("WhatsApp", whatsapp, existing.whatsapp);
+            diff("Negocio", businessName, existing.businessName);
+            diff("Rubro", rubro, existing.rubro);
+            diff("Vehículo", vehicle, existing.vehicle);
+            diff("Reparte en otra app", fmtBool(worksOtherApp), fmtBool(existing.worksOtherApp));
+            diff("Gana por viaje", earningsRange, existing.earningsRange);
+
+            if (cambios.length > 0) {
+                void sendTelegramNotification(
+                    [`🔄 Lead ${ROLE_LABEL[role]} se anotó de nuevo y actualizó datos`, `Email: ${email}`, ...cambios].join("\n")
+                ).catch((e) => console.error("[prelaunch/signup] telegram error:", e));
+            }
+        }
+
+        // `existing` le permite a la UI avisar "ya estabas anotado" (los datos
+        // se actualizan igual; avisos/email solo salieron en el alta original).
+        return NextResponse.json({ success: true, existing: Boolean(existing) });
     } catch (e) {
         console.error("[prelaunch/signup] error:", e);
         return NextResponse.json({ error: "No pudimos guardar tus datos. Probá de nuevo." }, { status: 500 });

@@ -221,6 +221,7 @@ Auth:      AUTH_SECRET, NEXTAUTH_SECRET, CRON_SECRET
 App:       NEXT_PUBLIC_APP_URL, NEXT_PUBLIC_SOCKET_URL, SOCKET_PORT, SOCKET_INTERNAL_URL
 MP:        MP_ACCESS_TOKEN, MP_PUBLIC_KEY, MP_WEBHOOK_SECRET, MP_APP_ID
 Email:     SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, NOTIFICATION_EMAIL
+Telegram:  TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID (avisos de negocio al founder; sin ellas = no-op)
 OPS:       OPS_LOGIN_EMAIL, OPS_LOGIN_PASSWORD
 Push:      NEXT_PUBLIC_VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, VAPID_EMAIL
 Maps:      NEXT_PUBLIC_GOOGLE_MAPS_API_KEY, NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID, NEXT_PUBLIC_USE_ROUTES_API (opcional)
@@ -383,7 +384,8 @@ Cada decisión debe reducir la probabilidad de al menos una.
 
 | Servicio        | Estado      | Uso                                                      |
 | --------------- | ----------- | -------------------------------------------------------- |
-| SMTP Nodemailer | 🟡          | ~60 templates, sin config prod                           |
+| SMTP Nodemailer | ✅          | ~320 templates registrados, SMTP configurado (Gmail)     |
+| Telegram Bot    | ✅          | Avisos de negocio (leads pre-launch) via src/lib/telegram.ts |
 | Web Push VAPID  | ✅          | Push buyers/merchants/drivers                            |
 | Socket.IO v4    | ✅          | Real-time                                                |
 | PostGIS v3.4    | ✅ Docker   | Geolocalización                                          |

@@ -10,6 +10,39 @@
 
 ---
 
+## 2026-07-23 (rama `feat/notificacion-telegram-leads`)
+
+feat: avisos de pre-registro — Telegram al founder + email de confirmación al lead
+
+TELEGRAM (src/lib/telegram.ts): helper fail-safe — sin TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID es
+no-op, timeout 5s, jamás rompe el flujo que lo dispara. Mensaje por lead nuevo con rol + contador
+(#N), negocio/rubro, nombre, WhatsApp y email. Estrategia (decisión concejo): Telegram = eventos
+de negocio de bajo volumen; Sentry = errores técnicos (sin duplicar); OPS = gestión. Post-launch
+se suman: pedido sin repartidor, refund automático, webhook MP rechazado, cron caído.
+
+EMAIL (src/lib/email-prelaunch.ts): builder único buildPrelaunchLeadEmail con variantes
+COMERCIO/DRIVER/CLIENTE — diseño aprobado en preview (saludo por nombre, tarjeta de beneficio con
+cláusula de vigencia regla #34, botón Instagram, baja = responder el correo, Ley 25.326).
+Registrado en EMAIL_REGISTRY (#320-322) reutilizando el mismo builder para el preview de
+/ops/emails: lo que se ve en OPS es lo que se envía.
+
+DISPARO en POST /api/prelaunch/signup SOLO en lead NUEVO (findUnique previo al upsert: el paso 2
+del repartidor y re-anotaciones no duplican avisos; bots del honeypot no avisan), fire-and-forget
+(regla #32) para Telegram y email por separado.
+
+RE-ANOTACIÓN visible: el endpoint devuelve `existing` y la UI avisa "¡Ya estabas anotado!
+Actualizamos tus datos" en los 3 forms (antes el upsert actualizaba en silencio y parecía que no
+pasaba nada). Telegram de re-anotación SOLO si algo cambió, con diff campo por campo
+("WhatsApp: 2901111 → 2901222"); sin cambios = silencio; el email de bienvenida nunca se
+re-envía. Bonus: el paso 2 del repartidor dispara este aviso con las respuestas de las 3
+preguntas (antes se guardaban en silencio). WhatsApp con placeholder de ejemplo (2901 123456)
++ hint "sin el 0 del código de área y sin el 15".
+
+ENV nuevas: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID (cargar en .env local y VPS; documentadas en
+CLAUDE.md). Tabla de dependencias: SMTP pasa a ✅ (Gmail configurado). Sin schema. Deploy -NoDB.
+
+**Archivos:** .claude/CLAUDE.md, src/app/api/prelaunch/signup/route.ts, src/app/proximamente/LaunchHub.tsx, src/lib/email-prelaunch.ts, src/lib/email-registry.ts, src/lib/telegram.ts
+
 ## 2026-07-23 (rama `fix/copy-legal-prelanzamiento`)
 
 fix: blindaje legal del copy de la cortina (números con condición + vigencia, sin comparativas)
@@ -118,6 +151,22 @@ Fase 2, modelada como grupos de opciones para escalar a todos los rubros de comi
 SCHEMA: PreLaunchLead + rubro + businessName (aditivo). Deploy -SchemaOnly (NO -NoDB).
 
 **Archivos:** .claude/CLAUDE.md, .claude/PLAN-CRECIMIENTO.md, prisma/schema.prisma, public/backpack-3d.png, public/bike-icon.png, public/car-icon.png, public/comercio-3d.png, public/imagenes_repartidor.png (+10 mas)
+
+## 2026-07-23 (rama `feat/notificacion-telegram-leads`)
+
+feat: avisos de pre-registro — Telegram al founder + email de confirmación al lead. Helper
+`src/lib/telegram.ts` FAIL-SAFE (sin TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID = no-op; timeout 5s;
+jamás rompe el flujo). Mensaje con rol, contador (#N), negocio/rubro, nombre, WhatsApp y email.
+Email `src/lib/email-prelaunch.ts`: builder único `buildPrelaunchLeadEmail` con variantes
+COMERCIO/DRIVER/CLIENTE (regla #34 en el bloque de beneficios; baja = responder el correo),
+registrado en EMAIL_REGISTRY (#320-322) usando el MISMO builder para el preview de /ops/emails.
+Disparo en POST /api/prelaunch/signup SOLO en lead NUEVO (findUnique previo al upsert: el paso 2
+del repartidor y las re-anotaciones no duplican avisos; bots del honeypot no avisan), fire-and-
+forget (regla #32). Estrategia de notificaciones (decisión concejo): Telegram = eventos de negocio
+de bajo volumen; Sentry = errores técnicos (no duplicar); OPS = gestión. Env nuevas:
+TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID (local y VPS). Tabla de deps: SMTP ya configurado (Gmail).
+
+---
 
 ## 2026-07-22 (rama `fix/copy-legal-prelanzamiento`)
 
