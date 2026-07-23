@@ -10,6 +10,17 @@
 
 ---
 
+## 2026-07-23 (rama `chore/limpieza-imagenes-cortina`)
+
+chore: limpieza de imágenes sin uso de la cortina
+
+Se eliminan 8 archivos de public/ que quedaron huérfanos tras el rediseño monobrand tipográfico
+de la cortina (ninguna referencia en src/): comercio-3d.png, repartidor-hero.svg, backpack-3d.png,
+bike-icon.png, moto-icon.png, car-icon.png, van-icon.png e imagenes_repartidor.png (composite
+fuente). Recuperables desde el historial de git si hicieran falta. Sin schema. Deploy -NoDB.
+
+**Archivos:** public/backpack-3d.png, public/bike-icon.png, public/car-icon.png, public/comercio-3d.png, public/imagenes_repartidor.png, public/moto-icon.png, public/repartidor-hero.svg, public/van-icon.png
+
 ## 2026-07-23 (rama `feat/notificacion-telegram-leads`)
 
 feat: avisos de pre-registro — Telegram al founder + email de confirmación al lead
