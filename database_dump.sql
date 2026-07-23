@@ -1478,7 +1478,10 @@ CREATE TABLE public."PreLaunchLead" (
     contacted boolean DEFAULT false NOT NULL,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     "businessName" text,
-    rubro text
+    rubro text,
+    "earningsRange" text,
+    vehicle text,
+    "worksOtherApp" boolean
 );
 
 
@@ -2702,14 +2705,15 @@ COPY public."PointsTransaction" (id, "userId", "orderId", type, amount, "balance
 -- Data for Name: PreLaunchLead; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."PreLaunchLead" (id, role, name, email, whatsapp, consent, "consentAt", "ipAddress", "userAgent", source, contacted, "createdAt", "businessName", rubro) FROM stdin;
-cmrw8755w0005v5sxfo0mdnk6	COMERCIO	Nahabab	maurod@me.com	209484648	t	2026-07-22 15:17:00.958	192.168.68.108	Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Mobile/15E148 Safari/604.1	landing	f	2026-07-22 15:17:00.988	Test	Cafetería / Panadería
-cmrwp0cbi0006v5sxq6y5ibh1	CLIENTE	\N	juan@somosmoovy.com	\N	t	2026-07-22 23:07:37.119	192.168.68.108	Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Mobile/15E148 Safari/604.1	landing	f	2026-07-22 23:07:37.147	\N	\N
-cmrwpbbv70007v5sxvaswwcht	DRIVER	Pabliiinnn	ppp@somosmoovy.com	254543046454	t	2026-07-22 23:16:09.791	192.168.68.108	Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Mobile/15E148 Safari/604.1	landing	f	2026-07-22 23:16:09.793	\N	\N
-cmrwy2c0q0000t53pzjyl0fdg	CLIENTE	\N	juaa@somosmoovy.com	\N	t	2026-07-23 03:21:06.644	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	landing	f	2026-07-23 03:21:06.646	\N	\N
-cmrwyhs6c0001t53paj7e42rz	CLIENTE	\N	kkk@somosmoovy.com	\N	t	2026-07-23 03:33:07.422	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	landing	f	2026-07-23 03:33:07.425	\N	\N
-cmrwyiqwc0002t53pfluoolkl	DRIVER	Juan Perez	kkk55@somosmoovy.com	54255651	t	2026-07-23 03:33:52.426	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	landing	f	2026-07-23 03:33:52.428	\N	\N
-cmrwz0qdz0003t53pu3m4nzuw	COMERCIO	sfsdfs	hye@somosmoovy.com	sdfsdf	t	2026-07-23 03:47:51.573	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	landing	f	2026-07-23 03:47:51.575	dsfsdf	Heladería
+COPY public."PreLaunchLead" (id, role, name, email, whatsapp, consent, "consentAt", "ipAddress", "userAgent", source, contacted, "createdAt", "businessName", rubro, "earningsRange", vehicle, "worksOtherApp") FROM stdin;
+cmrw8755w0005v5sxfo0mdnk6	COMERCIO	Nahabab	maurod@me.com	209484648	t	2026-07-22 15:17:00.958	192.168.68.108	Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Mobile/15E148 Safari/604.1	landing	f	2026-07-22 15:17:00.988	Test	Cafetería / Panadería	\N	\N	\N
+cmrwp0cbi0006v5sxq6y5ibh1	CLIENTE	\N	juan@somosmoovy.com	\N	t	2026-07-22 23:07:37.119	192.168.68.108	Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Mobile/15E148 Safari/604.1	landing	f	2026-07-22 23:07:37.147	\N	\N	\N	\N	\N
+cmrwpbbv70007v5sxvaswwcht	DRIVER	Pabliiinnn	ppp@somosmoovy.com	254543046454	t	2026-07-22 23:16:09.791	192.168.68.108	Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.5.2 Mobile/15E148 Safari/604.1	landing	f	2026-07-22 23:16:09.793	\N	\N	\N	\N	\N
+cmrwy2c0q0000t53pzjyl0fdg	CLIENTE	\N	juaa@somosmoovy.com	\N	t	2026-07-23 03:21:06.644	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	landing	f	2026-07-23 03:21:06.646	\N	\N	\N	\N	\N
+cmrwyhs6c0001t53paj7e42rz	CLIENTE	\N	kkk@somosmoovy.com	\N	t	2026-07-23 03:33:07.422	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	landing	f	2026-07-23 03:33:07.425	\N	\N	\N	\N	\N
+cmrwyiqwc0002t53pfluoolkl	DRIVER	Juan Perez	kkk55@somosmoovy.com	54255651	t	2026-07-23 03:33:52.426	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	landing	f	2026-07-23 03:33:52.428	\N	\N	\N	\N	\N
+cmrwz0qdz0003t53pu3m4nzuw	COMERCIO	sfsdfs	hye@somosmoovy.com	sdfsdf	t	2026-07-23 03:47:51.573	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	landing	f	2026-07-23 03:47:51.575	dsfsdf	Heladería	\N	\N	\N
+cmrwzvbvw0000xerav1ia61iw	DRIVER	rerert	jjj@somosmoovy.com	55498	t	2026-07-23 04:12:12.352	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	landing	f	2026-07-23 04:11:39.115	\N	\N	Menos de $2.000	BICI	t
 \.
 
 

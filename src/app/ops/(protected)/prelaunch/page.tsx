@@ -30,11 +30,16 @@ export default async function PreLaunchLeadsPage() {
         name: l.name,
         businessName: l.businessName,
         rubro: l.rubro,
+        vehicle: l.vehicle,
+        worksOtherApp: l.worksOtherApp,
+        earningsRange: l.earningsRange,
         email: l.email,
         whatsapp: l.whatsapp,
         consentAt: l.consentAt ? l.consentAt.toISOString() : null,
         createdAt: l.createdAt.toISOString(),
     }));
+
+    const VEHICLE_LABEL: Record<string, string> = { BICI: "Bici", MOTO: "Moto", AUTO: "Auto", FLETE: "Flete" };
 
     const fmt = (d: Date) =>
         d.toLocaleString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" });
@@ -82,6 +87,7 @@ export default async function PreLaunchLeadsPage() {
                                 <th className="px-4 py-3">Rol</th>
                                 <th className="px-4 py-3">Nombre</th>
                                 <th className="px-4 py-3">Comercio / Rubro</th>
+                                <th className="px-4 py-3">Vehículo</th>
                                 <th className="px-4 py-3">Email</th>
                                 <th className="px-4 py-3">WhatsApp</th>
                                 <th className="px-4 py-3">Fecha</th>
@@ -102,6 +108,20 @@ export default async function PreLaunchLeadsPage() {
                                             <>
                                                 {l.businessName || "—"}
                                                 {l.rubro && <span className="block text-xs text-slate-400">{l.rubro}</span>}
+                                            </>
+                                        ) : (
+                                            "—"
+                                        )}
+                                    </td>
+                                    <td className="px-4 py-3 text-slate-700">
+                                        {l.vehicle ? (
+                                            <>
+                                                {VEHICLE_LABEL[l.vehicle] ?? l.vehicle}
+                                                {l.worksOtherApp != null && (
+                                                    <span className="block text-xs text-slate-400">
+                                                        {l.worksOtherApp ? `Reparte en otra app${l.earningsRange && l.earningsRange !== "Prefiero no decirlo" ? ` · ${l.earningsRange}/viaje` : ""}` : "No reparte en otra app"}
+                                                    </span>
+                                                )}
                                             </>
                                         ) : (
                                             "—"

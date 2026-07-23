@@ -21,6 +21,13 @@ const SignupSchema = z.object({
     name: z.string().max(80).optional().nullable(),
     rubro: z.string().max(60).optional().nullable(),
     businessName: z.string().max(120).optional().nullable(),
+    // Preguntas opcionales del lead repartidor (paso 2, post-envío de datos)
+    vehicle: z.enum(["BICI", "MOTO", "AUTO", "FLETE"]).optional().nullable(),
+    worksOtherApp: z.boolean().optional().nullable(),
+    earningsRange: z
+        .enum(["Menos de $2.000", "$2.000 a $3.500", "$3.500 a $5.000", "Más de $5.000", "Prefiero no decirlo"])
+        .optional()
+        .nullable(),
     consent: z.boolean().refine((v) => v === true, {
         message: "Necesitamos tu OK para poder contactarte.",
     }),
@@ -58,6 +65,9 @@ export async function POST(request: NextRequest) {
     const name = parsed.data.name?.trim() || null;
     const rubro = parsed.data.rubro?.trim() || null;
     const businessName = parsed.data.businessName?.trim() || null;
+    const vehicle = parsed.data.vehicle ?? null;
+    const worksOtherApp = parsed.data.worksOtherApp ?? null;
+    const earningsRange = parsed.data.earningsRange ?? null;
 
     const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
     const userAgent = request.headers.get("user-agent")?.slice(0, 300) || null;
@@ -73,6 +83,9 @@ export async function POST(request: NextRequest) {
                 name,
                 rubro,
                 businessName,
+                vehicle,
+                worksOtherApp,
+                earningsRange,
                 consent: true,
                 consentAt: now,
                 ipAddress,
@@ -80,11 +93,15 @@ export async function POST(request: NextRequest) {
                 source: "landing",
             },
             update: {
-                // Si se reanota, actualizamos contacto y refrescamos consentimiento.
+                // Si se reanota (o manda el paso 2 de preguntas), actualizamos lo
+                // que venga y refrescamos consentimiento.
                 whatsapp: whatsapp ?? undefined,
                 name: name ?? undefined,
                 rubro: rubro ?? undefined,
                 businessName: businessName ?? undefined,
+                vehicle: vehicle ?? undefined,
+                worksOtherApp: worksOtherApp ?? undefined,
+                earningsRange: earningsRange ?? undefined,
                 consent: true,
                 consentAt: now,
             },

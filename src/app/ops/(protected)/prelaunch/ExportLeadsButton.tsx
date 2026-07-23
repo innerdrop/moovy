@@ -8,6 +8,9 @@ type Lead = {
     name: string | null;
     businessName: string | null;
     rubro: string | null;
+    vehicle: string | null;
+    worksOtherApp: boolean | null;
+    earningsRange: string | null;
     email: string;
     whatsapp: string | null;
     consentAt: string | null;
@@ -28,13 +31,16 @@ function csvCell(v: string | null): string {
 
 export default function ExportLeadsButton({ leads }: { leads: Lead[] }) {
     const download = () => {
-        const header = ["Rol", "Nombre", "Comercio", "Rubro", "Email", "WhatsApp", "Consentimiento", "Fecha alta"];
+        const header = ["Rol", "Nombre", "Comercio", "Rubro", "Vehículo", "Otra app", "Gana por viaje", "Email", "WhatsApp", "Consentimiento", "Fecha alta"];
         const rows = leads.map((l) =>
             [
                 ROLE_LABEL[l.role] ?? l.role,
                 l.name,
                 l.businessName,
                 l.rubro,
+                l.vehicle,
+                l.worksOtherApp == null ? null : l.worksOtherApp ? "Sí" : "No",
+                l.earningsRange,
                 l.email,
                 l.whatsapp,
                 l.consentAt,

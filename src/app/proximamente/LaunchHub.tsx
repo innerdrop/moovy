@@ -279,6 +279,42 @@ function LeadForm({ role, accent }: { role: "COMERCIO" | "DRIVER"; accent: strin
         }
     };
 
+    // Paso 2 del repartidor (preguntas opcionales post-envío)
+    const [followup, setFollowup] = useState<"ask" | "done">("ask");
+    const [fuVehicle, setFuVehicle] = useState("");
+    const [fuOtherApp, setFuOtherApp] = useState("");
+    const [fuEarnings, setFuEarnings] = useState("");
+    const [fuSending, setFuSending] = useState(false);
+
+    const sendFollowup = async () => {
+        // Nada elegido = omitir silencioso
+        if (!fuVehicle && !fuOtherApp) {
+            setFollowup("done");
+            return;
+        }
+        setFuSending(true);
+        try {
+            await fetch("/api/prelaunch/signup", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    role,
+                    name,
+                    email,
+                    whatsapp,
+                    consent: true,
+                    vehicle: fuVehicle ? fuVehicle.toUpperCase() : undefined,
+                    worksOtherApp: fuOtherApp ? fuOtherApp === "SI" : undefined,
+                    earningsRange: fuOtherApp === "SI" && fuEarnings ? fuEarnings : undefined,
+                }),
+            });
+        } catch {
+            // fire-and-forget: el lead principal ya está guardado
+        }
+        setFuSending(false);
+        setFollowup("done");
+    };
+
     const inputBase = "h-12 w-full rounded-xl border bg-white px-4 text-[16px] text-gray-900 placeholder:text-gray-400 focus:outline-none";
     const input = (key: string) =>
         `${inputBase} ${fieldErrors[key] ? "border-red-400 focus:border-red-500" : "border-gray-200 focus:border-gray-400"}`;
@@ -286,12 +322,55 @@ function LeadForm({ role, accent }: { role: "COMERCIO" | "DRIVER"; accent: strin
         fieldErrors[id] ? <p className="-mt-1.5 px-1 text-[12px] font-medium text-red-500">{fieldErrors[id]}</p> : null;
 
     if (status === "success") {
+        // Repartidor, paso 2 (opcional): tres preguntas DESPUÉS de dejar los datos
+        // (cero fricción en la conversión; el que ya se anotó contesta con gusto).
+        if (!isComercio && followup === "ask") {
+            return (
+                <div className="rounded-2xl bg-gray-50 p-5 text-center">
+                    <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: accent }}>
+                        <Check className="h-6 w-6 text-white" />
+                    </div>
+                    <p className="mt-3 text-[16px] font-black text-gray-900">¡Listo! Ya quedaste anotado.</p>
+                    <p className="mt-1 text-[14px] text-gray-500">¿Nos contás un poco más? Es opcional y tardás 10 segundos.</p>
+                    <div className="mt-4 space-y-3 text-left">
+                        <select className={`${inputBase} appearance-none border-gray-200 focus:border-gray-400 ${fuVehicle ? "" : "text-gray-400"}`} value={fuVehicle} onChange={(e) => setFuVehicle(e.target.value)}>
+                            <option value="">¿Con qué repartirías?</option>
+                            {["Bici", "Moto", "Auto", "Flete"].map((v) => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                        <select className={`${inputBase} appearance-none border-gray-200 focus:border-gray-400 ${fuOtherApp ? "" : "text-gray-400"}`} value={fuOtherApp} onChange={(e) => setFuOtherApp(e.target.value)}>
+                            <option value="">¿Repartís hoy en otra app?</option>
+                            <option value="SI">Sí</option>
+                            <option value="NO">No</option>
+                        </select>
+                        {fuOtherApp === "SI" && (
+                            <select className={`${inputBase} appearance-none border-gray-200 focus:border-gray-400 ${fuEarnings ? "" : "text-gray-400"}`} value={fuEarnings} onChange={(e) => setFuEarnings(e.target.value)}>
+                                <option value="">¿Cuánto ganás por viaje, aprox.?</option>
+                                {["Menos de $2.000", "$2.000 a $3.500", "$3.500 a $5.000", "Más de $5.000", "Prefiero no decirlo"].map((r) => <option key={r} value={r}>{r}</option>)}
+                            </select>
+                        )}
+                    </div>
+                    <button
+                        type="button"
+                        disabled={fuSending}
+                        onClick={sendFollowup}
+                        className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-2xl text-[15px] font-black text-white transition hover:brightness-95 disabled:opacity-60"
+                        style={{ backgroundColor: accent }}
+                    >
+                        {fuSending ? (<><Loader2 className="h-5 w-5 animate-spin" /> Enviando…</>) : "Enviar"}
+                    </button>
+                    <button type="button" onClick={() => setFollowup("done")} className="mt-2.5 text-[13px] font-bold text-gray-400 transition hover:text-gray-600">
+                        Omitir
+                    </button>
+                </div>
+            );
+        }
+
         return (
             <div className="rounded-2xl bg-gray-50 p-6 text-center">
                 <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full" style={{ backgroundColor: accent }}>
                     <Check className="h-6 w-6 text-white" />
                 </div>
-                <p className="mt-3 text-[16px] font-black text-gray-900">¡Listo! Ya quedaste anotado.</p>
+                <p className="mt-3 text-[16px] font-black text-gray-900">{isComercio ? "¡Listo! Ya quedaste anotado." : "¡Gracias! Con eso nos ayudás un montón."}</p>
                 <p className="mt-1 text-[14px] text-gray-500">Te contactamos para sumarte a Moovy. Gracias por querer ser de los primeros.</p>
                 <ShareMoovyButton
                     message={

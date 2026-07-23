@@ -10,6 +10,28 @@
 
 ---
 
+## 2026-07-23 (rama `feat/preguntas-lead-repartidor`)
+
+feat: 3 preguntas opcionales al lead repartidor (paso 2, post-envío de datos)
+
+El LeadForm de repartidor suma un paso 2 OPCIONAL que aparece recién DESPUÉS de guardar el lead
+(cero fricción en la conversión): ¿con qué repartirías? (Bici/Moto/Auto/Flete), ¿repartís hoy en
+otra app? (sí/no, sin nombrar competidores por regla de marca) y —solo si respondió que sí— rango
+que gana por viaje (en RANGOS con "Prefiero no decirlo": minimización de datos Ley 25.326). Botón
+Omitir. El paso 2 re-POSTea al mismo /api/prelaunch/signup (upsert por email+rol) fire-and-forget:
+si falla, el lead principal ya quedó guardado.
+
+Para qué: planificar flota y documentación (motorizados = licencia+cédula+seguro) y validar si el
+80% del costo de viaje es competitivo en Ushuaia ANTES de lanzar.
+
+SCHEMA: PreLaunchLead + vehicle + worksOtherApp + earningsRange (aditivo). API con enums Zod.
+OPS lista de espera: columna Vehículo (con "reparte en otra app · rango/viaje" como subtítulo) y
+los tres campos en el export CSV.
+
+Deploy -SchemaOnly. Local: correr npx prisma db push antes de probar el paso 2.
+
+**Archivos:** prisma/schema.prisma, src/app/api/prelaunch/signup/route.ts, src/app/ops/(protected)/prelaunch/ExportLeadsButton.tsx, src/app/ops/(protected)/prelaunch/page.tsx, src/app/proximamente/LaunchHub.tsx
+
 ## 2026-07-23 (rama `fix/lista-espera-cliente-y-compartir`)
 
 fix: lista de espera muestra CLIENTE como cliente + botón "Compartí Moovy" post-registro

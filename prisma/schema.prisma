@@ -1871,6 +1871,9 @@ model PreLaunchLead {
   whatsapp   String? // opcional
   rubro        String? // rubro del comercio interesado (para priorizar altas por rubro)
   businessName String? // nombre del comercio/negocio (lead de comercio)
+  vehicle       String? // lead repartidor: BICI | MOTO | AUTO | FLETE
+  worksOtherApp Boolean? // lead repartidor: ¿reparte hoy en otra app? (opcional)
+  earningsRange String? // lead repartidor: rango que gana por viaje en otra app (opcional, rangos)
   consent    Boolean   @default(false)
   consentAt  DateTime?
   ipAddress  String?
