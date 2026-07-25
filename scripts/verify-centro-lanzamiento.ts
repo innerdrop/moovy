@@ -6,7 +6,7 @@
 
 import { prisma } from "../src/lib/prisma";
 import { getPointsConfig, getActiveEarnBoost } from "../src/lib/points";
-import { isInFirstMonthFree, getFirstMonthFreeDaysRemaining } from "../src/lib/merchant-loyalty";
+import { isInFirstMonthFree, getFirstMonthFreeDaysRemaining, firstMonthFreeBaseDate } from "../src/lib/merchant-loyalty";
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = "") {
@@ -32,13 +32,15 @@ async function main() {
     // 2. Comercios activos + mes gratis (misma query que la API).
     const merchants = await prisma.merchant.findMany({
         where: { isActive: true, approvalStatus: "APPROVED" },
-        select: { id: true, name: true, createdAt: true },
+        select: { id: true, name: true, createdAt: true, approvedAt: true, approvalStatus: true },
     });
     check("Query comercios activos ejecuta sin error", true, `${merchants.length} activos`);
-    const inFreeMonth = merchants.filter((m) => isInFirstMonthFree(m.createdAt));
-    check("Cálculo mes gratis per-merchant ejecuta", true, `${inFreeMonth.length} en mes gratis`);
-    for (const m of inFreeMonth) {
-        const days = getFirstMonthFreeDaysRemaining(m.createdAt);
+    const inFreeMonth = merchants
+        .map((m) => ({ m, base: firstMonthFreeBaseDate(m) }))
+        .filter(({ base }) => base !== null && isInFirstMonthFree(base));
+    check("Cálculo mes gratis per-merchant ejecuta (base = aprobación)", true, `${inFreeMonth.length} en mes gratis`);
+    for (const { m, base } of inFreeMonth) {
+        const days = getFirstMonthFreeDaysRemaining(base!);
         check(`  · ${m.name}: días restantes válido`, days >= 0 && days <= 30, `${days} días`);
     }
 

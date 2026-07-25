@@ -20,9 +20,11 @@ interface ImageUploadProps {
     /** Clase de aspect-ratio para la PREVIEW (ej: "aspect-[16/5]" para portada).
         Por defecto usa 4:3. No aplica cuando cropAspect === 1 (logo cuadrado). */
     previewAspectClass?: string;
+    /** Clases extra para el estado vacío (ej: pl-32 para despejar un avatar montado) */
+    placeholderClassName?: string;
 }
 
-export default function ImageUpload({ value, onChange, disabled, compact, cropAspect, cropOutputSize = 500, previewAspectClass }: ImageUploadProps) {
+export default function ImageUpload({ value, onChange, disabled, compact, cropAspect, cropOutputSize = 500, previewAspectClass, placeholderClassName }: ImageUploadProps) {
     const [isLoading, setIsLoading] = useState(false);
     const [cropSrc, setCropSrc] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -165,7 +167,7 @@ export default function ImageUpload({ value, onChange, disabled, compact, cropAs
                 <div
                     onClick={() => fileInputRef.current?.click()}
                     className={`
-                        border-2 border-dashed rounded-xl ${compact ? "p-3 aspect-square" : "p-8"} flex flex-col items-center justify-center cursor-pointer transition
+                        border-2 border-dashed rounded-xl ${compact ? "p-3 aspect-square" : "p-8"} ${placeholderClassName || ""} flex flex-col items-center justify-center cursor-pointer transition
                         ${disabled ? "opacity-50 cursor-not-allowed" : "hover:bg-gray-50 hover:border-blue-500"}
                         border-gray-300 bg-white
                     `}

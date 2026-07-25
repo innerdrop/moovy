@@ -2099,6 +2099,12 @@ COPY public."AuditLog" (id, action, "entityType", "entityId", "userId", details,
 cmr2x7l1s001yz9sq62jky10w	EMAIL_TEMPLATE_SEEDED	EmailTemplate	bulk	cmqz5vqsx0000xhd86fq6wm5d	{"created":69,"skipped":0,"totalInRegistry":69,"errors":[]}	2026-07-02 03:04:06.736
 cmrw2hhg60004v5sx6p29q2cm	PRELAUNCH_LEAD_DELETED	PreLaunchLead	cmrw0ll1u0000v5sxam5andu7	cmqz5vqsx0000xhd86fq6wm5d	{"role":"COMERCIO","email":"test@somosmoovy.com","whatsapp":"2901111111"}	2026-07-22 12:37:05.813
 cmry0h9lo0002kynfbuzy113n	PRELAUNCH_LEAD_DELETED	PreLaunchLead	cmrw8755w0005v5sxfo0mdnk6	cmqz5vqsx0000xhd86fq6wm5d	{"role":"COMERCIO","email":"maurod@me.com","whatsapp":"65651651"}	2026-07-23 21:16:28.764
+cmrzii0n600026gzjk4cmagf1	FEATURE_FLAG_TOGGLED	FeatureFlag	cmrm3x11r000781oualp7iqui	cmqz5vqsx0000xhd86fq6wm5d	{"key":"merchant.doc.registro-sanitario","previousState":true,"newState":false,"toggledBy":"admin@somosmoovy.com"}	2026-07-24 22:28:43.072
+cmrzii0n600036gzj9o8h32te	FEATURE_FLAG_TOGGLED	FeatureFlag	cmrm3x11i000681outxjzlbn5	cmqz5vqsx0000xhd86fq6wm5d	{"key":"merchant.doc.habilitacion-municipal","previousState":true,"newState":false,"toggledBy":"admin@somosmoovy.com"}	2026-07-24 22:28:43.074
+cmrzjvm5o00056gzj0f5dx8un	MERCHANT_DOCUMENT_RESUBMITTED	Merchant	cmrzdt1mo0004wkbfvcf93fr6	cmrzdt1m80001wkbfyotyrlg7	{"documentField":"cuit","documentLabel":"CUIT"}	2026-07-24 23:07:17.1
+cmrzjww1j00076gzj4ni3hmcg	MERCHANT_DOCUMENT_RESUBMITTED	Merchant	cmrzdt1mo0004wkbfvcf93fr6	cmrzdt1m80001wkbfyotyrlg7	{"documentField":"bankAccount","documentLabel":"CBU/Alias bancario"}	2026-07-24 23:08:16.567
+cmrzjzw2d00096gzjog1cxgqz	MERCHANT_DOCUMENT_RESUBMITTED	Merchant	cmrzdt1mo0004wkbfvcf93fr6	cmrzdt1m80001wkbfyotyrlg7	{"documentField":"constanciaAfipUrl","documentLabel":"Constancia de Inscripción AFIP"}	2026-07-24 23:10:36.565
+cms0ftf7s0001136yvsgpqito	FEATURE_FLAG_TOGGLED	FeatureFlag	cmrm3x112000481ouvzlmwx3f	cmqz5vqsx0000xhd86fq6wm5d	{"key":"merchant.doc.bank-account","previousState":true,"newState":false,"toggledBy":"admin@somosmoovy.com"}	2026-07-25 14:01:22.503
 \.
 
 
@@ -2180,6 +2186,8 @@ cmrm3glk30004xcpyppfj7kbz	cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	STORE_S
 --
 
 COPY public."ConsentLog" (id, "userId", "consentType", version, action, "ipAddress", "userAgent", details, "acceptedAt") FROM stdin;
+cmrzdt1n20006wkbfy3n7nb6n	cmrzdt1m80001wkbfyotyrlg7	TERMS	1.2	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	{"context":"merchant_registration"}	2026-07-24 20:17:19.503
+cmrzdt1ne0008wkbfik04ts1w	cmrzdt1m80001wkbfyotyrlg7	PRIVACY	2.0	ACCEPT	127.0.0.1	Mozilla/5.0 (iPhone; CPU iPhone OS 18_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.5 Mobile/15E148 Safari/604.1	{"context":"merchant_registration"}	2026-07-24 20:17:19.514
 \.
 
 
@@ -2366,12 +2374,12 @@ cmrm3x0zd000081oupk3gamn0	merchant.publicidad	Publicidad	Permite a los comercios
 cmrm3x103000181oukyhynmyg	merchant.paquetes	Paquetes B2B	Permite a los comercios adquirir paquetes pre-armados de productos (combos de proveedores). Mientras este OFF, los items 'Adquirir paquetes' e 'Historial de paquetes' no aparecen en el menu y las paginas correspondientes redirigen al dashboard.	MERCHANT	f	2026-07-15 13:19:28.851	2026-07-15 13:19:28.851	\N	\N
 cmrm3x10h000281oukel6xeza	merchant.tracking-en-vivo	Tracking en vivo del driver	Muestra al comercio el mapa con la ubicacion en tiempo real del repartidor que retiro su pedido. Si esta OFF, el comercio solo ve el estado de texto (DRIVER_ASSIGNED, PICKED_UP, etc.) sin mapa.	MERCHANT	f	2026-07-15 13:19:28.865	2026-07-15 13:19:28.865	\N	\N
 cmrm3x10r000381ouvjv1pqve	merchant.doc.cuit	Documento: CUIT	Si esta ON, se le pide el CUIT al comercio y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	t	2026-07-15 13:19:28.875	2026-07-15 13:19:28.875	\N	\N
-cmrm3x112000481ouvzlmwx3f	merchant.doc.bank-account	Documento: CBU/Alias bancario	Si esta ON, se le pide el CBU o Alias bancario al comercio y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	t	2026-07-15 13:19:28.886	2026-07-15 13:19:28.886	\N	\N
 cmrm3x119000581ougnakiczq	merchant.doc.constancia-afip	Documento: Constancia de Inscripcion AFIP	Si esta ON, se le pide la Constancia de Inscripcion AFIP al comercio y es obligatoria para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	t	2026-07-15 13:19:28.893	2026-07-15 13:19:28.893	\N	\N
-cmrm3x11i000681outxjzlbn5	merchant.doc.habilitacion-municipal	Documento: Habilitacion Municipal	Si esta ON, se le pide la Habilitacion Municipal al comercio y es obligatoria para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	t	2026-07-15 13:19:28.902	2026-07-15 13:19:28.902	\N	\N
-cmrm3x11r000781oualp7iqui	merchant.doc.registro-sanitario	Documento: Registro Sanitario / Bromatologico	Si esta ON, se le pide el Registro Sanitario a los comercios gastronomicos y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion. Solo aplica a rubros de comida.	MERCHANT	t	2026-07-15 13:19:28.911	2026-07-15 13:19:28.911	\N	\N
 cmrm3x120000881ouy0m0ky3p	seller.paquetes	Paquetes para vendedores	Permite a los vendedores del marketplace adquirir paquetes B2B. Mientras este OFF, los items relacionados no aparecen en el menu del vendedor.	SELLER	f	2026-07-15 13:19:28.92	2026-07-15 13:19:28.92	\N	\N
 cmrm3x127000981oudj0hy5v7	buyer.scheduled-delivery	Pedidos programados	Habilita la opcion de programar entregas a una franja horaria futura (ej: 'entregar entre 20:00 y 21:00'). Mientras este OFF, todos los pedidos son entrega inmediata.	BUYER	f	2026-07-15 13:19:28.928	2026-07-15 13:19:28.928	\N	\N
+cmrm3x11i000681outxjzlbn5	merchant.doc.habilitacion-municipal	Documento: Habilitacion Municipal	Si esta ON, se le pide la Habilitacion Municipal al comercio y es obligatoria para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	f	2026-07-15 13:19:28.902	2026-07-24 22:28:43.043	cmqz5vqsx0000xhd86fq6wm5d	2026-07-24 22:28:43.041
+cmrm3x11r000781oualp7iqui	merchant.doc.registro-sanitario	Documento: Registro Sanitario / Bromatologico	Si esta ON, se le pide el Registro Sanitario a los comercios gastronomicos y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion. Solo aplica a rubros de comida.	MERCHANT	f	2026-07-15 13:19:28.911	2026-07-24 22:28:43.043	cmqz5vqsx0000xhd86fq6wm5d	2026-07-24 22:28:43.04
+cmrm3x112000481ouvzlmwx3f	merchant.doc.bank-account	Documento: CBU/Alias bancario	Si esta ON, se le pide el CBU o Alias bancario al comercio y es obligatorio para activarse. Si esta OFF, no se le pide ni bloquea la activacion.	MERCHANT	f	2026-07-15 13:19:28.886	2026-07-25 14:01:22.488	cmqz5vqsx0000xhd86fq6wm5d	2026-07-25 14:01:22.486
 \.
 
 
@@ -2479,6 +2487,7 @@ cmqz5vtiv009exhd8vvyf8nns	Farmacia del Canal	farmacia-del-canal	Farmacia con del
 cmqz5vttb00aoxhd8gww43etq	Verdulería La Huerta Fueguina	verduleria-la-huerta	Frutas y verduras frescas, selección diaria.	https://picsum.photos/seed/moovy-logo-verduleria-la-huerta/600/600	\N	t	t	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio8@somosmoovy.com	+5492901555008	Karukinka 210, Ushuaia	-54.7995	-68.3155	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:50.06	2026-06-29 11:55:50.06	Verdulería	cmqz5vtsy00ahxhd807lierxs	2026-06-29 11:55:50.063	2026-06-29 11:55:50.063	4.6	\N	\N	\N	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:50.06	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:50.063	\N
 cmqz5vrhh001qxhd80605qjj8	Patagonia Drinks	patagonia-drinks	Las mejores bebidas del fin del mundo. Cervezas, gaseosas y más.	https://picsum.photos/seed/moovy-logo-patagonia-drinks/600/600	\N	t	f	t	{"0":{"open":"10:00","close":"21:00"},"1":{"open":"09:00","close":"22:00"},"2":{"open":"09:00","close":"22:00"},"3":{"open":"09:00","close":"22:00"},"4":{"open":"09:00","close":"22:00"},"5":{"open":"09:00","close":"23:00"},"6":{"open":"10:00","close":"23:00"}}	f	comercio1@somosmoovy.com	+5492901555001	San Martín 456, Ushuaia	-54.8069	-68.3042	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:47.04	2026-06-29 11:55:47.04	Kiosco	cmqz5vrgz001jxhd84w7eneza	2026-06-29 11:55:47.045	2026-07-06 23:22:37.811	4.7	\N	\N	\N	10	\N	0	\N	\N	t	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:47.04	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:47.045	\N
 cmqz5vswb006uxhd8c5bcq86n	Burger del Fin del Mundo	burger-fin-del-mundo	Hamburguesas smash con ingredientes locales.	https://picsum.photos/seed/moovy-logo-burger-fin-del-mundo/600/600	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1783738853368-logo.webp	t	t	t	{"1":[{"open":"09:00","close":"22:00"}],"2":[{"open":"09:00","close":"22:00"}],"3":[{"open":"09:00","close":"22:00"}],"4":[{"open":"09:00","close":"22:00"}],"5":[{"open":"09:00","close":"23:00"}],"6":[{"open":"00:00","close":"23:59"}],"7":null}	f	comercio5@somosmoovy.com	+5492901555005	9 de Julio 120, Ushuaia	-54.8058	-68.3075	5	30	45	0	0	f	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-06-29 11:55:48.872	2026-06-29 11:55:48.872	Hamburguesería	cmqz5vsvy006nxhd8cea1yx8k	2026-06-29 11:55:48.876	2026-07-11 03:22:40.756	4.5	\N	\N	Burger del Fin del Mundo	10	\N	0	\N	\N	f	\N	\N	basic	\N	\N	+5492901222222	\N	\N	\N	\N	\N	APPROVED	2026-06-29 11:55:48.872	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-06-29 11:55:48.876	\N
+cmrzdt1mo0004wkbfvcf93fr6	Pixel Point	pixel-point	Nuevo comercio Moovy	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1784930108783-logo.webp	\N	f	t	t	{"1":[{"open":"09:00","close":"21:00"}],"2":[{"open":"09:00","close":"21:00"}],"3":[{"open":"09:00","close":"21:00"}],"4":[{"open":"09:00","close":"21:00"}],"5":[{"open":"09:00","close":"21:00"}],"6":[{"open":"10:00","close":"14:00"}],"7":null}	f	maugrod@gmail.com	+5492901652974	Magallanes 969	-54.8047968	-68.31372499999999	5	30	45	0	0	f	7ebe350ca2a14ca89145da1b118716b6:cc2598039c351b27c657333862bc3c1b:0bbea1b1494b0e1ebbf83d	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/registration-docs/1784934635577-PRODUCTOS.webp	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	PENDING	\N	\N	\N	\N	2026-07-24 20:17:19.46	2026-07-24 20:17:19.46	Kiosco	cmrzdt1m80001wkbfyotyrlg7	2026-07-24 20:17:19.487	2026-07-24 23:10:36.556	\N	\N	db97a686f086f278414f14c3f0b45222:89394e07a194ce3d91e72e6560434d14:15c13e0ac36178471879	Pixel Point	8	\N	0	\N	\N	f	\N	\N	basic	\N	\N	\N	\N	\N	\N	\N	\N	PENDING	\N	\N	DRAFT	\N	\N	\N	\N	f	\N	\N	\N	\N	\N	\N	BRONCE	f	0	2026-07-24 20:17:19.487	\N
 \.
 
 
@@ -3925,6 +3934,7 @@ cmrc815za00w075y6m9hlmp3y	QUESO CREMOSO X KG	queso-cremoso-x-kg-6o4wwb	\N	cmqz5v
 cmrc815za00w175y66intntie	CREMA DELTAL COLGATE 180G	crema-deltal-colgate-180g-35ukwa	\N	cmqz5vswb006uxhd8c5bcq86n	8960	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7509546686509	\N	\N
 cmrc815za00w275y610dvv25m	REXONA INVISIBLE	rexona-invisible-ebh65r	\N	cmqz5vswb006uxhd8c5bcq86n	5600	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	78944794	\N	\N
 cmqz5vsxo007sxhd8av6s1rmm	Cerveza Artesanal Pinta	pinta-artesanal	Pinta de cerveza artesanal local.	cmqz5vswb006uxhd8c5bcq86n	3990	2793	24	5	f	f	\N	\N	\N	2026-06-29 11:55:48.924	2026-07-09 20:18:15.794	\N	\N	\N	\N	3800	5
+cmrzefd0n000cwkbfw992t2a7	Hepatalgina	hepatalgina-1784925280667	ANalgesico estomacal	cmrzdt1mo0004wkbfvcf93fr6	3000	2100	10	5	t	f	\N	\N	\N	2026-07-24 20:34:40.677	2026-07-24 20:34:40.677	cmqz5vr1f0014xhd83erjqolw	250	300	\N	\N	\N
 \.
 
 
@@ -3981,6 +3991,7 @@ cmqz5vtu900bcxhd88a09lxob	cmqz5vtu700baxhd85r80nq4c	cmqz5vqyv000pxhd8lec7u05x
 cmqz5vtuh00bixhd8s133dior	cmqz5vtuf00bgxhd8gls84ah6	cmqz5vqyv000pxhd8lec7u05x
 cmqz5vtup00boxhd8zzcppm7c	cmqz5vtun00bmxhd8ij93bqj4	cmqz5vqyv000pxhd8lec7u05x
 cmrdy8h4o00027adl031pe8a3	cmqz5vsxo007sxhd8av6s1rmm	cmqz5vqxd000ixhd8e2wu3ki0
+cmrzefd0n000fwkbfb18ioqg3	cmrzefd0n000cwkbfw992t2a7	cmqz5vqy9000mxhd84i6y95uu
 \.
 
 
@@ -4038,6 +4049,7 @@ cmqz5vtuk00bkxhd8856goox3	cmqz5vtuf00bgxhd8gls84ah6	https://picsum.photos/seed/m
 cmqz5vtur00bqxhd8i9bsb5je	cmqz5vtun00bmxhd8ij93bqj4	https://picsum.photos/seed/moovy-frutillas/600/600	Frutillas (250g)	0
 cmrcpsqjg00037nue72igl8ba	cmrc815yy00m975y6k0lurue0	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1783553654082-ushuaia-bg.webp	soyunaprueba2	0
 cmrdy8h4000007adlg3vj1o47	cmqz5vsxo007sxhd8av6s1rmm	https://picsum.photos/seed/moovy-pinta-artesanal/600/600	Cerveza Artesanal Pinta	0
+cmrzefd0n000dwkbf4gf8o3e0	cmrzefd0n000cwkbfw992t2a7	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1784925233164-hepatalgina-en-gotas-x-120-ml-digestivo.webp	Hepatalgina	0
 \.
 
 
@@ -4141,6 +4153,7 @@ COPY public."SubOrder" (id, "orderId", "merchantId", "sellerId", status, subtota
 COPY public."SupportChat" (id, "userId", "merchantId", "operatorId", subject, category, status, priority, rating, "ratingComment", "lastMessageAt", "resolvedAt", "createdAt", "updatedAt", origin) FROM stdin;
 cmrc2vw0f000113mgtop0d6rn	cmqz5vsvy006nxhd8cea1yx8k	cmqz5vswb006uxhd8c5bcq86n	\N	Problema con un pedido	general	resolved	normal	\N	\N	2026-07-08 23:51:22.93	2026-07-09 00:47:50.454	2026-07-08 12:52:54.35	2026-07-09 00:47:50.456	MERCHANT
 cmrcsjs7o000d7nuefmjm1j2l	cmqz5vsvy006nxhd8cea1yx8k	cmqz5vswb006uxhd8c5bcq86n	cmrcsilkn00097nuetc7vfy53	Consulta general	general	closed	normal	\N	\N	2026-07-09 00:51:19.571	2026-07-09 00:58:59.213	2026-07-09 00:51:19.571	2026-07-09 00:58:59.215	MERCHANT
+cms0hflgm0009136y65k84nwp	cmrzdt1m80001wkbfyotyrlg7	cmrzdt1mo0004wkbfvcf93fr6	cmrcsilkn00097nuetc7vfy53	Consulta general	general	resolved	normal	\N	\N	2026-07-25 14:49:45.019	2026-07-25 14:52:10.562	2026-07-25 14:46:36.646	2026-07-25 14:52:10.564	MERCHANT
 \.
 
 
@@ -4158,6 +4171,13 @@ cmrcsjs7o000g7nue9imo8rn2	cmrcsjs7o000d7nuefmjm1j2l	cmqz5vqsx0000xhd86fq6wm5d	Ad
 cmrcsjs7o000f7nuej6oaquld	cmrcsjs7o000d7nuefmjm1j2l	cmqz5vsvy006nxhd8cea1yx8k	No me acreditaron los ultimos puntos	f	f	t	\N	\N	2026-07-09 00:51:19.571
 cmrcsthnf000m7nuerl0z0r0i	cmrcsjs7o000d7nuefmjm1j2l	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-09 00:58:52.443
 cmrcstmvu000o7nue0s2qbsm0	cmrcsjs7o000d7nuefmjm1j2l	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-09 00:58:59.225
+cms0hflgm000c136ya493exop	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	Admin MOOVY es tu operador asignado. En un momento te atiende, Fernando Temari.	t	t	t	\N	\N	2026-07-25 14:46:36.646
+cms0hflgm000b136yz33zb6gd	cms0hflgm0009136y65k84nwp	cmrzdt1m80001wkbfyotyrlg7	No se me acreditaron los $2500 de la promo por registro	f	f	t	\N	\N	2026-07-25 14:46:36.646
+cms0hglim000i136yobmqj7jz	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	Buen día Fernando! Déjame que verifico ya mismo	t	f	t	\N	\N	2026-07-25 14:47:23.375
+cms0hjmsq000p136y4mybrr5a	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	/saludo	t	f	t	\N	\N	2026-07-25 14:49:45.003
+cms0hkdn4000r136yhvsh69kc	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-25 14:50:19.792
+cms0hm1hs000t136yup1tdq4o	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-25 14:51:37.36
+cms0hmr48000v136ybxvylhrr	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-25 14:52:10.569
 \.
 
 
@@ -4166,7 +4186,7 @@ cmrcstmvu000o7nue0s2qbsm0	cmrcsjs7o000d7nuefmjm1j2l	cmqz5vqsx0000xhd86fq6wm5d	El
 --
 
 COPY public."SupportOperator" (id, "userId", "displayName", "isActive", "isOnline", "maxChats", "lastSeenAt", "createdAt", "updatedAt") FROM stdin;
-cmrcsilkn00097nuetc7vfy53	cmqz5vqsx0000xhd86fq6wm5d	Admin MOOVY	t	f	5	2026-07-09 00:51:43.484	2026-07-09 00:50:24.311	2026-07-09 00:51:43.486
+cmrcsilkn00097nuetc7vfy53	cmqz5vqsx0000xhd86fq6wm5d	Admin MOOVY	t	t	5	2026-07-25 14:48:10.875	2026-07-09 00:50:24.311	2026-07-25 14:48:10.877
 \.
 
 
@@ -4195,6 +4215,7 @@ cmqz5vwfh00fzxhd8bchmmyw5	cliente1@somosmoovy.com	$2b$12$7ZFsSIglT1XVS/UewQDNYO4
 cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-07-22 12:30:00.633	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-11 21:53:29.246	\N
 cmqz5vrgz001jxhd84w7eneza	comercio1@somosmoovy.com	$2b$12$yF6/4feNZrmKkGW/zI752eg44jwODi1JejVllozBQ6DuoL3r0r.vm	Carlos Patagonia	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vrgz001kxhd8fe0upbjz	\N	2026-06-29 11:55:47.028	2026-07-06 23:20:58.373	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:20:58.372	\N
 cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-07-06 23:32:32.958	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:32:32.921	\N
+cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-07-25 14:04:23.183	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.37Whxp97s8kSiR7D.jXmok.DPmVC8uu	 				COMERCIO	\N	\N	0	0	f	cmqz5vsvy006oxhd85im89bep	\N	2026-06-29 11:55:48.862	2026-07-11 03:01:00.38	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-07 14:53:34.731	\N
 \.
 
@@ -4216,6 +4237,8 @@ cmrgwhnd7000be1n6n9givedj	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd8
 cmrl2jaai0001v7uc2sjbhx47	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd86fq6wm5d	{"method":"credentials"}	\N	\N	2026-07-14 19:53:01.912
 cmrp89vsd0001fcxw8scoocjg	cmqz5vwfh00fzxhd8bchmmyw5	LOGIN	User	cmqz5vwfh00fzxhd8bchmmyw5	{"method":"credentials"}	\N	\N	2026-07-17 17:44:45.612
 cmrw28dih0002v5sx1g180o2t	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd86fq6wm5d	{"method":"credentials"}	\N	\N	2026-07-22 12:30:00.805
+cmrzdt1z3000awkbf5tilxp2s	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-24 20:17:19.935
+cms0fxanz0003136yh5flxfht	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-25 14:04:23.23
 \.
 
 

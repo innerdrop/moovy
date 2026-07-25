@@ -3,6 +3,25 @@
 > Punto de retome para la próxima sesión. Generado al pausar el trabajo del checklist pre-launch.
 > Leé este archivo al volver para reconstruir el contexto.
 
+## Dónde estamos (actualizado 2026-07-25 — CIERRE, sesión cortina+piloto+panel)
+
+**Estado git**: rama **`feat/panel-inmediato-comercio` ABIERTA** con todo el código listo y `.commit-message` preparado. Lo anterior (6 ramas: hub monobrand, lista de espera, preguntas repartidor, copy legal, telegram+emails, limpieza imágenes) está **cerrado y DEPLOYADO** a prod con `-SchemaOnly` + env de Telegram en el VPS (verificado por el founder: leads llegan por Telegram y email).
+
+**Primer paso al volver** (antes que cualquier otra cosa):
+1. `npx tsx scripts/test-first-month-free.ts` — es de DINERO: valida el mes gratis desde la APROBACIÓN (`firstMonthFreeBaseDate`; cambio de Biblia de esta sesión).
+2. `npx tsx scripts/verify-panel-inmediato.ts` — comercios PENDING nunca visibles al público.
+3. Probar el flujo del comercio de punta a punta con el usuario de prueba (Pixel Point / maugrod@gmail.com): registro → auto-login → guía 5 pasos → cargar docs → barra verde "todo listo, 24-48hs" (debe actualizarse SIN recargar al navegar) → aprobar desde OPS → email de aprobado → dashboard modo operación.
+4. `.\scripts\finish.ps1` → `.\scripts\devmain.ps1 -NoDB` (esta rama NO toca schema).
+5. Limpieza post-prueba: borrar el comercio de prueba y los leads de prueba desde OPS.
+
+**Decisiones founder de la sesión** (ya canónicas en CLAUDE.md): piloto = lead-capture (auto-registración solo por preview) · monobrand rojo en la cortina · panel inmediato modelo Shopify (aprobación gatea publicación, no acceso) · mes gratis corre desde la APROBACIÓN · docs del comercio: CUIT + Constancia AFIP (habilitación municipal y registro sanitario OFF — investigado: PedidosYa tampoco los pide; se cubren por DDJJ en TyC) · sin prometer puntos por compartir (no hay tracking).
+
+**Pendientes founder (sin código)**: gestionar TyC comercio/repartidor con abogado (bloqueante etapa pública) · decidir flag `merchant.doc.bank-account` en /ops/feature-flags (recomendación OFF: con el split MP el CBU no se usa; reversible) · UptimeRobot (viene de sesiones anteriores) · gestión MP marketplace_fee (ídem). Sentry local: ✅ resuelto (07-25).
+
+**Contexto clave para la próxima ventana**: el flujo del piloto quedó completo — cortina junta leads (con avisos Telegram/email), Mauro contacta y manda a `/comercio/registro?preview=...`, el comercio entra a su panel al toque y arma la tienda solo con la guía; OPS aprueba docs y la tienda se publica. Lo único que separa de invitar a Pixel Point es cerrar la rama abierta y pasar el flujo de prueba.
+
+---
+
 ## Dónde estamos (actualizado 2026-07-12 — CIERRE, sesión de diseño)
 
 **Sesión de rediseño de la tienda pública. 2 ramas cerradas.**

@@ -139,31 +139,42 @@ export default function SettingsForm({ merchant, requiredDocFields, section }: S
         <div className="space-y-6">
             {/* Store Status Toggle */}
             {show("estado") && (
-            <div className={`rounded-xl p-4 border flex items-center justify-between ${isOpen
-                ? "bg-green-50 border-green-200"
-                : "bg-gray-100 border-gray-200"
+            <div className={`rounded-xl p-4 border flex items-center justify-between ${merchant.approvalStatus !== "APPROVED"
+                ? "bg-gray-50 border-gray-200"
+                : isOpen
+                    ? "bg-green-50 border-green-200"
+                    : "bg-gray-100 border-gray-200"
                 }`}>
                 <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isOpen ? "bg-green-500" : "bg-gray-400"}`}>
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${merchant.approvalStatus !== "APPROVED" ? "bg-gray-300" : isOpen ? "bg-green-500" : "bg-gray-400"}`}>
                         <Power className="w-5 h-5 text-white" />
                     </div>
                     <div>
-                        <p className="font-semibold text-gray-900">{isOpen ? "Tienda Abierta" : "Tienda Cerrada"}</p>
-                        <p className="text-sm text-gray-500">{isOpen ? "Recibiendo pedidos" : "No recibe pedidos"}</p>
+                        <p className="font-semibold text-gray-900">{merchant.approvalStatus !== "APPROVED" ? "Tienda en preparación" : isOpen ? "Tienda Abierta" : "Tienda Cerrada"}</p>
+                        <p className="text-sm text-gray-500">{merchant.approvalStatus !== "APPROVED" ? "Se activa al aprobarse tu documentación" : isOpen ? "Recibiendo pedidos" : "No recibe pedidos"}</p>
                     </div>
                 </div>
-                <button
-                    type="button"
-                    onClick={handleToggleStore}
-                    disabled={isTogglingStore}
-                    className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${isOpen
-                        ? "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
-                        : "bg-green-600 text-white hover:bg-green-700"
-                        }`}
-                >
-                    {isTogglingStore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
-                    {isOpen ? "Pausar Tienda" : "Abrir Tienda"}
-                </button>
+                {merchant.approvalStatus === "APPROVED" ? (
+                    <button
+                        type="button"
+                        onClick={handleToggleStore}
+                        disabled={isTogglingStore}
+                        className={`px-4 py-2 rounded-lg font-medium transition flex items-center gap-2 ${isOpen
+                            ? "bg-white border border-gray-200 text-gray-700 hover:bg-gray-50"
+                            : "bg-green-600 text-white hover:bg-green-700"
+                            }`}
+                    >
+                        {isTogglingStore ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+                        {isOpen ? "Pausar Tienda" : "Abrir Tienda"}
+                    </button>
+                ) : (
+                    <span
+                        className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-400"
+                        title="Disponible cuando tu tienda esté aprobada"
+                    >
+                        <Lock className="w-4 h-4" /> Se activa al aprobar
+                    </span>
+                )}
             </div>
             )}
 

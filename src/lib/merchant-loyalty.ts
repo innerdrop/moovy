@@ -31,15 +31,31 @@ export const FIRST_MONTH_FREE_DAYS = 30;
 const FIRST_MONTH_FREE_MS = FIRST_MONTH_FREE_DAYS * 24 * 60 * 60 * 1000;
 
 /**
+ * Fecha base de la ventana de mes gratis (feat/panel-inmediato-comercio):
+ * el trial arranca al APROBARSE el comercio (cuando puede vender), NO al
+ * registrarse — con panel inmediato el comercio arma su tienda en PENDING y
+ * sería injusto quemarle días gratis que no puede usar.
+ *   - No aprobado → null (el trial todavía no empezó).
+ *   - Aprobado con approvedAt → approvedAt.
+ *   - Aprobado legacy sin approvedAt → createdAt (respaldo conservador).
+ */
+export function firstMonthFreeBaseDate(m: {
+  createdAt: Date;
+  approvedAt: Date | null;
+  approvalStatus: string;
+}): Date | null {
+  if (m.approvalStatus !== "APPROVED") return null;
+  return m.approvedAt ?? m.createdAt;
+}
+
+/**
  * Indica si un comercio está dentro de su ventana de mes gratis.
- * Usa la fecha de creación del comercio (no la de aprobación) para
- * coincidir con la promesa pública: "primer mes en MOOVY = 0%".
  *
- * @param createdAt DateTime del Merchant.createdAt
+ * @param baseDate fecha base del trial (usar firstMonthFreeBaseDate)
  * @param now reloj inyectable para tests; default Date.now()
  */
-export function isInFirstMonthFree(createdAt: Date, now: Date = new Date()): boolean {
-  const diffMs = now.getTime() - createdAt.getTime();
+export function isInFirstMonthFree(baseDate: Date, now: Date = new Date()): boolean {
+  const diffMs = now.getTime() - baseDate.getTime();
   // Si diffMs < 0 (fecha futura por clock skew), igual estamos en la ventana.
   return diffMs < FIRST_MONTH_FREE_MS;
 }
@@ -48,16 +64,16 @@ export function isInFirstMonthFree(createdAt: Date, now: Date = new Date()): boo
  * Fecha exacta de fin del mes gratis.
  * Se usa para mostrar al comercio "Tu período sin comisión vence el DD/MM/AAAA".
  */
-export function getFirstMonthFreeEndDate(createdAt: Date): Date {
-  return new Date(createdAt.getTime() + FIRST_MONTH_FREE_MS);
+export function getFirstMonthFreeEndDate(baseDate: Date): Date {
+  return new Date(baseDate.getTime() + FIRST_MONTH_FREE_MS);
 }
 
 /**
  * Días restantes del mes gratis. 0 si ya venció.
  * Útil para mensajes urgentes tipo "Te quedan 3 días sin comisión".
  */
-export function getFirstMonthFreeDaysRemaining(createdAt: Date, now: Date = new Date()): number {
-  const endDate = getFirstMonthFreeEndDate(createdAt);
+export function getFirstMonthFreeDaysRemaining(baseDate: Date, now: Date = new Date()): number {
+  const endDate = getFirstMonthFreeEndDate(baseDate);
   const diffMs = endDate.getTime() - now.getTime();
   if (diffMs <= 0) return 0;
   return Math.ceil(diffMs / (24 * 60 * 60 * 1000));
@@ -201,7 +217,7 @@ export async function getEffectiveCommissionWithSource(merchantId: string): Prom
   try {
     const merchant = await prisma.merchant.findUnique({
       where: { id: merchantId },
-      select: { loyaltyTier: true, commissionOverride: true, createdAt: true },
+      select: { loyaltyTier: true, commissionOverride: true, createdAt: true, approvedAt: true, approvalStatus: true },
     });
 
     if (!merchant) {
@@ -213,10 +229,11 @@ export async function getEffectiveCommissionWithSource(merchantId: string): Prom
       return { rate: merchant.commissionOverride, source: "OVERRIDE", tier: null };
     }
 
-    // 2. First-month-free
-    if (isInFirstMonthFree(merchant.createdAt)) {
+    // 2. First-month-free (base = aprobación; ver firstMonthFreeBaseDate)
+    const firstMonthBase = firstMonthFreeBaseDate(merchant);
+    if (firstMonthBase && isInFirstMonthFree(firstMonthBase)) {
       loyaltyLogger.info(
-        { merchantId, createdAt: merchant.createdAt },
+        { merchantId, firstMonthBase },
         "Merchant in first-month-free window, commission = 0%"
       );
       return { rate: 0, source: "FIRST_MONTH", tier: null };
@@ -364,6 +381,8 @@ export async function getMerchantLoyaltyWidget(merchantId: string) {
         loyaltyOrderCount: true,
         loyaltyUpdatedAt: true,
         createdAt: true,
+        approvedAt: true,
+        approvalStatus: true,
         commissionOverride: true,
       },
     });
@@ -375,11 +394,13 @@ export async function getMerchantLoyaltyWidget(merchantId: string) {
     // Info del mes gratis para que el dashboard muestre el banner y la fecha de vencimiento.
     // Si hay commissionOverride, el mes gratis NO aplica (el override gana).
     const hasOverride = merchant.commissionOverride !== null && merchant.commissionOverride !== undefined;
-    const firstMonthActive = !hasOverride && isInFirstMonthFree(merchant.createdAt);
+    const widgetBase = firstMonthFreeBaseDate(merchant);
+    const firstMonthActive = !hasOverride && !!widgetBase && isInFirstMonthFree(widgetBase);
     const firstMonthFree = {
       active: firstMonthActive,
-      endDate: getFirstMonthFreeEndDate(merchant.createdAt),
-      daysRemaining: firstMonthActive ? getFirstMonthFreeDaysRemaining(merchant.createdAt) : 0,
+      // Sin aprobar aún: el trial no empezó — endDate null (la UI no muestra fecha)
+      endDate: widgetBase ? getFirstMonthFreeEndDate(widgetBase) : null,
+      daysRemaining: firstMonthActive && widgetBase ? getFirstMonthFreeDaysRemaining(widgetBase) : 0,
     };
 
     // Get current tier config

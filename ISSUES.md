@@ -1,7 +1,35 @@
 # Moovy — Issues
-Última actualización: 2026-07-15
+Última actualización: 2026-07-25
 
 > **Fuente única de tareas pendientes.** Para histórico completo de issues resueltos en sprints anteriores → `.claude/CHANGELOG.md`.
+
+---
+
+
+## Resueltos sesión 2026-07-21 → 25 (cortina hub + piloto + panel inmediato)
+
+- ✅ **Cortina → hub "elegí tu mundo" monobrand** + estrategia piloto lead-capture (plan en `.claude/PLAN-CRECIMIENTO.md`). Deployado.
+- ✅ **Lead CLIENTE se mostraba como "Repartidor" en OPS** (ternario binario) — fix en tabla + CSV. Deployado.
+- ✅ **Copy legal pre-lanzamiento** (regla #34): condición + vigencia en números, sin comparativas, canal real de borrado de datos. Deployado.
+- ✅ **Telegram + email automático de leads** (solo alta; re-anotación = diff por Telegram sin re-email). Env `TELEGRAM_BOT_TOKEN/CHAT_ID` cargadas en local y VPS. Verificado por founder en prod.
+- ✅ **Paso 2 del lead repartidor** (vehículo/otra app/rango por viaje). Deployado.
+- ✅ **Soporte comercio: offline bloqueaba crear consulta** (callejón sin salida) → mensajería asíncrona. En rama abierta.
+- ✅ **Barra de armado congelada** (layout de Next no se re-renderiza) → client + `/api/merchant/setup`. En rama abierta.
+
+## Abiertos nuevos (sesión 2026-07-21 → 25)
+
+### 🟡 Cerrar `feat/panel-inmediato-comercio` (rama abierta, código completo)
+Correr los 2 scripts de verificación (uno es de DINERO: mes gratis desde aprobación) + probar flujo completo → finish → deploy `-NoDB`. Ver PROJECT_STATUS "Próximas tareas".
+
+### 🟡 TyC de comercio y repartidor con abogado — BLOQUEANTE de la etapa pública
+Sin ellos no se prende la auto-registración (etapa 3). Deben cubrir: esquema de comisiones + criterios de tiers, política de cambios con preaviso, DDJJ de habilitaciones del comercio (decisión founder: NO pedimos habilitación municipal ni registro sanitario — responsabilidad del comercio, como PedidosYa). Detalle en PLAN-CRECIMIENTO.
+
+### 🟢 Menores acumulados
+- Migrar canal de borrado de datos a `privacidad@somosmoovy.com` cuando el email del dominio exista (hoy Gmail).
+- Foto definitiva del hero del chooser (`ushuaia-bg.jpg` es placeholder) + sesión de fotos de comerciantes reales (specs ya entregadas en chat 07-22).
+- Verificar `customerNotes` en el checkout (campo backend existe; UI sin confirmar).
+- Telegram post-launch: pedido sin repartidor / refund automático / webhook MP rechazado / cron caído (lista en CHANGELOG 07-23).
+- Puntos MOOVER: no existe cron de vencimiento (el copy ya no lo promete) — decidir si algún día se implementa o se cierra.
 
 ---
 

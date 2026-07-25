@@ -32,13 +32,17 @@ export async function sendMerchantRequestReceivedEmail(data: {
     businessName: string;
     contactName: string;
 }) {
+    // feat/panel-inmediato-comercio: el panel se abre al registrarse (modelo
+    // Shopify). El email invita a armar la tienda YA; la aprobaci\u00f3n de docs
+    // gatea solo la publicaci\u00f3n, no el acceso.
     const html = emailLayout(`
-        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">Solicitud recibida</h2>
+        <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">&iexcl;Tu cuenta est&aacute; lista!</h2>
         <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
-            ${data.contactName}, recibimos tu solicitud para registrar <strong>${data.businessName}</strong> en MOOVY. Nuestro equipo va a revisar tu informaci&oacute;n y documentaci&oacute;n en las pr&oacute;ximas 24 a 48 horas h&aacute;biles.
+            ${data.contactName}, <strong>${data.businessName}</strong> ya tiene su panel en MOOVY. Entr&aacute; ahora y empez&aacute; a cargar tus productos, tu logo y tus horarios &mdash; as&iacute; ten&eacute;s todo listo para el d&iacute;a uno.
         </p>
-        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
-            Verificamos la documentaci&oacute;n fiscal y legal, que la informaci&oacute;n de tu comercio est&eacute; completa, y te notificamos por email cuando est&eacute; resuelto.
+        ${emailButton('Entrar a mi panel', `${baseUrl}/comercios`, 'red')}
+        <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+            <strong>&iquest;Cu&aacute;ndo se publica tu tienda?</strong> Cuando completes la documentaci&oacute;n (la carg\u00e1s desde tu panel, en Mi Comercio) y el equipo de Moovy la apruebe. Te avisamos por email en cada paso.
         </p>
         <p style="color: #999; font-size: 13px; line-height: 1.6; margin: 0;">
             Si ten&eacute;s alguna duda, respond&eacute; este correo o escribinos por WhatsApp.
@@ -47,7 +51,7 @@ export async function sendMerchantRequestReceivedEmail(data: {
 
     return sendEmail({
         to: data.email,
-        subject: 'Solicitud de comercio recibida \u2014 MOOVY',
+        subject: 'Tu panel de MOOVY ya est\u00e1 listo \u2014 empez\u00e1 a cargar tu tienda',
         html,
         tag: 'merchant_request_received',
     });

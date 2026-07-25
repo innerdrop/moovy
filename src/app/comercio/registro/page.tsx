@@ -10,7 +10,7 @@
 
 import { useState, useEffect, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession, signIn } from "next-auth/react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -25,11 +25,8 @@ import {
     Building2,
     ArrowLeft,
     CheckCircle2,
-    Clock,
     ChevronDown,
     Plus,
-    ShieldCheck,
-    MapPin,
 } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import { toast } from "@/store/toast";
@@ -183,7 +180,16 @@ function ComercioRegistroContent() {
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Error al registrar");
-            if (isLogged) await updateSession({ refreshRoles: true });
+            if (isLogged) {
+                await updateSession({ refreshRoles: true });
+            } else {
+                // Auto-login con las credenciales recién creadas: el comercio entra
+                // a su panel SIN pasar por el login (modelo Shopify: panel inmediato).
+                // Si fallara, no rompe el éxito: el botón cae al login normal.
+                try {
+                    await signIn("credentials", { email: formData.email, password: formData.password, redirect: false });
+                } catch { /* el botón del éxito lleva al login */ }
+            }
             setSubmitted(true);
         } catch (err: any) {
             setError(err.message);
@@ -203,13 +209,13 @@ function ComercioRegistroContent() {
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <CheckCircle2 className="w-8 h-8 text-green-600" />
                     </div>
-                    <h2 className="text-2xl font-black text-gray-900 mb-2">¡Solicitud enviada!</h2>
-                    <p className="text-gray-500 mb-6">Recibimos tu solicitud. El equipo de Moovy la revisa y te contacta en 24-48 horas.</p>
-                    <div className="bg-red-50 rounded-xl p-4 mb-6 flex items-center gap-3 text-left">
-                        <Clock className="w-5 h-5 text-[#e60012] flex-shrink-0" />
-                        <p className="text-sm text-[#a32d2d]">Te enviamos un email con los próximos pasos para activar tu tienda.</p>
-                    </div>
-                    <Link href={fromProfile ? "/mi-perfil" : "/proximamente"} className="inline-flex items-center gap-2 text-[#e60012] font-bold hover:underline">
+                    <h2 className="text-2xl font-black text-gray-900 mb-2">¡Tu cuenta está lista!</h2>
+                    <p className="text-gray-500 mb-6">Entrá a tu panel y empezá a armar tu tienda — te guiamos paso a paso.</p>
+                    <Link href="/comercios" className="mb-3 flex h-12 w-full items-center justify-center rounded-2xl text-[15px] font-black text-white transition hover:brightness-95" style={{ backgroundColor: RED }}>
+                        Entrar a mi panel
+                    </Link>
+                    <p className="mb-6 text-[12px] leading-relaxed text-gray-400">Tu tienda queda privada mientras la armás.</p>
+                    <Link href={fromProfile ? "/mi-perfil" : "/proximamente"} className="inline-flex items-center gap-2 text-sm text-gray-400 font-medium hover:text-gray-700">
                         <ArrowLeft className="w-4 h-4" />
                         {fromProfile ? "Volver al perfil" : "Volver al inicio"}
                     </Link>
@@ -350,15 +356,6 @@ function ComercioRegistroContent() {
                                 Acepto los <Link href="/terminos-comercio" className="text-[#e60012] underline font-medium" target="_blank">Términos para Comercios</Link> y la <Link href="/privacidad" className="text-[#e60012] underline font-medium" target="_blank">Política de Privacidad</Link> (Ley 25.326). <span className="text-red-500">*</span>
                             </span>
                         </label>
-
-                        {/* Anclaje de confianza (¿quién está detrás? + plata segura) */}
-                        <div className="flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1 pt-1 text-[11px] text-gray-400">
-                            <span className="inline-flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5" style={{ color: RED }} /> Cobrás por MercadoPago</span>
-                            <span className="text-gray-300">·</span>
-                            <span>Datos protegidos (Ley 25.326)</span>
-                            <span className="text-gray-300">·</span>
-                            <span className="inline-flex items-center gap-1"><MapPin className="w-3.5 h-3.5" style={{ color: RED }} /> Hecha en Ushuaia</span>
-                        </div>
 
                         <button type="submit" disabled={isLoading || !formData.acceptedLegal} className="w-full h-12 rounded-2xl text-white font-black text-[15px] flex items-center justify-center gap-2 transition disabled:opacity-50 mt-1 hover:brightness-95" style={{ backgroundColor: RED }}>
                             {isLoading ? (<><Loader2 className="w-5 h-5 animate-spin" />Enviando...</>) : ("Sumar mi comercio")}

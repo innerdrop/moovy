@@ -20,6 +20,7 @@
  */
 
 import {
+    firstMonthFreeBaseDate,
     isInFirstMonthFree,
     getFirstMonthFreeEndDate,
     getFirstMonthFreeDaysRemaining,
@@ -220,10 +221,16 @@ async function main() {
                 WHERE id = ${testMerchant.id}
             `;
             const rateBronceVencido = await getEffectiveCommission(testMerchant.id);
-            // BRONCE config en DB: commissionRate = 8 (seed). Si no hay config, fallback 8.
+            // El valor del tier NO se hardcodea: se lee de MerchantLoyaltyConfig, que
+            // es la fuente de verdad editable desde OPS (antes esperaba 8% y quedó
+            // stale cuando la Biblia pasó a BRONCE 10 / PLATA 9 / ORO 8 / DIAMANTE 7).
+            const bronceCfg = await prisma.merchantLoyaltyConfig.findFirst({
+                where: { tier: "BRONCE" },
+                select: { commissionRate: true },
+            });
             assert(
-                rateBronceVencido === 8,
-                `BRONCE + 60 días de creado → 8% (tier, got ${rateBronceVencido}%)`
+                bronceCfg ? rateBronceVencido === bronceCfg.commissionRate : rateBronceVencido > 0,
+                `BRONCE + 60 días de creado → ${bronceCfg ? `${bronceCfg.commissionRate}% (tier de OPS)` : "tarifa de tier > 0"} (got ${rateBronceVencido}%)`
             );
 
             // Escenario E: día 30 exacto (vencido) → vuelve al tier
@@ -234,11 +241,23 @@ async function main() {
                 WHERE id = ${testMerchant.id}
             `;
             const rateDiamanteVencido = await getEffectiveCommission(testMerchant.id);
-            // DIAMANTE seed = 5%. Si no hay config, fallback 8.
+            const diamanteCfg = await prisma.merchantLoyaltyConfig.findFirst({
+                where: { tier: "DIAMANTE" },
+                select: { commissionRate: true },
+            });
             assert(
-                rateDiamanteVencido === 5 || rateDiamanteVencido === 8,
-                `DIAMANTE + 31 días → 5% (o 8% si no hay config, got ${rateDiamanteVencido}%)`
+                diamanteCfg ? rateDiamanteVencido === diamanteCfg.commissionRate : rateDiamanteVencido > 0,
+                `DIAMANTE + 31 días → ${diamanteCfg ? `${diamanteCfg.commissionRate}% (tier de OPS)` : "tarifa de tier > 0"} (got ${rateDiamanteVencido}%)`
             );
+
+            // Coherencia con la Biblia: el mejor tier NUNCA puede pagar más que el
+            // peor (si alguien invierte los valores en OPS, esto lo caza).
+            if (bronceCfg && diamanteCfg) {
+                assert(
+                    diamanteCfg.commissionRate <= bronceCfg.commissionRate,
+                    `DIAMANTE (${diamanteCfg.commissionRate}%) paga ≤ que BRONCE (${bronceCfg.commissionRate}%)`
+                );
+            }
         } finally {
             // Limpieza: borrar el merchant de test
             await prisma.merchant.delete({ where: { id: testMerchant.id } });
@@ -268,3 +287,26 @@ main()
     .finally(async () => {
         await prisma.$disconnect();
     });
+// ── feat/panel-inmediato-comercio: la base del trial es la APROBACIÓN ──────
+{
+    const now = new Date("2026-07-24T12:00:00Z");
+    const created = new Date("2026-06-01T12:00:00Z");
+    const approved = new Date("2026-07-20T12:00:00Z");
+    assert(
+        firstMonthFreeBaseDate({ createdAt: created, approvedAt: null, approvalStatus: "PENDING" }) === null,
+        "PENDING → base null (el trial no corre mientras arma la tienda)"
+    );
+    assert(
+        firstMonthFreeBaseDate({ createdAt: created, approvedAt: approved, approvalStatus: "APPROVED" })?.getTime() === approved.getTime(),
+        "APPROVED con approvedAt → base = approvedAt"
+    );
+    assert(
+        firstMonthFreeBaseDate({ createdAt: created, approvedAt: null, approvalStatus: "APPROVED" })?.getTime() === created.getTime(),
+        "APPROVED legacy sin approvedAt → base = createdAt (respaldo)"
+    );
+    assert(
+        isInFirstMonthFree(approved, now) === true,
+        "Aprobado hace 4 días → sigue en ventana aunque se registró hace 53"
+    );
+}
+

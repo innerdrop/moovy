@@ -324,7 +324,7 @@ export default function ImportarProductosPage() {
                                             <select
                                                 value={mapping[f.key] ?? ""}
                                                 onChange={(e) => setMapping({ ...mapping, [f.key]: e.target.value === "" ? null : Number(e.target.value) })}
-                                                className="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
+                                                className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20"
                                             >
                                                 <option value="">— No importar —</option>
                                                 {colOptions.map((c) => (
@@ -360,7 +360,7 @@ export default function ImportarProductosPage() {
                                                 value={markupPercent}
                                                 onChange={(e) => setMarkupPercent(e.target.value)}
                                                 onWheel={(e) => e.currentTarget.blur()}
-                                                className="w-full border rounded-lg px-3 py-2 pr-8 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 font-bold"
+                                                className="w-full border border-gray-200 rounded-lg px-3 py-2 pr-8 text-sm bg-gray-50 focus:bg-white focus:ring-2 focus:ring-blue-500/20 font-bold"
                                             />
                                             <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 font-bold">%</span>
                                         </div>
@@ -414,7 +414,7 @@ export default function ImportarProductosPage() {
                                         <p className="text-sm font-bold text-gray-900">Revisar {irregularRows.length} códigos internos{excludedRows.size > 0 && <span className="text-gray-400 font-normal"> · {excludedRows.size} quitados</span>}</p>
                                     </div>
                                     <p className="text-xs text-gray-500 mb-4">No son códigos de barras estándar (suelen ser códigos internos de productos sueltos o por peso). Los guardamos <b>tal cual</b>. Podés editarlos, o <b>quitar</b> los que no sean productos (ej: recargas, ajustes) para que no se importen.</p>
-                                    <div className="max-h-72 overflow-y-auto divide-y border rounded-xl">
+                                    <div className="max-h-72 overflow-y-auto divide-y divide-gray-100 border border-gray-200 rounded-xl">
                                         {irregularRows.map((ir) => {
                                             const current = codeForRow(ir.rowIdx);
                                             const stateLabel = !current ? "vacío" : isValidBarcode(current) ? "✓ de barras" : "interno";
@@ -433,7 +433,7 @@ export default function ImportarProductosPage() {
                                                             <input
                                                                 value={current}
                                                                 onChange={(e) => setCodeOverrides({ ...codeOverrides, [ir.rowIdx]: e.target.value })}
-                                                                className="w-40 border rounded-lg px-2 py-1 text-sm font-mono focus:ring-2 focus:ring-blue-500/20"
+                                                                className="w-40 border border-gray-200 rounded-lg px-2 py-1 text-sm font-mono focus:ring-2 focus:ring-blue-500/20"
                                                                 placeholder="código"
                                                             />
                                                             <span className={`text-[11px] w-14 text-right ${stateColor}`}>{stateLabel}</span>
@@ -450,7 +450,7 @@ export default function ImportarProductosPage() {
                             )}
 
                             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-                                <div className="px-4 py-2 border-b text-xs font-bold text-gray-400 uppercase tracking-wider">Vista previa (primeras 5)</div>
+                                <div className="px-4 py-2 border-b border-gray-100 text-xs font-bold text-gray-400 uppercase tracking-wider">Vista previa (primeras 5)</div>
                                 <div className="overflow-x-auto">
                                     <table className="w-full text-sm">
                                         <thead className="bg-gray-50 text-gray-500">
@@ -462,7 +462,7 @@ export default function ImportarProductosPage() {
                                         </thead>
                                         <tbody>
                                             {preview.payload.slice(0, 5).map((p, i) => (
-                                                <tr key={i} className="border-t">
+                                                <tr key={i} className="border-t border-gray-100">
                                                     <td className="px-4 py-2 text-gray-900">{p.name}</td>
                                                     <td className="px-4 py-2 text-gray-700">
                                                         ${finalPriceOf(p.price).toLocaleString("es-AR")}

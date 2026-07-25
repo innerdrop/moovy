@@ -69,7 +69,7 @@ export default function MobileMoreMenu() {
             <button
                 onClick={() => setOpen(!open)}
                 className={`flex flex-col items-center justify-center w-full h-full py-1 transition-colors ${
-                    open ? "text-blue-600" : "text-gray-400 hover:text-blue-600 active:text-blue-700"
+                    open ? "text-[#e60012]" : "text-gray-500 hover:text-[#e60012] active:text-[#c4000f]"
                 }`}
             >
                 {open ? (

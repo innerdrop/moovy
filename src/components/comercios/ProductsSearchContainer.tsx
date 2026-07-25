@@ -445,7 +445,7 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
                                     </div>
 
                                     {/* Price and Stock */}
-                                    <div className="flex items-center justify-between w-full md:contents border-t md:border-t-0 pt-3 md:pt-0">
+                                    <div className="flex items-center justify-between w-full md:contents border-t border-gray-100 md:border-t-0 pt-3 md:pt-0">
                                         <div className="font-black text-blue-600 text-lg md:text-gray-900">
                                             ${product.price.toLocaleString("es-AR")}
                                         </div>
@@ -456,7 +456,7 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex items-center justify-end gap-2 md:w-full pt-3 md:pt-0 border-t md:border-t-0 w-full">
+                                    <div className="flex items-center justify-end gap-2 md:w-full pt-3 md:pt-0 border-t border-gray-100 md:border-t-0 w-full">
                                         <ProductStatusToggle productId={product.id} initialStatus={product.isActive} />
                                         <Link
                                             href={`/comercios/productos/${product.id}`}

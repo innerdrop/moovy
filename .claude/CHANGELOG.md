@@ -10,6 +10,119 @@
 
 ---
 
+## 2026-07-25 (rama `feat/panel-inmediato-comercio`)
+
+feat: panel inmediato para el comercio (modelo Shopify) + limpieza del registro
+
+El comercio entra a su panel APENAS se registra, sin esperar aprobación (decisión founder: la
+aprobación de docs gatea la PUBLICACIÓN, no el acceso). Auto-login post-registro (signIn
+credentials fail-safe), éxito rediseñado: "¡Tu cuenta está lista!" + botón "Entrar a mi panel"
+(chau "esperá 24-48hs"), y email #6 reescrito con CTA al panel ("Tu panel de MOOVY ya está
+listo") + preview de EMAIL_REGISTRY espejado al real.
+
+La mitad del camino YA existía y se verificó antes de tocar: requireMerchantAccess permitía
+pending desde feat/registro-rediseno-core, requireMerchantApi no gatea por aprobación, POST
+/api/orders rechaza merchants no aprobados server-side y los listados públicos exigen APPROVED
+(regla #14). Lo que faltaba: banner ámbar de estado en el layout del panel ("Tu tienda todavía
+no es visible al público" + CTA "Completar documentación" a Mi Comercio) y matar el copy de
+espera en éxito + email.
+
+Registro: fuera los 3 badges de confianza (Cobrás por MercadoPago / Datos protegidos / Hecha en
+Ushuaia) — la Ley 25.326 queda mencionada UNA sola vez, en la tilde de Términos y Privacidad.
+
+DASHBOARD REDISEÑADO EN DOS MODOS (concejo UX): MODO ARMADO (no aprobado o requisitos
+incompletos) = una sola tarjeta-guía "Prepará tu tienda" con 5 pasos ordenados por valor
+(producto → logo → horarios → dirección → docs), barra de progreso, paso siguiente resaltado con
+CTA "Empezar", estado "todo listo, en revisión" cuando terminó, línea compacta del 0% y ayuda
+discreta — sin métricas en cero ni banners apilados (se eliminó el banner del layout, el fat
+banner ámbar de la página y el OnboardingChecklist client, reemplazados por la guía server-side
+con la MISMA lógica canónica de requisitos). MODO OPERACIÓN (aprobado + completo) = dashboard de
+trabajo de siempre, con marca corregida: chrome del panel en rojo Moovy (era azul), "Dashboard" →
+saludo + nombre del comercio, tarjeta "Impulsá tu tienda" en carbón, acentos rojos. Éxito del
+registro compactado (una línea de estado, sin caja de texto larga).
+
+CONTINUIDAD DEL ARMADO (idea founder, mejorada por el concejo): mientras la tienda no está lista,
+TODAS las páginas del panel muestran una barrita con el progreso (3/5) y el SIGUIENTE paso,
+linkeando DIRECTO a él (flujo guiado: terminás de cargar el producto y la barra ya te ofrece el
+logo). Se oculta sola en el dashboard (ahí está la guía completa) y muta a "Todo listo, en
+revisión" al terminar. Lógica de pasos extraída a helper canónico src/lib/merchant-setup.ts
+(única fuente: dashboard + barra). MOBILE: header rehecho a una sola fila liviana (logo Moovy +
+nombre del comercio + switcher + logout, con blur) y barra de navegación inferior FLOTANTE
+redondeada con blur y sombra (mismo lenguaje que la tienda pública), despegada de los bordes y
+con safe-area.
+
+SOPORTE COMERCIO rediseñado (mobile): altura que respeta header + barra de armado + nav flotante
+(100dvh, sin overflow detrás de la barra), empty state hero centrado ("¿Necesitás una mano?" +
+CTA grande + "atención humana, sin bots"). FIX UX GRAVE: con soporte offline el botón se
+deshabilitaba y el comercio quedaba sin poder ni dejar su consulta — ahora es mensajería
+asíncrona (escribís siempre; offline = "te respondemos apenas volvamos" en placeholder y copy).
+Barra de navegación: punto medio final blanco flotante con borde y sombra profunda (el carbón
+tapaba protagonismo), íconos gris-500 → rojo al tocar (MobileMoreMenu incluido, era azul).
+
+MI COMERCIO pulido: (1) el logo ya no tapa el texto del uploader de portada (fila propia junto al
+hint, siempre legible); (2) Redes Sociales UNIFICADAS al form principal — mismo popup "Tenés
+cambios sin guardar" que el resto (se eliminó el form aparte con "Guardar Redes"); (3) "Pausar
+Tienda" apagado (gris, no accionable) mientras el comercio no está aprobado, con estado "Tienda
+en preparación — se activa al aprobarse tu documentación"; (5) horarios sugeridos = SIN GUARDAR
+desde el arranque (concejo: prefill estándar de industria + confirmación explícita, en vez de
+todo apagado): barra flotante "Confirmá tus horarios para activarlos" visible hasta el primer
+guardado y en cada cambio. Barras de guardado despegadas de la nav flotante (bottom-24) y botones
+Guardar en rojo Moovy (eran azules), íconos de sección a rojo.
+
+SOPORTE: fix del split roto en "Nueva consulta" en mobile (la lista no se ocultaba: dos paneles
+apretados lado a lado) + form de consulta moderno: mensaje primero (autofocus, textarea grande),
+asunto opcional secundario, botón rojo full-width, copy según online/offline.
+
+MES GRATIS DESDE LA APROBACIÓN (decisión founder + concejo — CAMBIO DE BIBLIA): con panel
+inmediato era injusto quemar días de trial armando la tienda. Nuevo helper canónico
+firstMonthFreeBaseDate (approvedAt; PENDING = trial no corre; aprobados legacy sin approvedAt
+caen a createdAt). Actualizados: getEffectiveCommissionWithSource (comisión real), widget de
+loyalty, /api/admin/launch (Centro de Lanzamiento), dashboard del comercio (en armado muestra
+"tu primer mes arranca cuando aprobemos tu tienda — no perdés días"), verify-centro-lanzamiento
+y test-first-month-free (4 asserts nuevos del base date). Biblia actualizada en CLAUDE.md.
+
+RETOQUES MI COMERCIO (2ª pasada): vuelve el logo montado sobre la portada (diseño original) con
+el texto del uploader corrido vía placeholderClassName de ImageUpload (se lee siempre);
+descripción con mínimo 30 caracteres + hint; chevron de categoría propio bien posicionado
+(appearance-none + ícono); indicador de estado TODO gris cuando está pendiente ("Tienda en
+preparación" + pill "Se activa al aprobar" con candado, sin verde a medias).
+
+BARRA DE ARMADO EN VIVO (fix de raíz): la barra vivía en el layout y Next.js NO re-renderiza
+layouts en navegación client-side → quedaba congelada (cargabas la documentación y seguía
+pidiéndola). Ahora es client y consulta el nuevo GET /api/merchant/setup (requireMerchantApi +
+computeMerchantSetup: la MISMA fuente de verdad) en cada cambio de ruta. Estado "todo listo":
+"¡Todo listo! Estamos revisando tus documentos — en las próximas 24-48 hs hábiles tu tienda
+queda habilitada" (también en la tarjeta-guía del dashboard). El layout solo conserva el nombre
+del comercio para el header.
+
+LÍNEAS NEGRAS EN EL PANEL (bug de Tailwind 4): en Tailwind 4 un `border` sin color usa
+currentColor (≈ negro) en vez del gris que daba Tailwind 3, así que cada borde sin color
+explícito dibujaba una línea negra. En el chat de soporte eso pintaba una barra negra vertical
+de punta a punta en mobile (el `border-r` del panel de la lista, que ahí ocupa el ancho
+completo) más la línea negra bajo el encabezado. Corregidos los 8 bordes sin color del panel
+del comercio: soporte, importador de productos (selects, tabla de vista previa) y la barra de
+acciones en lote de productos. El `border-r` del panel ahora es `md:` — en mobile no existe.
+
+CHAT DE SOPORTE con apariencia nueva: encabezado con avatar M rojo + punto de estado en vivo,
+lista de consultas como tarjetas redondeadas separadas (sin líneas divisorias duras, con
+resalte rojo suave en la seleccionada), burbujas de mensaje con esquina viva del lado del
+emisor y hora alineada a la derecha, campo de escritura tipo píldora con foco rojo y botón de
+enviar circular, y una línea de expectativa cuando todavía no respondimos ("Recibimos tu
+mensaje. Te respondemos apenas volvamos"). Estado vacío de escritorio alineado al de mobile.
+
+TEST DE MES GRATIS desalineado con la Biblia (no era un bug de dinero, era el test):
+test-first-month-free esperaba tiers de 8% y 5%, valores de una tabla vieja; el canon vigente
+es BRONCE 10 / PLATA 9 / ORO 8 / DIAMANTE 7 y el código devolvía eso, correcto. Los asserts
+ahora leen MerchantLoyaltyConfig (la fuente editable desde OPS) en vez de hardcodear, así no
+vuelven a quedar stale, más un assert de coherencia (el mejor tier nunca paga más que el peor).
+22/22 verde.
+
+Decisión canónica nueva en CLAUDE.md (Panel inmediato de comercio). Verificación:
+npx tsx scripts/verify-panel-inmediato.ts (listado público sin pendientes + guards presentes) y
+npx tsx scripts/test-first-month-free.ts (22/22). Sin schema. Deploy -NoDB.
+
+**Archivos:** .claude/CLAUDE.md, ISSUES.md, PROJECT_STATUS.md, docs/HANDOFF_PENDIENTES.md, scripts/test-first-month-free.ts, scripts/verify-centro-lanzamiento.ts, scripts/verify-panel-inmediato.ts, src/app/api/admin/launch/route.ts (+17 mas)
+
 ## 2026-07-23 (rama `chore/limpieza-imagenes-cortina`)
 
 chore: limpieza de imágenes sin uso de la cortina
@@ -20,6 +133,38 @@ bike-icon.png, moto-icon.png, car-icon.png, van-icon.png e imagenes_repartidor.p
 fuente). Recuperables desde el historial de git si hicieran falta. Sin schema. Deploy -NoDB.
 
 **Archivos:** public/backpack-3d.png, public/bike-icon.png, public/car-icon.png, public/comercio-3d.png, public/imagenes_repartidor.png, public/moto-icon.png, public/repartidor-hero.svg, public/van-icon.png
+
+## 2026-07-25 (rama `feat/panel-inmediato-comercio` — 2ª parte, RAMA ABIERTA al cierre de sesión)
+
+Continuación de la rama: dashboard del comercio en DOS MODOS (guía de armado de 5 pasos con
+progreso vs dashboard de operación; helper canónico src/lib/merchant-setup.ts), barra de
+continuidad EN VIVO (client + GET /api/merchant/setup — los layouts de Next no se re-renderizan
+al navegar y la versión server quedaba congelada), estado "todo listo, en revisión 24-48hs",
+MES GRATIS DESDE LA APROBACIÓN (firstMonthFreeBaseDate — cambio de Biblia; actualiza
+getEffectiveCommission, widget, Centro de Lanzamiento, scripts de verificación), soporte mobile
+rediseñado (fix: offline bloqueaba crear consultas → mensajería asíncrona; fix split roto en
+"Nueva consulta"), Mi Comercio pulido (redes unificadas al popup de guardado, horarios sugeridos
+con confirmación explícita, Pausar Tienda gris si pendiente, descripción mín 30 chars, chevron de
+categoría, logo montado sin tapar el uploader), nav mobile flotante + header liviano con nombre
+del comercio, marca del panel a rojo Moovy. Al cerrar: correr test-first-month-free +
+verify-panel-inmediato + flujo completo → finish.ps1 → deploy -NoDB.
+
+---
+
+## 2026-07-24 (rama `feat/panel-inmediato-comercio`)
+
+feat: panel inmediato para el comercio (modelo Shopify) + limpieza del registro. El comercio entra
+a su panel apenas se registra: auto-login post-registro (signIn credentials, fail-safe al login),
+éxito rediseñado ("¡Tu cuenta está lista!" + botón "Entrar a mi panel", chau "esperá 24-48hs") y
+email #6 reescrito con CTA al panel. La mitad del camino YA existía (requireMerchantAccess
+permitía pending desde feat/registro-rediseno-core; requireMerchantApi no gatea por aprobación;
+POST /api/orders rechaza merchants no aprobados; listados públicos exigen APPROVED) — lo que
+faltaba era el banner de estado en el layout (ámbar: "tu tienda todavía no es visible" + CTA a
+Mi Comercio) y matar el copy de espera. Registro: fuera los 3 badges de confianza (MercadoPago /
+Ley 25.326 / Hecha en Ushuaia — la ley queda UNA vez, en la tilde legal). Verificación:
+scripts/verify-panel-inmediato.ts (listado público sin pendientes + guards presentes).
+
+---
 
 ## 2026-07-23 (rama `feat/notificacion-telegram-leads`)
 
@@ -162,6 +307,21 @@ Fase 2, modelada como grupos de opciones para escalar a todos los rubros de comi
 SCHEMA: PreLaunchLead + rubro + businessName (aditivo). Deploy -SchemaOnly (NO -NoDB).
 
 **Archivos:** .claude/CLAUDE.md, .claude/PLAN-CRECIMIENTO.md, prisma/schema.prisma, public/backpack-3d.png, public/bike-icon.png, public/car-icon.png, public/comercio-3d.png, public/imagenes_repartidor.png (+10 mas)
+
+## 2026-07-24 (rama `feat/panel-inmediato-comercio`)
+
+feat: panel inmediato para el comercio (modelo Shopify) + limpieza del registro. El comercio entra
+a su panel apenas se registra: auto-login post-registro (signIn credentials, fail-safe al login),
+éxito rediseñado ("¡Tu cuenta está lista!" + botón "Entrar a mi panel", chau "esperá 24-48hs") y
+email #6 reescrito con CTA al panel. La mitad del camino YA existía (requireMerchantAccess
+permitía pending desde feat/registro-rediseno-core; requireMerchantApi no gatea por aprobación;
+POST /api/orders rechaza merchants no aprobados; listados públicos exigen APPROVED) — lo que
+faltaba era el banner de estado en el layout (ámbar: "tu tienda todavía no es visible" + CTA a
+Mi Comercio) y matar el copy de espera. Registro: fuera los 3 badges de confianza (MercadoPago /
+Ley 25.326 / Hecha en Ushuaia — la ley queda UNA vez, en la tilde legal). Verificación:
+scripts/verify-panel-inmediato.ts (listado público sin pendientes + guards presentes).
+
+---
 
 ## 2026-07-23 (rama `feat/notificacion-telegram-leads`)
 

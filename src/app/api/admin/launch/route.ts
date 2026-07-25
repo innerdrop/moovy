@@ -21,7 +21,7 @@ import {
     updatePointsConfig,
     getActiveEarnBoost,
 } from "@/lib/points";
-import { isInFirstMonthFree, getFirstMonthFreeDaysRemaining } from "@/lib/merchant-loyalty";
+import { isInFirstMonthFree, getFirstMonthFreeDaysRemaining, firstMonthFreeBaseDate } from "@/lib/merchant-loyalty";
 import { logConfigChange } from "@/lib/ops-config";
 import { z } from "zod";
 
@@ -49,16 +49,17 @@ export async function GET() {
         // Comercios activos (aprobados + operativos) + su ventana de mes gratis.
         const merchants = await prisma.merchant.findMany({
             where: { isActive: true, approvalStatus: "APPROVED" },
-            select: { id: true, name: true, createdAt: true },
+            select: { id: true, name: true, createdAt: true, approvedAt: true, approvalStatus: true },
             orderBy: { createdAt: "asc" },
         });
         const activeCount = merchants.length;
         const firstMonthList = merchants
-            .filter((m) => isInFirstMonthFree(m.createdAt, now))
-            .map((m) => ({
+            .map((m) => ({ m, base: firstMonthFreeBaseDate(m) }))
+            .filter(({ base }) => base !== null && isInFirstMonthFree(base, now))
+            .map(({ m, base }) => ({
                 id: m.id,
                 name: m.name,
-                daysRemaining: getFirstMonthFreeDaysRemaining(m.createdAt, now),
+                daysRemaining: getFirstMonthFreeDaysRemaining(base!, now),
             }));
 
         // Flag de publicidad (puede no existir todavía).

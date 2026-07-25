@@ -225,30 +225,26 @@ export const EMAIL_REGISTRY: EmailRegistryEntry[] = [
     {
         id: 'merchant_request_received',
         number: 6,
-        name: 'Solicitud de comercio recibida',
+        name: 'Cuenta de comercio lista (panel inmediato)',
         category: 'Onboarding y Aprobación',
         recipient: 'comercio',
         priority: 'P0',
-        status: 'new',
+        status: 'implemented',
         trigger: 'POST /api/auth/register/merchant',
-        subject: '📋 Recibimos tu solicitud de comercio - MOOVY',
+        subject: 'Tu panel de MOOVY ya está listo — empezá a cargar tu tienda',
         functionName: 'sendMerchantRequestReceivedEmail',
         file: 'src/lib/email-p0.ts',
+        // feat/panel-inmediato-comercio: el panel se abre al registrarse; la
+        // aprobación de docs gatea solo la publicación. Preview espejo del real.
         generatePreview: () => emailLayout(`
-            <div style="text-align: center; margin-bottom: 20px;">${emailBadge('Solicitud Recibida', '#dbeafe', '#1e40af')}</div>
-            <h2 style="color: #111827; margin-top: 0; text-align: center;">¡Hola ${SAMPLE.merchantContact}!</h2>
-            <p style="color: #6b7280; font-size: 16px; line-height: 1.6;">
-                Recibimos tu solicitud para registrar <strong>${SAMPLE.merchantName}</strong> en MOOVY.
-                Nuestro equipo va a revisar tu información y documentación en las próximas 24-48 horas hábiles.
+            <h2 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 22px; font-weight: 600;">¡Tu cuenta está lista!</h2>
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 0 0 24px 0;">
+                ${SAMPLE.merchantContact}, <strong>${SAMPLE.merchantName}</strong> ya tiene su panel en MOOVY. Entrá ahora y empezá a cargar tus productos, tu logo y tus horarios — así tenés todo listo para el día uno.
             </p>
-            ${emailInfoBox(`
-                <h4 style="color: #718096; margin: 0 0 10px 0; font-size: 14px;">¿Qué sigue?</h4>
-                <ol style="color: #4a5568; font-size: 14px; line-height: 1.8; padding-left: 20px; margin: 0;">
-                    <li>Verificamos tu documentación fiscal y legal</li>
-                    <li>Revisamos que la información de tu comercio esté completa</li>
-                    <li>Te notificamos por email si tu tienda fue aprobada</li>
-                </ol>
-            `)}
+            ${emailButton('Entrar a mi panel', `${baseUrl}/comercios`, 'red')}
+            <p style="color: #555; font-size: 15px; line-height: 1.7; margin: 24px 0;">
+                <strong>¿Cuándo se publica tu tienda?</strong> Cuando completes la documentación (la cargás desde tu panel, en Mi Comercio) y el equipo de Moovy la apruebe. Te avisamos por email en cada paso.
+            </p>
         `),
     },
     {

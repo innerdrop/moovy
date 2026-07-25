@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { updateMerchant, updateMerchantSchedule } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
-import { Loader2, Save, Store, Tag, MapPin, Phone, Mail, User, Calendar, Plus, Trash2, Instagram, MessageCircle, Globe, Info, X } from "lucide-react";
+import { Loader2, Save, Store, Tag, MapPin, Phone, Mail, User, Calendar, Plus, Trash2, Instagram, MessageCircle, Globe, Info, X, ChevronDown } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import { confirm } from "@/store/confirm";
 import { toast } from "@/store/toast";
@@ -144,7 +144,10 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
         }
     });
     const [savingSchedule, setSavingSchedule] = useState(false);
-    const [savingSocial, setSavingSocial] = useState(false);
+    // Los horarios sugeridos NO están activos hasta que el comercio los guarda:
+    // la barra de guardado aparece desde el inicio (concejo UX: prefill estándar
+    // de la industria + pedido de confirmación explícito, en vez de todo apagado).
+    const [scheduleDirty, setScheduleDirty] = useState(!merchant.scheduleJson);
 
     const handleSubmit = async (formData: FormData) => {
         // Guardar es NO destructivo: se ejecuta directo (spinner + toast), sin modal
@@ -197,11 +200,13 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
             setError(result.error);
         } else {
             toast.success("Horarios guardados correctamente");
+            setScheduleDirty(false);
         }
         setSavingSchedule(false);
     };
 
     const updateShift = (day: string, shiftIndex: number, field: "open" | "close", value: string) => {
+        setScheduleDirty(true);
         setSchedule((prev) => {
             const shifts = [...(prev[day] || [{ open: "09:00", close: "21:00" }])];
             shifts[shiftIndex] = { ...shifts[shiftIndex], [field]: value };
@@ -210,6 +215,7 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
     };
 
     const addShift = (day: string) => {
+        setScheduleDirty(true);
         setSchedule((prev) => {
             const existing = prev[day] || [];
             if (existing.length >= MAX_SHIFTS_PER_DAY) return prev;
@@ -222,6 +228,7 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
     };
 
     const removeShift = (day: string, shiftIndex: number) => {
+        setScheduleDirty(true);
         setSchedule((prev) => {
             const existing = prev[day] || [];
             if (existing.length <= 1) return prev;
@@ -231,6 +238,7 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
     };
 
     const toggleDay = (day: string) => {
+        setScheduleDirty(true);
         setSchedule((prev) => ({
             ...prev,
             [day]: prev[day] ? null : [{ open: "09:00", close: "21:00" }],
@@ -261,7 +269,7 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
                 {/* Basic Info */}
                 <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
                     <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <Store className="w-5 h-5 text-blue-600" />
+                        <Store className="w-5 h-5 text-[#e60012]" />
                         Información del Comercio
                     </h2>
 
@@ -279,8 +287,10 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
                                 cropAspect={16 / 5}
                                 cropOutputSize={1600}
                                 previewAspectClass="h-40 sm:h-52"
+                                placeholderClassName="pl-32 pr-4 sm:pl-8"
                             />
-                            {/* Logo montado como avatar */}
+                            {/* Logo montado como avatar (diseño original) — el texto del
+                                uploader queda corrido con placeholderClassName y se lee siempre */}
                             <div className="absolute -bottom-8 left-4 z-10 w-24 h-24 rounded-2xl ring-4 ring-white shadow-lg overflow-hidden bg-white">
                                 <ImageUpload
                                     value={imageUrl}
@@ -309,18 +319,22 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Descripción
                             </label>
-                            <textarea name="description" rows={2} defaultValue={merchant.description} placeholder="Describe tu comercio..." className="input" disabled={isLoading} />
+                            <textarea name="description" rows={3} required minLength={30} defaultValue={merchant.description} placeholder="Contale a tus clientes qué vendés y qué te hace especial…" className="input" disabled={isLoading} />
+                            <p className="mt-1 text-xs text-gray-400">Mínimo 30 caracteres — es lo primero que lee el cliente.</p>
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 <Tag className="w-4 h-4 inline mr-1" />
                                 Categoría
                             </label>
-                            <select name="category" className="input" defaultValue={merchant.category} disabled={isLoading}>
-                                {CATEGORIES.map((cat) => (
-                                    <option key={cat} value={cat}>{cat}</option>
-                                ))}
-                            </select>
+                            <div className="relative">
+                                <select name="category" className="input appearance-none pr-10" defaultValue={merchant.category} disabled={isLoading}>
+                                    {CATEGORIES.map((cat) => (
+                                        <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -328,7 +342,7 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
                 {/* Contact Info */}
                 <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
                     <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <Mail className="w-5 h-5 text-blue-600" />
+                        <Mail className="w-5 h-5 text-[#e60012]" />
                         Contacto del Negocio
                     </h2>
 
@@ -367,7 +381,7 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
                 {/* Owner Info */}
                 <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
                     <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <User className="w-5 h-5 text-blue-600" />
+                        <User className="w-5 h-5 text-[#e60012]" />
                         Datos del Propietario
                     </h2>
 
@@ -409,12 +423,47 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
                     )}
                 </div>
 
+                {/* Redes sociales — mismo form y mismo popup Guardar que el resto
+                    del perfil (unificado: un solo patrón de guardado) */}
+                <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
+                    <h2 className="font-semibold text-gray-900 flex items-center gap-2">
+                        <Globe className="w-5 h-5 text-[#e60012]" />
+                        Redes Sociales
+                    </h2>
+                    <p className="text-sm text-gray-500">
+                        Mostrá tus redes en tu perfil público. Los clientes confían más en comercios con presencia en redes.
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <Instagram className="w-4 h-4 inline mr-1" />
+                                Instagram
+                            </label>
+                            <input name="instagramUrl" type="text" defaultValue={merchant.instagramUrl || ""} placeholder="@tu_comercio" className="input" disabled={isLoading} />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <MessageCircle className="w-4 h-4 inline mr-1" />
+                                WhatsApp
+                            </label>
+                            <input name="whatsappNumber" type="text" defaultValue={merchant.whatsappNumber || ""} placeholder="+54 9 2901 ..." className="input" disabled={isLoading} />
+                        </div>
+                        <div className="md:col-span-2">
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                <Globe className="w-4 h-4 inline mr-1" />
+                                Facebook
+                            </label>
+                            <input name="facebookUrl" type="text" defaultValue={merchant.facebookUrl || ""} placeholder="facebook.com/tu_comercio" className="input" disabled={isLoading} />
+                        </div>
+                    </div>
+                </div>
+
                 {/* Hidden deliveryFee for backwards compat */}
                 <input type="hidden" name="deliveryFee" value={merchant.deliveryFee.toString()} />
 
                 {/* Banner flotante: solo aparece cuando hay cambios sin guardar en el perfil */}
                 {perfilDirty && (
-                    <div className="fixed left-0 right-0 bottom-16 z-30 px-3 sm:px-4 pb-2 pointer-events-none animate-in slide-in-from-bottom-2 duration-200">
+                    <div className="fixed left-0 right-0 bottom-24 z-30 px-3 sm:px-4 pb-2 pointer-events-none animate-in slide-in-from-bottom-2 duration-200">
                         <div className="max-w-2xl mx-auto pointer-events-auto bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
                             <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
                             <p className="text-xs sm:text-sm font-semibold text-gray-700 flex-1 min-w-0 truncate">
@@ -433,7 +482,7 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
                             <button
                                 type="submit"
                                 disabled={isLoading}
-                                className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 active:scale-[0.98] transition disabled:opacity-50 shadow-md"
+                                className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-[#e60012] text-white hover:bg-[#cc000f] active:scale-[0.98] transition disabled:opacity-50 shadow-md"
                             >
                                 {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                                 <span>Guardar</span>
@@ -449,7 +498,7 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
             <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
                 <div className="flex items-center justify-between">
                     <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <Calendar className="w-5 h-5 text-blue-600" />
+                        <Calendar className="w-5 h-5 text-[#e60012]" />
                         Horarios de Atención
                     </h2>
                 </div>
@@ -503,7 +552,7 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
                                             </div>
                                         ))}
                                         {shifts && shifts.length < MAX_SHIFTS_PER_DAY && (
-                                            <button type="button" onClick={() => addShift(day)} className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 transition">
+                                            <button type="button" onClick={() => addShift(day)} className="text-xs text-[#e60012] hover:text-[#c4000f] font-medium flex items-center gap-1 transition">
                                                 <Plus className="w-3 h-3" />
                                                 Turno
                                             </button>
@@ -518,74 +567,29 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
                         Podés configurar turnos partidos (ej: mañana y tarde) con el botón &quot;Agregar turno&quot;. Para cerrar temporalmente fuera de horario, usá &quot;Pausar Tienda&quot; en el estado de la tienda.
                     </p>
 
-                    <div className="flex justify-end pt-2">
-                        <button type="button" onClick={handleSaveSchedule} disabled={savingSchedule} className="btn-primary flex items-center gap-2 px-6">
-                            {savingSchedule ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                            Guardar Horarios
-                        </button>
-                    </div>
+                    {scheduleDirty && (
+                        <div className="fixed left-0 right-0 bottom-24 z-30 px-3 sm:px-4 pb-2 pointer-events-none animate-in slide-in-from-bottom-2 duration-200">
+                            <div className="max-w-2xl mx-auto pointer-events-auto bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
+                                <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
+                                <p className="text-xs sm:text-sm font-semibold text-gray-700 flex-1 min-w-0 truncate">
+                                    Confirmá tus horarios para activarlos
+                                </p>
+                                <button
+                                    type="button"
+                                    onClick={handleSaveSchedule}
+                                    disabled={savingSchedule}
+                                    className="inline-flex items-center gap-1.5 px-4 sm:px-5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-[#e60012] text-white hover:bg-[#cc000f] active:scale-[0.98] transition disabled:opacity-50 shadow-md"
+                                >
+                                    {savingSchedule ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                                    <span>Guardar horarios</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
             )}
 
-            {/* Social Media */}
-            {show("perfil") && (
-            <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
-                <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                    <Globe className="w-5 h-5 text-blue-600" />
-                    Redes Sociales
-                </h2>
-                <p className="text-sm text-gray-500">
-                    Mostrá tus redes en tu perfil público. Los clientes confían más en comercios con presencia en redes.
-                </p>
-
-                <form action={async (formData: FormData) => {
-                    // Guardado directo, sin confirmación.
-                    setSavingSocial(true);
-                    const result = await updateMerchant(formData);
-                    if (result?.error) { toast.error(result.error); setError(result.error); }
-                    else { toast.success("Redes sociales guardadas"); }
-                    setSavingSocial(false);
-                }}>
-                    <input type="hidden" name="name" value={merchant.name} />
-                    <input type="hidden" name="image" value={merchant.image} />
-                    <input type="hidden" name="deliveryFee" value={merchant.deliveryFee.toString()} />
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <Instagram className="w-4 h-4 inline mr-1" />
-                                Instagram
-                            </label>
-                            <input name="instagramUrl" type="text" defaultValue={merchant.instagramUrl || ""} placeholder="@tu_comercio" className="input" />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <MessageCircle className="w-4 h-4 inline mr-1" />
-                                WhatsApp
-                            </label>
-                            <input name="whatsappNumber" type="text" defaultValue={merchant.whatsappNumber || ""} placeholder="+54 9 2901 ..." className="input" />
-                        </div>
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <Globe className="w-4 h-4 inline mr-1" />
-                                Facebook
-                            </label>
-                            <input name="facebookUrl" type="text" defaultValue={merchant.facebookUrl || ""} placeholder="facebook.com/tu_comercio" className="input" />
-                        </div>
-                    </div>
-
-                    <button
-                        type="submit"
-                        disabled={savingSocial}
-                        className="flex items-center gap-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition font-medium text-sm disabled:opacity-50 mt-4"
-                    >
-                        {savingSocial ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                        Guardar Redes
-                    </button>
-                </form>
-            </div>
-            )}
         </div>
     );
 }
