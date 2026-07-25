@@ -1,29 +1,91 @@
-
 import { notFound } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
 import { prisma } from "@/lib/prisma";
-import ProductCard from "@/components/store/ProductCard";
-import MerchantScheduleWidget from "@/components/store/MerchantScheduleWidget";
+import StoreProfileClient, { type StoreProfileProduct, type ScheduleRow } from "@/components/store/StoreProfileClient";
 import EmptyState from "@/components/ui/EmptyState";
 import ReviewsSection from "@/components/store/ReviewsSection";
-import { checkMerchantSchedule } from "@/lib/merchant-schedule";
-import { MapPin, Clock, Star, Info, ChevronLeft, BadgeCheck, ShoppingBag, Instagram, Facebook, MessageCircle } from "lucide-react";
+import {
+    checkMerchantSchedule,
+    parseSchedule,
+    DEFAULT_MERCHANT_SCHEDULE,
+    type WeekSchedule,
+} from "@/lib/merchant-schedule";
+import { getPointsConfig, calculatePointsEarned } from "@/lib/points";
+import { Info, Star, ShoppingBag } from "lucide-react";
+
+// feat/rediseno-perfil-comercio (2026-07-25): cabecera y catálogo viven en
+// StoreProfileClient (portada full-bleed con curva, buscador scoped, chips).
+// Esta página (RSC) solo busca datos, calcula el estado real del horario en
+// timezone Ushuaia y arma props SLIM (nunca pasar el Product entero al client:
+// tiene costPrice y otra metadata interna que no debe viajar al navegador).
+//
+// Decisión canónica: el perfil público NO muestra badge "Verificado" ni
+// canales externos de contacto (WhatsApp/Instagram/Facebook). Las redes del
+// comercio son canal de ENTRADA vía co-marketing, nunca de salida.
 
 // ISSUE-049: umbral para mostrar lista plana sin filtro de categorías.
 // Si el comercio tiene < 5 productos, el filtro por categorías genera
-// ruido visual ("Otros (2)") en vez de ayudar a explorar. Debajo de este
-// umbral mostramos todo junto en una sola grilla limpia.
+// ruido visual ("Otros (2)") en vez de ayudar a explorar.
 const FLAT_LIST_THRESHOLD = 5;
 
-// Fix s4-4b-06: arma el href de una red social aceptando una URL completa,
-// un @handle o solo el usuario. Asi el link del perfil del comercio nunca
-// queda roto sin importar como lo cargo el comercio.
-function socialHref(value: string, domain: string): string {
-    const v = value.trim().replace(/^@/, "");
-    if (/^https?:\/\//i.test(v)) return v;
-    if (v.toLowerCase().includes(domain)) return `https://${v.replace(/^\/+/, "")}`;
-    return `https://${domain}/${v}`;
+const DAY_LABELS: Record<string, string> = {
+    "1": "Lunes", "2": "Martes", "3": "Miércoles", "4": "Jueves",
+    "5": "Viernes", "6": "Sábado", "7": "Domingo",
+};
+
+/** Día actual (key 1-7, lunes-domingo) y minutos desde medianoche en Ushuaia. */
+function nowInUshuaia(): { todayKey: string; nowMinutes: number } {
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: "America/Argentina/Ushuaia",
+        weekday: "short", hour: "numeric", minute: "numeric", hourCycle: "h23",
+    }).formatToParts(new Date());
+    const map: Record<string, string> = { Mon: "1", Tue: "2", Wed: "3", Thu: "4", Fri: "5", Sat: "6", Sun: "7" };
+    let weekday = "Mon", hours = 0, minutes = 0;
+    for (const part of parts) {
+        if (part.type === "weekday") weekday = part.value;
+        if (part.type === "hour") hours = parseInt(part.value, 10);
+        if (part.type === "minute") minutes = parseInt(part.value, 10);
+    }
+    return { todayKey: map[weekday] ?? "1", nowMinutes: hours * 60 + minutes };
+}
+
+const toMinutes = (hhmm: string) => {
+    const [h, m] = hhmm.split(":").map((n) => parseInt(n, 10));
+    return (h || 0) * 60 + (m || 0);
+};
+
+/** Filas del popup de horarios + hora de cierre de HOY si está abierto ahora. */
+function buildScheduleView(scheduleJson: string | null, isCurrentlyOpen: boolean): {
+    rows: ScheduleRow[];
+    openUntil: string | null;
+} {
+    const schedule: WeekSchedule = parseSchedule(scheduleJson) ?? DEFAULT_MERCHANT_SCHEDULE;
+    const { todayKey, nowMinutes } = nowInUshuaia();
+
+    const rows: ScheduleRow[] = ["1", "2", "3", "4", "5", "6", "7"].map((key) => {
+        const ranges = schedule[key] ?? null;
+        return {
+            label: DAY_LABELS[key],
+            isToday: key === todayKey,
+            text: ranges && ranges.length > 0
+                ? ranges.map((r) => `${r.open} – ${r.close}`).join(" / ")
+                : "Cerrado",
+        };
+    });
+
+    // "Abierto hasta las HH:MM": el cierre del rango de HOY que contiene el
+    // momento actual (contempla rangos que cruzan medianoche).
+    let openUntil: string | null = null;
+    if (isCurrentlyOpen) {
+        for (const r of schedule[todayKey] ?? []) {
+            const open = toMinutes(r.open);
+            const close = toMinutes(r.close);
+            const inRange = close >= open
+                ? nowMinutes >= open && nowMinutes < close
+                : nowMinutes >= open || nowMinutes < close;
+            if (inRange) { openUntil = r.close; break; }
+        }
+    }
+    return { rows, openUntil };
 }
 
 async function getMerchant(slug: string) {
@@ -33,21 +95,14 @@ async function getMerchant(slug: string) {
             products: {
                 where: { isActive: true },
                 include: {
-                    // If we had categories relation in Product, we would include it.
-                    // Looking at schema, Product has categories through ProductCategory
-                    categories: {
-                        include: {
-                            category: true
-                        }
-                    },
-                    images: true
-                }
+                    categories: { include: { category: true } },
+                    images: true,
+                },
             },
-        }
+        },
     });
     return merchant;
 }
-type Merchant = Awaited<ReturnType<typeof getMerchant>>;
 
 export default async function MerchantPage({ params }: { params: Promise<{ slug: string }> }) {
     const { slug } = await params;
@@ -78,197 +133,76 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
         scheduleJson: merchant.scheduleJson,
     });
     const isCurrentlyOpen = scheduleResult.isCurrentlyOpen;
+    const scheduleView = buildScheduleView(merchant.scheduleJson, isCurrentlyOpen);
 
-    // Normalizamos cada producto para el ProductCard (image + merchant con
-    // estado REAL). Pasamos el estado combinado (pausa + horario), no el flag
-    // crudo — así el card respeta el horario aunque el merchant no esté
-    // manualmente pausado.
-    const normalizedProducts = merchant.products.map(product => ({
-        ...product,
-        image: product.images[0]?.url || null,
-        merchantId: merchant.id,
-        merchant: { isOpen: isCurrentlyOpen },
-    }));
+    // Puntos MOOVER por producto — SIEMPRE el cálculo canónico del server
+    // (calculatePointsEarned + PointsConfig real, boost de lanzamiento
+    // incluido). Nunca estimar en el cliente: el checkout ya tuvo ese bug.
+    const pointsConfig = await getPointsConfig();
+
+    // Props SLIM para el ProductCard: solo lo que la card necesita. El estado
+    // combinado (pausa + horario) viaja en merchant.isCurrentlyOpen.
+    const normalizedProducts: StoreProfileProduct[] = merchant.products.map((product) => {
+        const points = calculatePointsEarned(product.price, pointsConfig);
+        return {
+            id: product.id,
+            slug: product.slug,
+            name: product.name,
+            price: product.price,
+            description: product.description,
+            image: product.images[0]?.url || null,
+            merchantId: merchant.id,
+            merchant: { isOpen: isCurrentlyOpen, isCurrentlyOpen },
+            points: points > 0 ? points : null,
+        };
+    });
 
     const totalProducts = normalizedProducts.length;
 
-    // ISSUE-049: si hay < 5 productos, mostramos lista plana sin agrupar
-    // por categoría. Evita el "Otros (2)" cuando el merchant recién arranca
-    // y todavía no categorizó.
+    // ISSUE-049: si hay < 5 productos, lista plana sin agrupar por categoría.
     const useFlatList = totalProducts > 0 && totalProducts < FLAT_LIST_THRESHOLD;
 
-    // Group products by category (solo se usa cuando NO va en flat list).
-    const productsByCategory: Record<string, typeof normalizedProducts> = {};
-    if (!useFlatList) {
-        for (const product of normalizedProducts) {
+    // Agrupar por categoría preservando el orden de aparición.
+    let groups: { name: string; products: StoreProfileProduct[] }[];
+    if (useFlatList) {
+        groups = [{ name: "Todo", products: normalizedProducts }];
+    } else {
+        const byCategory = new Map<string, StoreProfileProduct[]>();
+        merchant.products.forEach((product, i) => {
             const catName = product.categories[0]?.category.name || "Otros";
-            if (!productsByCategory[catName]) {
-                productsByCategory[catName] = [];
-            }
-            productsByCategory[catName].push(product);
-        }
+            if (!byCategory.has(catName)) byCategory.set(catName, []);
+            byCategory.get(catName)!.push(normalizedProducts[i]);
+        });
+        groups = Array.from(byCategory, ([name, products]) => ({ name, products }));
     }
-
-    const categories = Object.keys(productsByCategory);
 
     return (
         <div className="bg-gray-50 min-h-screen pb-20">
-            {/* Simple Header */}
-            <header className="sticky top-0 z-40 bg-white border-b px-4 py-3 flex items-center gap-3">
-                <Link href="/" className="p-2 -ml-2 hover:bg-gray-100 rounded-full">
-                    <ChevronLeft className="w-5 h-5 text-gray-600" />
-                </Link>
-                <div className="flex items-center gap-2">
-                    <h1 className="font-semibold text-navy truncate">{merchant.name}</h1>
-                    {merchant.isVerified && (
-                        <BadgeCheck className="w-5 h-5 text-blue-500 flex-shrink-0" />
-                    )}
-                </div>
-            </header>
-
-            {/* Merchant Header / Cover */}
-            {/* feat/portada-comercio: si el comercio subió portada (Merchant.banner,
-                16:5, se carga desde /comercios "Foto de portada"), se muestra con un
-                degradé sutil abajo para que el logo flotante y el badge no se pierdan.
-                Sin portada: el placeholder oscuro de siempre con el nombre. */}
-            <div className="bg-white border-b border-gray-100">
-                <div className="h-32 sm:h-40 bg-gradient-to-r from-gray-800 to-gray-900 relative overflow-hidden">
-                    {merchant.banner ? (
-                        <>
-                            <Image
-                                src={merchant.banner}
-                                alt={`Portada de ${merchant.name}`}
-                                fill
-                                priority
-                                sizes="100vw"
-                                className="object-cover"
-                            />
-                            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/40 to-transparent" />
-                        </>
-                    ) : (
-                        <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                            <span className="text-4xl font-bold text-white tracking-widest uppercase">{merchant.name}</span>
-                        </div>
-                    )}
-                    {/* Verified Badge on Banner */}
-                    {merchant.isVerified && (
-                        <div className="absolute top-3 right-3 bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg flex items-center gap-1.5">
-                            <BadgeCheck className="w-4 h-4" />
-                            Verificado
-                        </div>
-                    )}
-                </div>
-
-                <div className="container mx-auto px-4 -mt-10 relative">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-end gap-4 mb-4">
-                        {/* fix/logo-perfil-comercio: el tile SIEMPRE mostraba la inicial —
-                            el logo (Merchant.image) nunca se había conectado acá. Ahora:
-                            logo real con la inicial como fallback. */}
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 bg-white rounded-xl shadow-md p-1">
-                            {merchant.image ? (
-                                <div className="relative w-full h-full rounded-lg overflow-hidden bg-gray-50">
-                                    <Image
-                                        src={merchant.image}
-                                        alt={`Logo de ${merchant.name}`}
-                                        fill
-                                        sizes="96px"
-                                        className="object-cover"
-                                    />
-                                </div>
-                            ) : (
-                                <div className="w-full h-full bg-gray-100 rounded-lg flex items-center justify-center text-2xl font-bold text-gray-400">
-                                    {merchant.name.charAt(0)}
-                                </div>
-                            )}
-                        </div>
-
-                        <div className="flex-1 pb-1">
-                            <div className="flex items-center gap-2">
-                                <h1 className="text-2xl font-bold text-gray-900">{merchant.name}</h1>
-                                {merchant.isVerified && (
-                                    <BadgeCheck className="w-6 h-6 text-blue-500" />
-                                )}
-                            </div>
-                            <p className="text-gray-500 text-sm">{merchant.description}</p>
-                        </div>
-                    </div>
-
-                    {/* Merchant Info Bar */}
-                    <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-gray-600 py-3 border-t border-gray-50">
-                        <div className="flex items-center gap-1.5">
-                            <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
-                            <span className="font-bold text-gray-900">{merchant.rating ? merchant.rating.toFixed(1) : "Nuevo"}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <Clock className="w-4 h-4 text-gray-400" />
-                            <span>{merchant.deliveryTimeMin}-{merchant.deliveryTimeMax} min</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                            <MapPin className="w-4 h-4 text-gray-400" />
-                            <span>{merchant.address}</span>
-                        </div>
-                        {freeDeliveryMinimum !== null && (
-                            <div className="text-green-600 font-medium px-2 py-0.5 bg-green-50 rounded-md">
-                                Envío gratis desde ${freeDeliveryMinimum.toLocaleString("es-AR")}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Redes sociales del comercio (fix s4-4b-06): se muestran solo
-                        las que el comercio cargo en su perfil. */}
-                    {(merchant.instagramUrl || merchant.facebookUrl || merchant.whatsappNumber) && (
-                        <div className="flex flex-wrap items-center gap-3 pb-3">
-                            {merchant.instagramUrl && (
-                                <a
-                                    href={socialHref(merchant.instagramUrl, "instagram.com")}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[#e60012] transition"
-                                >
-                                    <Instagram className="w-4 h-4" />
-                                    <span>Instagram</span>
-                                </a>
-                            )}
-                            {merchant.facebookUrl && (
-                                <a
-                                    href={socialHref(merchant.facebookUrl, "facebook.com")}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-[#e60012] transition"
-                                >
-                                    <Facebook className="w-4 h-4" />
-                                    <span>Facebook</span>
-                                </a>
-                            )}
-                            {merchant.whatsappNumber && (
-                                <a
-                                    href={`https://wa.me/${merchant.whatsappNumber.replace(/[^0-9]/g, "")}`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-green-600 transition"
-                                >
-                                    <MessageCircle className="w-4 h-4" />
-                                    <span>WhatsApp</span>
-                                </a>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Horarios de atención — widget expandible con estado real */}
-                    <div className="pb-4">
-                        <MerchantScheduleWidget
-                            isOpen={merchant.isOpen}
-                            scheduleJson={merchant.scheduleJson}
-                        />
-                    </div>
-                </div>
-            </div>
+            <StoreProfileClient
+                merchant={{
+                    id: merchant.id,
+                    name: merchant.name,
+                    description: merchant.description,
+                    category: merchant.category,
+                    image: merchant.image,
+                    banner: merchant.banner,
+                    rating: merchant.rating,
+                    deliveryTimeMin: merchant.deliveryTimeMin,
+                    deliveryTimeMax: merchant.deliveryTimeMax,
+                    address: merchant.address,
+                }}
+                isCurrentlyOpen={isCurrentlyOpen}
+                freeDeliveryMinimum={freeDeliveryMinimum}
+                groups={groups}
+                useFlatList={useFlatList}
+                schedule={scheduleView}
+            />
 
             {/* Banner de cierre — usa el estado REAL (pausa + horario), no solo isOpen.
                 Mensajes diferenciados para que el buyer sepa si es pausa temporal o
                 fuera de horario + cuándo vuelve a abrir. */}
             {!isCurrentlyOpen && (
-                <div className="bg-red-50 border-y border-red-100 py-3">
+                <div className="bg-red-50 border-y border-red-100 py-3 mt-5">
                     <div className="container mx-auto px-4 flex items-center justify-center gap-2 text-red-600 font-bold text-center">
                         <Info className="w-5 h-5 flex-shrink-0" />
                         <p className="text-sm md:text-base">
@@ -282,65 +216,18 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                 </div>
             )}
 
-            {/* Categories Tabs — solo si tenemos suficientes productos para agrupar.
-                ISSUE-049: debajo de FLAT_LIST_THRESHOLD, las categorías generan más
-                ruido que valor (un solo grupo "Otros" con 2 productos). */}
-            {!useFlatList && categories.length > 1 && (
-                <div className="sticky top-[60px] z-10 bg-white shadow-sm mb-6">
-                    <div className="container mx-auto px-4">
-                        <div className="flex overflow-x-auto py-3 gap-4 no-scrollbar">
-                            {categories.map(cat => (
-                                <a
-                                    key={cat}
-                                    href={`#cat-${cat}`}
-                                    className="whitespace-nowrap px-3 py-1 bg-gray-100 rounded-full text-sm font-medium text-gray-700 hover:bg-[#e60012] hover:text-white transition"
-                                >
-                                    {cat}
-                                </a>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Product Lists */}
-            <div className={`container mx-auto px-4 ${useFlatList ? "pt-6" : ""} space-y-8`}>
-                {useFlatList ? (
-                    // ISSUE-049: flat list sin headers de categoría ni contadores.
-                    // Grid limpio con los ≤4 productos del merchant.
-                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                        {normalizedProducts.map((product) => (
-                            <ProductCard key={product.id} product={product} showAddButton />
-                        ))}
-                    </div>
-                ) : (
-                    categories.map(category => (
-                        <div key={category} id={`cat-${category}`} className="scroll-mt-32">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                {category}
-                                <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                                    {productsByCategory[category].length}
-                                </span>
-                            </h2>
-
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                                {productsByCategory[category].map((product) => (
-                                    <ProductCard key={product.id} product={product} showAddButton />
-                                ))}
-                            </div>
-                        </div>
-                    ))
-                )}
-
+            <div className="container mx-auto px-4">
                 {totalProducts === 0 && (
-                    <EmptyState
-                        icon={ShoppingBag}
-                        tone="neutral"
-                        size="md"
-                        title="Todavía no cargaron productos"
-                        description="Este comercio está arrancando. Volvé a visitarlo en unos días para ver su catálogo."
-                        primaryCta={{ label: "Ver otros comercios", href: "/tiendas" }}
-                    />
+                    <div className="mt-8">
+                        <EmptyState
+                            icon={ShoppingBag}
+                            tone="neutral"
+                            size="md"
+                            title="Todavía no cargaron productos"
+                            description="Este comercio está arrancando. Volvé a visitarlo en unos días para ver su catálogo."
+                            primaryCta={{ label: "Ver otros comercios", href: "/tiendas" }}
+                        />
+                    </div>
                 )}
 
                 {/* feat/resenas-publicas-tienda (2026-05-10): sección publica de
@@ -348,16 +235,21 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                     (AUTO_APPROVED + APPROVED). El rating numerico siempre
                     cuenta en el avg/distribution, el texto del comentario es
                     lo que se modera. */}
-                <section className="mt-12 pb-8">
-                    <h2 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
-                        <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                        Reseñas
-                    </h2>
-                    <ReviewsSection
-                        entityType="merchant"
-                        entityId={merchant.id}
-                        entityLabel={merchant.name}
-                    />
+                {/* feat/rediseno-perfil-comercio: las reseñas viven en una CARD
+                    (mismo lenguaje visual que la tarjeta de datos y los productos)
+                    — antes el estado vacío flotaba en blanco sobre blanco. */}
+                <section className="mt-8 pb-8">
+                    <div className="bg-white rounded-2xl border border-gray-50 shadow-[0_3px_16px_rgba(23,24,28,0.07)] p-5">
+                        <h2 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                            <Star className="w-5 h-5 text-yellow-400 fill-yellow-400" />
+                            Reseñas
+                        </h2>
+                        <ReviewsSection
+                            entityType="merchant"
+                            entityId={merchant.id}
+                            entityLabel={merchant.name}
+                        />
+                    </div>
                 </section>
             </div>
         </div>

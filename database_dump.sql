@@ -3937,7 +3937,7 @@ cmrc815za00w075y6m9hlmp3y	QUESO CREMOSO X KG	queso-cremoso-x-kg-6o4wwb	\N	cmqz5v
 cmrc815za00w175y66intntie	CREMA DELTAL COLGATE 180G	crema-deltal-colgate-180g-35ukwa	\N	cmqz5vswb006uxhd8c5bcq86n	8960	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7509546686509	\N	\N
 cmrc815za00w275y610dvv25m	REXONA INVISIBLE	rexona-invisible-ebh65r	\N	cmqz5vswb006uxhd8c5bcq86n	5600	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	78944794	\N	\N
 cmqz5vsxo007sxhd8av6s1rmm	Cerveza Artesanal Pinta	pinta-artesanal	Pinta de cerveza artesanal local.	cmqz5vswb006uxhd8c5bcq86n	3990	2793	24	5	f	f	\N	\N	\N	2026-06-29 11:55:48.924	2026-07-09 20:18:15.794	\N	\N	\N	\N	3800	5
-cmrzefd0n000cwkbfw992t2a7	Hepatalgina	hepatalgina-1784925280667	ANalgesico estomacal	cmrzdt1mo0004wkbfvcf93fr6	3000	2100	10	5	t	f	\N	\N	\N	2026-07-24 20:34:40.677	2026-07-24 20:34:40.677	cmqz5vr1f0014xhd83erjqolw	250	300	\N	\N	\N
+cmrzefd0n000cwkbfw992t2a7	Hepatalgina	hepatalgina-1784925280667	ANalgesico estomacal	cmrzdt1mo0004wkbfvcf93fr6	3000	2100	10	5	t	f	\N	\N	\N	2026-07-24 20:34:40.677	2026-07-25 20:46:15.148	cmqz5vr1f0014xhd83erjqolw	250	300	\N	\N	\N
 \.
 
 
@@ -3994,7 +3994,7 @@ cmqz5vtu900bcxhd88a09lxob	cmqz5vtu700baxhd85r80nq4c	cmqz5vqyv000pxhd8lec7u05x
 cmqz5vtuh00bixhd8s133dior	cmqz5vtuf00bgxhd8gls84ah6	cmqz5vqyv000pxhd8lec7u05x
 cmqz5vtup00boxhd8zzcppm7c	cmqz5vtun00bmxhd8ij93bqj4	cmqz5vqyv000pxhd8lec7u05x
 cmrdy8h4o00027adl031pe8a3	cmqz5vsxo007sxhd8av6s1rmm	cmqz5vqxd000ixhd8e2wu3ki0
-cmrzefd0n000fwkbfb18ioqg3	cmrzefd0n000cwkbfw992t2a7	cmqz5vqy9000mxhd84i6y95uu
+cms0ua3s1000610qkxfmg1orx	cmrzefd0n000cwkbfw992t2a7	cmqz5vqy9000mxhd84i6y95uu
 \.
 
 
@@ -4052,7 +4052,7 @@ cmqz5vtuk00bkxhd8856goox3	cmqz5vtuf00bgxhd8gls84ah6	https://picsum.photos/seed/m
 cmqz5vtur00bqxhd8i9bsb5je	cmqz5vtun00bmxhd8ij93bqj4	https://picsum.photos/seed/moovy-frutillas/600/600	Frutillas (250g)	0
 cmrcpsqjg00037nue72igl8ba	cmrc815yy00m975y6k0lurue0	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1783553654082-ushuaia-bg.webp	soyunaprueba2	0
 cmrdy8h4000007adlg3vj1o47	cmqz5vsxo007sxhd8av6s1rmm	https://picsum.photos/seed/moovy-pinta-artesanal/600/600	Cerveza Artesanal Pinta	0
-cmrzefd0n000dwkbf4gf8o3e0	cmrzefd0n000cwkbfw992t2a7	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1784925233164-hepatalgina-en-gotas-x-120-ml-digestivo.webp	Hepatalgina	0
+cms0ua3ql000410qkl3k7501s	cmrzefd0n000cwkbfw992t2a7	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785012370172-hepatalgina-en-gotas-x-120-ml-digestivo.webp	Hepatalgina	0
 \.
 
 
@@ -4219,7 +4219,7 @@ cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.E
 cmqz5vrgz001jxhd84w7eneza	comercio1@somosmoovy.com	$2b$12$yF6/4feNZrmKkGW/zI752eg44jwODi1JejVllozBQ6DuoL3r0r.vm	Carlos Patagonia	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vrgz001kxhd8fe0upbjz	\N	2026-06-29 11:55:47.028	2026-07-06 23:20:58.373	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:20:58.372	\N
 cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-07-06 23:32:32.958	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:32:32.921	\N
 cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.37Whxp97s8kSiR7D.jXmok.DPmVC8uu	 				COMERCIO	\N	\N	0	0	f	cmqz5vsvy006oxhd85im89bep	\N	2026-06-29 11:55:48.862	2026-07-11 03:01:00.38	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-07 14:53:34.731	\N
-cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-07-25 18:38:38.097	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-25 16:25:30.227	\N
+cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-07-25 20:32:18.264	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-25 16:25:30.227	\N
 \.
 
 
@@ -4244,6 +4244,7 @@ cmrzdt1z3000awkbf5tilxp2s	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbf
 cms0fxanz0003136yh5flxfht	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-25 14:04:23.23
 cms0p9b4h0001vxd0pw5tr0az	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-25 18:25:40.238
 cms0pnf720001112q8wsmezoa	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-25 18:36:38.7
+cms0ts5vb000110qk6fx4bocb	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-25 20:32:18.357
 \.
 
 

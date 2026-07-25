@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import { updateMerchant, updateMerchantSchedule } from "@/app/comercios/actions";
 import ImageUpload from "@/components/ui/ImageUpload";
-import { Loader2, Save, Store, Tag, MapPin, Phone, Mail, User, Calendar, Plus, Trash2, Instagram, MessageCircle, Globe, Info, X, ChevronDown } from "lucide-react";
+import { Loader2, Save, Store, Tag, MapPin, Phone, Mail, User, Calendar, Plus, Trash2, Info, X, ChevronDown } from "lucide-react";
 import { AddressAutocomplete } from "@/components/forms/AddressAutocomplete";
 import { confirm } from "@/store/confirm";
 import { toast } from "@/store/toast";
@@ -28,9 +28,6 @@ interface MiComercioFormProps {
         ownerPhone: string;
         scheduleEnabled: boolean;
         scheduleJson?: string | null;
-        instagramUrl?: string | null;
-        facebookUrl?: string | null;
-        whatsappNumber?: string | null;
     };
     // feat/reorg-mi-comercio: gating por sección para el hub. Sin section = todo (compat).
     section?: "perfil" | "horarios";
@@ -423,40 +420,13 @@ export default function MiComercioForm({ merchant, section }: MiComercioFormProp
                     )}
                 </div>
 
-                {/* Redes sociales — mismo form y mismo popup Guardar que el resto
-                    del perfil (unificado: un solo patrón de guardado) */}
-                <div className="bg-white rounded-xl border border-gray-100 p-6 space-y-4">
-                    <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                        <Globe className="w-5 h-5 text-[#e60012]" />
-                        Redes Sociales
-                    </h2>
-                    <p className="text-sm text-gray-500">
-                        Mostrá tus redes en tu perfil público. Los clientes confían más en comercios con presencia en redes.
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <Instagram className="w-4 h-4 inline mr-1" />
-                                Instagram
-                            </label>
-                            <input name="instagramUrl" type="text" defaultValue={merchant.instagramUrl || ""} placeholder="@tu_comercio" className="input" disabled={isLoading} />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <MessageCircle className="w-4 h-4 inline mr-1" />
-                                WhatsApp
-                            </label>
-                            <input name="whatsappNumber" type="text" defaultValue={merchant.whatsappNumber || ""} placeholder="+54 9 2901 ..." className="input" disabled={isLoading} />
-                        </div>
-                        <div className="md:col-span-2">
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                <Globe className="w-4 h-4 inline mr-1" />
-                                Facebook
-                            </label>
-                            <input name="facebookUrl" type="text" defaultValue={merchant.facebookUrl || ""} placeholder="facebook.com/tu_comercio" className="input" disabled={isLoading} />
-                        </div>
-                    </div>
-                </div>
+                {/* feat/rediseno-perfil-comercio (2026-07-25): la sección "Redes
+                    Sociales" se ELIMINÓ. Decisión canónica: el perfil público del
+                    comercio no expone canales externos de contacto (fuga de
+                    transacciones fuera de la plataforma — mismo criterio que
+                    PedidosYa/MercadoLibre). Los campos siguen en la DB para el
+                    futuro kit de co-marketing (el comercio publica Moovy en SUS
+                    redes, no al revés). */}
 
                 {/* Hidden deliveryFee for backwards compat */}
                 <input type="hidden" name="deliveryFee" value={merchant.deliveryFee.toString()} />

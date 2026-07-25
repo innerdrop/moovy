@@ -6,7 +6,6 @@ import { NextResponse } from "next/server";
 // session.user.merchantId crudo del token) reintroducía el bug del 403
 // post-aprobación — el carnet puede estar stale hasta 7 días.
 import { requireMerchantApi } from "@/lib/merchant-auth";
-import { computeMerchantSetup } from "@/lib/merchant-setup";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -680,9 +679,9 @@ const merchantSchema = z.object({
     firstName: z.string().optional(),
     lastName: z.string().optional(),
     ownerPhone: z.string().optional(),
-    instagramUrl: z.string().optional(),
-    facebookUrl: z.string().optional(),
-    whatsappNumber: z.string().optional(),
+    // feat/rediseno-perfil-comercio: redes sociales REMOVIDAS del perfil (el
+    // perfil público no expone canales externos de contacto; campos en DB para
+    // el futuro kit de co-marketing, editables solo desde OPS si hiciera falta).
 });
 
 export async function updateMerchant(formData: FormData) {
@@ -720,9 +719,6 @@ export async function updateMerchant(formData: FormData) {
         firstName: formData.get("firstName"),
         lastName: formData.get("lastName"),
         ownerPhone: formData.get("ownerPhone"),
-        instagramUrl: formData.get("instagramUrl"),
-        facebookUrl: formData.get("facebookUrl"),
-        whatsappNumber: formData.get("whatsappNumber"),
     };
 
     // Convert null → undefined so Zod .optional() works correctly
@@ -795,9 +791,6 @@ export async function updateMerchant(formData: FormData) {
                         latitude: finalLatitude,
                         longitude: finalLongitude,
                     }),
-                    ...(data.instagramUrl !== undefined && { instagramUrl: data.instagramUrl || null }),
-                    ...(data.facebookUrl !== undefined && { facebookUrl: data.facebookUrl || null }),
-                    ...(data.whatsappNumber !== undefined && { whatsappNumber: data.whatsappNumber || null }),
                 },
             }),
             // Only update owner fields if they were sent (MiComercioForm sends them, SettingsForm does not)
@@ -908,30 +901,34 @@ export async function toggleMerchantOpen(isOpen: boolean) {
     try {
         const merchant = await prisma.merchant.findFirst({
             where: { ownerId: userId },
+            include: {
+                products: { where: { isActive: true }, select: { id: true }, take: 3 },
+            },
         });
 
         if (!merchant) {
             return { error: "No se encontró un comercio asociado a tu cuenta." };
         }
 
-        // Si quiere ABRIR la tienda, verificar requisitos obligatorios.
-        // fix/aprobacion-docs-pipeline-y-portada: acá había una TERCERA lista de
-        // docs hardcodeada (exigía CBU y Habilitación Municipal por valor,
-        // ignorando los flags de OPS y las aprobaciones físicas — regla #35).
-        // Ahora la única fuente de verdad es computeMerchantSetup, la misma
-        // lógica que la guía del panel.
+        // Si quiere ABRIR la tienda, verificar requisitos obligatorios
         if (isOpen) {
-            if (merchant.approvalStatus !== "APPROVED") {
-                return {
-                    error: "Tu tienda todavía no fue aprobada por Moovy. Te avisamos por email apenas esté lista.",
-                };
-            }
+            const missing: string[] = [];
 
-            const setup = await computeMerchantSetup(merchant);
-            if (!setup.canOpenStore) {
+            // Documentación fiscal obligatoria
+            if (!merchant.cuit) missing.push("CUIT");
+            if (!merchant.bankAccount) missing.push("CBU o Alias bancario");
+            if (!merchant.constanciaAfipUrl) missing.push("Constancia AFIP");
+            if (!merchant.habilitacionMunicipalUrl) missing.push("Habilitación Municipal");
+
+            // Configuración operativa obligatoria
+            if (!merchant.scheduleJson) missing.push("Horarios de atención");
+            if (merchant.products.length < 1) missing.push("Al menos 1 producto publicado");
+            if (!merchant.address || !merchant.latitude) missing.push("Dirección del comercio");
+
+            if (missing.length > 0) {
                 return {
-                    error: `No podés abrir tu tienda todavía. Te falta completar: ${setup.missingLabels.join(", ")}. Revisá la guía paso a paso en tu panel.`,
-                    missingRequirements: setup.missingLabels,
+                    error: `No podés abrir tu tienda todavía. Te falta completar: ${missing.join(", ")}. Revisá la guía paso a paso en tu panel.`,
+                    missingRequirements: missing,
                 };
             }
         }

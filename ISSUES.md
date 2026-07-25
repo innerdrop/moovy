@@ -8,6 +8,8 @@
 
 ## Resueltos sesión 2026-07-25
 
+- ✅ **Rediseño integral del perfil público del comercio** (rama `feat/rediseno-perfil-comercio`, reglas #40-#41): perfil INMERSIVO — portada full-bleed con curva "onda austral", sin AppHeader global en `/store/*` (volver + buscador scoped + favorito flotan sobre la foto; header con blur aparece al scrollear), logo+nombre lado a lado, chips operativos ("Abierto hasta HH:MM" real por timezone), dirección⟷horarios en una fila, horarios en POPUP centrado (el acordeón empujaba el catálogo), barra "Ver mi pedido" (el carrito vivía en el header removido), reseñas en card. Card de producto nueva (grilla vidriera, elegida entre 4 escuelas): foto ENTERA (object-contain, nunca recortada — antes volaba la tapa de la Hepatalgina), nombre 16px, precio 18px NEGRO ⟷ insignia MOOVER (estrella SVG propia) con puntos calculados server-side (`calculatePointsEarned` + PointsConfig real, boost incluido). REMOVIDO del perfil público: badge "Verificado" (×3) y redes sociales (WhatsApp/IG/FB — fuga de transacciones, criterio ML/PedidosYa; campos en DB para co-marketing futuro; sección de carga del panel también removida). Burbuja de soporte SOLO en /mi-perfil.
+
 - ✅ **Aprobar docs desde OPS no habilitaba al comercio** (rama `fix/aprobacion-docs-pipeline-y-portada`): la guía del panel miraba archivo cargado y OPS aprueba por estado — con aprobación física el paso docs quedaba en rojo eterno. Ahora doc cumplido = valor O status APPROVED; comercio APPROVED global ⇒ docs cumplidos. `toggleMerchantOpen` tenía una 3ª lista de docs hardcodeada (regla #35) → delega en `computeMerchantSetup` + exige aprobación server-side. **Decisión founder: logo y PORTADA obligatorios para abrir la tienda** (paso 3 de la guía, 6 pasos; la aprobación no bloquea por imágenes). Verificación 21/21 + manual.
 - ✅ **Comercio purgado visible en "Rechazados" del pipeline** (misma rama): las 3 columnas ahora excluyen dueños con `deletedAt` (el rastro queda en Auditoría).
 - ✅ **Portada del comercio no subía** (misma rama): era HEIC de iPhone — el navegador no lo decodifica y el modal se cerraba en silencio. Conversión a JPEG en cliente con `heic-to/csp` (WASM, compatible con la CSP; `heic2any` descartada por usar eval), errores siempre visibles, límite 10MB alineado, timeout 30s. OPS ahora muestra logo+portada en la ficha del comercio.
@@ -54,6 +56,10 @@ Rama cerrada, mergeada y deployada (batch con `fix/docs-apagados-no-bloquean-apr
 Sin ellos no se prende la auto-registración (etapa 3). Deben cubrir: esquema de comisiones + criterios de tiers, política de cambios con preaviso, DDJJ de habilitaciones del comercio (decisión founder: NO pedimos habilitación municipal ni registro sanitario — responsabilidad del comercio, como PedidosYa). Detalle en PLAN-CRECIMIENTO.
 
 ### 🟢 Menores acumulados
+- Post-piloto: mover el chat de soporte a `/ayuda` como entrada de menú + badge de respuestas no leídas en Perfil (hoy la burbuja vive solo en /mi-perfil; sin aviso de respuestas, no matarla del todo).
+- Normalizar fotos de producto a lienzo cuadrado blanco server-side (sharp `fit: contain` + fondo) al subirlas — grid perfecto sin pedirle nada al comercio. Ideal pre-carga masiva de catálogos.
+- Layout de card "lista menú" (escuela Uber Eats) para rubros gastronómicos cuando entre el primer restaurante — elegir layout por rubro del comercio.
+- Typo en producto de prueba: "ANalgesico estomacal" (data, no código).
 - Migrar canal de borrado de datos a `privacidad@somosmoovy.com` cuando el email del dominio exista (hoy Gmail).
 - Foto definitiva del hero del chooser (`ushuaia-bg.jpg` es placeholder) + sesión de fotos de comerciantes reales (specs ya entregadas en chat 07-22).
 - Verificar `customerNotes` en el checkout (campo backend existe; UI sin confirmar).

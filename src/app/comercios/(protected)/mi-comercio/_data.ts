@@ -36,9 +36,6 @@ export async function loadProfileMerchant() {
         ownerPhone: merchant.owner.phone || "",
         scheduleEnabled: merchant.scheduleEnabled,
         scheduleJson: merchant.scheduleJson,
-        instagramUrl: merchant.instagramUrl,
-        facebookUrl: merchant.facebookUrl,
-        whatsappNumber: merchant.whatsappNumber,
     };
 }
 

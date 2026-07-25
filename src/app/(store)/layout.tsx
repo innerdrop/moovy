@@ -30,6 +30,18 @@ export default function StoreLayout({
     // El home es la única página con footer oscuro; ahí la reserva para la barra
     // flotante la da el propio footer (oscuro), no un padding blanco del main.
     const isHome = pathname === "/";
+    // feat/rediseno-perfil-comercio: el perfil del comercio es INMERSIVO — la
+    // portada llega al borde superior y trae su propio volver + buscador scoped.
+    // El AppHeader global (con el buscador general) NO se monta en /store/*:
+    // dos buscadores y dos barras confunden. La nav inferior queda (es la salida
+    // natural), y el carrito se accede con la barra "Ver mi pedido" de la página.
+    const isStoreProfile = pathname?.startsWith("/store/") ?? false;
+    // Burbuja de soporte SOLO en Mi Perfil (decisión founder 2026-07-25):
+    // flotando sobre el resto de la app molestaba (tapaba "Ver mi pedido" en la
+    // tienda, competía con el CTA en checkout y ficha de producto). Mi Perfil es
+    // el lugar natural de "necesito ayuda". Post-piloto: entrada de chat en
+    // /ayuda + badge de respuestas no leídas en Perfil.
+    const showSupportBubble = pathname?.startsWith("/mi-perfil") ?? false;
     const cartCount = useCartStore((state) => state.getTotalItems());
 
     const [mounted, setMounted] = useState(false);
@@ -154,15 +166,18 @@ export default function StoreLayout({
             {/* Scroll to top on navigation */}
             <ScrollToTop />
 
-            {/* Header compacto tipo app — fijo arriba */}
-            <AppHeader
-                isLoggedIn={!!isLoggedIn}
-                cartCount={cartCount}
-                userName={session?.user?.name || undefined}
-            />
+            {/* Header compacto tipo app — fijo arriba. Oculto en el perfil del
+                comercio (inmersivo, tiene su propia navegación). */}
+            {!isStoreProfile && (
+                <AppHeader
+                    isLoggedIn={!!isLoggedIn}
+                    cartCount={cartCount}
+                    userName={session?.user?.name || undefined}
+                />
+            )}
 
             {/* Contenido scrollable — solo esta zona se mueve */}
-            <main className={`flex-1 pt-14 lg:pt-[6.75rem] ${isHome ? "pb-0" : "pb-28"} lg:pb-0`}>
+            <main className={`flex-1 ${isStoreProfile ? "pt-0" : "pt-14 lg:pt-[6.75rem]"} ${isHome ? "pb-0" : "pb-28"} lg:pb-0`}>
                 {/* La dirección de entrega ahora se elige desde el pill "Ushuaia" del
                     header (LocationAddressButton). La vieja barra blanca "Entregar en"
                     se removió — partía la tarjeta roja del home. */}
@@ -184,7 +199,7 @@ export default function StoreLayout({
             <CartSidebar />
 
             {/* Live Chat Support Widget — toggleable desde OPS > Ajustes */}
-            {supportChatEnabled && <ChatWidget />}
+            {supportChatEnabled && showSupportBubble && <ChatWidget />}
 
             {/* Promo Popup */}
             {promoSettings && <PromoPopup {...promoSettings} />}

@@ -10,6 +10,74 @@
 
 ---
 
+## 2026-07-25 (rama `feat/rediseno-perfil-comercio`)
+
+feat: perfil del comercio inmersivo — portada full-bleed, buscador propio, cards con MOOVER y cero fugas
+
+Rediseno integral de la pagina publica del comercio, decidido sobre mockups
+antes de codear (4 escuelas de card evaluadas con el founder).
+
+VISUAL: portada full-bleed hasta el borde superior con corte curvo "onda
+austral"; volver + buscador scoped + favorito flotan sobre la foto; header con
+blur aparece al scrollear y hereda el buscador; logo y nombre lado a lado;
+chips con "Abierto hasta HH:MM" real (timezone Ushuaia, doble turno y cruce de
+medianoche); direccion y horarios en una fila; horarios en POPUP centrado (el
+acordeon empujaba el catalogo); resenas en card. Card de producto nueva:
+foto ENTERA en object-contain (cover recortaba la tapa de las botellas),
+nombre 16px, precio 18px negro extrabold enfrentado a la insignia MOOVER
+(estrella SVG propia) con puntos calculados SERVER-SIDE via
+calculatePointsEarned + getPointsConfig (el boost x2 del launch se refleja
+solo en las cards).
+
+ESTRUCTURAL: el AppHeader global no se monta en /store/* (dos buscadores
+confundian); barra "Ver mi pedido" para el carrito (vivia en el header
+removido); props slim al cliente (antes viajaba el Product entero con
+costPrice); buscador scoped filtra en memoria, cero requests.
+
+ESTRATEGICO (reglas #40-#41): perfil publico sin canales externos de contacto
+(WhatsApp/Instagram/Facebook removidos - fuga de transacciones, criterio
+ML/PedidosYa; campos en DB para co-marketing; seccion de carga del panel
+tambien removida); badge "Verificado" fuera de la vista publica (reservado
+como distincion curada futura); burbuja de soporte SOLO en /mi-perfil.
+
+Verificacion: tsc limpio + flujo manual completo en local (portada, busqueda,
+carrito, popup de horarios, home con su header intacto).
+
+**Archivos:** .claude/CLAUDE.md, ISSUES.md, src/app/(store)/layout.tsx, src/app/(store)/store/[slug]/page.tsx, src/app/comercios/(protected)/mi-comercio/_data.ts, src/app/comercios/(protected)/mi-comercio/page.tsx, src/app/comercios/(protected)/mi-comercio/perfil/page.tsx, src/app/comercios/actions.ts (+3 mas)
+
+## 2026-07-25 (rama `feat/rediseno-perfil-comercio`)
+
+feat: perfil del comercio inmersivo — portada full-bleed, buscador scoped, cards con MOOVER y cero fugas
+
+Rediseño integral de la página pública del comercio, iterado en vivo con el founder sobre mockups
+HTML antes de escribir código (4 escuelas de card evaluadas; ganó la grilla vidriera).
+LO VISUAL: portada full-bleed hasta el borde superior con corte curvo "onda austral" (SVG);
+volver + buscador + favorito flotan sobre la foto; al scrollear aparece un header con blur que
+hereda el buscador; logo y nombre lado a lado; chips operativos con "Abierto hasta HH:MM" REAL
+(cierre del rango vigente, timezone Ushuaia, contempla doble turno y cruce de medianoche);
+dirección⟷horarios en una fila; horarios en POPUP centrado (el acordeón inline empujaba el
+catálogo); reseñas contenidas en card. Card de producto nueva: foto ENTERA en object-contain
+(cover recortaba la tapa de una botella vertical — cover es para fotos ambientales), nombre 16px,
+precio 18px NEGRO extrabold enfrentado a la insignia MOOVER (estrella SVG propia, eco del botón
+de la nav) con los puntos SIEMPRE calculados server-side (calculatePointsEarned + getPointsConfig
+— nunca estimar en cliente, el checkout ya tuvo ese bug; el boost ×2 del launch se refleja solo).
+LO ESTRUCTURAL: el AppHeader global NO se monta en /store/* (dos headers y dos buscadores
+confundían); como el carrito vivía ahí, nueva barra "Ver mi pedido" (count + total → openCart)
+fija sobre la nav. Props SLIM al cliente (antes viajaba el Product entero con costPrice — dato
+sensible del comercio). Buscador scoped filtra en memoria (cero requests).
+LO ESTRATÉGICO (decisiones founder + concejo): el perfil público NO expone canales externos de
+contacto — WhatsApp/Instagram/Facebook REMOVIDOS (fuga de transacciones: "pedime por IG y pagás
+efectivo" mata la comisión; criterio MercadoLibre/PedidosYa; los campos quedan en DB para el kit
+de co-marketing donde el comercio publica Moovy en SUS redes) y la sección de carga del panel
+también se removió; badge "Verificado" fuera de la vista pública (todo comercio publicado ya está
+verificado por definición — reservado como distinción curada futura); burbuja de soporte SOLO en
+/mi-perfil (tapaba "Ver mi pedido" y competía con CTAs de compra).
+Verificación: tsc + flujo manual completo en local (portada, búsqueda, carrito, popup, home intacto).
+Archivos: `src/app/(store)/store/[slug]/page.tsx`, `src/components/store/StoreProfileClient.tsx`
+(nuevo), `src/components/store/ProductCard.tsx`, `src/app/(store)/layout.tsx`,
+`src/components/comercios/MiComercioForm.tsx`, `src/app/comercios/actions.ts`,
+`src/app/comercios/(protected)/mi-comercio/_data.ts` (+copys del hub), `src/app/(store)/mi-perfil/favoritos/page.tsx`.
+
 ## 2026-07-25 (rama `fix/aprobacion-docs-pipeline-y-portada`)
 
 fix: aprobar docs desde OPS habilita el panel, pipeline sin cuentas borradas y la portada sube siempre

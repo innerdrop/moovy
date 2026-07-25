@@ -7,7 +7,7 @@ export default async function PerfilPage() {
     if (!merchant) return <MerchantMissing />;
     return (
         <div className="max-w-3xl mx-auto space-y-6">
-            <SubHeader title="Perfil" subtitle="Portada, logo, descripción y redes sociales" />
+            <SubHeader title="Perfil" subtitle="Portada, logo y descripción" />
             <MiComercioForm merchant={merchant} section="perfil" />
         </div>
     );

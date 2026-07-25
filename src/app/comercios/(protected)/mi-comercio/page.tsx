@@ -13,7 +13,7 @@ const CARDS = [
         href: "/comercios/mi-comercio/perfil",
         icon: Building2,
         title: "Perfil",
-        desc: "Portada, logo, descripción y redes sociales",
+        desc: "Portada, logo y descripción",
         color: "bg-blue-50 text-blue-600",
     },
     {
