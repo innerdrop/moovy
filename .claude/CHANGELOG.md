@@ -10,6 +10,55 @@
 
 ---
 
+## 2026-07-25 (rama `feat/borrado-definitivo-cuenta`)
+
+feat: borrado definitivo de cuenta — el derecho de supresión (Ley 25.326) por fin funciona
+
+Hasta hoy, si alguien nos pedía que borráramos su cuenta, NO teníamos cómo cumplirle. Ni la
+persona desde su perfil, ni el equipo desde OPS. Y como efecto colateral, una casilla de correo
+ya usada quedaba inutilizable para siempre (bloqueaba hasta las pruebas del founder).
+
+EL BOTÓN DEL PERFIL ESTABA ROTO DE TRES MANERAS ENCADENADAS, y nunca se había ejercido:
+(1) la pantalla mandaba el POST sin cuerpo → request.json() explotaba → 500 "Error al eliminar";
+(2) aunque hubiera parseado, el endpoint exigía un `confirmEmail` que la pantalla nunca mandó
+(pide tipear "ELIMINAR"); (3) hacía `address.deleteMany`, imposible para cualquiera con pedidos
+porque `Order.addressId` es una relación OBLIGATORIA y la foreign key lo rechaza. Encima sus dos
+emails —el aviso al usuario y el [COMPLIANCE] al owner— estaban en el catálogo pero jamás
+cableados (violaba la regla #11). Un endpoint que compila no es un derecho cumplido: de ahí sale
+la regla #37.
+
+DOS NIVELES DE BAJA, EXPLÍCITOS (antes había uno solo y su copy se contradecía: decía "Eliminar
+PERMANENTEMENTE esta cuenta de la base de datos. Esta acción PUEDE REVERTIRSE"):
+· "Eliminar cuenta (reversible)" — el soft delete de siempre, para bajas por fraude o abuso. Se
+  puede restaurar y el email queda QUEMADO a propósito (410 anti-resurrección). El copy ahora lo
+  dice con todas las letras.
+· "Borrado definitivo" — cuando la persona lo pide. Irreversible y LIBERA la casilla.
+
+BORRAR NO ES `DELETE FROM`, ES DISOCIAR. Los pedidos son documentación fiscal y hay obligación de
+conservarlos (AFIP): quedan con sus montos pero sin un solo dato que identifique a nadie. Las
+direcciones se ANONIMIZAN en vez de borrarse (la FK obligatoria de los pedidos), las
+conversaciones de soporte y de pedido se redactan, y se destruyen enteros favoritos, carrito,
+notificaciones, referidos y el rastro GPS del repartidor. Se conservan a propósito AuditLog y
+ConsentLog: son la prueba ante la AAIP de que el consentimiento existió y de que la supresión se
+ejecutó. El audit se escribe con prisma.auditLog.create DIRECTO y no con el helper logAudit, que
+se traga los errores en silencio — si no se puede dejar constancia, el borrado no ocurre.
+
+Fuente única: purgeUserAccount en src/lib/account-purge.ts, en tx Serializable e idempotente
+(borrar dos veces devuelve 409, no duplica auditoría). La usan el titular desde su perfil y OPS.
+OPS exige frase literal ELIMINAR DEFINITIVAMENTE + nota de quién pidió la baja y por qué medio
+(reglas #8/#26); un admin no puede purgarse a sí mismo ni purgar a otro ADMIN. Una cuenta ya
+purgada deja de ofrecer "Restaurar" (no queda nada que restaurar).
+
+El email liberado NO reabre el bug de resurrección: la cuenta vieja queda anonimizada, así que
+un registro nuevo con esa casilla no la encuentra y crea una cuenta desde cero — verificado.
+
+CLAUDE.md: decisión canónica nueva (borrado de cuenta = dos niveles) + regla #37 (un derecho
+legal se verifica end-to-end). Verificación: npx tsx scripts/verify-borrado-definitivo.ts —
+31/31 contra DB real, crea una persona con datos en todas las tablas sensibles, la borra, revisa
+qué sobrevivió y vuelve a registrar con la casilla liberada. Sin schema. Deploy -NoDB.
+
+**Archivos:** .claude/CLAUDE.md, .claude/settings.local.json, ISSUES.md, scripts/verify-borrado-definitivo.ts, src/app/(store)/mi-perfil/page.tsx, src/app/api/admin/users/[id]/purge/route.ts, src/app/api/profile/delete/route.ts, src/app/ops/(protected)/usuarios/[id]/page.tsx (+4 mas)
+
 ## 2026-07-25 (rama `fix/docs-apagados-no-bloquean-aprobacion`)
 
 fix: un documento apagado desde OPS deja de ser requisito en TODAS las pantallas

@@ -12,13 +12,19 @@ import {
   Loader2,
   Trash2,
   RotateCcw,
+  ShieldAlert,
 } from "lucide-react";
 import { toast } from "@/store/toast";
 import { confirm } from "@/store/confirm";
 
+/** Frase exacta que el endpoint de borrado definitivo exige en el body. */
+const PURGE_PHRASE = "ELIMINAR DEFINITIVAMENTE";
+
 export interface UserAdminActionsProps {
   userId: string;
   userName: string;
+  /** Email actual — se muestra en el borrado definitivo (es la casilla que se libera). */
+  userEmail?: string;
   isSuspended: boolean;
   suspendedUntil: string | null;
   suspensionReason: string | null;
@@ -54,6 +60,7 @@ const LOYALTY_TIERS = ["BRONCE", "PLATA", "ORO", "DIAMANTE"] as const;
 export function UserAdminActions({
   userId,
   userName,
+  userEmail,
   isSuspended,
   suspendedUntil,
   suspensionReason,
@@ -93,6 +100,60 @@ export function UserAdminActions({
   const [showLoyaltyForm, setShowLoyaltyForm] = useState(false);
   const [selectedTier, setSelectedTier] = useState(merchant?.loyaltyTier || "BRONCE");
   const [tierLocked, setTierLocked] = useState(merchant?.loyaltyTierLocked || false);
+
+  // Borrado definitivo (derecho de supresión). Irreversible: por eso no alcanza
+  // con un click — hay que tipear la frase exacta y dejar constancia de quién
+  // pidió la baja (reglas #8/#26).
+  const [showPurgeForm, setShowPurgeForm] = useState(false);
+  const [purgePhrase, setPurgePhrase] = useState("");
+  const [purgeReason, setPurgeReason] = useState("");
+  const [purgeLoading, setPurgeLoading] = useState(false);
+
+  /** La cuenta ya pasó por el borrado definitivo (el email quedó anonimizado). */
+  const isPurged = !!userEmail?.endsWith("@deleted.moovy.local");
+
+  const handlePurge = async () => {
+    if (purgePhrase.trim().toUpperCase() !== PURGE_PHRASE) {
+      toast.error(`Escribí exactamente "${PURGE_PHRASE}"`);
+      return;
+    }
+    if (purgeReason.trim().length < 5) {
+      toast.error("Contá quién pidió la baja y por qué medio");
+      return;
+    }
+
+    setPurgeLoading(true);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/purge`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          confirmation: PURGE_PHRASE,
+          reason: purgeReason.trim(),
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok) {
+        toast.success(
+          data.freedEmail
+            ? `Cuenta borrada. La casilla ${data.freedEmail} quedó libre.`
+            : "Cuenta borrada definitivamente"
+        );
+        setShowPurgeForm(false);
+        setPurgePhrase("");
+        setPurgeReason("");
+        onRefresh();
+      } else {
+        toast.error(data.error || "Error al borrar la cuenta");
+      }
+    } catch (error) {
+      console.error("Error purging user:", error);
+      toast.error("Error de conexión");
+    } finally {
+      setPurgeLoading(false);
+    }
+  };
 
   const handleSuspend = async () => {
     if (!suspendReason.trim()) {
@@ -939,7 +1000,19 @@ export function UserAdminActions({
           <AlertCircle className="w-5 h-5 text-red-600" /> Zona de peligro
         </h3>
 
-        {deletedAt ? (
+        {deletedAt && isPurged ? (
+          /* Ya pasó por el borrado definitivo: no se ofrece restaurar, porque no
+             queda nada que restaurar (los datos personales ya no existen). */
+          <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+            <p className="text-sm font-semibold text-gray-900 mb-1">
+              Cuenta borrada definitivamente
+            </p>
+            <p className="text-sm text-gray-600">
+              El {new Date(deletedAt).toLocaleDateString("es-AR")} se borraron sus datos
+              personales y se liberó su email. No se puede restaurar.
+            </p>
+          </div>
+        ) : deletedAt ? (
           <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-sm text-red-900 font-semibold mb-2">
               🗑️ Cuenta eliminada
@@ -963,8 +1036,17 @@ export function UserAdminActions({
           </div>
         ) : (
           <div>
-            <p className="text-sm text-gray-600 mb-4">
-              Eliminar permanentemente esta cuenta de la base de datos. Esta acción puede revertirse desde el panel de administración.
+            {/* El copy decía "Eliminar permanentemente ... puede revertirse", que se
+                contradice solo. Es un borrado LÓGICO: la cuenta queda entera y el
+                email queda quemado (no se puede volver a usar). Para el borrado real
+                está la sección de abajo. */}
+            <p className="text-sm text-gray-600 mb-1">
+              Da de baja la cuenta y apaga sus accesos. <strong>Se puede revertir</strong>: los
+              datos quedan guardados.
+            </p>
+            <p className="text-xs text-gray-500 mb-4">
+              El email NO queda libre — quien lo intente reusar recibe &quot;esta cuenta fue
+              eliminada&quot;. Usalo para bajas por fraude o abuso.
             </p>
             <button
               onClick={handleDelete}
@@ -976,8 +1058,116 @@ export function UserAdminActions({
               ) : (
                 <Trash2 className="w-4 h-4" />
               )}
-              Eliminar cuenta
+              Eliminar cuenta (reversible)
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── Borrado definitivo — derecho de supresión (Ley 25.326) ────────────
+          Se usa cuando la persona PIDE que borremos sus datos. Irreversible.
+          No borra los pedidos: son documentación fiscal y hay obligación de
+          conservarlos. Lo que se destruye son los datos personales; el pedido
+          queda sin dueño identificable. */}
+      <div className={`bg-white rounded-2xl shadow-sm border-2 border-red-200 p-8 ${isPurged ? "hidden" : ""}`}>
+        <h3 className="text-lg font-bold text-red-900 mb-1 flex items-center gap-2">
+          <ShieldAlert className="w-5 h-5 text-red-600" />
+          Borrado definitivo
+        </h3>
+        <p className="text-sm text-gray-600 mb-4">
+          Para cuando la persona pide que borremos sus datos. <strong>No se puede deshacer.</strong>
+        </p>
+
+        <div className="mb-5 rounded-xl bg-gray-50 p-4 text-sm text-gray-700 space-y-1.5">
+          <p>
+            <strong className="text-gray-900">Se borra:</strong> nombre, email, teléfono,
+            direcciones, favoritos, notificaciones, puntos y las conversaciones de esa persona.
+          </p>
+          <p>
+            <strong className="text-gray-900">Se conserva:</strong> los pedidos con sus montos,
+            porque son documentación fiscal — pero sin ningún dato que identifique a la persona.
+          </p>
+          <p>
+            <strong className="text-gray-900">El email queda libre:</strong>{" "}
+            {userEmail ? (
+              <span className="font-mono text-[13px]">{userEmail}</span>
+            ) : (
+              "la casilla"
+            )}{" "}
+            se puede volver a usar para una cuenta nueva desde cero.
+          </p>
+        </div>
+
+        {!showPurgeForm ? (
+          <button
+            onClick={() => setShowPurgeForm(true)}
+            className="inline-flex items-center gap-2 px-4 py-2 bg-white border-2 border-red-600 text-red-700 hover:bg-red-50 font-bold rounded-lg transition"
+          >
+            <ShieldAlert className="w-4 h-4" />
+            Borrar definitivamente
+          </button>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-1">
+                ¿Quién pidió la baja y por qué medio?
+              </label>
+              <input
+                type="text"
+                value={purgeReason}
+                onChange={(e) => setPurgeReason(e.target.value)}
+                placeholder="Ej: la titular lo pidió por email el 25/07"
+                className="w-full h-11 px-4 rounded-xl border border-gray-200 text-sm text-gray-900 placeholder:text-gray-400 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Queda registrado. Es lo que mostramos si nos piden explicaciones.
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-bold text-gray-900 mb-1">
+                Escribí <span className="font-mono text-red-700">{PURGE_PHRASE}</span> para
+                confirmar
+              </label>
+              <input
+                type="text"
+                value={purgePhrase}
+                onChange={(e) => setPurgePhrase(e.target.value)}
+                placeholder={PURGE_PHRASE}
+                autoComplete="off"
+                className="w-full h-11 px-4 rounded-xl border border-gray-200 font-mono text-sm text-gray-900 placeholder:text-gray-300 focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-100"
+              />
+            </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={handlePurge}
+                disabled={
+                  purgeLoading ||
+                  purgePhrase.trim().toUpperCase() !== PURGE_PHRASE ||
+                  purgeReason.trim().length < 5
+                }
+                className="inline-flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white font-bold rounded-lg transition"
+              >
+                {purgeLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ShieldAlert className="w-4 h-4" />
+                )}
+                Borrar definitivamente
+              </button>
+              <button
+                onClick={() => {
+                  setShowPurgeForm(false);
+                  setPurgePhrase("");
+                  setPurgeReason("");
+                }}
+                disabled={purgeLoading}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-lg transition"
+              >
+                Cancelar
+              </button>
+            </div>
           </div>
         )}
       </div>

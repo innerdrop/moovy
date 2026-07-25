@@ -96,6 +96,9 @@ export const ACTIVITY_ACTIONS = {
   LOGIN_FAILED: "LOGIN_FAILED",
   PASSWORD_CHANGED: "PASSWORD_CHANGED",
   ACCOUNT_DELETED: "ACCOUNT_DELETED",
+  /** Borrado definitivo (derecho de supresión). Irreversible — ver src/lib/account-purge.ts */
+  ACCOUNT_PURGED: "ACCOUNT_PURGED",
+  ADMIN_USER_PURGED: "ADMIN_USER_PURGED",
 
   // Orders
   ORDER_CREATED: "ORDER_CREATED",

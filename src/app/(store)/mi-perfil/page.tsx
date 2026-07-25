@@ -214,7 +214,14 @@ export default function ProfilePage() {
         if (deleteConfirmText !== "ELIMINAR") return;
         setDeleteLoading(true);
         try {
-            const res = await fetch("/api/profile/delete", { method: "POST" });
+            // La confirmación que el titular tipeó viaja al server: sin ella el
+            // endpoint no borra nada (antes se mandaba el POST vacío y siempre
+            // fallaba, así que el borrado de cuenta nunca funcionó).
+            const res = await fetch("/api/profile/delete", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ confirmation: deleteConfirmText }),
+            });
             if (res.ok) {
                 toast.success("Tu cuenta ha sido eliminada");
                 logoutAndClearCart("/");

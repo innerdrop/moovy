@@ -25,12 +25,21 @@
 
 ## Abiertos nuevos (sesión 2026-07-25)
 
+### ✅ RESUELTO — Borrado definitivo de cuenta (rama `feat/borrado-definitivo-cuenta`)
+El diagnóstico completo quedó abajo como registro. Lo que se hizo: motor único `purgeUserAccount` (`src/lib/account-purge.ts`) · botón **Borrado definitivo** en OPS con frase literal `ELIMINAR DEFINITIVAMENTE` + nota obligatoria de quién pidió la baja · arreglo de las 3 fallas del borrado del perfil + los 2 emails cableados (registry a `implemented`) · copy del botón viejo corregido a "Eliminar cuenta (reversible)" con explicación de que el email NO queda libre. Decisiones: se DISOCIA (los pedidos se conservan por obligación fiscal, sin datos personales), las direcciones se anonimizan en vez de borrarse (FK obligatoria de `Order.addressId`), `AuditLog`/`ConsentLog` se conservan como prueba ante la AAIP, y el audit se escribe sin el helper que se traga errores: si no se puede dejar constancia, no se borra. Verificación: `scripts/verify-borrado-definitivo.ts` (31/31, incluye volver a registrar con la casilla liberada). Reglas #37 y decisión canónica nuevas en CLAUDE.md.
+
+<details><summary>Diagnóstico original (2026-07-25)</summary>
+
 ### 🔴 No se puede borrar una cuenta cuando la persona lo pide (Ley 25.326) — BLOQUEANTE de la apertura pública
 Hoy no existe ningún camino que funcione:
 - **OPS → "Eliminar cuenta"**: es borrado LÓGICO (reversible). Marca `deletedAt`, apaga comercio/driver/seller y borra CUIT/CBU/tokens MP, pero **NO libera el email** (decisión deliberada anti-resurrección: re-registrarse con ese mail devuelve 410). El copy del botón dice "Eliminar **permanentemente** … Esta acción **puede revertirse**" — se contradice y confunde.
 - **Perfil del usuario → "Eliminar mi cuenta"**: es el único que anonimiza el email y lo libera… y **está roto**: `mi-perfil` hace el POST sin cuerpo y `/api/profile/delete` exige `confirmEmail` → siempre error. Los 2 emails del catálogo (aviso al usuario + `[COMPLIANCE]` al owner) están registrados pero **nunca cableados** (viola regla #11).
 Consecuencia práctica: no se puede reutilizar una casilla de correo ya usada (bloquea las pruebas del founder) ni cumplir un pedido real de supresión.
 **Plan** (rama `feat/borrado-definitivo-cuenta`, acordada 07-25): botón "Borrado definitivo" en OPS separado del actual, con confirmación textual literal `ELIMINAR DEFINITIVAMENTE` + audit previo (reglas #8/#26) → anonimiza a la persona, borra direcciones/favoritos/push/referidos, **disocia** los pedidos (se conservan montos por obligación fiscal AFIP; se van los datos personales) y libera el email · arreglar el borrado del perfil + cablear los 2 emails · corregir el copy del botón actual a "Eliminar cuenta (reversible)". **Apagar un flag o borrar una cuenta nunca deben ser efectos colaterales silenciosos.**
+
+> Se descubrió una tercera falla al implementar: `address.deleteMany` era imposible para cualquiera con pedidos (`Order.addressId` es relación obligatoria → la FK lo rechaza). Por eso las direcciones se anonimizan.
+
+</details>
 
 ## Abiertos nuevos (sesión 2026-07-21 → 25)
 

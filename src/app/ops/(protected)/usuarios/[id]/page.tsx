@@ -1987,6 +1987,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 <UserAdminActions
                     userId={user.id}
                     userName={user.name || user.email}
+                    userEmail={user.email}
                     isSuspended={user.isSuspended}
                     suspendedUntil={user.suspendedUntil}
                     suspensionReason={user.suspensionReason}
