@@ -58,6 +58,8 @@ interface Merchant {
     constanciaAfipUrl: string | null;
     habilitacionMunicipalUrl: string | null;
     registroSanitarioUrl: string | null;
+    /** Documentos que hoy se exigen (categoría + flags merchant.doc.*). Lo calcula el server. */
+    requiredDocFields?: string[];
     acceptedTermsAt: string | null;
     startedAt: string | null;
     instagramUrl: string | null;
@@ -715,16 +717,27 @@ export default function MerchantDetailPage() {
 
                                     {/* Documentation completeness summary */}
                                     {(() => {
+                                        // fix/docs-apagados-no-bloquean-aprobacion: solo contamos
+                                        // los documentos que seguimos pidiendo. `requiredDocFields`
+                                        // lo calcula el server con los flags merchant.doc.* — antes
+                                        // esto hardcodeaba los 4 y marcaba en rojo un papel que ya
+                                        // habíamos decidido no pedir.
                                         const FOOD_TYPES = ["Restaurante", "Pizzería", "Hamburguesería", "Parrilla", "Cafetería",
                                             "Heladería", "Panadería/Pastelería", "Sushi", "Comida Saludable", "Rotisería", "Bebidas", "Vinoteca/Licorería"];
                                         const isFood = FOOD_TYPES.includes(merchant.category || "");
-                                        const docs = [
-                                            { ok: !!merchant.cuit, label: "CUIT" },
-                                            { ok: !!merchant.bankAccount, label: "CBU/Alias" },
-                                            { ok: !!merchant.constanciaAfipUrl, label: "AFIP" },
-                                            { ok: !!merchant.habilitacionMunicipalUrl, label: "Habilitación" },
-                                            ...(isFood ? [{ ok: !!merchant.registroSanitarioUrl, label: "Sanitario" }] : []),
+                                        // Fail-safe: sin dato del server, se piden todos (menos el
+                                        // sanitario en rubros no alimenticios).
+                                        const required = merchant.requiredDocFields ?? [
+                                            "cuit", "bankAccount", "constanciaAfipUrl", "habilitacionMunicipalUrl",
+                                            ...(isFood ? ["registroSanitarioUrl"] : []),
                                         ];
+                                        const docs = [
+                                            { field: "cuit", ok: !!merchant.cuit, label: "CUIT" },
+                                            { field: "bankAccount", ok: !!merchant.bankAccount, label: "CBU/Alias" },
+                                            { field: "constanciaAfipUrl", ok: !!merchant.constanciaAfipUrl, label: "AFIP" },
+                                            { field: "habilitacionMunicipalUrl", ok: !!merchant.habilitacionMunicipalUrl, label: "Habilitación" },
+                                            { field: "registroSanitarioUrl", ok: !!merchant.registroSanitarioUrl, label: "Sanitario" },
+                                        ].filter((d) => required.includes(d.field));
                                         const complete = docs.filter(d => d.ok).length;
                                         const total = docs.length;
                                         const allComplete = complete === total;
@@ -824,9 +837,24 @@ export default function MerchantDetailPage() {
                                             Documentación Presentada
                                         </h4>
                                         <div className="space-y-3">
-                                            <DocRow label="Constancia AFIP" url={merchant.constanciaAfipUrl} />
-                                            <DocRow label="Habilitación Municipal" url={merchant.habilitacionMunicipalUrl} />
-                                            <DocRow label="Registro Sanitario" url={merchant.registroSanitarioUrl} />
+                                            {/* `required` sale de los flags de OPS: un doc apagado
+                                                se muestra igual (por si el comercio lo cargó) pero
+                                                en gris "No presentado", no en rojo "Faltante". */}
+                                            <DocRow
+                                                label="Constancia AFIP"
+                                                url={merchant.constanciaAfipUrl}
+                                                required={merchant.requiredDocFields?.includes("constanciaAfipUrl") ?? true}
+                                            />
+                                            <DocRow
+                                                label="Habilitación Municipal"
+                                                url={merchant.habilitacionMunicipalUrl}
+                                                required={merchant.requiredDocFields?.includes("habilitacionMunicipalUrl") ?? true}
+                                            />
+                                            <DocRow
+                                                label="Registro Sanitario"
+                                                url={merchant.registroSanitarioUrl}
+                                                required={merchant.requiredDocFields?.includes("registroSanitarioUrl") ?? true}
+                                            />
                                         </div>
                                         {merchant.acceptedTermsAt && (
                                             <p className="text-xs text-gray-400 mt-3">

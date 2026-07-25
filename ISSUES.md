@@ -6,6 +6,13 @@
 ---
 
 
+## Resueltos sesión 2026-07-25
+
+- ✅ **Documentos apagados desde OPS ya no figuran como requisito** (rama `fix/docs-apagados-no-bloquean-aprobacion`, regla #35). El backend nunca los exigió (la auto-activación es flag-aware y el botón "Aprobar Comercio" no tiene precondición de docs), pero OPS los hardcodeaba en 3 lugares y los mostraba en rojo. Ahora el server manda la lista de requeridos y el cliente la consume, con fallback conservador. Además: aviso en verde cuando un comercio ya tiene todo lo requerido aprobado y sigue PENDING (caso del flag apagado DESPUÉS de aprobar, que no re-dispara la auto-activación). Verificación: `scripts/verify-docs-flags-aprobacion.ts` (17/17). Config real hoy: se piden **CUIT + Constancia AFIP**.
+- ✅ **Líneas negras en el panel del comercio** (Tailwind 4: `border` sin color = `currentColor`, regla #36) — 8 bordes corregidos + chat de soporte rediseñado. Cerrado en `feat/panel-inmediato-comercio`.
+- ✅ **`test-first-month-free` con tiers viejos** (esperaba 8%/5%; el canon es 10/9/8/7). No era bug de dinero: los asserts ahora leen `MerchantLoyaltyConfig`. 22/22.
+- ✅ **Default de comisión 8% en `/api/admin/merchants/[id]`** → 10 (canon). Era display-only, pero si el admin abría y guardaba la ficha podía persistirlo.
+
 ## Resueltos sesión 2026-07-21 → 25 (cortina hub + piloto + panel inmediato)
 
 - ✅ **Cortina → hub "elegí tu mundo" monobrand** + estrategia piloto lead-capture (plan en `.claude/PLAN-CRECIMIENTO.md`). Deployado.
@@ -15,6 +22,15 @@
 - ✅ **Paso 2 del lead repartidor** (vehículo/otra app/rango por viaje). Deployado.
 - ✅ **Soporte comercio: offline bloqueaba crear consulta** (callejón sin salida) → mensajería asíncrona. En rama abierta.
 - ✅ **Barra de armado congelada** (layout de Next no se re-renderiza) → client + `/api/merchant/setup`. En rama abierta.
+
+## Abiertos nuevos (sesión 2026-07-25)
+
+### 🔴 No se puede borrar una cuenta cuando la persona lo pide (Ley 25.326) — BLOQUEANTE de la apertura pública
+Hoy no existe ningún camino que funcione:
+- **OPS → "Eliminar cuenta"**: es borrado LÓGICO (reversible). Marca `deletedAt`, apaga comercio/driver/seller y borra CUIT/CBU/tokens MP, pero **NO libera el email** (decisión deliberada anti-resurrección: re-registrarse con ese mail devuelve 410). El copy del botón dice "Eliminar **permanentemente** … Esta acción **puede revertirse**" — se contradice y confunde.
+- **Perfil del usuario → "Eliminar mi cuenta"**: es el único que anonimiza el email y lo libera… y **está roto**: `mi-perfil` hace el POST sin cuerpo y `/api/profile/delete` exige `confirmEmail` → siempre error. Los 2 emails del catálogo (aviso al usuario + `[COMPLIANCE]` al owner) están registrados pero **nunca cableados** (viola regla #11).
+Consecuencia práctica: no se puede reutilizar una casilla de correo ya usada (bloquea las pruebas del founder) ni cumplir un pedido real de supresión.
+**Plan** (rama `feat/borrado-definitivo-cuenta`, acordada 07-25): botón "Borrado definitivo" en OPS separado del actual, con confirmación textual literal `ELIMINAR DEFINITIVAMENTE` + audit previo (reglas #8/#26) → anonimiza a la persona, borra direcciones/favoritos/push/referidos, **disocia** los pedidos (se conservan montos por obligación fiscal AFIP; se van los datos personales) y libera el email · arreglar el borrado del perfil + cablear los 2 emails · corregir el copy del botón actual a "Eliminar cuenta (reversible)". **Apagar un flag o borrar una cuenta nunca deben ser efectos colaterales silenciosos.**
 
 ## Abiertos nuevos (sesión 2026-07-21 → 25)
 

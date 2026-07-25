@@ -58,6 +58,9 @@ interface UserData {
     loginLockedUntil?: string | null;
     roles: Array<{ id: string; role: string; isActive: boolean; activatedAt: string }>;
     merchant: MerchantData | null;
+    /** Documentos que OPS realmente exige hoy (flags merchant.doc.* aplicados).
+        Los apagados NO cuentan para el contador ni bloquean la aprobación. */
+    merchantRequiredDocFields?: string[];
     driver: DriverData | null;
     seller: SellerData | null;
     addresses: Address[];
@@ -296,6 +299,36 @@ const DOC_LABELS: Record<string, string> = {
     habilitacionMunicipalUrl: "Habilitación Municipal",
     registroSanitarioUrl: "Registro Sanitario",
 };
+
+/**
+ * Documentos que HOY se le exigen al comercio.
+ *
+ * fix/docs-apagados-no-bloquean-aprobacion: la fuente de verdad es el server
+ * (`getRequiredDocumentFields`, que aplica los flags `merchant.doc.*`) y viaja en
+ * `merchantRequiredDocFields`. Si por algún motivo no llegó (respuesta vieja en
+ * caché, error de red), caemos al criterio por categoría — nunca a "no se pide
+ * nada": para documentación fiscal preferimos pedir de más que de menos.
+ */
+function resolveRequiredDocFields(
+    fromServer: string[] | undefined,
+    category: string | null | undefined
+): string[] {
+    if (fromServer && fromServer.length > 0) return fromServer;
+    const base = ["cuit", "bankAccount", "constanciaAfipUrl", "habilitacionMunicipalUrl"];
+    if (FOOD_CATEGORIES_CLIENT.has(category || "")) base.push("registroSanitarioUrl");
+    return base;
+}
+
+/** Status de cada documento del comercio indexado por documentField. */
+function merchantDocStatuses(merchant: MerchantData): Record<string, DocStatus> {
+    return {
+        cuit: merchant.cuitStatus,
+        bankAccount: merchant.bankAccountStatus,
+        constanciaAfipUrl: merchant.constanciaAfipStatus,
+        habilitacionMunicipalUrl: merchant.habilitacionMunicipalStatus,
+        registroSanitarioUrl: merchant.registroSanitarioStatus,
+    };
+}
 
 // Mirror del DRIVER_DOCUMENT_COLUMNS del lib (src/lib/driver-document-approval.ts).
 // Labels usados en toasts, headers y modales del admin driver.
@@ -1293,37 +1326,20 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                         Documentación
                                     </p>
                                     {(() => {
-                                        const isFood = FOOD_CATEGORIES_CLIENT.has(
-                                            user.merchant.category || ""
+                                        // fix/docs-apagados-no-bloquean-aprobacion: el contador
+                                        // cuenta SOLO los documentos que seguimos pidiendo. Antes
+                                        // hardcodeaba los 5 e ignoraba los flags merchant.doc.*,
+                                        // así que un doc apagado desde OPS se veía como faltante
+                                        // aunque la auto-activación ya no lo exigiera.
+                                        const requiredFields = resolveRequiredDocFields(
+                                            user.merchantRequiredDocFields,
+                                            user.merchant!.category
                                         );
-                                        const required: Array<{
-                                            status: DocStatus;
-                                            label: string;
-                                        }> = [
-                                            { status: user.merchant.cuitStatus, label: "CUIT" },
-                                            {
-                                                status: user.merchant.bankAccountStatus,
-                                                label: "CBU/Alias",
-                                            },
-                                            {
-                                                status: user.merchant.constanciaAfipStatus,
-                                                label: "Constancia AFIP",
-                                            },
-                                            {
-                                                status: user.merchant.habilitacionMunicipalStatus,
-                                                label: "Habilitación Municipal",
-                                            },
-                                        ];
-                                        if (isFood) {
-                                            required.push({
-                                                status: user.merchant.registroSanitarioStatus,
-                                                label: "Registro Sanitario",
-                                            });
-                                        }
-                                        const approved = required.filter(
-                                            (d) => d.status === "APPROVED"
+                                        const statuses = merchantDocStatuses(user.merchant!);
+                                        const approved = requiredFields.filter(
+                                            (f) => statuses[f] === "APPROVED"
                                         ).length;
-                                        const allApproved = approved === required.length;
+                                        const allApproved = approved === requiredFields.length;
                                         return (
                                             <span
                                                 className={`px-3 py-1 rounded-full text-xs font-bold ${
@@ -1332,11 +1348,43 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                                         : "bg-amber-100 text-amber-700"
                                                 }`}
                                             >
-                                                {approved}/{required.length} aprobados
+                                                {approved}/{requiredFields.length} aprobados
                                             </span>
                                         );
                                     })()}
                                 </div>
+
+                                {/* Comercio listo pero todavía PENDING.
+                                    La auto-activación se recalcula al aprobar un documento; si el
+                                    último requisito desapareció porque OPS apagó su flag (y no
+                                    porque alguien aprobó algo), nada la vuelve a disparar y el
+                                    comercio queda esperando para siempre. Apagar un flag NO
+                                    aprueba comercios en masa a propósito (aprobar es una decisión
+                                    legal y de dinero, no un efecto colateral de un interruptor):
+                                    lo hacemos visible y el admin aprueba con un click. */}
+                                {(() => {
+                                    const requiredFields = resolveRequiredDocFields(
+                                        user.merchantRequiredDocFields,
+                                        user.merchant!.category
+                                    );
+                                    const statuses = merchantDocStatuses(user.merchant!);
+                                    const allApproved = requiredFields.every(
+                                        (f) => statuses[f] === "APPROVED"
+                                    );
+                                    if (!allApproved || user.merchant!.approvalStatus === "APPROVED") {
+                                        return null;
+                                    }
+                                    return (
+                                        <div className="mb-4 flex items-start gap-2 rounded-xl border border-green-200 bg-green-50 p-3">
+                                            <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+                                            <p className="text-sm text-green-900">
+                                                <strong>Ya tiene aprobado todo lo que pedimos.</strong> El comercio
+                                                sigue pendiente: aprobalo con el botón <em>Aprobar Comercio</em> de
+                                                arriba para que su tienda se publique.
+                                            </p>
+                                        </div>
+                                    );
+                                })()}
 
                                 {/* Logo del comercio — gestionable desde OPS para casos donde el merchant
                                     entrega el logo fuera del sistema (USB, WhatsApp, email). El admin lo sube
@@ -1349,6 +1397,10 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
 
                                 <MerchantDocumentsAdmin
                                     merchant={user.merchant}
+                                    requiredFields={resolveRequiredDocFields(
+                                        user.merchantRequiredDocFields,
+                                        user.merchant.category
+                                    )}
                                     docProcessing={docProcessing}
                                     onApprove={handleApproveDocument}
                                     onReject={handleRejectDocument}
@@ -2068,6 +2120,8 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
 
 interface MerchantDocumentsAdminProps {
     merchant: MerchantData;
+    /** documentFields que seguimos exigiendo (flags merchant.doc.* ya aplicados). */
+    requiredFields: string[];
     docProcessing: string | null;
     onApprove: (field: string) => void;
     onReject: (field: string, label: string) => void;
@@ -2075,16 +2129,20 @@ interface MerchantDocumentsAdminProps {
 
 /**
  * Lista de cards, uno por documento, con status chip + rejection reason
- * (si REJECTED) + botones Aprobar/Rechazar. La lista incluye el Registro
- * Sanitario sólo para rubros alimenticios.
+ * (si REJECTED) + botones Aprobar/Rechazar.
+ *
+ * Qué es "requerido" NO se decide acá: viene de `requiredFields`, que el server
+ * calcula con `getRequiredDocumentFields` (categoría + flags `merchant.doc.*`).
+ * Es la MISMA lista que usa la auto-activación, así que lo que OPS pinta como
+ * pendiente es exactamente lo que falta para aprobar — ni un papel más.
  */
 function MerchantDocumentsAdmin({
     merchant,
+    requiredFields,
     docProcessing,
     onApprove,
     onReject,
 }: MerchantDocumentsAdminProps) {
-    const isFood = FOOD_CATEGORIES_CLIENT.has(merchant.category || "");
 
     const docs: Array<{
         field: string;
@@ -2112,7 +2170,7 @@ function MerchantDocumentsAdmin({
             approvalSource: (merchant as any).cuitApprovalSource ?? null,
             approvalNote: (merchant as any).cuitApprovalNote ?? null,
             isUrl: false,
-            required: true,
+            required: requiredFields.includes("cuit"),
         },
         {
             field: "bankAccount",
@@ -2124,7 +2182,7 @@ function MerchantDocumentsAdmin({
             approvalSource: (merchant as any).bankAccountApprovalSource ?? null,
             approvalNote: (merchant as any).bankAccountApprovalNote ?? null,
             isUrl: false,
-            required: true,
+            required: requiredFields.includes("bankAccount"),
         },
         {
             field: "constanciaAfipUrl",
@@ -2136,7 +2194,7 @@ function MerchantDocumentsAdmin({
             approvalSource: (merchant as any).constanciaAfipApprovalSource ?? null,
             approvalNote: (merchant as any).constanciaAfipApprovalNote ?? null,
             isUrl: true,
-            required: true,
+            required: requiredFields.includes("constanciaAfipUrl"),
         },
         {
             field: "habilitacionMunicipalUrl",
@@ -2148,7 +2206,7 @@ function MerchantDocumentsAdmin({
             approvalSource: (merchant as any).habilitacionMunicipalApprovalSource ?? null,
             approvalNote: (merchant as any).habilitacionMunicipalApprovalNote ?? null,
             isUrl: true,
-            required: true,
+            required: requiredFields.includes("habilitacionMunicipalUrl"),
         },
         {
             field: "registroSanitarioUrl",
@@ -2160,7 +2218,7 @@ function MerchantDocumentsAdmin({
             approvalSource: (merchant as any).registroSanitarioApprovalSource ?? null,
             approvalNote: (merchant as any).registroSanitarioApprovalNote ?? null,
             isUrl: true,
-            required: isFood,
+            required: requiredFields.includes("registroSanitarioUrl"),
         },
     ];
 
@@ -2193,7 +2251,7 @@ function MerchantDocumentsAdmin({
                                     </p>
                                     {!doc.required && (
                                         <span className="text-[10px] text-gray-500 uppercase tracking-wide">
-                                            Opcional
+                                            No lo pedimos
                                         </span>
                                     )}
                                     {optionalAndEmpty ? (

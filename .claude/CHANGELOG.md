@@ -10,6 +10,46 @@
 
 ---
 
+## 2026-07-25 (rama `fix/docs-apagados-no-bloquean-aprobacion`)
+
+fix: un documento apagado desde OPS deja de ser requisito en TODAS las pantallas
+
+Si desde /ops/feature-flags dejamos de pedir un documento (flags merchant.doc.*), ese papel no
+puede seguir apareciendo como faltante en ningún lado. El backend ya se comportaba bien —la
+auto-activación descuenta los apagados (merchant-document-approval.ts) y el botón "Aprobar
+Comercio" nunca tuvo precondición de documentos—, pero OPS hardcodeaba los 5 documentos en TRES
+lugares y pintaba en rojo "Falta: Habilitación" por algo que ya habíamos decidido no pedir. El
+panel del comercio y el pipeline sí los respetaban, así que OPS contradecía al resto del sistema.
+
+Fuente única: la lista de requeridos se calcula UNA vez en el server con
+getRequiredDocumentFields (categoría + flags) y viaja al cliente — ninguna pantalla la re-deriva.
+Campo `requiredDocFields` en GET /api/admin/merchants/[id] y `merchantRequiredDocFields` en GET
+/api/admin/users-unified/[id]. El cliente tiene fallback CONSERVADOR (si el dato no llegó, pide
+todos): para documentación fiscal preferimos pedir de más que de menos.
+
+Corregidos: contador "X/Y aprobados" de la ficha de usuario · tarjetas de documento (el flag
+decide `required`, no un `true` hardcodeado; el chip pasó de "Opcional" a "No lo pedimos") ·
+resumen "Documentación: X/Y — Falta: …" de la ficha del comercio · filas de documentos, que
+ahora muestran gris "No presentado" en vez de rojo "Faltante" cuando el doc no se pide.
+
+CASO QUE SÍ QUEDABA TRABADO: la auto-activación se recalcula sólo al aprobar un documento. Si el
+último requisito desaparece porque apagaste su flag (y no porque alguien aprobó algo), nada la
+vuelve a disparar y el comercio queda esperando para siempre. Decisión: apagar un flag NO aprueba
+comercios en masa —aprobar es una decisión legal y de dinero, nunca un efecto colateral silencioso
+de un interruptor—; en su lugar la ficha avisa en verde "ya tiene aprobado todo lo que pedimos" y
+el admin aprueba con un click.
+
+De paso: el GET del comercio devolvía comisión 8% por defecto cuando el campo venía vacío, valor
+de una tabla de tiers vieja (el canon es 10% base). Era sólo de pantalla, pero si el admin abría
+y guardaba la ficha podía persistir una comisión que no es la canónica. Ahora 10.
+
+Reglas nuevas en CLAUDE.md: #35 (un requisito apagado deja de serlo en todas las pantallas) y #36
+(Tailwind 4: `border` sin color dibuja negro — viene de la rama anterior).
+Verificación: npx tsx scripts/verify-docs-flags-aprobacion.ts (17/17 contra DB real, incluye
+simulación de apagar cada documento y de apagarlos todos). Sin schema. Deploy -NoDB.
+
+**Archivos:** .claude/CLAUDE.md, ISSUES.md, scripts/verify-docs-flags-aprobacion.ts, src/app/api/admin/merchants/[id]/route.ts, src/app/api/admin/users-unified/[id]/route.ts, src/app/ops/(protected)/comercios/[id]/page.tsx, src/app/ops/(protected)/usuarios/[id]/page.tsx
+
 ## 2026-07-25 (rama `feat/panel-inmediato-comercio`)
 
 feat: panel inmediato para el comercio (modelo Shopify) + limpieza del registro

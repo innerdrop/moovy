@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { decryptMerchantData, encryptMerchantData } from "@/lib/fiscal-crypto";
+import { getRequiredDocumentFields } from "@/lib/merchant-document-approval";
 
 // GET single merchant by ID
 export async function GET(
@@ -45,7 +46,10 @@ export async function GET(
 
         // Ensure all required fields are present
         if (decrypted) {
-            (decrypted as any).commissionRate = decrypted.commissionRate || 8;
+            // Fallback alineado a la Biblia (comercio 10% base). Estaba en 8, valor
+            // de una tabla de tiers vieja: si el admin abría y guardaba la ficha,
+            // podía persistir una comisión que no es la canónica.
+            (decrypted as any).commissionRate = decrypted.commissionRate || 10;
             (decrypted as any).rating = decrypted.rating || null;
             (decrypted as any).scheduleEnabled = decrypted.scheduleEnabled || false;
             (decrypted as any).scheduleJson = decrypted.scheduleJson || null;
@@ -54,6 +58,12 @@ export async function GET(
             (decrypted as any).mpLinked = !!decrypted.mpAccessToken;
             delete (decrypted as any).mpAccessToken;
             delete (decrypted as any).mpRefreshToken;
+            // fix/docs-apagados-no-bloquean-aprobacion: documentos que realmente
+            // exigimos hoy (categoría + flags merchant.doc.*). La ficha de OPS
+            // pintaba en rojo "Falta: Habilitación" aunque el flag estuviera OFF.
+            (decrypted as any).requiredDocFields = await getRequiredDocumentFields(
+                merchant.category
+            );
         }
 
         return NextResponse.json(decrypted);

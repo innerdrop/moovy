@@ -2,6 +2,7 @@ import { NextResponse, NextRequest } from "next/server";
 import { requireApiAdmin } from "@/lib/admin-auth";
 import { prisma } from "@/lib/prisma";
 import { decrypt } from "@/lib/encryption";
+import { getRequiredDocumentFields } from "@/lib/merchant-document-approval";
 
 /**
  * GET /api/admin/users-unified/[id]
@@ -354,6 +355,14 @@ export async function GET(
               }
             : null;
 
+        // fix/docs-apagados-no-bloquean-aprobacion: los documentos que OPS dejó de
+        // pedir (flags merchant.doc.*) NO son requeridos. El panel del comercio y la
+        // auto-activación ya lo respetaban; OPS los seguía mostrando en rojo como
+        // faltantes. Fuente única: getRequiredDocumentFields (flag-aware).
+        const merchantRequiredDocFields = merchant
+            ? await getRequiredDocumentFields(merchant.category)
+            : [];
+
         const rawDriver = user.driver;
         const driver = rawDriver
             ? {
@@ -391,6 +400,7 @@ export async function GET(
             loginLockedUntil: user.loginLockedUntil,
             roles: user.roles,
             merchant,
+            merchantRequiredDocFields,
             driver,
             seller,
             addresses: user.addresses,
