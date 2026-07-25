@@ -10,6 +10,9 @@ interface ImageCropModalProps {
     onClose: () => void;
     aspectRatio?: number; // 1 = square, 16/9 = widescreen, etc.
     outputSize?: number; // Output pixel size (default 500)
+    /** Se invoca si el navegador no puede decodificar la imagen (además de
+        cerrar). El caller decide cómo avisar — nunca fallar en silencio. */
+    onDecodeError?: () => void;
 }
 
 export default function ImageCropModal({
@@ -18,6 +21,7 @@ export default function ImageCropModal({
     onClose,
     aspectRatio = 1,
     outputSize = 500,
+    onDecodeError,
 }: ImageCropModalProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imageRef = useRef<HTMLImageElement | null>(null);
@@ -42,8 +46,9 @@ export default function ImageCropModal({
             setImageLoaded(true);
         };
         img.onerror = () => {
-            // Formato que el navegador no puede decodificar (raro con image/*): cerramos
-            // el modal en vez de quedar colgados. El server igual valida el archivo real.
+            // Formato que el navegador no puede decodificar: avisamos al caller
+            // (que muestra un toast) y cerramos en vez de quedar colgados.
+            onDecodeError?.();
             onClose();
         };
         img.src = imageSrc;

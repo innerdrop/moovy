@@ -8,6 +8,10 @@
 
 ## Resueltos sesión 2026-07-25
 
+- ✅ **Aprobar docs desde OPS no habilitaba al comercio** (rama `fix/aprobacion-docs-pipeline-y-portada`): la guía del panel miraba archivo cargado y OPS aprueba por estado — con aprobación física el paso docs quedaba en rojo eterno. Ahora doc cumplido = valor O status APPROVED; comercio APPROVED global ⇒ docs cumplidos. `toggleMerchantOpen` tenía una 3ª lista de docs hardcodeada (regla #35) → delega en `computeMerchantSetup` + exige aprobación server-side. **Decisión founder: logo y PORTADA obligatorios para abrir la tienda** (paso 3 de la guía, 6 pasos; la aprobación no bloquea por imágenes). Verificación 21/21 + manual.
+- ✅ **Comercio purgado visible en "Rechazados" del pipeline** (misma rama): las 3 columnas ahora excluyen dueños con `deletedAt` (el rastro queda en Auditoría).
+- ✅ **Portada del comercio no subía** (misma rama): era HEIC de iPhone — el navegador no lo decodifica y el modal se cerraba en silencio. Conversión a JPEG en cliente con `heic-to/csp` (WASM, compatible con la CSP; `heic2any` descartada por usar eval), errores siempre visibles, límite 10MB alineado, timeout 30s. OPS ahora muestra logo+portada en la ficha del comercio.
+
 - ✅ **Documentos apagados desde OPS ya no figuran como requisito** (rama `fix/docs-apagados-no-bloquean-aprobacion`, regla #35). El backend nunca los exigió (la auto-activación es flag-aware y el botón "Aprobar Comercio" no tiene precondición de docs), pero OPS los hardcodeaba en 3 lugares y los mostraba en rojo. Ahora el server manda la lista de requeridos y el cliente la consume, con fallback conservador. Además: aviso en verde cuando un comercio ya tiene todo lo requerido aprobado y sigue PENDING (caso del flag apagado DESPUÉS de aprobar, que no re-dispara la auto-activación). Verificación: `scripts/verify-docs-flags-aprobacion.ts` (17/17). Config real hoy: se piden **CUIT + Constancia AFIP**.
 - ✅ **Líneas negras en el panel del comercio** (Tailwind 4: `border` sin color = `currentColor`, regla #36) — 8 bordes corregidos + chat de soporte rediseñado. Cerrado en `feat/panel-inmediato-comercio`.
 - ✅ **`test-first-month-free` con tiers viejos** (esperaba 8%/5%; el canon es 10/9/8/7). No era bug de dinero: los asserts ahora leen `MerchantLoyaltyConfig`. 22/22.
@@ -43,8 +47,8 @@ Consecuencia práctica: no se puede reutilizar una casilla de correo ya usada (b
 
 ## Abiertos nuevos (sesión 2026-07-21 → 25)
 
-### 🟡 Cerrar `feat/panel-inmediato-comercio` (rama abierta, código completo)
-Correr los 2 scripts de verificación (uno es de DINERO: mes gratis desde aprobación) + probar flujo completo → finish → deploy `-NoDB`. Ver PROJECT_STATUS "Próximas tareas".
+### ✅ Cerrar `feat/panel-inmediato-comercio` — HECHO (2026-07-25)
+Rama cerrada, mergeada y deployada (batch con `fix/docs-apagados-no-bloquean-aprobacion` y `feat/borrado-definitivo-cuenta`). El flujo completo se probó en prod con Pixel Point y los bugs que aparecieron se cazaron en `fix/aprobacion-docs-pipeline-y-portada`.
 
 ### 🟡 TyC de comercio y repartidor con abogado — BLOQUEANTE de la etapa pública
 Sin ellos no se prende la auto-registración (etapa 3). Deben cubrir: esquema de comisiones + criterios de tiers, política de cambios con preaviso, DDJJ de habilitaciones del comercio (decisión founder: NO pedimos habilitación municipal ni registro sanitario — responsabilidad del comercio, como PedidosYa). Detalle en PLAN-CRECIMIENTO.

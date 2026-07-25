@@ -29,6 +29,32 @@ export default function ImageUpload({ value, onChange, disabled, compact, cropAs
     const [cropSrc, setCropSrc] = useState<string | null>(null);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Debe coincidir con MAX_FILE_SIZE de /api/upload (el copy viejo decía 4MB
+    // y el server aceptaba 10 — fix/aprobacion-docs-pipeline-y-portada).
+    const MAX_UPLOAD_MB = 10;
+
+    // Fotos de iPhone: los navegadores (salvo Safari) no decodifican HEIC/HEIF.
+    // Las convertimos a JPEG en el cliente ANTES de recortar/subir. Usamos el
+    // build CSP de heic-to (WASM puro, sin eval) porque nuestra CSP bloquea
+    // 'unsafe-eval' y permite 'wasm-unsafe-eval' — heic2any quedaba bloqueada
+    // por la CSP con el spinner colgado. Import dinámico: solo paga el costo
+    // (~1MB de WASM) quien sube un HEIC.
+    const isHeicFile = (file: File) =>
+        /image\/hei(c|f)/i.test(file.type) || /\.(heic|heif)$/i.test(file.name);
+
+    const toUploadableImage = async (file: File): Promise<File> => {
+        if (!isHeicFile(file)) return file;
+        const { heicTo } = await import("heic-to/csp");
+        const conversion = heicTo({ blob: file, type: "image/jpeg", quality: 0.9 });
+        // Backstop anti-cuelgue: si el WASM no responde (CSP, memoria, etc.),
+        // cortamos a los 30s y el catch muestra el toast — nunca spinner eterno.
+        const timeout = new Promise<never>((_, reject) =>
+            setTimeout(() => reject(new Error("HEIC conversion timeout")), 30_000)
+        );
+        const blob = await Promise.race([conversion, timeout]);
+        return new File([blob], file.name.replace(/\.[^/.]+$/, ".jpg"), { type: "image/jpeg" });
+    };
+
     const uploadFile = async (file: File | Blob, fileName?: string) => {
         setIsLoading(true);
         try {
@@ -44,13 +70,24 @@ export default function ImageUpload({ value, onChange, disabled, compact, cropAs
                 body: formData,
             });
 
-            if (!response.ok) throw new Error("Upload failed");
+            if (!response.ok) {
+                // Mostrar el motivo real del server si vino (formato, tamaño, etc.)
+                let serverMsg = "";
+                try {
+                    const err = await response.json();
+                    if (typeof err?.error === "string") serverMsg = err.error;
+                } catch { /* respuesta sin JSON */ }
+                throw new Error(serverMsg || "Upload failed");
+            }
 
             const data = await response.json();
             onChange(data.url);
         } catch (error) {
             console.error("Error uploading image:", error);
-            toast.error("Error al subir la imagen. Intenta de nuevo.");
+            const msg = error instanceof Error && error.message && error.message !== "Upload failed"
+                ? error.message
+                : "Error al subir la imagen. Intenta de nuevo.";
+            toast.error(msg);
         } finally {
             setIsLoading(false);
         }
@@ -60,25 +97,41 @@ export default function ImageUpload({ value, onChange, disabled, compact, cropAs
         const file = e.target.files?.[0];
         if (!file) return;
 
-        if (cropAspect) {
-            // Show crop modal instead of uploading directly
-            const reader = new FileReader();
-            reader.onload = (ev) => {
-                setCropSrc(ev.target?.result as string);
-            };
-            reader.readAsDataURL(file);
+        if (file.size > MAX_UPLOAD_MB * 1024 * 1024) {
+            toast.error(`La imagen pesa más de ${MAX_UPLOAD_MB}MB. Probá con una foto más liviana.`);
+            if (fileInputRef.current) fileInputRef.current.value = "";
             return;
         }
 
-        // No crop — compress and upload directly
         setIsLoading(true);
         try {
-            const compressedFile = await compressImage(file);
+            const prepared = await toUploadableImage(file);
+
+            if (cropAspect) {
+                // Show crop modal instead of uploading directly
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    setCropSrc(ev.target?.result as string);
+                    setIsLoading(false);
+                };
+                reader.onerror = () => {
+                    toast.error("No pudimos leer esa imagen. Probá con JPG, PNG o WebP.");
+                    setIsLoading(false);
+                };
+                reader.readAsDataURL(prepared);
+                return;
+            }
+
+            // No crop — compress and upload directly
+            const compressedFile = await compressImage(prepared);
             await uploadFile(compressedFile);
         } catch (error) {
-            console.error("Error uploading image:", error);
-            toast.error("Error al subir la imagen. Intenta de nuevo.");
+            // Nunca fallar en silencio: si el archivo no se pudo leer/convertir,
+            // el usuario tiene que saber qué formato sirve.
+            console.error("Error preparing image:", error);
+            toast.error("No pudimos procesar esa imagen. Probá con JPG, PNG o WebP.");
             setIsLoading(false);
+            if (fileInputRef.current) fileInputRef.current.value = "";
         }
     };
 
@@ -156,7 +209,7 @@ export default function ImageUpload({ value, onChange, disabled, compact, cropAs
         <div className="w-full">
             <input
                 type="file"
-                accept="image/*"
+                accept="image/*,.heic,.heif"
                 className="hidden"
                 ref={fileInputRef}
                 onChange={handleFileChange}
@@ -182,7 +235,7 @@ export default function ImageUpload({ value, onChange, disabled, compact, cropAs
                             <p className="text-sm font-medium text-gray-600">
                                 {isLoading ? "Subiendo..." : "Click para subir imagen"}
                             </p>
-                            <p className="text-xs text-gray-400 mt-1">JPG, PNG, WEBP (Max 4MB)</p>
+                            <p className="text-xs text-gray-400 mt-1">Cualquier foto de tu celu o compu (máx 10MB)</p>
                         </>
                     )}
                 </div>
@@ -228,6 +281,11 @@ export default function ImageUpload({ value, onChange, disabled, compact, cropAs
                     outputSize={cropOutputSize}
                     onCrop={handleCropComplete}
                     onClose={handleCropClose}
+                    onDecodeError={() => {
+                        // Antes el modal se cerraba EN SILENCIO si el navegador no
+                        // podía decodificar la imagen — parecía que "no pasaba nada".
+                        toast.error("El navegador no pudo abrir esa imagen. Probá con JPG, PNG o WebP.");
+                    }}
                 />
             )}
         </div>

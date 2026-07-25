@@ -431,6 +431,17 @@ export default function MerchantDetailPage() {
                     >
                         <ChevronLeft className="w-5 h-5" />
                     </Link>
+                    {/* Logo del comercio (fix/aprobacion-docs-pipeline-y-portada:
+                        OPS ahora muestra logo y portada, que son obligatorios
+                        para publicar la tienda) */}
+                    <div className="w-14 h-14 rounded-xl overflow-hidden bg-gray-100 border border-gray-200 flex items-center justify-center flex-shrink-0">
+                        {merchant.image ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img src={merchant.image} alt={`Logo de ${merchant.name}`} className="w-full h-full object-cover" />
+                        ) : (
+                            <Store className="w-7 h-7 text-gray-300" />
+                        )}
+                    </div>
                     <div>
                         <div className="flex items-center gap-2">
                             <h1 className="text-2xl font-bold text-gray-900">{merchant.name}</h1>
@@ -479,6 +490,20 @@ export default function MerchantDetailPage() {
                     </button>
                 </div>
             </div>
+
+            {/* Foto de portada (16:5) — misma imagen que corona la tienda pública.
+                Si falta, se avisa: es requisito para que el comercio pueda abrir. */}
+            {merchant.banner ? (
+                <div className="relative w-full aspect-[16/5] max-h-48 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={merchant.banner} alt={`Portada de ${merchant.name}`} className="w-full h-full object-cover" />
+                </div>
+            ) : (
+                <div className="w-full rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                    Sin foto de portada — el comercio no puede abrir su tienda hasta subirla.
+                </div>
+            )}
 
             {/* Stats Cards */}
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">

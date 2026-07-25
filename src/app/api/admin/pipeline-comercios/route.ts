@@ -32,6 +32,10 @@ export async function GET(request: NextRequest) {
             prisma.merchant.findMany({
                 where: {
                     approvalStatus: "PENDING",
+                    // Cuentas borradas (lógico o definitivo) fuera del funnel de
+                    // alta: no son un alta en curso ni un rechazo a seguir.
+                    // El rastro queda en Auditoría. (fix/aprobacion-docs-pipeline-y-portada)
+                    owner: { deletedAt: null },
                     },
                 select: {
                     id: true,
@@ -54,6 +58,7 @@ export async function GET(request: NextRequest) {
                 where: {
                     approvalStatus: "APPROVED",
                     approvedAt: { gte: thirtyDaysAgo },
+                    owner: { deletedAt: null },
                     },
                 select: {
                     id: true,
@@ -71,6 +76,7 @@ export async function GET(request: NextRequest) {
                 where: {
                     approvalStatus: "REJECTED",
                     updatedAt: { gte: thirtyDaysAgo },
+                    owner: { deletedAt: null },
                     },
                 select: {
                     id: true,

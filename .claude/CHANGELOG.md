@@ -10,6 +10,65 @@
 
 ---
 
+## 2026-07-25 (rama `fix/aprobacion-docs-pipeline-y-portada`)
+
+fix: aprobar docs desde OPS habilita el panel, pipeline sin cuentas borradas y la portada sube siempre
+
+Tres fixes del flujo del comercio (cazados probando Pixel Point en prod):
+
+1) La guia del panel miraba si habia ARCHIVO cargado y OPS aprueba por ESTADO:
+con aprobacion fisica el paso "Completa tu documentacion" quedaba en rojo
+eterno y el comercio aprobado no podia abrir la tienda. Ahora doc cumplido =
+valor cargado O status APPROVED, y comercio APPROVED global => docs cumplidos.
+toggleMerchantOpen tenia una TERCERA lista de docs hardcodeada (regla #35);
+ahora delega en computeMerchantSetup y exige aprobacion server-side.
+Decision founder: logo y PORTADA obligatorios para ABRIR la tienda (la portada
+es paso 3 de la guia, 6 pasos); la aprobacion no bloquea por imagenes.
+OPS muestra logo y portada en la ficha del comercio.
+
+2) El pipeline de comercios mostraba al purgado en "Rechazados": las 3
+columnas ahora excluyen duenos con deletedAt (el rastro queda en Auditoria).
+
+3) La portada "no subia" en silencio: era HEIC de iPhone. Conversion a JPEG
+en el cliente con heic-to/csp (WASM puro, compatible con la CSP; heic2any
+descartada porque usa eval y la CSP lo bloquea), errores siempre visibles con
+el motivo real del server, rechazo temprano de mas de 10MB y timeout de 30s.
+
+Verificacion: scripts/verify-aprobacion-docs-portada.ts (21/21) + manual
+(portada HEIC y JPG en local, panel en modo operacion, pipeline limpio).
+
+**Archivos:** .claude/CLAUDE.md, ISSUES.md, package-lock.json, package.json, scripts/verify-aprobacion-docs-portada.ts, src/app/api/admin/pipeline-comercios/route.ts, src/app/api/merchant/onboarding/route.ts, src/app/comercios/actions.ts (+4 mas)
+
+## 2026-07-25 (rama `fix/aprobacion-docs-pipeline-y-portada`)
+
+fix: aprobación de docs habilita el panel de verdad, pipeline sin cuentas borradas, y la portada sube siempre
+
+Tres bugs cazados por el founder probando el flujo del comercio en prod, en una rama maestra:
+(1) **Aprobar docs desde OPS no habilitaba al comercio**: la guía del panel (`merchant-setup.ts`)
+miraba si había ARCHIVO cargado, mientras OPS aprueba por ESTADO — con aprobación física (sin URL)
+el paso quedaba en rojo eterno y `canOpenStore` en false. Ahora doc cumplido = valor cargado O
+status APPROVED, y comercio APPROVED global ⇒ paso docs cumplido. Además `toggleMerchantOpen`
+tenía una TERCERA lista de docs hardcodeada (exigía CBU y Hab. Municipal ignorando flags — regla
+#35); ahora delega en `computeMerchantSetup` y exige aprobación server-side. **Portada y logo son
+obligatorios para ABRIR la tienda** (decisión founder; la aprobación sigue sin bloquear por
+imágenes) — la portada es paso 3 de la guía (6 pasos) y OPS la muestra en la ficha con aviso.
+(2) **El comercio purgado aparecía en "Rechazados" del pipeline**: el purge marca REJECTED
+(deliberado) pero el funnel no filtraba dueños borrados; las 3 columnas ahora excluyen
+`owner.deletedAt != null` (el rastro queda en Auditoría).
+(3) **La portada "no subía" en silencio**: la foto era HEIC (iPhone) — el navegador no la decodifica
+y el modal de recorte se cerraba SIN mensaje. Ahora se convierte a JPEG en el cliente con
+`heic-to/csp` (WASM puro — `heic2any` quedó descartada: usa eval() y nuestra CSP lo bloquea, con
+spinner colgado), ningún error queda mudo (toast con el motivo real del server), rechazo temprano
+de >10MB (el copy decía 4MB y el server aceptaba 10) y timeout anti-cuelgue de 30s.
+Verificación: `scripts/verify-aprobacion-docs-portada.ts` (21/21 contra DB local, incluye control
+de que el filtro del pipeline no borra de más) + manual: portada HEIC y JPG OK en local, panel de
+Pixel Point en modo operación, purgado fuera del pipeline.
+Archivos: `src/lib/merchant-setup.ts`, `src/app/comercios/actions.ts`,
+`src/app/api/admin/pipeline-comercios/route.ts`, `src/app/api/merchant/onboarding/route.ts`,
+`src/components/ui/ImageUpload.tsx`, `src/components/ui/ImageCropModal.tsx`,
+`src/app/ops/(protected)/comercios/[id]/page.tsx`, `package.json` (+`heic-to`),
+`scripts/verify-aprobacion-docs-portada.ts`.
+
 ## 2026-07-25 (rama `feat/borrado-definitivo-cuenta`)
 
 feat: borrado definitivo de cuenta — el derecho de supresión (Ley 25.326) por fin funciona

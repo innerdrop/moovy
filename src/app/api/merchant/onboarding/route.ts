@@ -56,17 +56,23 @@ export async function GET() {
 
         // Operational checks
         const hasLogo = Boolean(merchant.image);
+        const hasBanner = Boolean(merchant.banner);
         const hasSchedule = Boolean(merchant.scheduleJson);
         const hasProducts = productCount >= 1;
         const hasAddress = Boolean(merchant.address && merchant.latitude);
         const hasMercadoPago = Boolean(merchant.mpUserId);
 
-        // All docs complete = can open store (los no requeridos cuentan como OK)
-        const docsComplete = hasCuit && hasBankAccount && hasConstanciaAfip && hasHabilitacion && hasRegistroSanitario;
-        // All operational = fully ready. Logo es obligatorio (rama
-        // fix/comercio-onboarding-completo) — el backend bloquea la aprobación
-        // del merchant si Merchant.image es null.
-        const canOpenStore = docsComplete && hasSchedule && hasProducts && hasAddress && hasLogo;
+        // All docs complete = can open store (los no requeridos cuentan como OK).
+        // Si el comercio ya está APPROVED globalmente (botón "Aprobar Comercio"
+        // de OPS, sin precondición de docs), la documentación se da por cumplida
+        // — misma regla que computeMerchantSetup (fix/aprobacion-docs-pipeline-y-portada).
+        const docsComplete =
+            merchant.approvalStatus === "APPROVED" ||
+            (hasCuit && hasBankAccount && hasConstanciaAfip && hasHabilitacion && hasRegistroSanitario);
+        // All operational = fully ready. Logo y PORTADA son obligatorios para
+        // ABRIR la tienda (decisión founder 2026-07-25); la aprobación no
+        // bloquea por imágenes (fix/aprobacion-sin-logo).
+        const canOpenStore = docsComplete && hasSchedule && hasProducts && hasAddress && hasLogo && hasBanner;
         // isComplete suma MercadoPago como recomendado para "100% perfil completo".
         const isComplete = canOpenStore && hasMercadoPago;
 
@@ -91,6 +97,7 @@ export async function GET() {
             registroSanitarioRequired,
             // Operational
             hasLogo,
+            hasBanner,
             hasSchedule,
             hasProducts,
             productCount,
