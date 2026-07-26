@@ -410,8 +410,16 @@ h4, h5, h6 {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* fix/nitidez-registro-y-aviso-consola (2026-07-26): SIN `forwards`.
+   Con fill forwards el transform final (translateY(0)) quedaba aplicado para
+   SIEMPRE ⇒ la tarjeta vivía en una capa compuesta propia ⇒ en Windows con
+   escalado fraccional (125/150%) el texto se rasterizaba BORROSO (el registro
+   se veía desenfocado vs el login). Sin fill, al terminar la animación el
+   elemento vuelve al flujo normal y el texto se pinta nítido. El estado final
+   natural (opacity 1, sin transform) es idéntico al último keyframe: no hay
+   flicker. Mismo fix para slideUp. */
 .animate-fadeIn {
-  animation: fadeIn 0.3s ease forwards;
+  animation: fadeIn 0.3s ease;
 }
 
 .animate-pulse-slow {
@@ -419,7 +427,7 @@ h4, h5, h6 {
 }
 
 .animate-slideUp {
-  animation: slideUp 0.4s ease forwards;
+  animation: slideUp 0.4s ease;
 }
 
 /* ── Scroll-triggered reveal animations ── */

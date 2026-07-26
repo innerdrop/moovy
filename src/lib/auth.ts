@@ -309,7 +309,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         const { prisma } = await import("@/lib/prisma");
                         const dbUser = await prisma.user.findUnique({
                             where: { email: (user.email || "").toLowerCase() },
-                            select: { id: true, role: true, referralCode: true },
+                            select: { id: true, name: true, role: true, referralCode: true },
                         });
                         if (dbUser) {
                             const { computeUserAccess } = await import("@/lib/roles");
@@ -320,6 +320,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                             if (access && access.driver.status !== "none") roles.push("DRIVER");
                             if (access && access.seller.status !== "none") roles.push("SELLER");
                             token.id = dbUser.id;
+                            // La identidad la manda NUESTRA base, no el perfil de
+                            // Google: si te registraste como "Fernando", sos Fernando
+                            // entres con la llave que entres. (Sin esto, la sesión
+                            // mostraba el nombre de Google al entrar por OAuth.)
+                            if (dbUser.name) token.name = dbUser.name;
                             token.role = dbUser.role;
                             token.roles = [...new Set([...roles, dbUser.role].filter(Boolean))];
                             token.referralCode = dbUser.referralCode;

@@ -10,6 +10,38 @@
 
 ---
 
+## 2026-07-26 (rama `fix/nitidez-registro-y-aviso-consola`)
+
+fix: texto nitido en desktop (adios al registro "desenfocado") + aviso de consola legible en tema oscuro
+
+1) El form de registro se veia borroso en desktop y nitido en mobile — firma
+de bug de compositing: animate-fadeIn usaba fill:forwards, que retiene el
+transform final para siempre → capa compuesta permanente → en Windows con
+escalado fraccional (125/150%) el texto se rasteriza entre pixeles. El login
+(sin animacion) se veia nitido; por eso la diferencia entre forms. Fix:
+forwards eliminado de fadeIn y slideUp en globals.css — la animacion se ve
+identica y sin flicker (el estado natural coincide con el ultimo keyframe),
+pero al terminar el elemento vuelve al flujo normal y el texto queda nitido.
+17 componentes beneficiados.
+
+2) El aviso anti-Self-XSS ("FRENA!") tenia color de cuerpo fijo #17181c,
+ilegible en DevTools con tema oscuro. Ahora el cuerpo va sin color forzado
+(la consola lo adapta sola a claro/oscuro); el titulo rojo se lee en ambos.
+Decision: el aviso queda SOLO en espanol — Google lo muestra localizado (no
+bilingue), la estafa Self-XSS llega en el idioma de la victima y la app es
+es-AR only.
+
+3) Al entrar con Google la sesion mostraba el nombre del perfil de Google en
+vez del nombre con el que la persona se registro en Moovy (con contrasena si
+leia la DB). El jwt callback del branch google ahora hidrata tambien `name`
+desde la base: la identidad la manda NUESTRA DB, el login es solo la llave.
+
+Verificacion: tsc + registro nitido en desktop con escalado 125% + entrar con
+Google y con contrasena muestra el MISMO nombre (el del registro) + consola
+en tema oscuro y claro.
+
+**Archivos:** ISSUES.md, src/app/globals.css, src/components/ConsoleSelfXssWarning.tsx, src/lib/auth.ts
+
 ## 2026-07-26 (rama `fix/pwa-actualizacion-instantanea`)
 
 fix: la PWA se actualiza sola — nunca mas "borra el cache del celular"
@@ -47,6 +79,30 @@ Verificacion: tsc limpio + generate-sw-version genera version correcta.
 Prueba real post-deploy: el iPhone del founder debe recibir el banner.
 
 **Archivos:** .claude/CLAUDE.md, .gitignore, ISSUES.md, next.config.ts, package.json, public/sw.js, scripts/generate-sw-version.mjs, src/app/layout.tsx (+2 mas)
+
+## 2026-07-26 (rama `fix/nitidez-registro-y-aviso-consola`)
+
+fix: texto nítido en desktop (adiós al registro "desenfocado") + aviso de consola legible en tema oscuro
+
+(1) El founder notó el form de REGISTRO borroso en su compu pero nítido en el celular — firma
+exacta de un bug de compositing: `animate-fadeIn` usaba `fill: forwards`, que retiene el
+transform final (translateY(0)) PARA SIEMPRE → el elemento vive en una capa compuesta propia →
+en Windows con escalado fraccional (125/150%) esa capa se rasteriza entre píxeles y el texto
+sale borroso. En mobile el DPR es entero y se pinta alineado. El login no tenía la animación:
+nítido. Fix: `forwards` eliminado de `fadeIn` y `slideUp` en globals.css — el estado natural
+(opacity 1, sin transform) es idéntico al último keyframe, así que la animación se ve IGUAL y
+sin flicker, pero al terminar el texto vuelve al flujo normal. 17 componentes beneficiados.
+(2) El "¡FRENÁ!" anti-Self-XSS tenía color de cuerpo fijo #17181c — ilegible en DevTools tema
+oscuro. Ahora el cuerpo va sin color forzado (la consola lo adapta sola); el título rojo Moovy
+se lee en ambos temas. Decisión founder+concejo: el aviso queda SOLO en español — Google lo
+muestra localizado (no bilingüe), la estafa llega en el idioma de la víctima y la app es es-AR.
+(3) Al entrar con Google la sesión mostraba el nombre del PERFIL DE GOOGLE en vez del nombre
+con el que la persona se registró en Moovy (con contraseña sí leía la DB — de ahí la
+diferencia que notó el founder probando ambas llaves). El jwt callback del branch google ahora
+hidrata también `name` desde la DB: la identidad la manda nuestra base, el login es solo la
+llave. La vinculación de cuentas por email quedó validada como correcta (una cuenta, dos
+llaves); hardening de Google (email_verified + aviso de vinculación) anotado como menor.
+Archivos: `src/app/globals.css`, `src/components/ConsoleSelfXssWarning.tsx`, `src/lib/auth.ts`.
 
 ## 2026-07-25 (rama `fix/pwa-actualizacion-instantanea`)
 

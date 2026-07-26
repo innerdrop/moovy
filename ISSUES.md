@@ -6,6 +6,12 @@
 ---
 
 
+## Resueltos sesión 2026-07-26
+
+- ✅ **Registro "desenfocado" en desktop** (rama `fix/nitidez-registro-y-aviso-consola`): `animate-fadeIn` con `fill: forwards` dejaba el transform final aplicado PARA SIEMPRE → capa compuesta permanente → texto borroso en Windows con escalado fraccional (125/150%); en mobile (DPR entero) se veía bien — por eso el login (sin animación) era nítido y el registro no. Fix global: `forwards` fuera de `fadeIn` y `slideUp` (17 componentes beneficiados, misma animación visual, cero flicker).
+- ✅ **La sesión mostraba el nombre de Google en vez del nombre de registro** (misma rama): al entrar por OAuth, el JWT conservaba el nombre del perfil de Google; ahora se hidrata desde la DB (la identidad la manda nuestra base — el método de login es solo la llave). Con contraseña ya funcionaba bien.
+- ✅ **Aviso "¡FRENÁ!" ilegible en DevTools tema oscuro** (misma rama): el cuerpo tenía color fijo `#17181c` — ahora sin color forzado (la consola adapta sola a claro/oscuro). Decisión: SOLO español (Google lo muestra localizado, no bilingüe; la estafa Self-XSS llega en el idioma de la víctima; app es-AR only).
+
 ## Resueltos sesión 2026-07-25
 
 - ✅ **PWA servía versiones viejas hasta borrar caché del celular** (rama `fix/pwa-actualizacion-instantanea`, regla #42): tres agujeros — (1) `CACHE_VERSION` manual que ningún deploy bumpeaba → el SW viejo quedaba instalado para siempre; (2) el "network-first" del HTML usaba `fetch()` pelado que Safari iOS respondía desde su caché heurístico → páginas viejas "desde la red"; (3) chequeo de updates cada 10 min que en sesiones mobile nunca corría. Fix: versión estampada por build (`prebuild` → `public/sw-version.js` gitignorado, hash+timestamp; compatible con el `git reset --hard` del VPS), navegación con `cache: "no-store"`, `updateViaCache: "none"` + chequeo al abrir y al volver a primer plano. Cada deploy ⇒ banner "Actualizar" en la primera apertura. tsc limpio; prueba real post-deploy en iPhone. **Bonus en la misma rama**: aviso anti-Self-XSS en la consola (`ConsoleSelfXssWarning`, solo prod, como Google/Facebook) — protege al usuario de la estafa "pegá este código en DevTools".
@@ -58,6 +64,7 @@ Rama cerrada, mergeada y deployada (batch con `fix/docs-apagados-no-bloquean-apr
 Sin ellos no se prende la auto-registración (etapa 3). Deben cubrir: esquema de comisiones + criterios de tiers, política de cambios con preaviso, DDJJ de habilitaciones del comercio (decisión founder: NO pedimos habilitación municipal ni registro sanitario — responsabilidad del comercio, como PedidosYa). Detalle en PLAN-CRECIMIENTO.
 
 ### 🟢 Menores acumulados
+- **Hardening login Google** (rama corta, post-verificación del founder 07-26): (a) chequear `profile.email_verified` de Google en el signIn callback (hoy no se mira; una línea); (b) al vincular Google a una cuenta con `emailVerified` null, marcarla verificada + email de aviso "se agregó Google como método de acceso" — cierra el vector de pre-registro ajeno (registro con password no verifica email hoy). La vinculación por email en sí es correcta y queda como está.
 - Post-piloto: mover el chat de soporte a `/ayuda` como entrada de menú + badge de respuestas no leídas en Perfil (hoy la burbuja vive solo en /mi-perfil; sin aviso de respuestas, no matarla del todo).
 - Normalizar fotos de producto a lienzo cuadrado blanco server-side (sharp `fit: contain` + fondo) al subirlas — grid perfecto sin pedirle nada al comercio. Ideal pre-carga masiva de catálogos.
 - Layout de card "lista menú" (escuela Uber Eats) para rubros gastronómicos cuando entre el primer restaurante — elegir layout por rubro del comercio.

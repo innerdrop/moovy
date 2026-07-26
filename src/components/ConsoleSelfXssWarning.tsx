@@ -21,11 +21,13 @@ export default function ConsoleSelfXssWarning() {
             );
             console.log(
                 "%cEsta consola es una herramienta para desarrolladores. Si alguien te dijo que copies y pegues algo acá para \"activar una función\", \"ganar puntos MOOVER\" o \"verificar tu cuenta\", ES UNA ESTAFA (se llama Self-XSS): ese código corre con tu sesión y pueden robarte la cuenta.",
-                "color:#17181c;font-size:15px;line-height:1.5;font-family:system-ui,sans-serif;"
+                // Sin color forzado: la consola usa su color por defecto y se adapta
+                // sola a tema claro u oscuro (con #17181c fijo era ilegible en dark).
+                "font-size:15px;line-height:1.5;font-family:system-ui,sans-serif;"
             );
             console.log(
                 "%cCerrá esta ventana y no pegues nada que no entiendas. ¿Dudas? Escribinos desde el chat de soporte en tu perfil.",
-                "color:#6b7280;font-size:13px;font-family:system-ui,sans-serif;"
+                "font-size:13px;font-family:system-ui,sans-serif;opacity:0.8;"
             );
         } catch {
             // Una consola exótica sin soporte de %c no puede romper la app.
