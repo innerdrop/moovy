@@ -10,6 +10,75 @@
 
 ---
 
+## 2026-07-26 (rama `fix/pwa-actualizacion-instantanea`)
+
+fix: la PWA se actualiza sola — nunca mas "borra el cache del celular"
+
+El iPhone del founder mostraba la version vieja del sitio hasta borrar
+historial. Tres agujeros, tres fixes:
+
+1) CACHE_VERSION era manual y ningun deploy lo bumpeaba: sw.js nunca cambiaba
+de bytes, el navegador jamas detectaba version nueva y el SW viejo quedaba
+instalado PARA SIEMPRE. Ahora la version la estampa el build: script
+"prebuild" (scripts/generate-sw-version.mjs) escribe hash-del-commit +
+timestamp en public/sw-version.js (GITIGNORADO - el git reset --hard del VPS
+lo regenera limpio en cada deploy; sw.js lo lee con importScripts).
+
+2) El "network-first" del HTML usaba fetch() pelado, que Safari iOS responde
+desde su cache heuristico: paginas viejas "desde la red". Ahora la navegacion
+va con cache:"no-store" - el HTML SIEMPRE baja fresco.
+
+3) El chequeo de updates corria cada 10 minutos y en sesiones mobile de 40
+segundos nunca llegaba a ejecutarse. Ahora: updateViaCache:"none" +
+registration.update() inmediato al abrir + en visibilitychange (al volver a
+primer plano), ademas del intervalo.
+
+Resultado: cada deploy dispara el banner "Actualizar" en la primera apertura
+de cada cliente. /sw-version.js con headers no-cache (sino el versionado no
+sirve). Limite de plataforma documentado: la PWA anclada al home de iOS puede
+mostrar un instante la version vieja al restaurar (igual que Twitter) y se
+actualiza al toque.
+
+BONUS misma rama: aviso anti-Self-XSS en la consola (ConsoleSelfXssWarning,
+solo produccion, estilo Google/Facebook) montado en el layout raiz - protege
+al usuario de la estafa "pega este codigo en DevTools para ganar puntos".
+
+Verificacion: tsc limpio + generate-sw-version genera version correcta.
+Prueba real post-deploy: el iPhone del founder debe recibir el banner.
+
+**Archivos:** .claude/CLAUDE.md, .gitignore, ISSUES.md, next.config.ts, package.json, public/sw.js, scripts/generate-sw-version.mjs, src/app/layout.tsx (+2 mas)
+
+## 2026-07-25 (rama `fix/pwa-actualizacion-instantanea`)
+
+fix: la PWA se actualiza sola — nunca más "borrá el caché del celular"
+
+El founder detectó que su iPhone mostraba la versión vieja del sitio hasta borrar historial —
+inadmisible para usuarios reales. Diagnóstico: el SW estaba bien diseñado (network-first para
+HTML, cache-first solo para estáticos hasheados, banner "Actualizar") pero con TRES agujeros:
+(1) `CACHE_VERSION` manual que ningún deploy bumpeaba → sw.js nunca cambiaba de bytes → el
+navegador jamás detectaba versión nueva → el SW viejo quedaba instalado PARA SIEMPRE;
+(2) el fetch de navegación sin opciones pasaba por el caché HTTP del navegador — Safari iOS
+cachea heurísticamente el HTML, así que "network-first" servía páginas viejas sin tocar la red;
+(3) el chequeo de updates corría cada 10 minutos: en mobile (sesiones de 40 segundos) nunca
+llegaba a ejecutarse. FIX: (a) `scripts/generate-sw-version.mjs` corre como `prebuild` y estampa
+hash-del-commit+timestamp en `public/sw-version.js` (GITIGNORADO — el `git reset --hard` del VPS
+lo regenera limpio en cada deploy; sw.js lo lee con importScripts y cae a un default en dev);
+(b) navegación con `fetch(request, {cache:"no-store"})` — el HTML siempre baja fresco;
+(c) `updateViaCache:"none"` + `registration.update()` inmediato al abrir + en `visibilitychange`
+(cuando la app vuelve a primer plano). Resultado: cada deploy dispara el banner "Actualizar" en
+la primera apertura de cada cliente. Límite de plataforma documentado: la PWA anclada a la
+pantalla de inicio de iOS puede mostrar un instante de versión vieja al restaurar — igual que
+Twitter/Starbucks; se actualiza al toque.
+Headers: `/sw-version.js` con no-cache (si se cacheara, el versionado no serviría).
+Verificación: tsc limpio + `node scripts/generate-sw-version.mjs` genera versión correcta.
+Prueba real post-deploy: iPhone del founder con la versión vieja clavada debe recibir el banner.
+BONUS misma rama: aviso anti-Self-XSS en la consola (`ConsoleSelfXssWarning`, solo producción,
+estilo Google/Facebook) montado en el layout raíz — protege al usuario de la estafa "pegá este
+código en DevTools para ganar puntos" (el código pegado corre con SU sesión).
+Archivos: `public/sw.js`, `src/components/ServiceWorkerRegistrar.tsx`, `next.config.ts`,
+`package.json` (prebuild), `.gitignore`, `scripts/generate-sw-version.mjs` (nuevo),
+`src/components/ConsoleSelfXssWarning.tsx` (nuevo), `src/app/layout.tsx`.
+
 ## 2026-07-25 (rama `feat/rediseno-perfil-comercio`)
 
 feat: perfil del comercio inmersivo — portada full-bleed, buscador propio, cards con MOOVER y cero fugas

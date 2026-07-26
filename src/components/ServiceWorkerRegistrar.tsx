@@ -51,7 +51,15 @@ export default function ServiceWorkerRegistrar() {
             try {
                 registration = await navigator.serviceWorker.register("/sw.js", {
                     scope: "/",
+                    // El chequeo de actualización NUNCA usa el caché HTTP para
+                    // sw.js ni sus importScripts (sw-version.js) — clave para
+                    // que iOS Safari detecte versiones nuevas al toque.
+                    updateViaCache: "none",
                 });
+
+                // Chequear actualización YA, en cada apertura (el intervalo de
+                // 10 min casi nunca corría en mobile: sesiones cortas).
+                registration.update().catch(() => { /* offline, no importa */ });
 
                 // Si ya hay un SW waiting (ej: se instaló antes de que el usuario recargara)
                 if (registration.waiting) {
@@ -78,6 +86,15 @@ export default function ServiceWorkerRegistrar() {
                 const interval = setInterval(() => {
                     registration?.update();
                 }, 10 * 60 * 1000);
+
+                // ...y cada vez que la app vuelve a primer plano (el caso real
+                // en mobile: el usuario cambia de app y vuelve).
+                const onVisible = () => {
+                    if (document.visibilityState === "visible") {
+                        registration?.update().catch(() => { /* offline */ });
+                    }
+                };
+                document.addEventListener("visibilitychange", onVisible);
 
                 console.log("[PWA] Service Worker registered successfully");
 

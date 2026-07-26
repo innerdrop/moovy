@@ -37,6 +37,16 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // ── Versión del SW (generada por prebuild): no-cache como sw.js ──
+      {
+        source: "/sw-version.js",
+        headers: [
+          {
+            key: "Cache-Control",
+            value: "no-cache, no-store, must-revalidate",
+          },
+        ],
+      },
       // ── Next.js static assets: inmutables (hasheados por el build) ──
       {
         source: "/_next/static/:path*",

@@ -12,7 +12,14 @@
 // El CACHE_VERSION se actualiza en cada deploy. El build script lo puede inyectar,
 // o se cambia manualmente. Al activarse un nuevo SW, borra todos los caches anteriores.
 
-var CACHE_VERSION = '5';
+// fix/pwa-actualizacion-instantanea (2026-07-25): la versión real la estampa
+// el build en /sw-version.js (script prebuild: scripts/generate-sw-version.mjs
+// — hash del commit + timestamp). Cada deploy ⇒ bytes nuevos ⇒ el navegador
+// detecta el SW nuevo y dispara el banner "Actualizar". Antes CACHE_VERSION
+// era manual y nunca se bumpeaba: los clientes quedaban con el SW viejo
+// PARA SIEMPRE (el bug del iPhone del founder).
+try { importScripts('/sw-version.js'); } catch (e) { /* dev: sin build no hay archivo */ }
+var CACHE_VERSION = self.__MOOVY_SW_VERSION__ || '6-dev';
 var CACHE_NAME = 'moovy-v' + CACHE_VERSION;
 var OFFLINE_URL = '/offline.html';
 
@@ -97,7 +104,11 @@ self.addEventListener('fetch', function (event) {
     // ── Navigation requests: Network-first with offline fallback ──
     if (request.mode === 'navigate') {
         event.respondWith(
-            fetch(request)
+            // cache:'no-store' — puentea el caché HTTP del navegador. Safari iOS
+            // cachea heurísticamente el HTML y el fetch() pelado se servía de ahí:
+            // "network-first" que en la práctica devolvía páginas viejas. Con
+            // no-store el HTML SIEMPRE baja fresco de la red.
+            fetch(request, { cache: 'no-store' })
                 .then(function (response) {
                     if (response.ok) {
                         var responseClone = response.clone();

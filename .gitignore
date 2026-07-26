@@ -75,3 +75,6 @@ metrics_dump.txt
 # Deploy logs (devmain.ps1 / rollback.ps1, chore/devmain-safety 2026-04-28)
 deploys/
 *.log
+
+# Version del Service Worker (generada por prebuild, nunca commitear)
+/public/sw-version.js

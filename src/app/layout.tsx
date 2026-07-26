@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Providers from "@/components/Providers";
 import ServiceWorkerRegistrar from "@/components/ServiceWorkerRegistrar";
+import ConsoleSelfXssWarning from "@/components/ConsoleSelfXssWarning";
 import WebVitalsReporter from "@/components/analytics/WebVitalsReporter";
 
 // Nunito — única font del producto (variable, 200-1000 weights)
@@ -83,6 +84,9 @@ export default function RootLayout({
       </head>
       <body className={`${nunito.variable} font-sans antialiased`}>
         <ServiceWorkerRegistrar />
+        {/* Aviso anti-Self-XSS en la consola (solo prod) — protege al usuario
+            de la estafa "pegá este código en DevTools". */}
+        <ConsoleSelfXssWarning />
         <WebVitalsReporter />
         <Providers>
           {children}
