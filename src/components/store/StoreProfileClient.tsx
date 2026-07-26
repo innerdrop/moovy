@@ -157,7 +157,11 @@ export default function StoreProfileClient({
                     topbarVisible ? "translate-y-0" : "-translate-y-full"
                 }`}
             >
-                <div className="bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
+                {/* fix/safe-area (2026-07-26): en PWA instalada la página llega hasta el
+                    borde físico de la pantalla — sin este padding el buscador queda DEBAJO
+                    del reloj/batería del iPhone y no se puede tocar. safe-area-top = 0 en
+                    navegador común, así que no cambia nada fuera del modo app. */}
+                <div className="bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm safe-area-top">
                     <div className="container mx-auto px-4 py-2.5 flex items-center gap-3">
                         <Link
                             href="/"
@@ -202,7 +206,7 @@ export default function StoreProfileClient({
                 <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/40 to-transparent" />
 
                 {/* Controles flotantes: volver · buscador · favorito */}
-                <div className="absolute inset-x-0 top-3 z-10">
+                <div className="absolute inset-x-0 top-[calc(0.75rem+env(safe-area-inset-top))] z-10">
                     <div className="container mx-auto px-4 flex items-center gap-3">
                         <Link
                             href="/"
@@ -319,7 +323,7 @@ export default function StoreProfileClient({
 
             {/* ── Tabs de categorías (anchors) ── */}
             {showTabs && (
-                <div className="sticky top-[56px] z-40 mt-5">
+                <div className="sticky top-[calc(56px+env(safe-area-inset-top))] z-40 mt-5">
                     <div className="bg-gradient-to-b from-gray-50 via-gray-50/95 to-transparent pb-2 pt-1">
                         <div className="container mx-auto px-4">
                             <div className="flex overflow-x-auto gap-2 no-scrollbar">
@@ -339,7 +343,9 @@ export default function StoreProfileClient({
             )}
 
             {/* ── Catálogo ── */}
-            <div className="container mx-auto px-4 mt-5 space-y-8">
+            {/* px-5 en mobile (founder 07-26): las cards quedaban pegadas al borde
+                de la pantalla — un toque más de aire lateral sin achicar la foto. */}
+            <div className="container mx-auto px-5 sm:px-4 mt-5 space-y-8">
                 {results ? (
                     // Modo búsqueda: grilla plana con lo que matchea el query
                     <div>

@@ -27,9 +27,12 @@ import {
     SlidersHorizontal,
     KeyRound,
     X,
-    Calendar
+    Calendar,
+    ChevronDown,
+    Printer
 } from "lucide-react";
 import OrderChatPanel from "@/components/orders/OrderChatPanel";
+import StorePauseCard from "@/components/comercios/StorePauseCard";
 
 interface SubOrder {
     id: string;
@@ -162,6 +165,65 @@ const statusConfig: Record<string, { label: string; color: string; bgColor: stri
     REJECTED: { label: "Rechazado", color: "text-red-600", bgColor: "bg-red-100", icon: <XCircle className="w-5 h-5" /> },
 };
 
+/**
+ * Ticket de identificación del pedido (founder 07-26) — NO fiscal.
+ * Formato 80mm (impresora térmica) pero imprime en cualquier impresora:
+ * abre una ventanita con el ticket y dispara el diálogo de impresión del
+ * sistema. Etapa 1 del plan de impresión (etapa 2 post-piloto: auto-print
+ * al entrar un pedido pagado; etapa 3: térmicas cloud tipo Asia).
+ */
+function printOrderTicket(order: Order) {
+    // Seguridad: TODO texto que viene de datos (nombres de cliente/productos,
+    // dirección) se escapa antes de entrar al HTML del ticket — un nombre
+    // malicioso no puede inyectar código en la ventana del comercio.
+    const esc = (s: string) =>
+        s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    const items = order.items
+        .map((i) => `<tr><td class="q">${i.quantity}×</td><td>${esc(i.name)}</td><td class="p">${formatPrice(i.price * i.quantity)}</td></tr>`)
+        .join("");
+    const entrega = order.isPickup
+        ? "RETIRA EN LOCAL"
+        : order.address
+            ? `ENVÍO: ${esc(`${order.address.street} ${order.address.number}, ${order.address.city}`)}`
+            : "ENVÍO A DOMICILIO";
+    const fecha = new Date(order.createdAt).toLocaleString("es-AR", {
+        timeZone: "America/Argentina/Ushuaia",
+        day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit",
+    });
+    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(order.orderNumber)}</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; font-family:'Courier New',monospace; color:#000; }
+  body { width:72mm; padding:4mm 3mm; }
+  .c { text-align:center; }
+  .brand { font-size:16px; font-weight:900; letter-spacing:2px; }
+  .num { font-size:26px; font-weight:900; margin:2mm 0 1mm; }
+  .meta { font-size:11px; margin-bottom:1mm; }
+  hr { border:none; border-top:1px dashed #000; margin:2mm 0; }
+  table { width:100%; font-size:12px; border-collapse:collapse; }
+  td { padding:0.6mm 0; vertical-align:top; }
+  .q { width:9mm; font-weight:bold; }
+  .p { text-align:right; white-space:nowrap; }
+  .tot { font-size:14px; font-weight:900; display:flex; justify-content:space-between; }
+  .entrega { font-size:11.5px; font-weight:bold; margin:1mm 0; }
+  .legal { font-size:9px; text-align:center; margin-top:2mm; }
+  @media print { body { width:auto; } }
+</style></head><body>
+  <div class="c brand">MOOVY</div>
+  <div class="c num">${esc(order.orderNumber)}</div>
+  <div class="c meta">${fecha} hs · ${esc(order.user?.name || "Cliente")}${order.user?.phone ? " · " + esc(order.user.phone) : ""}</div>
+  <div class="c entrega">${entrega}</div>
+  <hr><table>${items}</table><hr>
+  <div class="tot"><span>TOTAL PRODUCTOS</span><span>${formatPrice(getMerchantSale(order))}</span></div>
+  <div class="legal">Ticket NO fiscal — solo identificación del pedido.<br>Abrochalo a la bolsa 📎</div>
+<script>window.onload = function(){ window.print(); };<\/script>
+</body></html>`;
+    const w = window.open("", "_blank", "width=340,height=560");
+    if (!w) return false; // popup bloqueado — el caller avisa por toast
+    w.document.write(html);
+    w.document.close();
+    return true;
+}
+
 const CANCELLATION_REASONS = [
     "Producto no disponible",
     "Falta de stock",
@@ -278,6 +340,18 @@ export default function ComercioPedidosPage() {
     const [minAmount, setMinAmount] = useState("");
     const [maxAmount, setMaxAmount] = useState("");
     const [showFilters, setShowFilters] = useState(false);
+
+    // ── Tablero KDS (founder 07-26, mockup A+B): acordeón por tarjeta ──
+    // Por defecto: los pedidos que PIDEN ACCIÓN llegan ABIERTOS (y latiendo);
+    // el resto colapsado. `toggledCards` invierte el default de una tarjeta
+    // cuando el comercio la toca (XOR — no hace falta doble estado).
+    const [toggledCards, setToggledCards] = useState<Set<string>>(new Set());
+    const toggleCard = (id: string) =>
+        setToggledCards(prev => {
+            const next = new Set(prev);
+            if (next.has(id)) next.delete(id); else next.add(id);
+            return next;
+        });
     const [merchantId, setMerchantId] = useState<string | null>(null);
     const [unassignableAlerts, setUnassignableAlerts] = useState<{ orderId: string; orderNumber: string }[]>([]);
     const [confirmTimeout, setConfirmTimeout] = useState(300);
@@ -551,6 +625,35 @@ export default function ComercioPedidosPage() {
     const isActiveStatus = (s: string) =>
         !completedStatuses.includes(s) && !failedStatuses.includes(s);
 
+    // Semáforo KDS: 3 contadores gigantes estilo pantalla de cocina.
+    // NUEVOS = piden una decisión YA (aceptar/confirmar reserva).
+    const needsActionStatuses = ["PENDING", "CONFIRMED", "SCHEDULED"];
+    const preparingStatuses = ["PREPARING", "SEARCHING_DRIVER", "DRIVER_ASSIGNED", "SCHEDULED_CONFIRMED"];
+    const needsAction = (s: string) => needsActionStatuses.includes(s);
+    const kdsNew = orders.filter(o => needsAction(o.status)).length;
+    const kdsPrep = orders.filter(o => preparingStatuses.includes(o.status)).length;
+    const kdsReady = orders.filter(o =>
+        isActiveStatus(o.status) && !needsAction(o.status) && !preparingStatuses.includes(o.status)
+    ).length;
+
+    /** "hace 3 min" — para que el comercio vea la antigüedad sin pensar. */
+    const timeAgo = (iso: string) => {
+        const mins = Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 60000));
+        if (mins < 1) return "recién";
+        if (mins < 60) return `hace ${mins} min`;
+        const h = Math.floor(mins / 60);
+        return `hace ${h} h ${mins % 60} min`;
+    };
+
+    /** Borde semáforo de la tarjeta (mockup B). */
+    const kdsBorder = (s: string) => {
+        if (failedStatuses.includes(s)) return "border-l-red-300";
+        if (needsAction(s)) return "border-l-[#e60012]";
+        if (preparingStatuses.includes(s)) return "border-l-amber-400";
+        if (completedStatuses.includes(s)) return "border-l-gray-300";
+        return "border-l-green-500";
+    };
+
     const filteredOrders = orders.filter(order => {
         if (filter === "active" && !isActiveStatus(order.status)) return false;
         if (filter === "completed" && !completedStatuses.includes(order.status)) return false;
@@ -605,6 +708,10 @@ export default function ComercioPedidosPage() {
                 </div>
             </div>
 
+            {/* Pausa rápida (founder 07-26): también acá, donde el comercio vive
+                cuando trabaja. selfFetch: esta página es client y no trae merchant. */}
+            <StorePauseCard variant="compact" selfFetch />
+
             {/* Disconnection Banner — sticky warning when socket is down */}
             {!isConnected && disconnectedSince && (
                 <DisconnectionBanner
@@ -648,45 +755,79 @@ export default function ComercioPedidosPage() {
                 </div>
             )}
 
-            {/* Filter Tabs */}
-            {(() => {
-                const failedCount = orders.filter(o => failedStatuses.includes(o.status)).length;
-                return (
-            <div className="flex gap-2 bg-gray-100 p-1 rounded-xl overflow-x-auto">
-                {[
-                    { key: "active", label: "Activos", count: orders.filter(o => isActiveStatus(o.status)).length, tone: "default" as const },
-                    { key: "completed", label: "Completados", count: orders.filter(o => completedStatuses.includes(o.status)).length, tone: "default" as const },
-                    { key: "failed", label: "Fallidos", count: failedCount, tone: "danger" as const },
-                    { key: "all", label: "Todos", count: orders.length, tone: "default" as const },
-                ].map((tab) => (
-                    <button
-                        key={tab.key}
-                        onClick={() => setFilter(tab.key as typeof filter)}
-                        className={`flex-1 min-w-[100px] py-2 px-3 rounded-lg text-sm font-medium transition ${filter === tab.key
-                            ? tab.tone === "danger"
-                                ? "bg-white shadow-sm text-red-600"
-                                : "bg-white shadow-sm text-blue-600"
-                            : tab.tone === "danger" && tab.count > 0
-                                ? "text-red-600 hover:text-red-700"
-                                : "text-gray-500 hover:text-gray-700"
-                            }`}
-                    >
-                        {tab.label} ({tab.count})
-                    </button>
-                ))}
+            {/* ── Contadores KDS (mockup A): el estado de la cocina de un vistazo.
+                NUEVOS late en rojo cuando hay pedidos esperando decisión. Tocar
+                un contador te lleva a la lista de activos. ── */}
+            <div className="grid grid-cols-3 gap-2">
+                <button
+                    type="button"
+                    onClick={() => setFilter("active")}
+                    className={`rounded-2xl py-3 px-1 text-center border-2 transition ${
+                        kdsNew > 0
+                            ? "bg-[#e60012] border-[#e60012] text-white kds-pulse"
+                            : "bg-white border-gray-100 text-gray-400"
+                    }`}
+                >
+                    <span className="block text-3xl font-black leading-none">{kdsNew}</span>
+                    <span className="block text-[11px] font-extrabold tracking-wide mt-1">NUEVOS</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setFilter("active")}
+                    className={`rounded-2xl py-3 px-1 text-center border-2 transition ${
+                        kdsPrep > 0
+                            ? "bg-amber-50 border-amber-200 text-amber-700"
+                            : "bg-white border-gray-100 text-gray-400"
+                    }`}
+                >
+                    <span className="block text-3xl font-black leading-none">{kdsPrep}</span>
+                    <span className="block text-[11px] font-extrabold tracking-wide mt-1">EN PREPARACIÓN</span>
+                </button>
+                <button
+                    type="button"
+                    onClick={() => setFilter("active")}
+                    className={`rounded-2xl py-3 px-1 text-center border-2 transition ${
+                        kdsReady > 0
+                            ? "bg-green-50 border-green-200 text-green-700"
+                            : "bg-white border-gray-100 text-gray-400"
+                    }`}
+                >
+                    <span className="block text-3xl font-black leading-none">{kdsReady}</span>
+                    <span className="block text-[11px] font-extrabold tracking-wide mt-1">LISTOS · EN CALLE</span>
+                </button>
             </div>
-                );
-            })()}
 
-            {/* Advanced Filters */}
-            <div className="flex items-center gap-2">
+            {/* Archivo + filtros: los contadores KDS de arriba son el estado de HOY;
+                estas chips son el ARCHIVO (historial de ventas, fallidos, todo) —
+                secundarias a propósito (founder 07-26: "ya no merecen protagonismo"). */}
+            {/* Vista y filtros (founder 07-26, 3er intento): NADA de chips
+                chiquitas con scroll — la vista (Activos/Completados/Fallidos/
+                Todos) se elige DENTRO del panel con botones grandes. Afuera solo
+                queda el botón y, si no estás en Activos (la cocina), un aviso
+                "Viendo: X" con ✕ para volver de un toque. */}
+            <div className="flex items-center gap-2 flex-wrap">
                 <button
                     onClick={() => setShowFilters(!showFilters)}
-                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium transition ${showFilters ? "bg-blue-100 text-blue-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold transition ${
+                        showFilters || dateFrom || dateTo || minAmount || maxAmount
+                            ? "bg-blue-100 text-blue-700"
+                            : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
                 >
                     <SlidersHorizontal className="w-4 h-4" />
-                    Filtros
+                    Vista y filtros
+                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showFilters ? "rotate-180" : ""}`} />
                 </button>
+                {filter !== "active" && (
+                    <button
+                        onClick={() => setFilter("active")}
+                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold bg-gray-900 text-white"
+                        title="Volver a los pedidos activos"
+                    >
+                        Viendo: {filter === "completed" ? "Completados" : filter === "failed" ? "Fallidos" : "Todos"}
+                        <X className="w-3.5 h-3.5" />
+                    </button>
+                )}
                 {(dateFrom || dateTo || minAmount || maxAmount) && (
                     <button
                         onClick={() => { setDateFrom(""); setDateTo(""); setMinAmount(""); setMaxAmount(""); }}
@@ -697,7 +838,35 @@ export default function ComercioPedidosPage() {
                 )}
             </div>
             {showFilters && (
-                <div className="bg-white rounded-xl border border-gray-100 p-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-4">
+                    <div>
+                        <p className="text-[11px] font-black tracking-wide text-gray-400 mb-2">QUÉ VER</p>
+                        <div className="grid grid-cols-2 gap-2">
+                            {[
+                                { key: "active", label: "Activos", count: orders.filter(o => isActiveStatus(o.status)).length },
+                                { key: "completed", label: "Completados", count: orders.filter(o => completedStatuses.includes(o.status)).length },
+                                { key: "failed", label: "Fallidos", count: orders.filter(o => failedStatuses.includes(o.status)).length },
+                                { key: "all", label: "Todos", count: orders.length },
+                            ].map((tab) => (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => { setFilter(tab.key as typeof filter); setShowFilters(false); }}
+                                    className={`py-2.5 px-3 rounded-xl text-sm font-bold transition ${
+                                        filter === tab.key
+                                            ? tab.key === "failed"
+                                                ? "bg-red-600 text-white"
+                                                : "bg-gray-900 text-white"
+                                            : tab.key === "failed" && tab.count > 0
+                                                ? "bg-red-50 text-red-600"
+                                                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                    }`}
+                                >
+                                    {tab.label} ({tab.count})
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
                         <label className="block text-xs text-gray-500 mb-1">Desde</label>
                         <input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
@@ -713,6 +882,7 @@ export default function ComercioPedidosPage() {
                     <div>
                         <label className="block text-xs text-gray-500 mb-1">Monto máximo</label>
                         <input type="number" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} placeholder="$∞" min="0" className="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm" />
+                    </div>
                     </div>
                 </div>
             )}
@@ -733,25 +903,44 @@ export default function ComercioPedidosPage() {
                         const isUpdating = updating === order.id;
                         const isPending = order.status === "PENDING";
 
+                        // Acordeón (mockup B): los que piden acción llegan ABIERTOS,
+                        // el resto colapsado; toggledCards invierte el default (XOR).
+                        const isExpanded = needsAction(order.status) !== toggledCards.has(order.id);
+                        const itemCount = order.items.reduce((n, i) => n + i.quantity, 0);
+
                         return (
                             <div
                                 key={order.id}
-                                className={`bg-white rounded-xl border overflow-hidden ${isPending ? "ring-2 ring-yellow-400 shadow-md" : "border-gray-100"
-                                    }`}
+                                className={`bg-white rounded-2xl overflow-hidden border border-gray-100 border-l-[6px] shadow-sm ${kdsBorder(order.status)} ${
+                                    needsAction(order.status) ? "kds-pulse" : ""
+                                }`}
                             >
-                                {/* Order Header */}
-                                <div className={`px-4 py-3 ${status.bgColor} flex items-center justify-between`}>
-                                    <div className="flex items-center gap-2">
-                                        <span className={status.color}>{status.icon}</span>
-                                        <span className={`font-semibold text-sm ${status.color}`}>{status.label}</span>
+                                {/* Cabecera SIEMPRE visible: número grande · cliente · antigüedad ·
+                                    estado. Tocarla abre/cierra el detalle hacia abajo. */}
+                                <button
+                                    type="button"
+                                    onClick={() => toggleCard(order.id)}
+                                    className="w-full text-left px-4 py-3 flex items-center justify-between gap-2"
+                                >
+                                    <div className="min-w-0">
+                                        <p className="text-[17px] font-black text-gray-900 truncate">
+                                            {order.orderNumber} · {order.user?.name || "Cliente"}
+                                        </p>
+                                        <p className="text-xs text-gray-400 font-semibold mt-0.5">
+                                            {timeAgo(order.createdAt)} · {itemCount} ítem{itemCount === 1 ? "" : "s"} · {formatPrice(getMerchantSale(order))}
+                                        </p>
                                     </div>
-                                    <span className="text-xs text-gray-500 font-mono">
-                                        {order.orderNumber}
+                                    <span className="flex items-center gap-1.5 flex-shrink-0">
+                                        <span className={`inline-flex items-center gap-1 text-[11.5px] font-black px-2.5 py-1 rounded-full ${status.bgColor} ${status.color} ${needsAction(order.status) ? "kds-blink" : ""}`}>
+                                            {status.label}
+                                        </span>
+                                        <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
                                     </span>
-                                </div>
+                                </button>
 
-                                {/* Order Body */}
-                                <div className="p-4">
+                                {/* Detalle desplegable */}
+                                {isExpanded && (
+                                <div className="p-4 pt-3 border-t border-dashed border-gray-100">
                                     {/* Banner de fallo: cuando un pedido fue cancelado / rechazado / o no tuvo
                                         repartidor, mostramos un bloque rojo con el motivo para que el comercio
                                         entienda QUÉ pasó sin salir de esta tarjeta. */}
@@ -919,6 +1108,20 @@ export default function ComercioPedidosPage() {
                                                 <XCircle className="w-5 h-5" />
                                             </button>
                                         )}
+
+                                        {/* Imprimir ticket (no fiscal) — para abrochar a la bolsa.
+                                            Disponible siempre (reimprimir un entregado también sirve). */}
+                                        <button
+                                            onClick={() => {
+                                                if (!printOrderTicket(order)) {
+                                                    toast.error("Permití las ventanas emergentes para poder imprimir el ticket");
+                                                }
+                                            }}
+                                            className="p-2 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 transition"
+                                            title="Imprimir ticket del pedido"
+                                        >
+                                            <Printer className="w-5 h-5" />
+                                        </button>
                                     </div>
 
                                     {/* Chat con comprador */}
@@ -946,6 +1149,7 @@ export default function ComercioPedidosPage() {
                                         </div>
                                     )}
                                 </div>
+                                )}
                             </div>
                         );
                     })}

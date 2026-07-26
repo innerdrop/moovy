@@ -974,6 +974,20 @@ h4, h5, h6 {
    lado tienda — mp-skeleton es violeta y queda solo para marketplace.
    El brillo anima un ::after superpuesto (transform infinito, nunca
    fill:forwards — ver lección del desenfoque en desktop). */
+/* Tablero KDS de Pedidos del comercio (founder 07-26): el pedido que pide
+   acción LATE (anillo rojo) y su pill parpadea. Solo box-shadow/opacity —
+   nunca transform con fill:forwards (lección del desenfoque en desktop). */
+@keyframes kds-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(230, 0, 18, 0.35); }
+  50% { box-shadow: 0 0 0 8px rgba(230, 0, 18, 0); }
+}
+.kds-pulse { animation: kds-pulse 1.6s ease-in-out infinite; }
+@keyframes kds-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+.kds-blink { animation: kds-blink 1.3s ease-in-out infinite; }
+
 @keyframes sk-shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }

@@ -22,6 +22,7 @@ import {
     firstMonthFreeBaseDate,
 } from "@/lib/merchant-loyalty";
 import KPIDashboard from "./KPIDashboard";
+import StorePauseCard from "@/components/comercios/StorePauseCard";
 import { computeMerchantSetup } from "@/lib/merchant-setup";
 
 const RED = "#e60012";
@@ -271,6 +272,10 @@ export default async function ComerciosDashboardPage() {
                     </Link>
                 </div>
             </div>
+
+            {/* Pausa rápida (founder 07-26): acción de emergencia a mano, no
+                escondida en Horarios. Solo modo operación (acá ya está APPROVED). */}
+            <StorePauseCard initialIsOpen={merchant.isOpen} />
 
             {/* Pedidos pendientes: LA alerta accionable (única con derecho a gritar) */}
             {pendingOrdersCount > 0 && (

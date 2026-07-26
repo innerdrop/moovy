@@ -4169,6 +4169,7 @@ COPY public."SupportChat" (id, "userId", "merchantId", "operatorId", subject, ca
 cmrc2vw0f000113mgtop0d6rn	cmqz5vsvy006nxhd8cea1yx8k	cmqz5vswb006uxhd8c5bcq86n	\N	Problema con un pedido	general	resolved	normal	\N	\N	2026-07-08 23:51:22.93	2026-07-09 00:47:50.454	2026-07-08 12:52:54.35	2026-07-09 00:47:50.456	MERCHANT
 cmrcsjs7o000d7nuefmjm1j2l	cmqz5vsvy006nxhd8cea1yx8k	cmqz5vswb006uxhd8c5bcq86n	cmrcsilkn00097nuetc7vfy53	Consulta general	general	closed	normal	\N	\N	2026-07-09 00:51:19.571	2026-07-09 00:58:59.213	2026-07-09 00:51:19.571	2026-07-09 00:58:59.215	MERCHANT
 cms0hflgm0009136y65k84nwp	cmrzdt1m80001wkbfyotyrlg7	cmrzdt1mo0004wkbfvcf93fr6	cmrcsilkn00097nuetc7vfy53	Consulta general	general	resolved	normal	\N	\N	2026-07-25 14:49:45.019	2026-07-25 14:52:10.562	2026-07-25 14:46:36.646	2026-07-25 14:52:10.564	MERCHANT
+cms2c15v7001v5p8saqad2vmn	cmqz5vwo300g5xhd8ok66ryk2	\N	cmrcsilkn00097nuetc7vfy53	Quisiera trabajar con ustedes	otro	active	normal	\N	\N	2026-07-26 21:50:57.522	\N	2026-07-26 21:50:57.522	2026-07-26 21:50:57.522	BUYER
 \.
 
 
@@ -4193,6 +4194,8 @@ cms0hjmsq000p136y4mybrr5a	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	/s
 cms0hkdn4000r136yhvsh69kc	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-25 14:50:19.792
 cms0hm1hs000t136yup1tdq4o	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-25 14:51:37.36
 cms0hmr48000v136ybxvylhrr	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-25 14:52:10.569
+cms2c15v7001x5p8sn3roz8jv	cms2c15v7001v5p8saqad2vmn	cmqz5vwo300g5xhd8ok66ryk2	Quisiera trabajar con ustedes	f	f	f	\N	\N	2026-07-26 21:50:57.522
+cms2c15v7001y5p8spu624a56	cms2c15v7001v5p8saqad2vmn	cmqz5vqsx0000xhd86fq6wm5d	Juan es tu operador asignado. En un momento te atiende, Pedro Comprador.	t	t	t	\N	\N	2026-07-26 21:50:57.522
 \.
 
 
@@ -4201,7 +4204,7 @@ cms0hmr48000v136ybxvylhrr	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	El
 --
 
 COPY public."SupportOperator" (id, "userId", "displayName", "isActive", "isOnline", "maxChats", "lastSeenAt", "createdAt", "updatedAt") FROM stdin;
-cmrcsilkn00097nuetc7vfy53	cmqz5vqsx0000xhd86fq6wm5d	Admin MOOVY	t	t	5	2026-07-25 14:48:10.875	2026-07-09 00:50:24.311	2026-07-25 14:48:10.877
+cmrcsilkn00097nuetc7vfy53	cmqz5vqsx0000xhd86fq6wm5d	Juan	t	t	5	2026-07-26 22:32:01.046	2026-07-09 00:50:24.311	2026-07-26 22:32:01.047
 \.
 
 
@@ -4223,14 +4226,14 @@ cmqz5vv0p00e9xhd8vtohx0lr	vendedor4@somosmoovy.com	$2b$12$rDe18.JZZyCFHKCeNU4aCe
 cmqz5vvmh00fbxhd84xtx2cxu	repartidor2@somosmoovy.com	$2b$12$r4yJqua1ydau1GZ534KwD..lHnb95szoStw65//XLI.4/A9wPOmD2	Lucas Delivery	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vvmh00fcxhd8epk923ku	\N	2026-06-29 11:55:52.409	2026-06-29 11:55:52.409	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vvwa00fjxhd8xtqudcev	repartidor3@somosmoovy.com	$2b$12$yl/hOmdNw3z0SofyaiHfDOPhvNTplD/eNxXBp.aW8DyFghiFLJWyy	Brian Express	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vvwa00fkxhd8tiegd01w	\N	2026-06-29 11:55:52.762	2026-06-29 11:55:52.762	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vw6e00frxhd8xzbnhvi3	repartidor4@somosmoovy.com	$2b$12$SCzlk3i5xewt6sCl6HzMlOzi6FTj2nomvuW61Jn149v/QANGQt5Ua	Nico Veloz	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vw6e00fsxhd8fi2f7iwm	\N	2026-06-29 11:55:53.127	2026-06-29 11:55:53.127	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
-cmqz5vwws00gbxhd8xdblt14z	cliente3@somosmoovy.com	$2b$12$9q91L9dMys9zsNJgBBKjgO3rmqK5OFExmfJJEbUojP7g8AJLw4Ufa	Lucía Test	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwws00gcxhd8ifwc7bkh	\N	2026-06-29 11:55:54.076	2026-06-29 11:55:54.076	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vx5l00ghxhd8xnar59ix	cliente4@somosmoovy.com	$2b$12$EfMi32tg/BNF9KGFede11OJs3dScKvyk3ted7lL7Ds5MFgBQ80Hve	Marco Demo	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vx5l00gixhd8lk39samr	\N	2026-06-29 11:55:54.393	2026-06-29 11:55:54.393	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vva600f3xhd89zcsytov	repartidor1@somosmoovy.com	$2b$12$wM6iMD5E3RXXdUr5GYnjc.ywxwzoF08aXzL.JKLJSHm0NzMKtQ3RW	Mateo Rider	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vva600f4xhd8q48id7j2	\N	2026-06-29 11:55:51.966	2026-06-29 12:11:39.124	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
 cmqz5vwfh00fzxhd8bchmmyw5	cliente1@somosmoovy.com	$2b$12$7ZFsSIglT1XVS/UewQDNYO4T.UjlCul7h9mv6sCYTJ4N.xVVgJYNO	Juana Cliente	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwfh00g0xhd8w7w3k570	\N	2026-06-29 11:55:53.453	2026-07-17 17:44:45.478	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-02 21:17:16.557	\N
 cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-07-22 12:30:00.633	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-11 21:53:29.246	\N
 cmqz5vrgz001jxhd84w7eneza	comercio1@somosmoovy.com	$2b$12$yF6/4feNZrmKkGW/zI752eg44jwODi1JejVllozBQ6DuoL3r0r.vm	Carlos Patagonia	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vrgz001kxhd8fe0upbjz	\N	2026-06-29 11:55:47.028	2026-07-06 23:20:58.373	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:20:58.372	\N
-cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-07-06 23:32:32.958	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:32:32.921	\N
+cmqz5vwws00gbxhd8xdblt14z	cliente3@somosmoovy.com	$2b$12$9q91L9dMys9zsNJgBBKjgO3rmqK5OFExmfJJEbUojP7g8AJLw4Ufa	Lucía Test	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwws00gcxhd8ifwc7bkh	\N	2026-06-29 11:55:54.076	2026-07-26 20:29:41.374	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-26 20:29:41.372	\N
 cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.37Whxp97s8kSiR7D.jXmok.DPmVC8uu	 				COMERCIO	\N	\N	0	0	f	cmqz5vsvy006oxhd85im89bep	\N	2026-06-29 11:55:48.862	2026-07-11 03:01:00.38	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-07 14:53:34.731	\N
+cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-07-26 21:49:51.903	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:32:32.921	\N
 cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-07-26 19:34:36.94	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-25 16:25:30.227	\N
 \.
 
@@ -4266,6 +4269,8 @@ cms24o9cm000te1t8nazvtqnb	cmrzdt1m80001wkbfyotyrlg7	POINTS_ADJUSTED_BY_ADMIN	Use
 cms24ogxn0010e1t8ruam103b	cmrzdt1m80001wkbfyotyrlg7	POINTS_ADJUSTED_BY_ADMIN	User	cmrzdt1m80001wkbfyotyrlg7	{"amount":-100000,"reason":"[REV:cms23xx0m000be1t84yvzttcl] Reversión de \\"Prueba\\"","revertedTransactionId":"cms23xx0m000be1t84yvzttcl","adminEmail":"admin@somosmoovy.com"}	\N	\N	2026-07-26 18:25:08.027
 cms24paw10017e1t8r2ytxgd5	cmrzdt1m80001wkbfyotyrlg7	POINTS_ADJUSTED_BY_ADMIN	User	cmrzdt1m80001wkbfyotyrlg7	{"amount":-1,"reason":"[REV:cms23plqw0002e1t8pswtu0ix] Reversión de \\"Prueba\\"","revertedTransactionId":"cms23plqw0002e1t8pswtu0ix","adminEmail":"admin@somosmoovy.com"}	\N	\N	2026-07-26 18:25:46.849
 cms275u09000127ez4s1kc8j5	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-26 19:34:37.351
+cms290fr200015p8sb81vqc2u	cmqz5vwws00gbxhd8xdblt14z	LOGIN	User	cmqz5vwws00gbxhd8xdblt14z	{"method":"credentials"}	\N	\N	2026-07-26 20:26:24.813
+cms2bzr9p001r5p8skgjm0yye	cmqz5vwo300g5xhd8ok66ryk2	LOGIN	User	cmqz5vwo300g5xhd8ok66ryk2	{"method":"credentials"}	\N	\N	2026-07-26 21:49:51.947
 \.
 
 

@@ -267,15 +267,22 @@ export function ChatWidget() {
     const dragStart = useRef({ x: 0, y: 0, bx: 0, by: 0 });
     const hasMoved = useRef(false);
 
+    // Zona prohibida de abajo (founder 07-26: "la burbuja toca la barra de
+    // abajo"): barra de navegación (~72px) + su safe-area + un respiro. La
+    // burbuja arranca ARRIBA de eso y el arrastre tampoco la deja bajar ahí.
+    const BOTTOM_NAV_SPACE = 116;
+
     const getDefaultPos = useCallback(() => {
-        if (typeof window === "undefined") return { x: 358, y: 760 };
-        return { x: window.innerWidth - 72, y: window.innerHeight - 140 };
+        if (typeof window === "undefined") return { x: 358, y: 700 };
+        return { x: window.innerWidth - 76, y: window.innerHeight - BOTTOM_NAV_SPACE - 56 };
     }, []);
 
     const clampPos = useCallback((x: number, y: number) => {
-        const maxX = (typeof window !== "undefined" ? window.innerWidth : 430) - 56;
-        const maxY = (typeof window !== "undefined" ? window.innerHeight : 900) - 56;
-        return { x: Math.max(0, Math.min(x, maxX)), y: Math.max(0, Math.min(y, maxY)) };
+        const vw = typeof window !== "undefined" ? window.innerWidth : 430;
+        const vh = typeof window !== "undefined" ? window.innerHeight : 900;
+        const maxX = vw - 72;
+        const maxY = vh - BOTTOM_NAV_SPACE - 56;
+        return { x: Math.max(16, Math.min(x, maxX)), y: Math.max(72, Math.min(y, maxY)) };
     }, []);
 
     const handleDragStart = useCallback((clientX: number, clientY: number) => {
@@ -298,7 +305,7 @@ export function ChatWidget() {
         // Snap to nearest horizontal edge
         if (bubblePos) {
             const midX = (typeof window !== "undefined" ? window.innerWidth : 430) / 2;
-            const snapX = bubblePos.x < midX ? 16 : (typeof window !== "undefined" ? window.innerWidth : 430) - 72;
+            const snapX = bubblePos.x < midX ? 16 : (typeof window !== "undefined" ? window.innerWidth : 430) - 76;
             setBubblePos(prev => prev ? { ...prev, x: snapX } : prev);
         }
     }, [bubblePos]);
@@ -329,12 +336,25 @@ export function ChatWidget() {
     }
 
     const currentPos = bubblePos || getDefaultPos();
-    const chatOpensUp = currentPos.y > 300;
     return (
         <div
-            className="fixed z-40"
+            className={`fixed ${isOpen ? "z-[60]" : "z-40"}`}
             style={{ left: currentPos.x, top: currentPos.y, touchAction: "none" }}
         >
+            {/* Telón (founder 07-26: "el chat se mezcla con todo lo del fondo").
+                Oscurece + desenfoca SUAVE (3px) el resto de la pantalla: la
+                atención va al chat y el fondo deja de competir. Blur bajo a
+                propósito — un desenfoque fuerte pesa en Android de gama baja y
+                el objetivo es jerarquía, no efecto. Tocar el telón cierra.
+                Se pinta PRIMERO: la burbuja y el panel quedan por encima. */}
+            {isOpen && (
+                <div
+                    onClick={() => setIsOpen(false)}
+                    className="fixed inset-0 bg-black/35 backdrop-blur-[3px] animate-in fade-in duration-200"
+                    aria-hidden
+                />
+            )}
+
             <button
                 onTouchStart={(e) => handleDragStart(e.touches[0].clientX, e.touches[0].clientY)}
                 onMouseDown={(e) => { e.preventDefault(); handleDragStart(e.clientX, e.clientY); }}
@@ -355,44 +375,69 @@ export function ChatWidget() {
             </button>
 
             {isOpen && (
-                <div className={`absolute ${chatOpensUp ? "bottom-20" : "top-20"} right-0 w-96 max-w-[calc(100vw-32px)] bg-white rounded-lg shadow-2xl flex flex-col h-96 md:h-[500px] animate-in slide-in-from-bottom-5`}>
+                <div className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[min(24rem,calc(100vw-32px))] max-h-[min(32rem,calc(100vh-9rem))] h-[30rem] bg-white rounded-3xl shadow-[0_24px_70px_rgba(23,24,28,0.3)] ring-1 ring-black/5 flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                     {!activeChat ? (
                         <>
-                            {/* Header - Chat list */}
-                            <div className="bg-[#e60012] text-white p-4 rounded-t-lg shrink-0">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <h3 className="font-semibold">Soporte MOOVY</h3>
-                                        <p className="text-xs opacity-90">
-                                            {isOnline ? "En línea" : "Fuera de línea"}
-                                        </p>
+                            {/* Header - Chat list (rediseño founder 07-26): degradado,
+                                avatar y estado con PULSO verde cuando hay alguien
+                                atendiendo — "En línea" plano no se leía como vivo. */}
+                            <div className="bg-gradient-to-br from-[#e60012] to-[#ff2d3f] text-white px-4 pt-4 pb-5 shrink-0">
+                                <div className="flex items-start justify-between gap-2">
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur flex items-center justify-center flex-shrink-0">
+                                            <ChatBubbleIcon className="w-5 h-5" />
+                                        </div>
+                                        <div className="min-w-0">
+                                            <h3 className="font-extrabold text-[15px] leading-tight">Soporte Moovy</h3>
+                                            <span className={`mt-1 inline-flex items-center gap-1.5 text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                                                isOnline ? "bg-white/20" : "bg-black/15"
+                                            }`}>
+                                                <span className="relative flex h-2 w-2">
+                                                    {isOnline && (
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75" />
+                                                    )}
+                                                    <span className={`relative inline-flex rounded-full h-2 w-2 ${isOnline ? "bg-green-400" : "bg-white/50"}`} />
+                                                </span>
+                                                {isOnline ? "En línea ahora" : "Fuera de línea"}
+                                            </span>
+                                        </div>
                                     </div>
                                     <button
                                         onClick={() => setIsOpen(false)}
-                                        className="text-lg hover:opacity-80"
+                                        className="w-8 h-8 rounded-full hover:bg-white/20 transition flex items-center justify-center flex-shrink-0 text-white/90"
+                                        aria-label="Cerrar"
                                     >
                                         ✕
                                     </button>
                                 </div>
+                                <p className="text-[11.5px] text-white/85 mt-2.5 leading-snug">
+                                    {isOnline
+                                        ? "Somos de Ushuaia y te respondemos al toque."
+                                        : "Dejanos tu consulta y te respondemos apenas volvamos."}
+                                </p>
                             </div>
 
                             {/* Chat list */}
-                            <div className="flex-1 overflow-y-auto">
+                            <div className="flex-1 overflow-y-auto bg-gray-50/70 p-3">
                                 {chats.length === 0 ? (
-                                    <div className="p-6 text-center text-gray-500">
-                                        <div className="text-3xl mb-2">💬</div>
-                                        <p className="text-sm">No tenés consultas aún</p>
-                                        <p className="text-xs text-gray-400 mt-1">Creá una nueva si necesitás ayuda</p>
+                                    <div className="h-full flex flex-col items-center justify-center text-center px-6">
+                                        <div className="w-14 h-14 rounded-2xl bg-white shadow-sm border border-gray-100 flex items-center justify-center mb-3">
+                                            <ChatBubbleIcon className="w-7 h-7 text-gray-300" />
+                                        </div>
+                                        <p className="text-[15px] font-bold text-gray-700">¿En qué te damos una mano?</p>
+                                        <p className="text-[12.5px] text-gray-400 mt-1 leading-snug">
+                                            Escribinos por un pedido, un pago o cualquier duda.
+                                        </p>
                                     </div>
                                 ) : (
                                     chats.map(chat => (
                                         <button
                                             key={chat.id}
                                             onClick={() => setActiveChat(chat)}
-                                            className="w-full text-left p-3 border-b hover:bg-gray-50 transition-colors"
+                                            className="w-full text-left p-3 mb-2 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-gray-200 transition-all"
                                         >
                                             <div className="flex items-center justify-between gap-2">
-                                                <p className="font-medium text-sm truncate flex-1">
+                                                <p className="font-bold text-[13.5px] text-gray-800 truncate flex-1">
                                                     {chat.subject || "Consulta"}
                                                 </p>
                                                 <div className="flex items-center gap-1.5 shrink-0">
@@ -406,7 +451,7 @@ export function ChatWidget() {
                                                     </span>
                                                 </div>
                                             </div>
-                                            <p className="text-xs text-gray-400 mt-1">
+                                            <p className="text-[11px] text-gray-400 mt-1 font-medium">
                                                 {new Date(chat.lastMessageAt || chat.createdAt).toLocaleDateString("es-AR", {
                                                     day: "numeric", month: "short", hour: "2-digit", minute: "2-digit"
                                                 })}
@@ -417,27 +462,28 @@ export function ChatWidget() {
                             </div>
 
                             {/* New chat button */}
-                            <div className="border-t p-3 shrink-0">
+                            <div className="border-t border-gray-100 p-3 shrink-0 bg-white">
                                 <button
                                     onClick={() => setActiveChat({ id: "new", userId: "", status: "waiting", priority: "normal", createdAt: new Date(), updatedAt: new Date(), lastMessageAt: new Date(), messages: [] })}
-                                    className="w-full bg-[#e60012] text-white py-2.5 rounded-lg hover:bg-red-700 font-medium text-sm transition-colors"
+                                    className="w-full bg-[#e60012] text-white py-3 rounded-2xl hover:bg-red-700 font-bold text-sm transition-colors shadow-sm active:scale-[0.99]"
                                 >
-                                    + Nueva consulta
+                                    Escribinos
                                 </button>
                             </div>
                         </>
                     ) : activeChat.id === "new" ? (
                         <>
                             {/* Header - New chat */}
-                            <div className="bg-[#e60012] text-white p-4 rounded-t-lg shrink-0">
-                                <div className="flex items-center justify-between">
-                                    <h3 className="font-semibold">Nueva consulta</h3>
+                            <div className="bg-gradient-to-br from-[#e60012] to-[#ff2d3f] text-white px-4 py-4 shrink-0">
+                                <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => setActiveChat(null)}
-                                        className="text-lg hover:opacity-80"
+                                        className="w-8 h-8 rounded-full hover:bg-white/20 transition flex items-center justify-center flex-shrink-0"
+                                        aria-label="Volver"
                                     >
                                         ←
                                     </button>
+                                    <h3 className="font-extrabold text-[15px]">Nueva consulta</h3>
                                 </div>
                             </div>
 
@@ -489,25 +535,37 @@ export function ChatWidget() {
                     ) : (
                         <>
                             {/* Header - Active chat */}
-                            <div className="bg-[#e60012] text-white p-4 rounded-t-lg shrink-0">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-semibold text-sm truncate">{activeChat.subject || "Consulta"}</h3>
-                                        <p className="text-xs opacity-90">
-                                            {activeChat.status === "resolved" || activeChat.status === "closed"
-                                                ? statusLabel(activeChat.status)
-                                                : activeChat.operator?.isOnline
-                                                    ? "Operador en línea"
-                                                    : "Esperando respuesta"
-                                            }
-                                        </p>
-                                    </div>
+                            <div className="bg-gradient-to-br from-[#e60012] to-[#ff2d3f] text-white px-3 py-3.5 shrink-0">
+                                <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => setActiveChat(null)}
-                                        className="text-lg hover:opacity-80 ml-2 shrink-0"
+                                        className="w-8 h-8 rounded-full hover:bg-white/20 transition flex items-center justify-center flex-shrink-0"
+                                        aria-label="Volver"
                                     >
                                         ←
                                     </button>
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="font-bold text-[13.5px] truncate leading-tight">{activeChat.subject || "Consulta"}</h3>
+                                        {/* Quién atiende + pulso verde: el cliente ve que hay
+                                            alguien del otro lado, con su nombre real. */}
+                                        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-white/90 mt-0.5">
+                                            {activeChat.status === "resolved" || activeChat.status === "closed" ? (
+                                                statusLabel(activeChat.status)
+                                            ) : activeChat.operator?.isOnline ? (
+                                                <>
+                                                    <span className="relative flex h-2 w-2">
+                                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-300 opacity-75" />
+                                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-400" />
+                                                    </span>
+                                                    {activeChat.operator.displayName
+                                                        ? `${activeChat.operator.displayName} está en línea`
+                                                        : "En línea"}
+                                                </>
+                                            ) : (
+                                                "Te respondemos apenas podamos"
+                                            )}
+                                        </span>
+                                    </div>
                                 </div>
                             </div>
 
@@ -531,9 +589,9 @@ export function ChatWidget() {
                                             className={`flex ${msg.isFromAdmin ? "justify-start" : "justify-end"}`}
                                         >
                                             <div
-                                                className={`max-w-[80%] px-3 py-2 rounded-2xl text-sm ${
+                                                className={`max-w-[80%] px-3.5 py-2.5 rounded-2xl text-[13.5px] leading-relaxed shadow-sm ${
                                                     msg.isFromAdmin
-                                                        ? "bg-white border border-gray-200 rounded-bl-md"
+                                                        ? "bg-white border border-gray-100 rounded-bl-md text-gray-800"
                                                         : "bg-[#e60012] text-white rounded-br-md"
                                                 }`}
                                             >
@@ -574,7 +632,7 @@ export function ChatWidget() {
                                             onChange={(e) => setMessage(e.target.value)}
                                             onKeyDown={handleKeyDown}
                                             placeholder="Escribí un mensaje..."
-                                            className="flex-1 px-3 py-2 border rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#e60012] focus:border-transparent"
+                                            className="flex-1 px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-[#e60012] focus:border-transparent focus:bg-white transition"
                                             disabled={loading}
                                         />
                                         <button

@@ -20,11 +20,12 @@ export async function GET() {
 
     const op = await (prisma as any).supportOperator.findUnique({
         where: { userId: admin.userId },
-        select: { isOnline: true, isActive: true, lastSeenAt: true },
+        select: { isOnline: true, isActive: true, lastSeenAt: true, displayName: true },
     });
     const fresh = !!op && op.isActive && op.isOnline &&
         op.lastSeenAt && new Date(op.lastSeenAt).getTime() > Date.now() - OPERATOR_STALE_MS;
-    return NextResponse.json({ available: fresh });
+    // displayName: para que OPS prellene el "nombre para mostrar" al ponerse en línea.
+    return NextResponse.json({ available: fresh, displayName: op?.displayName ?? null });
 }
 
 // POST { available: boolean } — toggle / heartbeat / beacon de cierre.
@@ -33,14 +34,22 @@ export async function POST(request: Request) {
     if (admin instanceof NextResponse) return admin;
 
     let available = false;
+    let requestedName: string | null = null;
     try {
         const body = await request.json();
         available = body?.available === true;
+        // fix/safe-area-pausa-rapida-y-card (founder 07-26): el operador ELIGE el
+        // nombre que ve el cliente ("Admin MOOVY" quedaba mal). Solo se actualiza
+        // cuando viene en el body (el heartbeat no lo manda — no pisa nada).
+        if (typeof body?.displayName === "string") {
+            const clean = body.displayName.trim().slice(0, 40);
+            if (clean.length >= 2) requestedName = clean;
+        }
     } catch {
         available = false; // sendBeacon sin JSON parseable → offline
     }
 
-    const displayName = admin.name || admin.email || "Equipo Moovy";
+    const displayName = requestedName || admin.name || admin.email || "Equipo Moovy";
 
     await (prisma as any).supportOperator.upsert({
         where: { userId: admin.userId },
@@ -55,6 +64,7 @@ export async function POST(request: Request) {
             isActive: true,
             isOnline: available,
             lastSeenAt: new Date(),
+            ...(requestedName ? { displayName: requestedName } : {}),
         },
     });
 

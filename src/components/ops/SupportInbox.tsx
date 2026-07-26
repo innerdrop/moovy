@@ -76,6 +76,11 @@ export default function SupportInbox() {
     const [reply, setReply] = useState("");
     const [sending, setSending] = useState(false);
     const [available, setAvailable] = useState(false);
+    // Nombre que ve el cliente en el chat (founder 07-26: "Admin MOOVY" quedaba
+    // mal). Antes de ponerse en línea, el operador lo elige/confirma en un modal.
+    const [opName, setOpName] = useState("");
+    const [nameModalOpen, setNameModalOpen] = useState(false);
+    const [nameDraft, setNameDraft] = useState("");
     const endRef = useRef<HTMLDivElement>(null);
     const selectedIdRef = useRef<string | null>(null);
     selectedIdRef.current = selected?.id ?? null;
@@ -107,14 +112,33 @@ export default function SupportInbox() {
     }, []);
 
     async function toggleAvailable() {
-        const next = !available;
-        setAvailable(next);
+        if (!available) {
+            // Ponerse EN LÍNEA pasa siempre por el modal del nombre.
+            setNameDraft(opName);
+            setNameModalOpen(true);
+            return;
+        }
+        setAvailable(false);
         try {
             await fetch("/api/admin/support/availability", {
                 method: "POST", headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ available: next }),
+                body: JSON.stringify({ available: false }),
             });
-        } catch { setAvailable(!next); }
+        } catch { setAvailable(true); }
+    }
+
+    async function goOnlineWithName() {
+        const clean = nameDraft.trim();
+        if (clean.length < 2) return;
+        setNameModalOpen(false);
+        setOpName(clean);
+        setAvailable(true);
+        try {
+            await fetch("/api/admin/support/availability", {
+                method: "POST", headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ available: true, displayName: clean }),
+            });
+        } catch { setAvailable(false); }
     }
 
     useEffect(() => { loadChats(); }, [loadChats]);
@@ -122,7 +146,10 @@ export default function SupportInbox() {
 
     // Disponibilidad para chat en vivo: estado inicial.
     useEffect(() => {
-        fetch("/api/admin/support/availability").then((r) => r.json()).then((d) => setAvailable(!!d.available)).catch(() => {});
+        fetch("/api/admin/support/availability").then((r) => r.json()).then((d) => {
+            setAvailable(!!d.available);
+            if (typeof d.displayName === "string" && d.displayName) setOpName(d.displayName);
+        }).catch(() => {});
     }, []);
     // Heartbeat cada 30s + aviso offline al cerrar (mientras estoy disponible).
     useEffect(() => {
@@ -217,10 +244,58 @@ export default function SupportInbox() {
                     <span className="text-sm font-semibold text-gray-800">{available ? "Disponible para chat en vivo" : "No disponible"}</span>
                     <span className="text-xs text-gray-400 hidden md:inline truncate">— {available ? "los usuarios te ven en línea y chatean en vivo" : "los usuarios dejan su consulta como ticket"}</span>
                 </div>
-                <button onClick={toggleAvailable} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex-shrink-0 ${available ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
-                    {available ? "Ponerme no disponible" : "Ponerme disponible"}
-                </button>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    {available && opName && (
+                        <button
+                            onClick={() => { setNameDraft(opName); setNameModalOpen(true); }}
+                            className="text-xs text-gray-500 hover:text-gray-700 underline decoration-gray-300 underline-offset-2 hidden sm:inline"
+                            title="Cambiar el nombre que ve el cliente"
+                        >
+                            atendés como «{opName}»
+                        </button>
+                    )}
+                    <button onClick={toggleAvailable} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition ${available ? "bg-green-600 text-white hover:bg-green-700" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+                        {available ? "Ponerme no disponible" : "Ponerme disponible"}
+                    </button>
+                </div>
             </div>
+
+            {/* Modal: nombre para mostrar al cliente (obligatorio antes de estar en línea) */}
+            {nameModalOpen && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-xl">
+                        <h3 className="font-bold text-gray-900 text-lg">¿Cómo te va a ver el cliente?</h3>
+                        <p className="text-sm text-gray-500 mt-1 mb-4">
+                            Este nombre aparece en el chat («{nameDraft.trim() || "Caro"} de Moovy te está escribiendo»).
+                            Usá tu nombre de pila — cercano y profesional, nunca "Admin".
+                        </p>
+                        <input
+                            autoFocus
+                            value={nameDraft}
+                            onChange={(e) => setNameDraft(e.target.value)}
+                            onKeyDown={(e) => { if (e.key === "Enter") goOnlineWithName(); }}
+                            maxLength={40}
+                            placeholder="Ej: Caro de Moovy"
+                            className="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-green-500 focus:border-green-500"
+                        />
+                        <div className="flex gap-2 mt-4">
+                            <button
+                                onClick={() => setNameModalOpen(false)}
+                                className="flex-1 px-4 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 transition text-sm font-medium"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={goOnlineWithName}
+                                disabled={nameDraft.trim().length < 2}
+                                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-xl hover:bg-green-700 transition text-sm font-bold disabled:opacity-50"
+                            >
+                                {available ? "Guardar nombre" : "Ponerme en línea"}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="flex flex-col lg:flex-row gap-4 min-h-[520px]">
             {/* Lista */}

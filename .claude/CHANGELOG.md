@@ -10,6 +10,172 @@
 
 ---
 
+## 2026-07-26 (rama `fix/safe-area-pausa-rapida-y-card`)
+
+fix: safe-area PWA + pausa rapida con consecuencias + tablero KDS en Pedidos + aire lateral
+
+1) SAFE-AREA (bug): en la PWA instalada la topbar del perfil de comercio
+quedaba DEBAJO del reloj/bateria del iPhone y el buscador no se podia
+tocar. Fix en 3 puntos de StoreProfileClient (topbar con safe-area-top,
+controles de portada corridos, tabs sticky compensadas). En navegador
+comun el inset es 0, cero cambios.
+
+2) PAUSA RAPIDA: StorePauseCard (nuevo) — tarjeta de estado en el panel
+principal y fila compacta en Pedidos, SIEMPRE con confirmacion que lista
+las consecuencias exactas (deja de recibir al instante, se ve cerrada
+temporalmente, los pedidos en curso siguen, no se reabre sola). Mismo
+server action de Horarios. /api/merchant/me suma isOpen + approvalStatus.
+ConfirmModal soporta saltos de linea.
+
+3) TABLERO KDS EN PEDIDOS (mockups A+B): 3 contadores gigantes estilo
+pantalla de cocina (NUEVOS late en rojo / EN PREPARACION / LISTOS-EN
+CALLE) + tarjetas acordeon con borde semaforo — las que piden accion
+llegan abiertas y latiendo, el resto colapsado y se despliega al tocar
+(cabecera: numero, cliente, hace X min, items, venta). Toda la logica de
+acciones/chat/PIN/countdown intacta.
+
+4) AIRE LATERAL: catalogo del perfil de comercio con px-5 en mobile.
+
+5) TICKET IMPRIMIBLE (etapa 1): boton de imprimir en cada tarjeta de
+Pedidos -> ticket formato 80mm (termica o impresora comun), NO fiscal,
+con numero gigante, entrega/retiro, items y total de productos. Datos
+escapados (seguridad) y aviso si el navegador bloquea la ventana.
+Etapas 2 (auto-print post-piloto) y 3 (termicas cloud) anotadas.
+
+6) VISTAS DENTRO DE "VISTA Y FILTROS": un solo boton abre el panel con
+botones grandes para elegir que ver (Activos/Completados/Fallidos/Todos)
++ filtros de fecha/monto; afuera solo queda "Viendo: X" con equis cuando
+no estas en Activos. Tarjetas pegadas a los contadores, sin chips
+chiquitas ni scroll.
+
+7) TOUR DE BIENVENIDA con valores VIVOS: el slide de puntos prometia el
+bono sin aclarar el minimo de compra que lo activa. /api/onboarding
+devuelve signupBonus + minPurchaseForBonus reales (PointsConfig) y el
+slide se arma en runtime — si cambian los montos desde OPS, el tour
+nunca miente. Slides 1 y 2 revisados: correctos.
+
+8) NOMBRE DEL OPERADOR DE SOPORTE: ponerse en linea en OPS pasa siempre
+por un modal donde el operador elige el nombre que ve el cliente ("Caro
+de Moovy" en vez de "Admin MOOVY"), editable en caliente, persistido en
+SupportOperator.displayName (la API de availability lo acepta; el
+heartbeat no lo pisa).
+
+9) VENTANA DE SOPORTE DEL CLIENTE REDISENADA: contenedor redondeado con
+sombra profunda, header en degradado con avatar, "En linea ahora" con
+punto verde PULSANTE (antes texto plano) + linea humana, estado vacio que
+propone ("En que te damos una mano?"), consultas como tarjetas, CTA
+"Escribinos", y en el chat activo el header muestra el nombre del
+operador con el mismo pulso. Burbujas e input con mas aire. Ademas
+TELON: al abrir el chat el fondo se oscurece y desenfoca suave (3px) y
+tocarlo cierra — el panel ya no se mezcla con la pagina. El panel se abre
+SIEMPRE centrado en la pantalla (antes colgaba de la burbuja), el widget
+sube sobre la barra inferior al abrirse, y la burbuja respeta una zona
+libre de 116px abajo para no tocar la barra de navegacion.
+
+Verificacion: tsc limpio. Manual: (a) iPhone app instalada -> perfil ->
+scroll -> buscador tocable bajo el reloj; (b) pausar/reanudar desde panel
+y desde Pedidos leyendo la confirmacion; (c) crear un pedido de prueba ->
+el contador NUEVOS late y la tarjeta llega abierta pulsando -> aceptar ->
+pasa a EN PREPARACION -> listo; (d) tocar tarjetas colapsadas para
+abrirlas/cerrarlas; (e) catalogo con mas aire en los bordes; (f) imprimir
+el ticket de un pedido y verificar formato y datos; (g) con un usuario
+nuevo, ver el tour: el slide de puntos debe decir el monto del bono y el
+minimo real del primer pedido; (h) en OPS soporte, ponerse en linea ->
+pide el nombre -> abrir el chat como cliente y verificar que muestra ese
+nombre con el punto verde pulsando (y cambiarlo en caliente); (i) cerrar
+la disponibilidad en OPS y verificar que el cliente ve "Fuera de linea"
+sin pulso.
+
+**Archivos:** ISSUES.md, src/app/api/admin/support/availability/route.ts, src/app/api/merchant/me/route.ts, src/app/api/onboarding/route.ts, src/app/comercios/(protected)/page.tsx, src/app/comercios/(protected)/pedidos/page.tsx, src/app/globals.css, src/components/comercios/StorePauseCard.tsx (+5 mas)
+
+## 2026-07-26 (rama `fix/safe-area-pausa-rapida-y-card`)
+
+fix: buscador bajo el reloj del iPhone (safe-area en PWA) + Pausar tienda a mano con confirmación + aire lateral del catálogo
+
+(1) SAFE-AREA 🔴: en la PWA instalada (pantalla completa, sin barras del navegador) la
+página llega hasta el borde físico — la topbar del perfil de comercio (aparece al
+scrollear) quedaba DEBAJO del reloj/batería del iPhone y el buscador no se podía tocar.
+Pasa en todo teléfono con notch/isla. Fix en 3 puntos de StoreProfileClient: la topbar
+fija suma `safe-area-top` (clase que ya existía), los controles flotantes de la portada
+bajan `env(safe-area-inset-top)` y las tabs sticky compensan el offset (56px + inset).
+En navegador común el inset es 0 ⇒ cero cambios. viewportFit:"cover" ya estaba.
+(2) PAUSA RÁPIDA: "Pausar Tienda" vivía solo en Horarios y estado — es una acción de
+emergencia y tiene que estar a mano. `StorePauseCard` (nuevo): tarjeta de estado
+(Abierta/Pausada + botón) arriba del panel principal del comercio y fila compacta en
+Pedidos en vivo; SIEMPRE modal de confirmación (regla #24) antes de pausar o reanudar.
+Reusa el server action de Horarios (toggleMerchantOpen — mantiene los requisitos de
+apertura y la auditoría). /api/merchant/me ahora devuelve isOpen + approvalStatus
+(campos inocuos) para la variante selfFetch de la página client de Pedidos.
+(3) AIRE LATERAL: el catálogo del perfil de comercio pasa a px-5 en mobile — las cards
+quedaban pegadas al borde de la pantalla; decisión founder: más aire SIN achicar la
+foto (la foto vende).
+(4) TABLERO KDS EN PEDIDOS (2ª iteración de la rama, mockups A+B elegidos): la pantalla
+de Pedidos del comercio pasa a "pantalla de cocina" — 3 contadores gigantes arriba
+(NUEVOS late en rojo cuando hay pedidos esperando decisión / EN PREPARACIÓN / LISTOS·EN
+CALLE) y tarjetas ACORDEÓN con borde semáforo (rojo=pide acción, ámbar=preparando,
+verde=listo/en calle, gris=terminado): los pedidos que piden acción (PENDING/CONFIRMED/
+SCHEDULED) llegan ABIERTOS y latiendo (anillo kds-pulse — solo box-shadow, sin
+fill:forwards); el resto colapsado con cabecera "#número · cliente · hace X min · items
+· venta" que se despliega hacia abajo al tocar (toggledCards con XOR sobre el default).
+Las pestañas Activos/Completados/Fallidos/Todos, filtros avanzados, countdown, PIN,
+chats y TODOS los handlers quedaron intactos — solo cambió el cascarón visual.
+(5) CONFIRMACIÓN DE PAUSA COMPLETA: el modal lista las consecuencias exactas (deja de
+recibir AL INSTANTE / se ve "cerrada temporalmente" / los pedidos en curso SIGUEN / no
+se reabre sola). ConfirmModal ahora renderiza saltos de línea (whitespace-pre-line).
+(6) TICKET IMPRIMIBLE (etapa 1 del plan de impresión — consejo: etapa 2 post-piloto
+auto-print con toggle + Chrome kiosk-printing; etapa 3 térmicas cloud ESC/POS): botón 🖨
+en cada tarjeta → ventana con ticket formato 80mm (imprime en térmica O impresora común),
+NO fiscal con leyenda "solo identificación del pedido", número gigante, entrega/retiro,
+items y total de productos (getMerchantSale — nunca order.total). Seguridad: todo dato
+(cliente/productos/dirección) escapado antes de entrar al HTML (la ventana hereda el
+origen del panel — un nombre malicioso no puede inyectar script). Popup bloqueado → toast.
+(7) VISTAS DENTRO DE "VISTA Y FILTROS" (3ª iteración — chips chiquitas con scroll
+rechazadas por el founder): un solo botón abre el panel con botones GRANDES para elegir
+qué ver (Activos/Completados/Fallidos/Todos, se cierra al elegir) + filtros de fecha y
+monto; afuera solo queda "Viendo: X ✕" cuando no estás en Activos (un toque y volvés a
+la cocina). Las tarjetas quedan pegadas a los contadores KDS.
+(8) TOUR DE BIENVENIDA CON VALORES VIVOS: el slide de puntos prometía el bono "al
+completar tu primer pedido" sin aclarar el mínimo de compra que lo activa — promesa rota
+para un primer pedido chico. /api/onboarding ahora devuelve signupBonus +
+minPurchaseForBonus reales (PointsConfig, editable desde OPS) y el slide se arma en
+runtime; fallback genérico honesto si no llegan. Slides 1 y 2 revisados contra la
+realidad del producto: correctos.
+(9) NOMBRE PARA MOSTRAR DEL OPERADOR DE SOPORTE: "Admin MOOVY te está escribiendo"
+quedaba mal — ahora ponerse en línea pasa SIEMPRE por un modal donde el operador elige
+el nombre que ve el cliente (sugerencia "Caro de Moovy"; mínimo 2 chars, máx 40, el
+server lo sanitiza). Editable en caliente desde la barra ("atendés como «X»"). Persiste
+en SupportOperator.displayName (campo que YA existía — la API de availability ahora lo
+acepta en el POST del toggle; el heartbeat no lo manda, así que nunca lo pisa). Los
+chats existentes lo toman al instante (el cliente lee displayName por relación).
+(10) VENTANA DE SOPORTE DEL CLIENTE REDISEÑADA: era una caja rectangular con "En línea"
+en texto plano. Ahora: contenedor rounded-3xl con sombra profunda y ring, header en
+degradado (#e60012 → #ff2d3f) con avatar, badge de estado con PUNTO VERDE PULSANTE
+(animate-ping — el mismo lenguaje del indicador de la burbuja) y una línea humana debajo
+("Somos de Ushuaia y te respondemos al toque" / "Dejanos tu consulta…"); estado vacío que
+propone en vez de informar ("¿En qué te damos una mano?"); consultas como tarjetas
+blancas sobre fondo gris; CTA "Escribinos". En el chat activo el header muestra el
+NOMBRE del operador con el pulso ("Caro de Moovy está en línea") — se apoya en el
+displayName del punto (9). Burbujas y campo de escritura con más aire. TELÓN DE FONDO:
+al abrir el chat el resto de la pantalla se oscurece (black/35) + desenfoque suave de 3px
+y tocarlo cierra — el founder reportó que el panel "se mezclaba con todo lo del fondo".
+Blur BAJO a propósito: uno fuerte castiga el scroll en Android de gama baja y el objetivo
+es jerarquía visual, no efecto. El telón se pinta antes que la burbuja y el panel, así
+que ambos quedan por encima (la burbuja escalada funciona como botón de cierre).
+REUBICACIÓN (mismo reporte): el panel ya NO cuelga de la burbuja (position absolute con
+chatOpensUp) — se abre SIEMPRE centrado en el viewport (fixed + translate -50%, alto
+acotado por max-h para que nunca choque con el header ni con la barra inferior), con
+entrada fade+zoom. El wrapper sube a z-[60] mientras está abierto porque la BottomNav es
+z-50 y quedaba nítida por encima del telón. Y la burbuja respeta una zona prohibida de
+116px abajo (barra + safe-area + respiro): arranca arriba de ella y el arrastre tampoco
+la deja bajar — antes tocaba la barra de navegación.
+Archivos: src/components/store/StoreProfileClient.tsx,
+src/components/comercios/StorePauseCard.tsx (nuevo), src/app/api/merchant/me/route.ts,
+src/app/comercios/(protected)/page.tsx, src/app/comercios/(protected)/pedidos/page.tsx,
+src/components/ui/ConfirmModal.tsx, src/app/globals.css,
+src/app/api/onboarding/route.ts, src/components/onboarding/BuyerOnboardingTour.tsx,
+src/app/api/admin/support/availability/route.ts, src/components/ops/SupportInbox.tsx,
+src/components/support/ChatWidget.tsx.
+
 ## 2026-07-26 (rama `perf/skeletons-y-optimizacion-imagenes`)
 
 perf: skeletons + optimizacion de imagenes en el camino comprador — adios a la carga en blanco

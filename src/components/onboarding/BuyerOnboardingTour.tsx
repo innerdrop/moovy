@@ -32,8 +32,12 @@ const SLIDES: Slide[] = [
     {
         icon: <Gift className="w-14 h-14 lg:w-16 lg:h-16 text-white" />,
         title: "Tenés puntos de bienvenida",
+        // Fallback generico si los valores vivos no llegaron. El texto REAL se arma
+        // en runtime con PointsConfig (via /api/onboarding). Antes prometia el bono
+        // "al completar tu primer pedido" sin aclarar el minimo de compra que lo
+        // activa: promesa rota para un primer pedido chico (revision founder 07-26).
         description:
-            "Activamos tus Puntos MOOVER al completar tu primer pedido. Cada $1.000 suma puntos, y cada punto vale $1 de descuento en futuros pedidos. Invitás amigos, sumás más puntos.",
+            "Tenés un bono de Puntos MOOVER esperándote: se activa con tu primer pedido. Cada compra suma puntos y cada punto vale $1 de descuento en futuros pedidos. Invitás amigos, sumás más puntos.",
         accent: "from-amber-400 to-orange-500",
     },
 ];
@@ -44,6 +48,8 @@ export default function BuyerOnboardingTour() {
     const [slideIndex, setSlideIndex] = useState(0);
     const [isClosing, setIsClosing] = useState(false);
     const [checked, setChecked] = useState(false);
+    // Valores vivos del programa de puntos (para el slide de bienvenida).
+    const [pointsInfo, setPointsInfo] = useState<{ signupBonus: number; minPurchaseForBonus: number } | null>(null);
 
     // Detectar si debe mostrarse — solo para usuarios autenticados
     useEffect(() => {
@@ -67,6 +73,7 @@ export default function BuyerOnboardingTour() {
             .then((data) => {
                 if (cancelled) return;
                 setChecked(true);
+                if (data?.points?.signupBonus) setPointsInfo(data.points);
                 if (data?.shouldShow) {
                     setShouldShow(true);
                 }
@@ -129,6 +136,16 @@ export default function BuyerOnboardingTour() {
     const current = SLIDES[slideIndex];
     const isLast = slideIndex === SLIDES.length - 1;
 
+    // Slide de puntos con los valores REALES (si llegaron): monto del bono y el
+    // minimo del primer pedido que lo activa — sin promesas rotas.
+    const fmt = (n: number) => "$" + n.toLocaleString("es-AR");
+    const description =
+        current.title === "Tenés puntos de bienvenida" && pointsInfo
+            ? "Tenés " + fmt(pointsInfo.signupBonus) + " en Puntos MOOVER de regalo: se activan con tu primer pedido" +
+              (pointsInfo.minPurchaseForBonus > 0 ? " desde " + fmt(pointsInfo.minPurchaseForBonus) : "") +
+              ". Después, cada compra suma puntos y cada punto vale $1 de descuento. Invitás amigos, sumás más puntos."
+            : current.description;
+
     return (
         <div
             role="dialog"
@@ -168,7 +185,7 @@ export default function BuyerOnboardingTour() {
                         {current.title}
                     </h2>
                     <p className="text-sm lg:text-base text-gray-600 text-center leading-relaxed">
-                        {current.description}
+                        {description}
                     </p>
 
                     {/* Progress dots */}

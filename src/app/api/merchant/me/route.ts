@@ -20,6 +20,10 @@ export async function GET() {
             name: merchant.name,
             slug: merchant.slug,
             isActive: merchant.isActive,
+            // fix/safe-area-pausa-rapida-y-card: StorePauseCard (Pedidos) necesita
+            // saber la pausa manual y si el comercio está aprobado. Inocuos.
+            isOpen: merchant.isOpen,
+            approvalStatus: merchant.approvalStatus,
         });
     } catch (error) {
         console.error("Error fetching merchant:", error);

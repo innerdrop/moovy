@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import logger from "@/lib/logger";
+import { getPointsConfig } from "@/lib/points";
 
 /**
  * GET /api/onboarding — devuelve si el tour debe mostrarse al buyer.
@@ -24,9 +25,19 @@ export async function GET() {
             return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 });
         }
 
+        // fix/safe-area-pausa-rapida-y-card: el slide de puntos del tour muestra
+        // los valores REALES del programa (viven en PointsConfig, editables desde
+        // OPS) — nunca hardcodear montos en el texto del tour: si el founder
+        // cambia el bono, el slide mentiria.
+        const config = await getPointsConfig();
+
         return NextResponse.json({
             shouldShow: user.onboardingCompletedAt === null,
             onboardingCompletedAt: user.onboardingCompletedAt,
+            points: {
+                signupBonus: config.signupBonus,
+                minPurchaseForBonus: config.minPurchaseForBonus,
+            },
         });
     } catch (error) {
         logger.error({ error }, "onboarding GET error");
