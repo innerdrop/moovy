@@ -10,6 +10,74 @@
 
 ---
 
+## 2026-07-26 (rama `feat/ops-ficha-usuario-operativa`)
+
+feat: ficha de usuario de OPS operativa — identidad visual, puntos nivel loyalty (sumar/restar/revertir) y pedidos del cliente
+
+1) IDENTIDAD VISUAL del comercio: dos tarjetas de gestion (logo compacto +
+portada 16:5), miniaturas con "Ver grande" (nada de fotos a pantalla
+completa), y las dos imagenes se gestionan desde OPS en nombre del comercio:
+nueva ruta PATCH /api/admin/merchants/[id]/banner (clon de /logo, auditoria
+before/after). MerchantLogoAdmin eliminado -> MerchantVisualIdentityAdmin.
+El header con logo montado se probo y se descarto (founder).
+
+2) PUNTOS MOOVER nivel loyalty serio: el endpoint POST
+/api/admin/users/[id]/points existia huerfano (regla #10) y sin blindaje.
+Ahora: modal con botones SUMAR/RESTAR separados + TIPO de ajuste (Regalo /
+Compensacion por reclamo / Correccion / Promocion / Otro) + motivo
+obligatorio, y REVERSION ENLAZADA por movimiento — boton "Revertir" en el
+historial que crea el movimiento inverso marcado [REV:<id>]; nunca se borra
+una transaccion, se compensa. Guardas: solo ajustes manuales reversibles,
+una reversion no se revierte, cada ajuste se revierte UNA vez, motivo >=5
+chars, entero <=+-100.000, sin saldo negativo, sin cuentas borradas; audit
+ADMIN_POINTS_ADJUSTMENT / ADMIN_POINTS_REVERSAL + actividad del usuario.
+
+3) PEDIDOS DEL CLIENTE en la pestana Actividad: codigo, comercio, items,
+total, estado y link a la ficha del pedido — filtro userId nuevo en
+/api/admin/orders.
+
+4) CONSOLA LIMPIA: priority en los logos del sidebar de OPS (mata el
+warning amarillo de LCP en todo /ops).
+
+Verificacion: tsc limpio + en local: sumar +500 (Regalo) y restar -200
+(Correccion) con motivo, revertir un ajuste y verificar que solo se puede
+una vez, subir/quitar portada desde OPS, pedidos de un usuario con compras,
+consola de /ops sin warnings.
+
+**Archivos:** ISSUES.md, src/app/api/admin/merchants/[id]/banner/route.ts, src/app/api/admin/orders/route.ts, src/app/api/admin/users/[id]/points/route.ts, src/app/ops/(protected)/usuarios/[id]/page.tsx, src/components/ops/OpsSidebar.tsx
+
+## 2026-07-26 (rama `feat/ops-ficha-usuario-operativa`)
+
+feat: la ficha de usuario de OPS se vuelve operativa — identidad visual gestionable, programa de puntos nivel loyalty (sumar/restar/revertir) y pedidos del cliente
+
+Pedidos del founder operando su OPS real: (1) IDENTIDAD VISUAL — el logo ocupaba la
+pantalla entera y la portada ni se gestionaba: ahora dos tarjetas de gestión (logo compacto
++ portada 16:5), miniaturas con "Ver grande ↗" (abre la original), y las DOS se gestionan
+desde OPS en nombre del comercio: nueva ruta `PATCH /api/admin/merchants/[id]/banner` (clon
+de /logo, auditoría MERCHANT_BANNER_UPDATED_BY_ADMIN con before/after). `MerchantLogoAdmin`
+eliminado → `MerchantVisualIdentityAdmin`. El "header con portada + logo montado" se probó
+y se DESCARTÓ (founder: "quedó horrible") — queda comentado en el código para no repetirlo.
+(2) PUNTOS MOOVER nivel loyalty serio — hallazgo previo: endpoint huérfano y sin blindaje.
+v1 le dio volante y armadura; v2 (feedback founder "puedo agregar pero no quitar ni
+revertir") lo lleva al patrón de los programas grandes: modal con botones SUMAR/RESTAR
+separados (nunca un número con signo — confundía), TIPO de ajuste tipificado (Regalo /
+Compensación por reclamo / Corrección / Promoción / Otro) + motivo obligatorio, y REVERSIÓN
+ENLAZADA por movimiento: botón "Revertir" en el historial (solo ajustes manuales) que crea
+el movimiento INVERSO marcado `[REV:<id>]` — nunca se borra ni edita una transacción, se
+compensa (patrón contable). Guardas server-side: solo ADJUSTMENT reversible, una reversión
+no se revierte, cada ajuste se revierte UNA vez (el marcador hace de candado), sin saldo
+negativo, marcador `[REV:` reservado en ajustes manuales; audit ADMIN_POINTS_ADJUSTMENT /
+ADMIN_POINTS_REVERSAL (before/after) + actividad del usuario. Puntos = plata: se trazan
+como plata. (3) PEDIDOS DEL CLIENTE — "quiero saber qué compra cada uno": lista en la
+pestaña Actividad (código, comercio, items, total, estado, link a /ops/pedidos/[id]) sobre
+filtro `userId` nuevo en /api/admin/orders. (4) CONSOLA LIMPIA — warning amarillo de LCP:
+`priority` en los 2 logos del sidebar de OPS (el AppHeader ya lo tenía).
+Pendiente fase 2 (anotado): logins/canjes/soporte en el activity log.
+Archivos: `src/app/ops/(protected)/usuarios/[id]/page.tsx`,
+`src/app/api/admin/merchants/[id]/banner/route.ts` (nuevo),
+`src/app/api/admin/users/[id]/points/route.ts` (blindaje + reversión),
+`src/app/api/admin/orders/route.ts`, `src/components/ops/OpsSidebar.tsx`.
+
 ## 2026-07-26 (rama `style/ops-ficha-usuario-cockpit`)
 
 style: ficha de usuario de OPS en cockpit de 3 columnas + overlay "Actualizando Moovy" con barra

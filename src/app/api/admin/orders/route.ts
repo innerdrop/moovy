@@ -22,6 +22,8 @@ export async function GET(request: NextRequest) {
         const dateTo = searchParams.get("dateTo");
         const search = searchParams.get("search");
         const merchantId = searchParams.get("merchantId");
+        // feat/ops-ficha-usuario-operativa: pedidos de UN cliente (ficha de usuario)
+        const userIdFilter = searchParams.get("userId");
 
         const where: any = { deletedAt: null };
 
@@ -44,6 +46,9 @@ export async function GET(request: NextRequest) {
         // Merchant filter
         if (merchantId) {
             where.merchantId = merchantId;
+        }
+        if (userIdFilter) {
+            where.userId = userIdFilter;
         }
 
         // Search filter (orderNumber or user name/email)

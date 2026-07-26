@@ -407,6 +407,75 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     const [processing, setProcessing] = useState(false);
     const [activeTab, setActiveTab] = useState<"info" | "actions" | "activity">("info");
 
+    // feat/ops-ficha-usuario-operativa: ajuste manual de puntos MOOVER.
+    // El endpoint POST /api/admin/users/[id]/points existia huerfano (regla #10)
+    // — este modal es su volante. Motivo obligatorio: queda en audit + actividad.
+    const [pointsModalOpen, setPointsModalOpen] = useState(false);
+    const [pointsMode, setPointsMode] = useState<"add" | "subtract">("add");
+    const [pointsType, setPointsType] = useState("Regalo");
+    const [pointsAmount, setPointsAmount] = useState("");
+    const [pointsReason, setPointsReason] = useState("");
+    const [pointsSubmitting, setPointsSubmitting] = useState(false);
+    // Reversión por transacción (estándar de los programas de fidelización:
+    // nunca "restar a mano" — contra-movimiento enlazado al original, una vez).
+    const [revertTx, setRevertTx] = useState<PointsTransaction | null>(null);
+    const [revertSubmitting, setRevertSubmitting] = useState(false);
+
+    const submitRevert = async () => {
+        if (!revertTx) return;
+        setRevertSubmitting(true);
+        try {
+            const res = await fetch(`/api/admin/users/${userId}/points`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ revertTransactionId: revertTx.id }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data?.error || "No se pudo revertir.");
+            toast.success(`Movimiento revertido (${revertTx.amount > 0 ? "-" : "+"}${Math.abs(revertTx.amount)} pts).`);
+            setRevertTx(null);
+            fetchUser();
+        } catch (err) {
+            console.error("[PointsRevert] Error:", err);
+            toast.error(err instanceof Error ? err.message : "No se pudo revertir.");
+        } finally {
+            setRevertSubmitting(false);
+        }
+    };
+
+    const submitPointsAdjustment = async () => {
+        const raw = parseInt(pointsAmount, 10);
+        if (!Number.isInteger(raw) || raw <= 0) {
+            toast.error("Cantidad inválida: ingresá un número entero positivo.");
+            return;
+        }
+        const amount = pointsMode === "subtract" ? -raw : raw;
+        if (pointsReason.trim().length < 5) {
+            toast.error("El motivo es obligatorio (mínimo 5 caracteres) — queda auditado.");
+            return;
+        }
+        setPointsSubmitting(true);
+        try {
+            const res = await fetch(`/api/admin/users/${userId}/points`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ amount, description: `${pointsType} — ${pointsReason.trim()}` }),
+            });
+            const data = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(data?.error || "No se pudo ajustar los puntos.");
+            toast.success(`Puntos ajustados: ${amount > 0 ? "+" : ""}${amount}. Nuevo saldo: ${data.newBalance}`);
+            setPointsModalOpen(false);
+            setPointsAmount("");
+            setPointsReason("");
+            fetchUser();
+        } catch (err) {
+            console.error("[PointsAdjust] Error:", err);
+            toast.error(err instanceof Error ? err.message : "No se pudo ajustar los puntos.");
+        } finally {
+            setPointsSubmitting(false);
+        }
+    };
+
     // feat/ops-notificacion-opcional-aprobacion: al aprobar/rechazar comercio o
     // repartidor, el admin decide si se le manda email al usuario. Default = sí.
     // Permite correcciones de estado y QA sin spamear. El audit log siempre
@@ -1339,38 +1408,17 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                     );
                                 })()}
 
-                                {/* Logo del comercio — gestionable desde OPS para casos donde el merchant
-                                    entrega el logo fuera del sistema (USB, WhatsApp, email). El admin lo sube
-                                    en su nombre para destrabar la aprobación (que requiere logo presente). */}
-                                <MerchantLogoAdmin
+                                {/* Identidad visual del comercio: portada como HEADER con el
+                                    logo montado (mismo lenguaje que la tienda publica), en
+                                    miniatura con "Ver grande", y gestion OPS de ambas imagenes
+                                    (reemplazar/quitar en nombre del comercio, con auditoria). */}
+                                <MerchantVisualIdentityAdmin
                                     merchantId={user.merchant.id}
+                                    merchantName={user.merchant.name}
                                     currentImage={user.merchant.image ?? null}
+                                    currentBanner={user.merchant.banner ?? null}
                                     onUpdated={fetchUser}
                                 />
-
-                                {/* Portada del comercio — solo lectura (el operador VE todo;
-                                    la sube el comercio desde su panel). Obligatoria para abrir
-                                    la tienda (regla #38/#40). */}
-                                <div>
-                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
-                                        Portada del comercio
-                                    </p>
-                                    {user.merchant.banner ? (
-                                        <div className="relative w-full aspect-[16/5] max-h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
-                                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                                            <img
-                                                src={user.merchant.banner}
-                                                alt={`Portada de ${user.merchant.name}`}
-                                                className="w-full h-full object-cover"
-                                            />
-                                        </div>
-                                    ) : (
-                                        <div className="w-full rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
-                                            <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
-                                            Sin foto de portada — el comercio no puede abrir su tienda hasta subirla.
-                                        </div>
-                                    )}
-                                </div>
 
                                 <MerchantDocumentsAdmin
                                     merchant={user.merchant}
@@ -1847,6 +1895,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                     <th className="text-left text-xs font-bold text-gray-600 uppercase tracking-wide pb-3">
                                         Fecha
                                     </th>
+                                    <th className="pb-3" />
                                 </tr>
                             </thead>
                             <tbody>
@@ -1948,6 +1997,22 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                         <td className="py-3 text-sm text-gray-600">
                                             {new Date(tx.createdAt).toLocaleDateString("es-AR")}
                                         </td>
+                                        <td className="py-3 text-right">
+                                            {/* Reversión: solo ajustes admin, que no sean ya una
+                                                reversión, y una sola vez por transacción. */}
+                                            {tx.type === "ADJUSTMENT" &&
+                                                !(tx.description ?? "").includes("[REV:") &&
+                                                !user.pointsTransactions.some((t) =>
+                                                    (t.description ?? "").includes(`[REV:${tx.id}]`)
+                                                ) && (
+                                                    <button
+                                                        onClick={() => setRevertTx(tx)}
+                                                        className="text-[11px] font-bold text-[#e60012] hover:underline"
+                                                    >
+                                                        Revertir
+                                                    </button>
+                                                )}
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -1998,6 +2063,24 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 {/* Legacy Actions Section */}
                 <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
                     <h2 className="text-lg font-bold text-gray-900 mb-6">Acciones Adicionales</h2>
+
+                    {/* Puntos MOOVER: ajuste manual con motivo obligatorio + audit */}
+                    <div className="border border-red-100 bg-red-50/50 rounded-xl p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <p className="text-sm font-bold text-gray-900 flex items-center gap-2">
+                                <Gift className="w-4 h-4 text-[#e60012]" /> Puntos MOOVER
+                            </p>
+                            <p className="text-xs text-gray-500 mt-0.5">
+                                Saldo actual: <b>{user.pointsBalance} pts</b>. Regalá, compensá un reclamo o corregí — siempre con motivo auditado.
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setPointsModalOpen(true)}
+                            className="px-4 py-2 rounded-lg bg-[#e60012] text-white text-sm font-bold hover:bg-red-700 transition flex-shrink-0"
+                        >
+                            Ajustar puntos
+                        </button>
+                    </div>
 
                     {/* ISSUE-062: badge de bloqueo + contador de intentos */}
                     {(() => {
@@ -2073,6 +2156,8 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
 
             {activeTab === "activity" && (
             <div className="space-y-6">
+                {/* "Quiero saber qué compra cada cliente": pedidos con detalle */}
+                <UserOrdersList userId={user.id} />
                 <UserActivityLog userId={user.id} />
             </div>
             )}
@@ -2086,6 +2171,135 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                     )}
                 </aside>
             </div>
+
+            {/* Modal de reversión de una transacción de puntos */}
+            {revertTx && (
+                <div className="fixed inset-0 z-[80]" role="dialog" aria-modal="true" aria-label="Revertir movimiento de puntos">
+                    <div
+                        className="absolute inset-0 bg-black/40"
+                        onClick={() => !revertSubmitting && setRevertTx(null)}
+                    />
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-white rounded-2xl shadow-2xl p-6">
+                        <h3 className="text-lg font-bold text-gray-900 mb-2">Revertir movimiento</h3>
+                        <p className="text-sm text-gray-600 mb-1">
+                            <b>{revertTx.amount > 0 ? "+" : ""}{revertTx.amount} pts</b> — {revertTx.description || revertTx.type}
+                        </p>
+                        <p className="text-xs text-gray-500 mb-4">
+                            Se crea el movimiento inverso ({revertTx.amount > 0 ? "-" : "+"}{Math.abs(revertTx.amount)} pts) enlazado al original.
+                            Cada movimiento se puede revertir UNA sola vez y queda auditado.
+                        </p>
+                        <div className="flex gap-2 justify-end">
+                            <button
+                                onClick={() => setRevertTx(null)}
+                                disabled={revertSubmitting}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100 transition"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={submitRevert}
+                                disabled={revertSubmitting}
+                                className="px-4 py-2 rounded-lg bg-[#e60012] text-white text-sm font-bold hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-60"
+                            >
+                                {revertSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                Revertir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de ajuste de puntos MOOVER */}
+            {pointsModalOpen && (
+                <div className="fixed inset-0 z-[80]" role="dialog" aria-modal="true" aria-label="Ajustar puntos MOOVER">
+                    <div
+                        className="absolute inset-0 bg-black/40"
+                        onClick={() => !pointsSubmitting && setPointsModalOpen(false)}
+                    />
+                    <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100%-2rem)] max-w-md bg-white rounded-2xl shadow-2xl p-6">
+                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2 mb-1">
+                            <Gift className="w-5 h-5 text-[#e60012]" /> Ajustar puntos MOOVER
+                        </h3>
+                        <p className="text-xs text-gray-500 mb-4">
+                            Saldo actual: <b>{user.pointsBalance} pts</b>. Positivo suma, negativo resta.
+                            Queda en auditoría y en la actividad del usuario.
+                        </p>
+                        {/* Acreditar / Debitar como acciones separadas (estándar de
+                            fidelización: un solo campo con signo confunde) */}
+                        <div className="flex gap-2 mb-3">
+                            <button
+                                type="button"
+                                onClick={() => setPointsMode("add")}
+                                disabled={pointsSubmitting}
+                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition ${
+                                    pointsMode === "add" ? "bg-green-600 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                }`}
+                            >
+                                + Sumar
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setPointsMode("subtract")}
+                                disabled={pointsSubmitting}
+                                className={`flex-1 py-2 rounded-lg text-sm font-bold transition ${
+                                    pointsMode === "subtract" ? "bg-[#e60012] text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                                }`}
+                            >
+                                − Restar
+                            </button>
+                        </div>
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Cantidad de puntos</label>
+                        <input
+                            type="number"
+                            min={1}
+                            value={pointsAmount}
+                            onChange={(e) => setPointsAmount(e.target.value)}
+                            disabled={pointsSubmitting}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-red-200"
+                            placeholder="500"
+                        />
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Tipo de ajuste</label>
+                        <select
+                            value={pointsType}
+                            onChange={(e) => setPointsType(e.target.value)}
+                            disabled={pointsSubmitting}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-3 bg-white focus:outline-none focus:ring-2 focus:ring-red-200"
+                        >
+                            <option>Regalo</option>
+                            <option>Compensación por reclamo</option>
+                            <option>Corrección</option>
+                            <option>Promoción</option>
+                            <option>Otro</option>
+                        </select>
+                        <label className="block text-xs font-bold text-gray-600 mb-1">Motivo (obligatorio — lo ve solo OPS)</label>
+                        <textarea
+                            value={pointsReason}
+                            onChange={(e) => setPointsReason(e.target.value)}
+                            disabled={pointsSubmitting}
+                            rows={2}
+                            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-4 focus:outline-none focus:ring-2 focus:ring-red-200 resize-none"
+                            placeholder="Compensación por reclamo del pedido PED-…"
+                        />
+                        <div className="flex gap-2 justify-end">
+                            <button
+                                onClick={() => setPointsModalOpen(false)}
+                                disabled={pointsSubmitting}
+                                className="px-4 py-2 rounded-lg text-sm font-semibold text-gray-600 hover:bg-gray-100 transition"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={submitPointsAdjustment}
+                                disabled={pointsSubmitting}
+                                className="px-4 py-2 rounded-lg bg-[#e60012] text-white text-sm font-bold hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-60"
+                            >
+                                {pointsSubmitting && <Loader2 className="w-4 h-4 animate-spin" />}
+                                Confirmar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Modal Moovy de aprobación de documento (merchant + driver).
                 Reemplaza el flujo viejo basado en window.confirm + window.prompt.
@@ -3016,84 +3230,203 @@ function DriverChangeRequestsAdmin({
 }
 
 
-/* ───────────────────────────────────────────────────────────────────────────
- * MerchantLogoAdmin — sub-componente que el admin usa desde la ficha del
- * comercio para subir/reemplazar/quitar el logo del merchant en su nombre.
- *
- * Caso de uso: el comercio nuevo te trae el logo en USB/WhatsApp/email y vos
- * (admin) lo subís sin pedirle al merchant que se loguee y lo cargue. Sin esto,
- * la aprobación queda bloqueada por LOGO_MISSING desde la rama anterior.
- *
- * Internamente reusa <ImageUpload> que ya hace todo: comprime, sube a /api/upload,
- * devuelve URL final. Acá sólo persistimos la URL en Merchant.image vía PATCH
- * /api/admin/merchants/[id]/logo.
- * ───────────────────────────────────────────────────────────────────────────
- */
-interface MerchantLogoAdminProps {
+/* ─────────────────────────────────────────────────────────────────────────
+ * MerchantVisualIdentityAdmin — identidad visual del comercio en la ficha de
+ * usuario (feat/ops-ficha-usuario-operativa): la portada como HEADER (16:5)
+ * con el logo montado como avatar — mismo lenguaje que la tienda pública — en
+ * MINIATURA (nada de imágenes a pantalla completa; "Ver grande" abre la
+ * original en otra pestaña). Ambas imágenes se gestionan desde OPS en nombre
+ * del comercio (reemplazar/quitar), con auditoría en sus endpoints
+ * (/logo y /banner). Reemplaza al viejo MerchantLogoAdmin.
+ * ───────────────────────────────────────────────────────────────────────── */
+interface MerchantVisualIdentityAdminProps {
     merchantId: string;
+    merchantName: string;
     currentImage: string | null;
-    onUpdated: () => void | Promise<void>;
+    currentBanner: string | null;
+    onUpdated: () => void;
 }
 
-function MerchantLogoAdmin({ merchantId, currentImage, onUpdated }: MerchantLogoAdminProps) {
-    const [saving, setSaving] = useState(false);
+function MerchantVisualIdentityAdmin({
+    merchantId,
+    merchantName,
+    currentImage,
+    currentBanner,
+    onUpdated,
+}: MerchantVisualIdentityAdminProps) {
+    const [saving, setSaving] = useState<"logo" | "banner" | null>(null);
 
-    // ImageUpload llama onChange con la URL final (post-upload). Persistimos en DB.
-    const handleImageChange = async (newUrl: string) => {
-        setSaving(true);
+    const persist = async (kind: "logo" | "banner", url: string | null) => {
+        setSaving(kind);
         try {
-            const res = await fetch(`/api/admin/merchants/${merchantId}/logo`, {
+            const endpoint =
+                kind === "logo"
+                    ? `/api/admin/merchants/${merchantId}/logo`
+                    : `/api/admin/merchants/${merchantId}/banner`;
+            const body = kind === "logo" ? { imageUrl: url } : { bannerUrl: url };
+            const res = await fetch(endpoint, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ imageUrl: newUrl || null }),
+                body: JSON.stringify(body),
             });
-            const data = await res.json().catch(() => ({}));
-            if (res.ok) {
-                if (newUrl) {
-                    toast.success(currentImage ? "Logo reemplazado" : "Logo cargado — ya podés aprobar el comercio");
-                } else {
-                    toast.success("Logo eliminado");
-                }
-                await onUpdated();
-            } else {
-                toast.error(data.error || "Error al guardar el logo");
-            }
+            if (!res.ok) throw new Error("save failed");
+            toast.success(kind === "logo" ? "Logo actualizado" : "Portada actualizada");
+            onUpdated();
         } catch (err) {
-            console.error("[MerchantLogoAdmin] Error:", err);
-            toast.error("Error de conexión");
+            console.error("[MerchantVisualIdentityAdmin] Error:", err);
+            toast.error("No se pudo guardar. Probá de nuevo.");
         } finally {
-            setSaving(false);
+            setSaving(null);
         }
     };
 
     return (
-        <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-                <p className="text-xs font-bold text-gray-500 uppercase">
-                    Logo del comercio
-                </p>
-                {!currentImage && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-red-100 text-red-700 uppercase">
-                        Falta — bloquea aprobación
-                    </span>
-                )}
+        <div>
+            <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                Identidad visual
+            </p>
+
+            {/* Gestión compacta: reemplazar / quitar / ver grande.
+                (El "header con logo montado" se probó y se descartó — founder 07-26:
+                las dos tarjetas alcanzan y sobran.) */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="border border-gray-100 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-[11px] font-bold text-gray-600 uppercase">Logo</p>
+                        {currentImage && (
+                            <a
+                                href={currentImage}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] font-semibold text-[#e60012] hover:underline"
+                            >
+                                Ver grande ↗
+                            </a>
+                        )}
+                    </div>
+                    <div className="w-24">
+                        <ImageUpload
+                            value={currentImage ?? ""}
+                            onChange={(url) => persist("logo", url || null)}
+                            disabled={saving !== null}
+                            cropAspect={1}
+                            cropOutputSize={500}
+                            compact
+                        />
+                    </div>
+                    {saving === "logo" && (
+                        <p className="text-[11px] text-gray-400 mt-1">Guardando…</p>
+                    )}
+                </div>
+                <div className="border border-gray-100 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-2">
+                        <p className="text-[11px] font-bold text-gray-600 uppercase">Portada</p>
+                        {currentBanner && (
+                            <a
+                                href={currentBanner}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] font-semibold text-[#e60012] hover:underline"
+                            >
+                                Ver grande ↗
+                            </a>
+                        )}
+                    </div>
+                    <ImageUpload
+                        value={currentBanner ?? ""}
+                        onChange={(url) => persist("banner", url || null)}
+                        disabled={saving !== null}
+                        cropAspect={16 / 5}
+                        cropOutputSize={1600}
+                        previewAspectClass="aspect-[16/5]"
+                    />
+                    {saving === "banner" && (
+                        <p className="text-[11px] text-gray-400 mt-1">Guardando…</p>
+                    )}
+                </div>
             </div>
-            <div className="bg-white border border-slate-200 rounded-xl p-4">
-                <p className="text-xs text-gray-500 mb-3">
-                    Si el comercio te entregó el logo fuera del sistema (USB, WhatsApp,
-                    email), subilo acá en su nombre. Se guarda en Merchant.image y queda
-                    auditado en el historial admin.
-                </p>
-                <ImageUpload
-                    value={currentImage ?? ""}
-                    onChange={handleImageChange}
-                    disabled={saving}
-                    cropAspect={1}
-                />
-                {saving && (
-                    <p className="text-xs text-gray-400 mt-2">Guardando...</p>
-                )}
-            </div>
+            <p className="text-[11px] text-gray-400 mt-2">
+                Los cambios se hacen en nombre del comercio y quedan auditados. La ✕ de cada imagen la quita.
+            </p>
+        </div>
+    );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
+ * UserOrdersList — pedidos del cliente en la pestaña Actividad
+ * (feat/ops-ficha-usuario-operativa: "quiero saber qué compra cada cliente").
+ * Código, fecha, comercio, items y total, con link a la ficha del pedido.
+ * ───────────────────────────────────────────────────────────────────────── */
+function UserOrdersList({ userId }: { userId: string }) {
+    const [orders, setOrders] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        let alive = true;
+        (async () => {
+            try {
+                const res = await fetch(`/api/admin/orders?userId=${userId}&limit=20`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (alive) setOrders(data.orders ?? []);
+                }
+            } catch (err) {
+                console.error("[UserOrdersList] Error:", err);
+            } finally {
+                if (alive) setLoading(false);
+            }
+        })();
+        return () => {
+            alive = false;
+        };
+    }, [userId]);
+
+    return (
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Pedidos del cliente</h2>
+            {loading ? (
+                <div className="flex justify-center py-6">
+                    <Loader2 className="w-5 h-5 animate-spin text-[#e60012]" />
+                </div>
+            ) : orders.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Todavía no hizo pedidos.</p>
+            ) : (
+                <div className="divide-y divide-gray-50">
+                    {orders.map((o) => {
+                        const itemCount = o.items?.length ?? 0;
+                        const itemNames = (o.items ?? [])
+                            .slice(0, 3)
+                            .map((it: any) => it.name ?? it.productName ?? "")
+                            .filter(Boolean)
+                            .join(", ");
+                        return (
+                            <Link
+                                key={o.id}
+                                href={`/ops/pedidos/${o.id}`}
+                                className="flex items-center gap-3 py-2.5 hover:bg-gray-50 rounded-lg px-2 -mx-2 transition"
+                            >
+                                <div className="min-w-0 flex-1">
+                                    <p className="text-sm font-semibold text-gray-900 truncate">
+                                        {o.orderNumber} · {o.merchant?.name ?? "—"}
+                                    </p>
+                                    <p className="text-xs text-gray-500 truncate">
+                                        {new Date(o.createdAt).toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "numeric" })}
+                                        {" · "}
+                                        {itemCount} item{itemCount === 1 ? "" : "s"}
+                                        {itemNames ? ` — ${itemNames}${itemCount > 3 ? "…" : ""}` : ""}
+                                    </p>
+                                </div>
+                                <span className="text-sm font-bold text-gray-900 flex-shrink-0">
+                                    ${(o.total ?? 0).toLocaleString("es-AR")}
+                                </span>
+                                <span className="text-[10px] font-bold text-gray-500 bg-gray-100 rounded-full px-2 py-0.5 flex-shrink-0">
+                                    {o.status}
+                                </span>
+                            </Link>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 }

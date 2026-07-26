@@ -245,7 +245,7 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                     <Menu className="w-6 h-6" />
                 </button>
                 <Link href="/ops/dashboard" className="flex items-center gap-2">
-                    <Image src="/logo-moovy-white.svg" alt="Moovy" width={280} height={90} className="h-6 w-auto" />
+                    <Image src="/logo-moovy-white.svg" alt="Moovy" width={280} height={90} priority className="h-6 w-auto" />
                     <span className="text-xs font-medium text-slate-400">Admin</span>
                 </Link>
                 <OpsNotificationBell />
@@ -303,7 +303,7 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
                 {/* Header */}
                 <div className="p-4 border-b border-slate-800 flex items-center justify-between">
                     <Link href="/ops/dashboard" className="flex items-center gap-3" onClick={closeMobileMenu}>
-                        <Image src="/logo-moovy-white.svg" alt="Moovy" width={280} height={90} className="h-7 w-auto" />
+                        <Image src="/logo-moovy-white.svg" alt="Moovy" width={280} height={90} priority className="h-7 w-auto" />
                     </Link>
                     <div className="flex items-center gap-1">
                         {/* Campana solo en desktop: en mobile el bell vive en la barra superior.

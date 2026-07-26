@@ -2108,6 +2108,12 @@ cms0ftf7s0001136yvsgpqito	FEATURE_FLAG_TOGGLED	FeatureFlag	cmrm3x112000481ouvzlm
 cms0kt5r0000298r54hcz8z7a	MERCHANT_DOCUMENT_APPROVED	Merchant	cmrzdt1mo0004wkbfvcf93fr6	cmqz5vqsx0000xhd86fq6wm5d	{"documentField":"cuit","documentLabel":"CUIT","adminEmail":"admin@somosmoovy.com","triggeredAutoActivation":false}	2026-07-25 16:21:08.315
 cms0kt9zq000598r54ilwmo6r	MERCHANT_DOCUMENT_APPROVED	Merchant	cmrzdt1mo0004wkbfvcf93fr6	cmqz5vqsx0000xhd86fq6wm5d	{"documentField":"constanciaAfipUrl","documentLabel":"Constancia de Inscripción AFIP","adminEmail":"admin@somosmoovy.com","triggeredAutoActivation":true}	2026-07-25 16:21:13.814
 cms0kta1p000898r5l9bcmff9	MERCHANT_APPROVED	Merchant	cmrzdt1mo0004wkbfvcf93fr6	cmqz5vqsx0000xhd86fq6wm5d	{"merchantName":"Pixel Point","merchantOwnerId":"cmrzdt1m80001wkbfyotyrlg7","adminEmail":"admin@somosmoovy.com","notified":true}	2026-07-25 16:21:13.885
+cms23plrt0004e1t8a9ceeg8r	ADMIN_POINTS_ADJUSTMENT	User	cmrzdt1m80001wkbfyotyrlg7	cmqz5vqsx0000xhd86fq6wm5d	{"adminEmail":"admin@somosmoovy.com","userEmail":"maugrod@gmail.com","amount":1,"reason":"Prueba","balanceBefore":0,"balanceAfter":1}	2026-07-26 17:58:01.337
+cms23xx10000de1t8yjc3b662	ADMIN_POINTS_ADJUSTMENT	User	cmrzdt1m80001wkbfyotyrlg7	cmqz5vqsx0000xhd86fq6wm5d	{"adminEmail":"admin@somosmoovy.com","userEmail":"maugrod@gmail.com","amount":100000,"reason":"Prueba","balanceBefore":1,"balanceAfter":100001}	2026-07-26 18:04:29.171
+cms24243n000ke1t8irnpi5bw	ADMIN_POINTS_ADJUSTMENT	User	cmrzdt1m80001wkbfyotyrlg7	cmqz5vqsx0000xhd86fq6wm5d	{"adminEmail":"admin@somosmoovy.com","userEmail":"maugrod@gmail.com","amount":100000,"reason":"Test 3","balanceBefore":100001,"balanceAfter":200001}	2026-07-26 18:07:44.963
+cms24o9bp000re1t8ekr0yewr	ADMIN_POINTS_REVERSAL	User	cmrzdt1m80001wkbfyotyrlg7	cmqz5vqsx0000xhd86fq6wm5d	{"adminEmail":"admin@somosmoovy.com","userEmail":"maugrod@gmail.com","revertedTransactionId":"cms242435000ie1t8ysrsi17c","originalAmount":100000,"originalDescription":"Test 3","amount":-100000,"balanceBefore":200001,"balanceAfter":100001}	2026-07-26 18:24:58.165
+cms24ogx9000ye1t84jvxxbcw	ADMIN_POINTS_REVERSAL	User	cmrzdt1m80001wkbfyotyrlg7	cmqz5vqsx0000xhd86fq6wm5d	{"adminEmail":"admin@somosmoovy.com","userEmail":"maugrod@gmail.com","revertedTransactionId":"cms23xx0m000be1t84yvzttcl","originalAmount":100000,"originalDescription":"Prueba","amount":-100000,"balanceBefore":100001,"balanceAfter":1}	2026-07-26 18:25:08.013
+cms24pavt0015e1t8qc3rdw34	ADMIN_POINTS_REVERSAL	User	cmrzdt1m80001wkbfyotyrlg7	cmqz5vqsx0000xhd86fq6wm5d	{"adminEmail":"admin@somosmoovy.com","userEmail":"maugrod@gmail.com","revertedTransactionId":"cms23plqw0002e1t8pswtu0ix","originalAmount":1,"originalDescription":"Prueba","amount":-1,"balanceBefore":1,"balanceAfter":0}	2026-07-26 18:25:46.842
 \.
 
 
@@ -2711,6 +2717,12 @@ points_config	0.01	0	1	500	50	2500	3500	1000	\N	2500	0	5000	90	{"SILVER":3,"GOLD
 --
 
 COPY public."PointsTransaction" (id, "userId", "orderId", type, amount, "balanceAfter", description, "createdAt") FROM stdin;
+cms23plqw0002e1t8pswtu0ix	cmrzdt1m80001wkbfyotyrlg7	\N	ADJUSTMENT	1	1	Prueba	2026-07-26 17:58:01.304
+cms23xx0m000be1t84yvzttcl	cmrzdt1m80001wkbfyotyrlg7	\N	ADJUSTMENT	100000	100001	Prueba	2026-07-26 18:04:29.158
+cms242435000ie1t8ysrsi17c	cmrzdt1m80001wkbfyotyrlg7	\N	ADJUSTMENT	100000	200001	Test 3	2026-07-26 18:07:44.945
+cms24o9ay000pe1t8vy94hpc8	cmrzdt1m80001wkbfyotyrlg7	\N	ADJUSTMENT	-100000	100001	[REV:cms242435000ie1t8ysrsi17c] Reversión de "Test 3"	2026-07-26 18:24:58.138
+cms24ogwk000we1t8hbejiceo	cmrzdt1m80001wkbfyotyrlg7	\N	ADJUSTMENT	-100000	1	[REV:cms23xx0m000be1t84yvzttcl] Reversión de "Prueba"	2026-07-26 18:25:07.988
+cms24pavk0013e1t81ugyt33u	cmrzdt1m80001wkbfyotyrlg7	\N	ADJUSTMENT	-1	0	[REV:cms23plqw0002e1t8pswtu0ix] Reversión de "Prueba"	2026-07-26 18:25:46.832
 \.
 
 
@@ -4219,7 +4231,7 @@ cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.E
 cmqz5vrgz001jxhd84w7eneza	comercio1@somosmoovy.com	$2b$12$yF6/4feNZrmKkGW/zI752eg44jwODi1JejVllozBQ6DuoL3r0r.vm	Carlos Patagonia	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vrgz001kxhd8fe0upbjz	\N	2026-06-29 11:55:47.028	2026-07-06 23:20:58.373	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:20:58.372	\N
 cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-07-06 23:32:32.958	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:32:32.921	\N
 cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.37Whxp97s8kSiR7D.jXmok.DPmVC8uu	 				COMERCIO	\N	\N	0	0	f	cmqz5vsvy006oxhd85im89bep	\N	2026-06-29 11:55:48.862	2026-07-11 03:01:00.38	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-07 14:53:34.731	\N
-cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-07-26 16:19:33.382	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-25 16:25:30.227	\N
+cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-07-26 18:25:46.823	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-25 16:25:30.227	\N
 \.
 
 
@@ -4246,6 +4258,13 @@ cms0p9b4h0001vxd0pw5tr0az	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbf
 cms0pnf720001112q8wsmezoa	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-25 18:36:38.7
 cms0ts5vb000110qk6fx4bocb	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-25 20:32:18.357
 cms206zc20001u5296trpkpd9	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-26 16:19:33.6
+cms23plsb0006e1t83xlu25iq	cmrzdt1m80001wkbfyotyrlg7	POINTS_ADJUSTED_BY_ADMIN	User	cmrzdt1m80001wkbfyotyrlg7	{"amount":1,"reason":"Prueba","adminEmail":"admin@somosmoovy.com"}	\N	\N	2026-07-26 17:58:01.355
+cms23tql30008e1t87ssvrdw7	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-26 18:01:14.198
+cms23xx19000fe1t8xfgfo8fj	cmrzdt1m80001wkbfyotyrlg7	POINTS_ADJUSTED_BY_ADMIN	User	cmrzdt1m80001wkbfyotyrlg7	{"amount":100000,"reason":"Prueba","adminEmail":"admin@somosmoovy.com"}	\N	\N	2026-07-26 18:04:29.182
+cms242444000me1t8emaeikoe	cmrzdt1m80001wkbfyotyrlg7	POINTS_ADJUSTED_BY_ADMIN	User	cmrzdt1m80001wkbfyotyrlg7	{"amount":100000,"reason":"Test 3","adminEmail":"admin@somosmoovy.com"}	\N	\N	2026-07-26 18:07:44.98
+cms24o9cm000te1t8nazvtqnb	cmrzdt1m80001wkbfyotyrlg7	POINTS_ADJUSTED_BY_ADMIN	User	cmrzdt1m80001wkbfyotyrlg7	{"amount":-100000,"reason":"[REV:cms242435000ie1t8ysrsi17c] Reversión de \\"Test 3\\"","revertedTransactionId":"cms242435000ie1t8ysrsi17c","adminEmail":"admin@somosmoovy.com"}	\N	\N	2026-07-26 18:24:58.198
+cms24ogxn0010e1t8ruam103b	cmrzdt1m80001wkbfyotyrlg7	POINTS_ADJUSTED_BY_ADMIN	User	cmrzdt1m80001wkbfyotyrlg7	{"amount":-100000,"reason":"[REV:cms23xx0m000be1t84yvzttcl] Reversión de \\"Prueba\\"","revertedTransactionId":"cms23xx0m000be1t84yvzttcl","adminEmail":"admin@somosmoovy.com"}	\N	\N	2026-07-26 18:25:08.027
+cms24paw10017e1t8r2ytxgd5	cmrzdt1m80001wkbfyotyrlg7	POINTS_ADJUSTED_BY_ADMIN	User	cmrzdt1m80001wkbfyotyrlg7	{"amount":-1,"reason":"[REV:cms23plqw0002e1t8pswtu0ix] Reversión de \\"Prueba\\"","revertedTransactionId":"cms23plqw0002e1t8pswtu0ix","adminEmail":"admin@somosmoovy.com"}	\N	\N	2026-07-26 18:25:46.849
 \.
 
 
