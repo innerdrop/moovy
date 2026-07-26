@@ -3,6 +3,20 @@
 > Punto de retome para la próxima sesión. Generado al pausar el trabajo del checklist pre-launch.
 > Leé este archivo al volver para reconstruir el contexto.
 
+## Dónde estamos (actualizado 2026-07-26 — CIERRE, sesión QA + rediseño perfil + PWA)
+
+**Estado git**: `develop` limpio en `f66d8aa` con **3 ramas de la sesión mergeadas** (`fix/aprobacion-docs-pipeline-y-portada` · `feat/rediseno-perfil-comercio` · `fix/pwa-actualizacion-instantanea`). **Deploy `devmain.ps1 -NoDB` EN CURSO al cierre de la sesión** — ⚠️ requiere Docker local levantado (`docker start moovy-db`) porque el build local del devmain prerenderiza el sitemap contra la DB.
+
+**Primer paso al volver**: la verificación post-deploy de 7 puntos (ver PROJECT_STATUS "Próximas tareas" -2) — incluye la prueba de fuego del iPhone (banner "Actualizar" con la versión vieja clavada) y subir la portada HEIC real de Pixel Point.
+
+**Decisiones founder de la sesión** (canónicas en CLAUDE.md #38-#42): logo+portada obligatorios para PUBLICAR (no para aprobar) · perfil público sin canales externos de contacto (redes = co-marketing de entrada, jamás salida) · "Verificado" fuera de la vista pública (futura distinción curada) · card de producto = grilla vidriera con precio negro ⟷ insignia MOOVER (puntos server-side SIEMPRE) · horarios en popup · soporte solo en Mi Perfil · SW versionado por build, jamás a mano.
+
+**Pendientes founder (sin código, priorizados 07-26)**: cargar productos reales a Pixel Point · foto definitiva del hero del chooser · **MP marketplace_fee: SIN apuro** (decisión founder: al principio los payouts de repartidores se pagan de bolsillo propio; contactar al ejecutivo comercial de MP cuando escale el volumen — la comisión queda retenida en "dinero a liquidar" con calendario propio de marketplace) · flag `bank-account`: ✅ confirmado OK en prod (07-26) · **TyC con abogado: se revisa AL FINAL** (bloquea la etapa pública, no el piloto por invitación).
+
+**Deuda menor anotada en ISSUES**: chat de soporte a /ayuda + badge (post-piloto) · normalización de fotos a lienzo cuadrado server-side (pre-carga masiva) · card "lista menú" para gastronomía (cuando entre el 1er restaurante) · rama `chore/audit-deps` (npm audit fix seguro + next 16.2.11 + next-auth + sharp; NO tocar mercadopago v3 ni nodemailer v9 pre-launch).
+
+---
+
 ## Dónde estamos (actualizado 2026-07-25 — CIERRE, sesión cortina+piloto+panel)
 
 **Estado git**: rama **`feat/panel-inmediato-comercio` ABIERTA** con todo el código listo y `.commit-message` preparado. Lo anterior (6 ramas: hub monobrand, lista de espera, preguntas repartidor, copy legal, telegram+emails, limpieza imágenes) está **cerrado y DEPLOYADO** a prod con `-SchemaOnly` + env de Telegram en el VPS (verificado por el founder: leads llegan por Telegram y email).

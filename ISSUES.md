@@ -1,5 +1,5 @@
 # Moovy — Issues
-Última actualización: 2026-07-25
+Última actualización: 2026-07-26
 
 > **Fuente única de tareas pendientes.** Para histórico completo de issues resueltos en sprints anteriores → `.claude/CHANGELOG.md`.
 
