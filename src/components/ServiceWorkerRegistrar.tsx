@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 
 /**
  * Registra el Service Worker y muestra un banner sutil cuando hay
@@ -17,14 +17,30 @@ import { useEffect, useState, useCallback } from "react";
 export default function ServiceWorkerRegistrar() {
     const [showUpdateBanner, setShowUpdateBanner] = useState(false);
     const [waitingWorker, setWaitingWorker] = useState<ServiceWorker | null>(null);
+    // Overlay "Actualizando Moovy…": la activacion del SW no emite progreso
+    // real, asi que la barra avanza SIMULADA (easing hacia 90%) y salta a 100%
+    // cuando el SW nuevo toma control DE VERDAD (controllerchange). Patron
+    // nprogress/YouTube: percepcion de progreso, cierre real.
+    const [updating, setUpdating] = useState(false);
+    const [progress, setProgress] = useState(0);
+    const progressTimer = useRef<number | null>(null);
 
     const applyUpdate = useCallback(() => {
-        if (waitingWorker) {
-            waitingWorker.postMessage({ type: "SKIP_WAITING" });
-            setShowUpdateBanner(false);
-            // La página se recarga automáticamente cuando el nuevo SW toma control
-            // via el controllerchange listener de abajo
-        }
+        if (!waitingWorker) return;
+        setShowUpdateBanner(false);
+        setUpdating(true);
+        setProgress(8);
+        if (progressTimer.current) window.clearInterval(progressTimer.current);
+        progressTimer.current = window.setInterval(() => {
+            setProgress((p) => (p < 90 ? p + Math.max(0.6, (90 - p) * 0.09) : p));
+        }, 120);
+        waitingWorker.postMessage({ type: "SKIP_WAITING" });
+        // La pagina se recarga cuando el nuevo SW toma control (controllerchange).
+        // Red de seguridad: si no toma control en 8s, recargamos igual — nunca
+        // un overlay colgado.
+        window.setTimeout(() => {
+            window.location.reload();
+        }, 8000);
     }, [waitingWorker]);
 
     useEffect(() => {
@@ -107,7 +123,10 @@ export default function ServiceWorkerRegistrar() {
         // Cuando el nuevo SW toma control, recargar la página
         const onControllerChange = () => {
             console.log("[PWA] New Service Worker active — reloading");
-            window.location.reload();
+            // El 100% de la barra es REAL: el SW nuevo ya tomo control. Un
+            // respiro de 250ms para que el ojo registre el cierre, y recarga.
+            setProgress(100);
+            window.setTimeout(() => window.location.reload(), 250);
         };
         navigator.serviceWorker.addEventListener("controllerchange", onControllerChange);
 
@@ -115,8 +134,63 @@ export default function ServiceWorkerRegistrar() {
 
         return () => {
             navigator.serviceWorker.removeEventListener("controllerchange", onControllerChange);
+            if (progressTimer.current) window.clearInterval(progressTimer.current);
         };
     }, []);
+
+    // Overlay de actualizacion: estrella MOOVER girando + barra de progreso.
+    if (updating) {
+        return (
+            <div
+                style={{
+                    position: "fixed",
+                    inset: 0,
+                    zIndex: 999999,
+                    background: "rgba(255,255,255,0.94)",
+                    backdropFilter: "blur(6px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 18,
+                    fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+                }}
+            >
+                <style>{`@keyframes moovySpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+                <div
+                    style={{
+                        width: 64,
+                        height: 64,
+                        borderRadius: "50%",
+                        background: "linear-gradient(135deg,#ff4d2e,#e60012)",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        boxShadow: "0 10px 30px rgba(230,0,18,0.35)",
+                        animation: "moovySpin 1.6s linear infinite",
+                    }}
+                >
+                    <svg viewBox="0 0 24 24" width="30" height="30" style={{ fill: "#fff" }}>
+                        <path d="M12 2.8l2.7 5.6 6.2.8-4.5 4.2 1.1 6.1L12 16.6l-5.5 2.9 1.1-6.1-4.5-4.2 6.2-.8z" />
+                    </svg>
+                </div>
+                <p style={{ fontSize: 16, fontWeight: 700, color: "#17181c", margin: 0 }}>
+                    Actualizando Moovy…
+                </p>
+                <div style={{ width: 220, height: 6, borderRadius: 999, background: "#eceef2", overflow: "hidden" }}>
+                    <div
+                        style={{
+                            width: `${Math.min(progress, 100)}%`,
+                            height: "100%",
+                            borderRadius: 999,
+                            background: "linear-gradient(90deg,#ff4d2e,#e60012)",
+                            transition: "width 0.25s ease",
+                        }}
+                    />
+                </div>
+            </div>
+        );
+    }
 
     if (!showUpdateBanner) return null;
 

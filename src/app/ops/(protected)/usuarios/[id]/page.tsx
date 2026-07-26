@@ -83,6 +83,8 @@ interface MerchantData {
     slug: string;
     description: string | null;
     image: string | null;
+    /** Foto de portada (16:5) — obligatoria para que el comercio abra su tienda. */
+    banner: string | null;
     isActive: boolean;
     isOpen: boolean;
     email: string | null;
@@ -967,157 +969,108 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
     }
 
     return (
-        <div className="space-y-6">
+        <div className="flex flex-col gap-3 lg:h-[calc(100vh-3rem)] lg:min-h-0">
+            {/* style/ops-ficha-usuario-cockpit (2026-07-26): layout COCKPIT de 3
+                columnas (app-shell: en desktop la pagina NUNCA scrollea, cada
+                columna scrollea por dentro) — identidad+numeros fijos a la
+                izquierda, el trabajo (pestanas) al centro, y las notas internas
+                relegadas a un panel angosto a la derecha (antes dominaban media
+                pantalla). En mobile las columnas se apilan y la pagina scrollea
+                normal. La logica de las pestanas NO se toco: solo el cascaron. */}
             {/* Back Button */}
-            <Link href="/ops/usuarios" className="inline-flex items-center text-gray-500 hover:text-gray-900 transition">
+            <Link href="/ops/usuarios" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 transition flex-shrink-0">
                 <ArrowLeft className="w-4 h-4 mr-2" /> Volver a Usuarios
             </Link>
 
-            {/* Header */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-8">
-                <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
-                    <div className="flex items-start gap-6">
-                        {/* Avatar */}
-                        <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center text-[#e60012] font-black text-3xl border-2 border-red-200 flex-shrink-0">
+            <div className="flex-1 flex flex-col lg:flex-row gap-3 lg:min-h-0">
+                {/* ── Columna izquierda: identidad + numeros ── */}
+                <aside className="lg:w-[264px] flex-shrink-0 flex flex-col gap-3 lg:overflow-y-auto lg:min-h-0">
+                    <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-4 text-center">
+                        <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-50 to-red-100 flex items-center justify-center text-[#e60012] font-black text-2xl border-2 border-red-200 mx-auto mb-2">
                             {(user.name || user.email).charAt(0).toUpperCase()}
                         </div>
-
-                        {/* User Info */}
-                        <div>
-                            <h1 className="text-3xl font-bold text-gray-900 mb-2">{user.name || "Sin nombre"}</h1>
-                            <p className="text-gray-600 flex items-center gap-2 mb-1">
-                                {user.email}
-                            </p>
-                            {user.phone && (
-                                <p className="text-gray-600 flex items-center gap-2 mb-3">
-                                    {user.phone}
-                                </p>
-                            )}
-
-                            {/* Roles */}
-                            <div className="flex flex-wrap gap-2 mt-3">
-                                {user.roles.map((role) => (
-                                    <div
-                                        key={role.id}
-                                        className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wide ${getRoleBadgeColor(
-                                            role.role
-                                        )}`}
-                                    >
-                                        <span
-                                            className={`w-2 h-2 rounded-full ${
-                                                role.isActive ? "bg-green-500" : "bg-gray-400"
-                                            }`}
-                                        />
-                                        {role.role}
-                                    </div>
-                                ))}
-                            </div>
+                        <h1 className="text-lg font-bold text-gray-900 leading-tight">{user.name || "Sin nombre"}</h1>
+                        <p className="text-xs text-gray-500 break-all mt-0.5">{user.email}</p>
+                        {user.phone && <p className="text-xs text-gray-500">{user.phone}</p>}
+                        <div className="flex flex-wrap justify-center gap-1.5 mt-2.5">
+                            {user.roles.map((role) => (
+                                <div
+                                    key={role.id}
+                                    className={`inline-flex items-center gap-1.5 px-2 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wide ${getRoleBadgeColor(role.role)}`}
+                                >
+                                    <span className={`w-1.5 h-1.5 rounded-full ${role.isActive ? "bg-green-500" : "bg-gray-400"}`} />
+                                    {role.role}
+                                </div>
+                            ))}
                         </div>
+                        <p className="mt-2.5 inline-block text-[11px] text-gray-500 bg-gray-100 rounded-full px-3 py-1">
+                            Miembro desde {new Date(user.stats.memberSince).toLocaleDateString("es-AR", { day: "2-digit", month: "short", year: "numeric" })}
+                        </p>
+                        {user.deletedAt && (
+                            <div className="mt-2.5 bg-red-50 border border-red-200 rounded-lg p-2 text-left flex items-start gap-2">
+                                <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0 mt-0.5" />
+                                <div>
+                                    <p className="text-xs font-bold text-red-800">Cuenta eliminada</p>
+                                    <p className="text-[10px] text-red-700">{new Date(user.deletedAt).toLocaleDateString("es-AR")}</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Stats Cards */}
-                    <div className="grid grid-cols-2 gap-4">
-                        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-4 border border-red-200">
-                            <p className="text-[10px] font-bold text-red-600 uppercase tracking-widest mb-1">
-                                Puntos MOOVER
-                            </p>
-                            <p className="text-2xl font-bold text-[#e60012] flex items-center gap-1">
-                                <Gift className="w-5 h-5" /> {user.pointsBalance}
+                    {/* Numeros compactos */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                        <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-3 border border-red-200">
+                            <p className="text-[9px] font-bold text-red-600 uppercase tracking-widest mb-0.5">Puntos MOOVER</p>
+                            <p className="text-lg font-bold text-[#e60012] flex items-center gap-1">
+                                <Gift className="w-4 h-4" /> {user.pointsBalance}
                             </p>
                         </div>
-                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                            <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-1">
-                                Total Pedidos
-                            </p>
-                            <p className="text-2xl font-bold text-blue-700">
-                                {user.stats.totalOrders}
-                            </p>
+                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-3 border border-blue-200">
+                            <p className="text-[9px] font-bold text-blue-600 uppercase tracking-widest mb-0.5">Pedidos</p>
+                            <p className="text-lg font-bold text-blue-700">{user.stats.totalOrders}</p>
                         </div>
-                        <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
-                            <p className="text-[10px] font-bold text-green-600 uppercase tracking-widest mb-1">
-                                Total Gastado
-                            </p>
-                            <p className="text-xl font-bold text-green-700">
-                                {formatPrice(user.stats.totalSpent)}
-                            </p>
+                        <div className="col-span-2 bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-3 border border-green-200">
+                            <p className="text-[9px] font-bold text-green-600 uppercase tracking-widest mb-0.5">Total gastado</p>
+                            <p className="text-lg font-bold text-green-700">{formatPrice(user.stats.totalSpent)}</p>
                             {(user.stats.openOrdersCount ?? 0) > 0 && (
-                                <p className="text-[10px] text-green-700/70 mt-1 font-medium">
+                                <p className="text-[10px] text-green-700/70 mt-0.5 font-medium">
                                     + {formatPrice(user.stats.openOrdersValue ?? 0)} en {user.stats.openOrdersCount} pedido{user.stats.openOrdersCount === 1 ? "" : "s"} abierto{user.stats.openOrdersCount === 1 ? "" : "s"}
                                 </p>
                             )}
                         </div>
-                        <div className="bg-gradient-to-br from-slate-50 to-slate-100 rounded-xl p-4 border border-slate-200">
-                            <p className="text-[10px] font-bold text-slate-600 uppercase tracking-widest mb-1">
-                                Miembro desde
-                            </p>
-                            <p className="text-sm font-bold text-slate-700">
-                                {new Date(user.stats.memberSince).toLocaleDateString("es-AR", {
-                                    day: "2-digit",
-                                    month: "short",
-                                    year: "numeric",
-                                })}
-                            </p>
-                        </div>
                     </div>
-                </div>
+                </aside>
 
-                {/* Account Status */}
-                {user.deletedAt && (
-                    <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-3">
-                        <AlertTriangle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-                        <div>
-                            <p className="text-sm font-bold text-red-800">Cuenta eliminada</p>
-                            <p className="text-xs text-red-700">
-                                {new Date(user.deletedAt).toLocaleDateString("es-AR")}
-                            </p>
-                        </div>
+                {/* ── Columna central: pestanas + trabajo ── */}
+                <div className="flex-1 min-w-0 flex flex-col gap-3 lg:min-h-0">
+                    <div className="bg-white rounded-xl shadow-sm border border-slate-100 flex p-1 gap-1 flex-shrink-0">
+                        <button
+                            onClick={() => setActiveTab("info")}
+                            className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                                activeTab === "info" ? "bg-[#e60012] text-white" : "text-gray-600 hover:bg-gray-50"
+                            }`}
+                        >
+                            Información
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("actions")}
+                            className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                                activeTab === "actions" ? "bg-[#e60012] text-white" : "text-gray-600 hover:bg-gray-50"
+                            }`}
+                        >
+                            Acciones
+                        </button>
+                        <button
+                            onClick={() => setActiveTab("activity")}
+                            className={`flex-1 px-4 py-2 rounded-lg text-sm font-semibold transition ${
+                                activeTab === "activity" ? "bg-[#e60012] text-white" : "text-gray-600 hover:bg-gray-50"
+                            }`}
+                        >
+                            Actividad
+                        </button>
                     </div>
-                )}
-            </div>
 
-            {/* Notas internas del admin — visibles en toda pestaña.
-                Mostramos solo cuando la sesión ya cargó el id del admin actual,
-                porque la UI depende de ese valor para ownership (editar/pin). */}
-            {currentAdminId && (
-                <AdminNotesSection userId={userId} currentAdminId={currentAdminId} />
-            )}
-
-            {/* Tabs Navigation */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100">
-                <div className="flex border-b border-slate-200">
-                    <button
-                        onClick={() => setActiveTab("info")}
-                        className={`flex-1 px-6 py-4 text-center font-semibold transition ${
-                            activeTab === "info"
-                                ? "text-[#e60012] border-b-2 border-[#e60012]"
-                                : "text-gray-600 hover:text-gray-900"
-                        }`}
-                    >
-                        Información
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("actions")}
-                        className={`flex-1 px-6 py-4 text-center font-semibold transition ${
-                            activeTab === "actions"
-                                ? "text-[#e60012] border-b-2 border-[#e60012]"
-                                : "text-gray-600 hover:text-gray-900"
-                        }`}
-                    >
-                        Acciones
-                    </button>
-                    <button
-                        onClick={() => setActiveTab("activity")}
-                        className={`flex-1 px-6 py-4 text-center font-semibold transition ${
-                            activeTab === "activity"
-                                ? "text-[#e60012] border-b-2 border-[#e60012]"
-                                : "text-gray-600 hover:text-gray-900"
-                        }`}
-                    >
-                        Actividad
-                    </button>
-                </div>
-            </div>
-
+                    <div className="lg:flex-1 lg:overflow-y-auto lg:min-h-0 space-y-6 lg:pr-1">
             {/* Tab Content */}
             {activeTab === "info" && (
             <div className="space-y-6">
@@ -1394,6 +1347,30 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                                     currentImage={user.merchant.image ?? null}
                                     onUpdated={fetchUser}
                                 />
+
+                                {/* Portada del comercio — solo lectura (el operador VE todo;
+                                    la sube el comercio desde su panel). Obligatoria para abrir
+                                    la tienda (regla #38/#40). */}
+                                <div>
+                                    <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">
+                                        Portada del comercio
+                                    </p>
+                                    {user.merchant.banner ? (
+                                        <div className="relative w-full aspect-[16/5] max-h-40 rounded-xl overflow-hidden border border-gray-200 bg-gray-100">
+                                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                                            <img
+                                                src={user.merchant.banner}
+                                                alt={`Portada de ${user.merchant.name}`}
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <div className="w-full rounded-xl border border-dashed border-gray-300 bg-gray-50 px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
+                                            <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />
+                                            Sin foto de portada — el comercio no puede abrir su tienda hasta subirla.
+                                        </div>
+                                    )}
+                                </div>
 
                                 <MerchantDocumentsAdmin
                                     merchant={user.merchant}
@@ -2099,6 +2076,16 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 <UserActivityLog userId={user.id} />
             </div>
             )}
+                    </div>
+                </div>
+
+                {/* ── Columna derecha: notas internas (sin protagonismo) ── */}
+                <aside className="lg:w-[280px] flex-shrink-0 lg:overflow-y-auto lg:min-h-0">
+                    {currentAdminId && (
+                        <AdminNotesSection userId={userId} currentAdminId={currentAdminId} />
+                    )}
+                </aside>
+            </div>
 
             {/* Modal Moovy de aprobación de documento (merchant + driver).
                 Reemplaza el flujo viejo basado en window.confirm + window.prompt.

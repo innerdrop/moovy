@@ -4219,7 +4219,7 @@ cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.E
 cmqz5vrgz001jxhd84w7eneza	comercio1@somosmoovy.com	$2b$12$yF6/4feNZrmKkGW/zI752eg44jwODi1JejVllozBQ6DuoL3r0r.vm	Carlos Patagonia	\N	\N	\N	COMERCIO	\N	\N	0	0	f	cmqz5vrgz001kxhd8fe0upbjz	\N	2026-06-29 11:55:47.028	2026-07-06 23:20:58.373	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:20:58.372	\N
 cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-07-06 23:32:32.958	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:32:32.921	\N
 cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.37Whxp97s8kSiR7D.jXmok.DPmVC8uu	 				COMERCIO	\N	\N	0	0	f	cmqz5vsvy006oxhd85im89bep	\N	2026-06-29 11:55:48.862	2026-07-11 03:01:00.38	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-07 14:53:34.731	\N
-cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-07-25 20:32:18.264	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-25 16:25:30.227	\N
+cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-07-26 16:19:33.382	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-25 16:25:30.227	\N
 \.
 
 
@@ -4245,6 +4245,7 @@ cms0fxanz0003136yh5flxfht	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbf
 cms0p9b4h0001vxd0pw5tr0az	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-25 18:25:40.238
 cms0pnf720001112q8wsmezoa	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-25 18:36:38.7
 cms0ts5vb000110qk6fx4bocb	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-25 20:32:18.357
+cms206zc20001u5296trpkpd9	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-26 16:19:33.6
 \.
 
 

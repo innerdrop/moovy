@@ -10,6 +10,64 @@
 
 ---
 
+## 2026-07-26 (rama `style/ops-ficha-usuario-cockpit`)
+
+style: ficha de usuario de OPS en cockpit de 3 columnas + overlay "Actualizando Moovy" con barra
+
+1) La ficha de usuario obligaba a scrollear: header gigante y las notas
+internas dominando media pantalla. Rediseno COCKPIT (elegido entre 3 mockups):
+patron app-shell — en desktop la pagina NUNCA scrollea, cada columna scrollea
+por dentro. Identidad + numeros compactos fijos a la izquierda (264px),
+pestanas como pildoras + todo el trabajo al centro, y las notas internas
+relegadas a un panel angosto a la derecha (280px). En mobile las columnas se
+apilan. La logica de las 3 pestanas (docs, aprobaciones, acciones, actividad)
+NO se toco: cirugia solo del cascaron JSX con 2 anclas de reemplazo.
+
+2) El click en "Actualizar" del banner de version nueva hacia un reload
+pelado, indistinguible de un refresh comun. Ahora: overlay con la estrella
+MOOVER girando + "Actualizando Moovy..." + barra de progreso (simulada con
+easing hasta 90% — la activacion del SW no emite progreso real, patron
+nprogress/YouTube — y salta a 100% REAL cuando el SW nuevo toma control) +
+red de seguridad de 8s que recarga aunque el SW no responda.
+
+3) La portada del comercio no se veia en la ficha de usuario de OPS (la API
+ya mandaba banner pero la interface lo omitia): ahora aparece en la seccion
+Documentacion bajo el logo, solo lectura, con aviso ambar si falta — regla
+"el operador VE todo".
+
+Verificacion: tsc + ficha de usuario en local (3 columnas sin scroll de
+pagina en desktop, apilada en mobile, pestanas y acciones funcionando) +
+overlay verificable en prod post-deploy (el SW no corre en dev).
+
+**Archivos:** ISSUES.md, src/app/ops/(protected)/usuarios/[id]/page.tsx, src/components/ServiceWorkerRegistrar.tsx
+
+## 2026-07-26 (rama `style/ops-ficha-usuario-cockpit`)
+
+style: ficha de usuario de OPS en cockpit de 3 columnas + overlay "Actualizando Moovy" con barra
+
+(1) La ficha de usuario de OPS obligaba a scrollear (header gigante + notas internas dominando
+media pantalla). Elegido entre 3 mockups HTML: COCKPIT de 3 columnas con patrón app-shell — en
+desktop la página NUNCA scrollea (root `lg:h-[calc(100vh-3rem)]`, el layout de OPS ya es
+h-screen), cada columna scrollea por dentro. Izquierda (264px): tarjeta de identidad compacta
+(avatar, contacto, roles, miembro-desde, banner de cuenta eliminada) + números 2×2 (puntos,
+pedidos, gastado con pedidos abiertos). Centro: pestañas como píldoras compactas + todo el
+contenido de Información/Acciones/Actividad SIN TOCAR (cirugía solo del cascarón: 2 anclas de
+reemplazo en un archivo de 3.100 líneas). Derecha (280px): AdminNotesSection relegada a panel
+angosto. Mobile: columnas apiladas, página scrollea normal.
+(2) El click en "Actualizar" del banner de la PWA hacía un reload pelado — indistinguible de un
+refresh común. Ahora: overlay full-screen con la estrella MOOVER girando + "Actualizando Moovy…"
++ barra de progreso (simulada con easing hasta 90% — la activación del SW no emite progreso
+real; patrón nprogress — y salta a 100% REAL en controllerchange, 250ms de respiro y recarga)
++ red de seguridad: a los 8s recarga igual, nunca un overlay colgado.
+(3) La portada del comercio no se veía en la ficha de usuario de OPS (la API users-unified ya
+mandaba `banner` pero la interface lo omitía): ahora aparece en la sección Documentación bajo el
+logo, solo lectura (16:5, aviso ámbar si falta — regla "el operador VE todo").
+NOTA de proceso: la cirugía de anclas falló al primer intento (el cierre real tiene un
+DocApprovalModal antes del root y el patrón matcheó dentro de un sub-componente) — reparado
+revirtiendo la inyección y cerrando en el lugar correcto. Lección: tras cirugía de anclas en
+archivos gigantes, COMPILAR antes de avisar.
+Archivos: `src/app/ops/(protected)/usuarios/[id]/page.tsx`, `src/components/ServiceWorkerRegistrar.tsx`.
+
 ## 2026-07-26 (rama `fix/nitidez-registro-y-aviso-consola`)
 
 fix: texto nitido en desktop (adios al registro "desenfocado") + aviso de consola legible en tema oscuro
