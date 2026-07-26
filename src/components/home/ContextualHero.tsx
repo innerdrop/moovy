@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import SmartImage from "@/components/ui/SmartImage";
 import Link from "next/link";
 import { Clock, Sun, Sunrise, Sunset, Moon, ChevronRight } from "lucide-react";
 
@@ -223,11 +224,12 @@ export default function ContextualHero({ merchants, customBackgrounds }: Context
                   {/* Image */}
                   <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
                     {m.image ? (
-                      <img
+                      <SmartImage
                         src={m.image}
                         alt={m.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                        loading="eager"
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        sizes="(max-width: 640px) 80vw, 320px"
+                        priority
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gray-200">

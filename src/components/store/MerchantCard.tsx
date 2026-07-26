@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import SmartImage from "@/components/ui/SmartImage";
 import { Star, MapPin, Clock, BadgeCheck, Sparkles } from "lucide-react";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
 import HeartButton from "@/components/ui/HeartButton";
@@ -65,7 +66,7 @@ export default function MerchantCard({ merchant, variant = "default" }: Merchant
                 {/* Image thumbnail */}
                 <div className="relative w-[72px] h-[72px] rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
                     {merchant.image ? (
-                        <img src={merchant.image} alt={merchant.name} className="w-full h-full object-cover" />
+                        <SmartImage src={merchant.image} alt={merchant.name} sizes="72px" />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
                             <span className="text-2xl font-bold opacity-20">{cleanEncoding(merchant.name).charAt(0)}</span>
@@ -124,7 +125,7 @@ export default function MerchantCard({ merchant, variant = "default" }: Merchant
             <div className="relative aspect-video bg-gray-100">
                 {/* feat/portada-comercio: la portada real primero; el logo como fallback. */}
                 {(merchant.banner || merchant.image) ? (
-                    <img src={merchant.banner || merchant.image!} alt={merchant.name} className="w-full h-full object-cover img-zoom" />
+                    <SmartImage src={merchant.banner || merchant.image!} alt={merchant.name} className="object-cover img-zoom" sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 420px" />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">
                         <span className="text-4xl font-bold opacity-20">{cleanEncoding(merchant.name).charAt(0)}</span>

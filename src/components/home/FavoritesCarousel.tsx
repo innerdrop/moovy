@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import SmartImage from "@/components/ui/SmartImage";
 import { ChevronRight, Star } from "lucide-react";
 
 interface Merchant {
@@ -55,10 +56,11 @@ export default function FavoritesCarousel({ merchants }: FavoritesCarouselProps)
                             <div className="bg-white rounded-2xl md:rounded-3xl overflow-hidden shadow-md hover:shadow-lg transition-all border border-gray-100">
                                 {/* Image */}
                                 <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
-                                    <img
+                                    <SmartImage
                                         src={merchant.coverImage || merchant.logo || placeholderImages[index % placeholderImages.length]}
                                         alt={merchant.name}
-                                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                                        className="object-cover group-hover:scale-110 transition-transform duration-300"
+                                        sizes="(max-width: 640px) 60vw, 280px"
                                     />
                                     {merchant.isPremium && (
                                         <span className="absolute top-2 md:top-3 left-2 md:left-3 bg-[#e60012] text-white text-[9px] md:text-xs px-2 md:px-3 py-0.5 md:py-1 rounded-full font-bold">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
+import SmartImage from "@/components/ui/SmartImage";
 import Link from "next/link";
 import { Clock, ChevronRight, Store, Star } from "lucide-react";
 import HomeHero from "./HomeHero";
@@ -206,11 +207,11 @@ function MerchantCard({ merchant }: { merchant: MerchantPreview }) {
                 <div className="relative h-[118px] bg-gray-100">
                     <div className="absolute inset-0 overflow-hidden">
                         {merchant.banner ? (
-                            <img
+                            <SmartImage
                                 src={merchant.banner}
                                 alt={merchant.name}
-                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                loading="lazy"
+                                className="object-cover group-hover:scale-105 transition-transform duration-300"
+                                sizes="(max-width: 640px) 90vw, 340px"
                             />
                         ) : (
                             <div className="w-full h-full bg-gradient-to-br from-gray-200 to-gray-300" />
@@ -229,7 +230,7 @@ function MerchantCard({ merchant }: { merchant: MerchantPreview }) {
                     {/* Logo avatar montado */}
                     <div className="absolute -bottom-7 left-3.5 w-16 h-16 rounded-2xl border-4 border-white bg-white shadow-md overflow-hidden flex items-center justify-center">
                         {merchant.image ? (
-                            <img src={merchant.image} alt="" className="w-full h-full object-cover" />
+                            <SmartImage src={merchant.image} alt="" sizes="64px" />
                         ) : (
                             <span className="text-[22px] font-black text-gray-400">{initials}</span>
                         )}

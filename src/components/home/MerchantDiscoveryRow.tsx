@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import SmartImage from "@/components/ui/SmartImage";
 import { ChevronRight, Star, Clock } from "lucide-react";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
 import HeartButton from "@/components/ui/HeartButton";
@@ -112,11 +113,11 @@ function DiscoveryCard({ merchant }: { merchant: MerchantPreview }) {
         <div className="relative aspect-[16/10] bg-gray-100 overflow-hidden">
           {/* fix/tienda-logo-comercio: mostrar el LOGO del comercio; la portada solo como fallback si no hay logo. */}
           {(merchant.image || merchant.banner) ? (
-            <img
+            <SmartImage
               src={merchant.image || merchant.banner!}
               alt={cleanEncoding(merchant.name)}
-              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              loading="lazy"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              sizes="(max-width: 640px) 70vw, 300px"
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gray-200">

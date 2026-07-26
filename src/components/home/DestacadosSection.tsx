@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import SmartImage from "@/components/ui/SmartImage";
 import Link from "next/link";
 import { ArrowRight, Star, Clock, MapPin } from "lucide-react";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
@@ -139,10 +140,11 @@ function DestacadoCard({
       <div className="relative aspect-video bg-gray-100 overflow-hidden">
         {/* feat/portada-comercio: portada real primero, logo como fallback. */}
         {(merchant.banner || merchant.image) ? (
-          <img
+          <SmartImage
             src={merchant.banner || merchant.image!}
             alt={merchant.name}
-            className="w-full h-full object-cover img-zoom group-hover:scale-105 transition-transform duration-300"
+            className="object-cover img-zoom group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 85vw, 420px"
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center bg-gray-200 text-gray-400">

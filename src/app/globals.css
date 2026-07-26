@@ -970,6 +970,28 @@ h4, h5, h6 {
 }
 
 /* --- Shimmer skeleton (violet-tinted) --- */
+/* perf/skeletons-y-optimizacion-imagenes: esqueleto NEUTRO (gris) para el
+   lado tienda — mp-skeleton es violeta y queda solo para marketplace.
+   El brillo anima un ::after superpuesto (transform infinito, nunca
+   fill:forwards — ver lección del desenfoque en desktop). */
+@keyframes sk-shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+.sk-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: #e5e7eb;
+  border-radius: 8px;
+}
+.sk-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.65) 50%, transparent 100%);
+  animation: sk-shimmer 1.4s ease-in-out infinite;
+}
+
 @keyframes mp-shimmer {
   0% { transform: translateX(-100%); }
   100% { transform: translateX(100%); }

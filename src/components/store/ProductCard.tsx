@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import SmartImage from "@/components/ui/SmartImage";
 import { Store, Plus, Check } from "lucide-react";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
 import { useCartStore } from "@/store/cart";
@@ -98,10 +99,11 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
             {/* Foto: producto ENTERO, con corazón y (+) montados */}
             <div className="relative aspect-[3/2]">
                 {product.image ? (
-                    <img
+                    <SmartImage
                         src={product.image}
                         alt={product.name}
-                        className="w-full h-full object-contain p-2"
+                        className="object-contain p-2"
+                        sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
                     />
                 ) : (
                     <div className="w-full h-full flex items-center justify-center text-gray-400 bg-gray-50">

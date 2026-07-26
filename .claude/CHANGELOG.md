@@ -10,6 +10,58 @@
 
 ---
 
+## 2026-07-26 (rama `perf/skeletons-y-optimizacion-imagenes`)
+
+perf: skeletons + optimizacion de imagenes en el camino comprador — adios a la carga en blanco
+
+1) SmartImage (componente nuevo): reemplaza los <img> pelados de las
+tarjetas por next/image — el server comprime y sirve el tamano JUSTO para
+cada dispositivo (WebP, lazy) — con esqueleto gris brillante mientras la
+imagen baja, aparicion suave al llegar, y bloque gris limpio si falla
+(nunca un icono roto). Migrados 11 archivos del camino comprador:
+ProductCard, MerchantCard, HomeFeed, HomeProductCard, MerchantDiscoveryRow,
+NewMerchantsRow, FavoritesCarousel, CategoryGrid, DestacadosSection,
+ContextualHero (priority = LCP real) y la fila marketplace del home.
+HeroBannerCarousel queda a proposito (usa <picture> responsive, fill lo
+romperia). Clase nueva sk-skeleton (neutra, gris) en globals.css.
+
+2) Skeletons de pagina (loading.tsx): generico del grupo (store) — cubre
+el home y toda ruta sin loading propio —, /tiendas (header + grilla igual
+a la real) y /store/[slug] (portada + tarjeta + grilla de productos).
+Las 3 paginas del comprador que cargaban en blanco ahora muestran la
+forma del contenido al instante, como todas las apps grandes.
+
+Verificacion: tsc limpio. En local: home/tiendas/perfil muestran esqueleto
+gris al navegar, cada imagen aparece con fade sobre fondo gris, y en la
+pestana Red se ve que las fotos llegan como WebP del tamano justo
+(/_next/image) en vez de la original entera.
+
+**Archivos:** ISSUES.md, src/app/(store)/loading.tsx, src/app/(store)/page.tsx, src/app/(store)/store/[slug]/loading.tsx, src/app/(store)/tiendas/loading.tsx, src/app/globals.css, src/components/home/CategoryGrid.tsx, src/components/home/ContextualHero.tsx (+9 mas)
+
+## 2026-07-26 (rama `perf/skeletons-y-optimizacion-imagenes`)
+
+perf: skeletons + optimización de imágenes en el camino comprador — adiós a la carga "en blanco"
+
+Feedback del founder probando producción: "las imágenes demoran y no hay un preloader gris
+como todas las apps". Diagnóstico: (a) las tarjetas del home/tiendas/productos usaban <img>
+pelado — sin compresión, sin tamaño por dispositivo, sin lazy: el celu bajaba la foto
+original entera; (b) home, /tiendas y el perfil de comercio no tenían loading.tsx — pantalla
+en blanco hasta que el server respondía. Solución: (1) `SmartImage`
+(src/components/ui/SmartImage.tsx): next/image + esqueleto gris con brillo (clase nueva
+`sk-skeleton`, neutra; mp-skeleton queda para marketplace) + fade-in al cargar + bloque gris
+si la imagen falla. Migrados 11 archivos: ProductCard, MerchantCard, HomeFeed,
+HomeProductCard, MerchantDiscoveryRow, NewMerchantsRow, FavoritesCarousel, CategoryGrid,
+DestacadosSection, ContextualHero (priority = LCP real del home) y la fila marketplace del
+home. HeroBannerCarousel NO se migró a propósito (usa <picture> con srcSet responsive y
+altura natural — fill lo rompería). Cada `sizes` está afinado al layout real (72px para
+thumbs, 44px para avatares, vw en grillas) para que Next sirva la resolución justa.
+(2) Skeletons de página: (store)/loading.tsx genérico (home + rutas sin loading propio),
+/tiendas (misma forma que la página real) y /store/[slug] (portada + tarjeta + grilla;
+/tienda/[slug] redirige ahí). El shimmer anima transform en un ::after infinito — nunca
+fill:forwards (lección del desenfoque en desktop).
+Archivos: src/components/ui/SmartImage.tsx (nuevo), src/app/globals.css, 11 componentes
+migrados, 3 loading.tsx nuevos.
+
 ## 2026-07-26 (rama `feat/ops-ficha-usuario-operativa`)
 
 feat: ficha de usuario de OPS operativa — identidad visual, puntos nivel loyalty (sumar/restar/revertir) y pedidos del cliente

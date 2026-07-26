@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import SmartImage from "@/components/ui/SmartImage";
 import { Plus, Store, Check } from "lucide-react";
 import { useCartStore } from "@/store/cart";
 import { useState } from "react";
@@ -63,10 +64,11 @@ export default function HomeProductCard({ product }: HomeProductCardProps) {
             <Link href={`/productos/${encodeURIComponent(product.slug)}`}>
                 <div className="aspect-square bg-gray-100 relative overflow-hidden">
                     {image ? (
-                        <img
+                        <SmartImage
                             src={image}
                             alt={product.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="object-cover group-hover:scale-105 transition-transform duration-300"
+                            sizes="(max-width: 640px) 45vw, 240px"
                         />
                     ) : (
                         <div className="w-full h-full flex items-center justify-center">

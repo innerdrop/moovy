@@ -1,5 +1,6 @@
 // Home Page - Página de Inicio (v3 — Contextual Hero + Discovery Rows + Map)
 import type { Metadata } from "next";
+import SmartImage from "@/components/ui/SmartImage";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -550,13 +551,12 @@ export default async function LiveStoreView() {
                     className="flex-shrink-0 w-[150px] lg:w-[170px] snap-start block"
                   >
                     <div className="rounded-[18px] overflow-hidden bg-white shadow-[0_4px_14px_rgba(46,16,101,0.08)]">
-                      <div className="aspect-square bg-gradient-to-br from-purple-50 to-violet-100 overflow-hidden">
+                      <div className="relative aspect-square bg-gradient-to-br from-purple-50 to-violet-100 overflow-hidden">
                         {listing.images?.[0]?.url && (
-                          <img
+                          <SmartImage
                             src={listing.images[0].url}
                             alt={listing.title}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
+                            sizes="170px"
                           />
                         )}
                       </div>

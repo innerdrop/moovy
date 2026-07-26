@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import SmartImage from "@/components/ui/SmartImage";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -72,7 +73,7 @@ function MerchantPill({ merchant }: { merchant: MerchantPreview }) {
         >
             <div className="relative w-11 h-11 rounded-full overflow-hidden bg-rose-50 border-2 border-[#ffe4e6] flex items-center justify-center flex-shrink-0">
                 {merchant.image ? (
-                    <img src={merchant.image} alt={name} className="w-full h-full object-cover" loading="lazy" />
+                    <SmartImage src={merchant.image} alt={name} sizes="44px" />
                 ) : (
                     <span className="text-base font-black text-[#e60012]/70">{initial}</span>
                 )}
