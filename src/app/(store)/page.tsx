@@ -74,28 +74,56 @@ async function getHeroSlides() {
   }
 }
 
-/** Home categories from curated HomeCategorySlot (admin-managed, independent of B2B packages) */
+/**
+ * Vitrinas del home (HomeCategorySlot) — feat/home-categorias-independientes.
+ *
+ * Cada vitrina es AUTÓNOMA: nombre e imagen propios y un destino elegido en OPS.
+ * Acá se resuelve el `href` una sola vez (server-side) para que el cliente solo
+ * tenga que navegar:
+ *   · CATEGORY → /productos?categoria=<slug de la categoría real>
+ *   · SEARCH   → /buscar?q=<término>
+ * Si la vitrina apunta a una categoría que fue borrada (categoryId quedó null por
+ * el onDelete: SetNull), NO se rompe: cae a una búsqueda por su propio nombre.
+ */
+function slugify(text: string) {
+  return text
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
 async function getHomeCategories(limit: number = 8) {
   try {
-    const slots = await prisma.homeCategorySlot.findMany({
+    const slots = await (prisma as any).homeCategorySlot.findMany({
       where: { isActive: true },
       include: { category: true },
       orderBy: { order: "asc" },
       take: limit,
     });
 
-    // Merge slot overrides with category data
-    return slots.map((slot) => ({
-      id: slot.category.id,
-      name: slot.label || slot.category.name,
-      slug: slot.category.slug,
-      image: slot.image || slot.category.image,
-      icon: slot.icon || slot.category.icon,
-      description: slot.category.description,
-      scope: slot.category.scope,
-      order: slot.order,
-      isActive: true,
-    }));
+    return slots.map((slot: any) => {
+      const name = slot.label || slot.category?.name || "Categoría";
+      const isSearch = slot.linkType === "SEARCH" || !slot.category;
+      const term = slot.linkValue || name;
+
+      return {
+        id: slot.id,
+        name,
+        // slug: identidad de la vitrina para las píldoras del hero (filtro local).
+        slug: slot.category?.slug || slugify(term) || slot.id,
+        href: isSearch
+          ? `/buscar?q=${encodeURIComponent(term)}`
+          : `/productos?categoria=${slot.category.slug}`,
+        image: slot.image || slot.category?.image || null,
+        icon: slot.icon || slot.category?.icon || null,
+        description: slot.category?.description ?? null,
+        scope: slot.category?.scope ?? "BOTH",
+        order: slot.order,
+        isActive: true,
+      };
+    });
   } catch {
     // Fallback: if HomeCategorySlot table doesn't exist yet, use legacy query
     try {

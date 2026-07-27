@@ -16,6 +16,7 @@
 import { prisma } from "@/lib/prisma";
 import { generateReferralCode, isValidReferralCode } from "@/lib/referral";
 import { TERMS_VERSION, PRIVACY_POLICY_VERSION } from "@/lib/legal-versions";
+import { sendWelcomeEmail } from "@/lib/email";
 
 export type GoogleUpsertResult =
     | { ok: true; created: boolean; userId: string }
@@ -136,6 +137,15 @@ export async function upsertGoogleUser(params: {
             })
             .catch((e) => console.error("[google-signin] referral create failed:", e));
     }
+
+    // Mail de bienvenida — BUG reportado por el founder (07-26): el alta por
+    // Google creaba la cuenta igual que el registro por email PERO nunca mandaba
+    // el correo (el envío vivía solo en /api/auth/register, y Google no pasa por
+    // ahí). Se manda igual que allá: sin bloquear el login y sin poder tumbarlo
+    // si el SMTP falla — el usuario ya quedó creado.
+    sendWelcomeEmail(email, firstName, newReferralCode).catch((e) =>
+        console.error("[google-signin] welcome email failed:", e)
+    );
 
     return { ok: true, created: true, userId: user.id };
 }

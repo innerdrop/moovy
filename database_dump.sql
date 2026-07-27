@@ -764,14 +764,16 @@ ALTER TABLE public."HeroSlide" OWNER TO postgres;
 
 CREATE TABLE public."HomeCategorySlot" (
     id text NOT NULL,
-    "categoryId" text NOT NULL,
+    "categoryId" text,
     "order" integer DEFAULT 0 NOT NULL,
     image text,
     icon text,
     label text,
     "isActive" boolean DEFAULT true NOT NULL,
     "createdAt" timestamp(3) without time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    "updatedAt" timestamp(3) without time zone NOT NULL
+    "updatedAt" timestamp(3) without time zone NOT NULL,
+    "linkType" text DEFAULT 'CATEGORY'::text NOT NULL,
+    "linkValue" text
 );
 
 
@@ -2114,6 +2116,14 @@ cms24243n000ke1t8irnpi5bw	ADMIN_POINTS_ADJUSTMENT	User	cmrzdt1m80001wkbfyotyrlg7
 cms24o9bp000re1t8ekr0yewr	ADMIN_POINTS_REVERSAL	User	cmrzdt1m80001wkbfyotyrlg7	cmqz5vqsx0000xhd86fq6wm5d	{"adminEmail":"admin@somosmoovy.com","userEmail":"maugrod@gmail.com","revertedTransactionId":"cms242435000ie1t8ysrsi17c","originalAmount":100000,"originalDescription":"Test 3","amount":-100000,"balanceBefore":200001,"balanceAfter":100001}	2026-07-26 18:24:58.165
 cms24ogx9000ye1t84jvxxbcw	ADMIN_POINTS_REVERSAL	User	cmrzdt1m80001wkbfyotyrlg7	cmqz5vqsx0000xhd86fq6wm5d	{"adminEmail":"admin@somosmoovy.com","userEmail":"maugrod@gmail.com","revertedTransactionId":"cms23xx0m000be1t84yvzttcl","originalAmount":100000,"originalDescription":"Prueba","amount":-100000,"balanceBefore":100001,"balanceAfter":1}	2026-07-26 18:25:08.013
 cms24pavt0015e1t8qc3rdw34	ADMIN_POINTS_REVERSAL	User	cmrzdt1m80001wkbfyotyrlg7	cmqz5vqsx0000xhd86fq6wm5d	{"adminEmail":"admin@somosmoovy.com","userEmail":"maugrod@gmail.com","revertedTransactionId":"cms23plqw0002e1t8pswtu0ix","originalAmount":1,"originalDescription":"Prueba","amount":-1,"balanceBefore":1,"balanceAfter":0}	2026-07-26 18:25:46.842
+cms2h0m2t0018gb7ek8kd6xz2	HOME_CATEGORY_SLOT_CREATED	HomeCategorySlot	cms2h0m080016gb7euzmmqwni	cmqz5vqsx0000xhd86fq6wm5d	{"label":"Gaseosas","linkType":"CATEGORY","categoryId":"cmqz5vqyn000oxhd8fpc7qxgz","linkValue":null}	2026-07-27 00:10:29.957
+cms2h1jtk001agb7efhxax0h9	HOME_CATEGORY_SLOT_UPDATED	HomeCategorySlot	cmrhwtsaa0001evvy1jwx92fz	cmqz5vqsx0000xhd86fq6wm5d	{"changes":{"label":"Kiosco","image":"https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785111067180-logo.webp","linkType":"CATEGORY","categoryId":"cmqz5vqyn000oxhd8fpc7qxgz","linkValue":null}}	2026-07-27 00:11:13.688
+cms2h2l60001egb7epnp83xh7	HOME_CATEGORY_SLOT_CREATED	HomeCategorySlot	cms2h2l5m001cgb7e20o3o88x	cmqz5vqsx0000xhd86fq6wm5d	{"label":"Mascotas","linkType":"CATEGORY","categoryId":"cmqz5vr0m000yxhd8gfimq465","linkValue":null}	2026-07-27 00:12:02.089
+cms2i3e2q001igb7e72xnx2kd	HOME_CATEGORY_SLOT_UPDATED	HomeCategorySlot	cmrhwtsaa0001evvy1jwx92fz	cmqz5vqsx0000xhd86fq6wm5d	{"changes":{"label":"Kiosco","image":"https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785111067180-logo.webp","linkType":"CATEGORY","categoryId":"cmqz5vqyn000oxhd8fpc7qxgz","linkValue":null}}	2026-07-27 00:40:39.169
+cms2i3s3t001kgb7eewgg5kz7	HOME_CATEGORY_SLOT_UPDATED	HomeCategorySlot	cms2h0m080016gb7euzmmqwni	cmqz5vqsx0000xhd86fq6wm5d	{"changes":{"label":"Gaseosas","image":"https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785112855691-logo.webp","linkType":"CATEGORY","categoryId":"cmqz5vqyn000oxhd8fpc7qxgz","linkValue":null}}	2026-07-27 00:40:57.353
+cms2i90r60001rcsvmz0whkju	HOME_CATEGORY_SLOT_UPDATED	HomeCategorySlot	cmrhwtsaa0001evvy1jwx92fz	cmqz5vqsx0000xhd86fq6wm5d	{"changes":{"label":"Kiosco","image":"https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785111067180-logo.webp","linkType":"CATEGORY","categoryId":"cmqz5vqyn000oxhd8fpc7qxgz","linkValue":null}}	2026-07-27 00:45:01.841
+cms2i9cju0003rcsvoguk40nk	HOME_CATEGORY_SLOT_UPDATED	HomeCategorySlot	cmrhwtsaa0001evvy1jwx92fz	cmqz5vqsx0000xhd86fq6wm5d	{"changes":{"label":"Kiosco","image":"https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785113100475-logo.webp","linkType":"CATEGORY","categoryId":"cmqz5vqyn000oxhd8fpc7qxgz","linkValue":null}}	2026-07-27 00:45:17.13
+cms2ia33f0005rcsvg5om24zi	HOME_CATEGORY_SLOT_UPDATED	HomeCategorySlot	cmrhwtsaa0001evvy1jwx92fz	cmqz5vqsx0000xhd86fq6wm5d	{"changes":{"label":"Kiosco","image":"https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785113148467-logo.webp","linkType":"CATEGORY","categoryId":"cmqz5vqyn000oxhd8fpc7qxgz","linkValue":null}}	2026-07-27 00:45:51.531
 \.
 
 
@@ -2172,8 +2182,8 @@ cmqz5vr07000vxhd8dvyam1ju	Deportes	deportes	\N	\N	t	4	MARKETPLACE	2026-06-29 11:
 cmqz5vr0e000wxhd871dqy12g	Juguetes	juguetes	\N	\N	t	5	MARKETPLACE	2026-06-29 11:55:46.43	2026-06-29 11:55:46.43	t	0	\N	f	t	\N	\N
 cmqz5vr0i000xxhd8lsjz1e47	Libros y Música	libros-musica	\N	\N	t	6	MARKETPLACE	2026-06-29 11:55:46.435	2026-06-29 11:55:46.435	t	0	\N	f	t	\N	\N
 cmqz5vr0m000yxhd8gfimq465	Mascotas	mascotas	\N	\N	t	7	MARKETPLACE	2026-06-29 11:55:46.439	2026-06-29 11:55:46.439	t	0	\N	f	t	\N	\N
-cmqz5vr0q000zxhd8p3tglvrd	Artesanías	artesanias	\N	\N	t	9	MARKETPLACE	2026-06-29 11:55:46.443	2026-06-29 11:55:46.443	t	0	\N	f	t	\N	\N
 cmqz5vqyn000oxhd8fpc7qxgz	Kiosco	kiosco	\N	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1783867779052-Gemini_Generated_Image_taddjntaddjntadd.webp	t	9	STORE	2026-06-29 11:55:46.368	2026-07-12 14:49:47.648	t	0	\N	f	t	\N	\N
+cmqz5vr0q000zxhd8p3tglvrd	Artesanías	artesanias	\N	\N	t	9	MARKETPLACE	2026-06-29 11:55:46.443	2026-07-27 00:11:34.299	t	0	\N	f	t	\N	\N
 \.
 
 
@@ -2404,8 +2414,10 @@ COPY public."HeroSlide" (id, title, subtitle, "buttonText", "buttonLink", gradie
 -- Data for Name: HomeCategorySlot; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public."HomeCategorySlot" (id, "categoryId", "order", image, icon, label, "isActive", "createdAt", "updatedAt") FROM stdin;
-cmrhwtsaa0001evvy1jwx92fz	cmqz5vqyn000oxhd8fpc7qxgz	1	\N	\N	\N	t	2026-07-12 14:49:55.569	2026-07-12 14:49:55.569
+COPY public."HomeCategorySlot" (id, "categoryId", "order", image, icon, label, "isActive", "createdAt", "updatedAt", "linkType", "linkValue") FROM stdin;
+cms2h2l5m001cgb7e20o3o88x	cmqz5vr0m000yxhd8gfimq465	3	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785111116145-logo.webp	\N	Mascotas	t	2026-07-27 00:12:02.075	2026-07-27 00:12:02.075	CATEGORY	\N
+cms2h0m080016gb7euzmmqwni	cmqz5vqyn000oxhd8fpc7qxgz	2	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785112855691-logo.webp	\N	Gaseosas	t	2026-07-27 00:10:29.863	2026-07-27 00:40:57.342	CATEGORY	\N
+cmrhwtsaa0001evvy1jwx92fz	cmqz5vqyn000oxhd8fpc7qxgz	1	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785113148467-logo.webp	\N	Kiosco	t	2026-07-12 14:49:55.569	2026-07-27 00:45:51.516	CATEGORY	\N
 \.
 
 
@@ -4170,6 +4182,7 @@ cmrc2vw0f000113mgtop0d6rn	cmqz5vsvy006nxhd8cea1yx8k	cmqz5vswb006uxhd8c5bcq86n	\N
 cmrcsjs7o000d7nuefmjm1j2l	cmqz5vsvy006nxhd8cea1yx8k	cmqz5vswb006uxhd8c5bcq86n	cmrcsilkn00097nuetc7vfy53	Consulta general	general	closed	normal	\N	\N	2026-07-09 00:51:19.571	2026-07-09 00:58:59.213	2026-07-09 00:51:19.571	2026-07-09 00:58:59.215	MERCHANT
 cms0hflgm0009136y65k84nwp	cmrzdt1m80001wkbfyotyrlg7	cmrzdt1mo0004wkbfvcf93fr6	cmrcsilkn00097nuetc7vfy53	Consulta general	general	resolved	normal	\N	\N	2026-07-25 14:49:45.019	2026-07-25 14:52:10.562	2026-07-25 14:46:36.646	2026-07-25 14:52:10.564	MERCHANT
 cms2c15v7001v5p8saqad2vmn	cmqz5vwo300g5xhd8ok66ryk2	\N	cmrcsilkn00097nuetc7vfy53	Quisiera trabajar con ustedes	otro	active	normal	\N	\N	2026-07-26 21:50:57.522	\N	2026-07-26 21:50:57.522	2026-07-26 21:50:57.522	BUYER
+cms2g0xyv0005gb7el2moom52	cmqz5vwws00gbxhd8xdblt14z	\N	cmrcsilkn00097nuetc7vfy53	sjdhakljdlad	pago	active	normal	\N	\N	2026-07-26 23:43:12.036	\N	2026-07-26 23:42:45.751	2026-07-26 23:43:12.037	BUYER
 \.
 
 
@@ -4194,8 +4207,11 @@ cms0hjmsq000p136y4mybrr5a	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	/s
 cms0hkdn4000r136yhvsh69kc	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-25 14:50:19.792
 cms0hm1hs000t136yup1tdq4o	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-25 14:51:37.36
 cms0hmr48000v136ybxvylhrr	cms0hflgm0009136y65k84nwp	cmqz5vqsx0000xhd86fq6wm5d	El equipo de Moovy dio por finalizada esta consulta. Si necesitás más ayuda, podés iniciar una nueva cuando quieras. ¡Gracias!	t	f	t	\N	\N	2026-07-25 14:52:10.569
-cms2c15v7001x5p8sn3roz8jv	cms2c15v7001v5p8saqad2vmn	cmqz5vwo300g5xhd8ok66ryk2	Quisiera trabajar con ustedes	f	f	f	\N	\N	2026-07-26 21:50:57.522
 cms2c15v7001y5p8spu624a56	cms2c15v7001v5p8saqad2vmn	cmqz5vqsx0000xhd86fq6wm5d	Juan es tu operador asignado. En un momento te atiende, Pedro Comprador.	t	t	t	\N	\N	2026-07-26 21:50:57.522
+cms2g0xyv0008gb7e7dsa2dbp	cms2g0xyv0005gb7el2moom52	cmqz5vqsx0000xhd86fq6wm5d	Juan es tu operador asignado. En un momento te atiende, Lucía Test.	t	t	t	\N	\N	2026-07-26 23:42:45.751
+cms2g0xyv0007gb7eghq0yqnr	cms2g0xyv0005gb7el2moom52	cmqz5vwws00gbxhd8xdblt14z	sjdhakljdlad	f	f	t	\N	\N	2026-07-26 23:42:45.751
+cms2c15v7001x5p8sn3roz8jv	cms2c15v7001v5p8saqad2vmn	cmqz5vwo300g5xhd8ok66ryk2	Quisiera trabajar con ustedes	f	f	t	\N	\N	2026-07-26 21:50:57.522
+cms2g1i8k000cgb7er0nutpqk	cms2g0xyv0005gb7el2moom52	cmqz5vqsx0000xhd86fq6wm5d	Hola!	t	f	t	\N	\N	2026-07-26 23:43:12.02
 \.
 
 
@@ -4204,7 +4220,7 @@ cms2c15v7001y5p8spu624a56	cms2c15v7001v5p8saqad2vmn	cmqz5vqsx0000xhd86fq6wm5d	Ju
 --
 
 COPY public."SupportOperator" (id, "userId", "displayName", "isActive", "isOnline", "maxChats", "lastSeenAt", "createdAt", "updatedAt") FROM stdin;
-cmrcsilkn00097nuetc7vfy53	cmqz5vqsx0000xhd86fq6wm5d	Juan	t	t	5	2026-07-26 22:32:01.046	2026-07-09 00:50:24.311	2026-07-26 22:32:01.047
+cmrcsilkn00097nuetc7vfy53	cmqz5vqsx0000xhd86fq6wm5d	Juan	t	f	5	2026-07-26 23:50:34.053	2026-07-09 00:50:24.311	2026-07-26 23:50:34.062
 \.
 
 
@@ -4234,7 +4250,7 @@ cmqz5vrgz001jxhd84w7eneza	comercio1@somosmoovy.com	$2b$12$yF6/4feNZrmKkGW/zI752e
 cmqz5vwws00gbxhd8xdblt14z	cliente3@somosmoovy.com	$2b$12$9q91L9dMys9zsNJgBBKjgO3rmqK5OFExmfJJEbUojP7g8AJLw4Ufa	Lucía Test	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwws00gcxhd8ifwc7bkh	\N	2026-06-29 11:55:54.076	2026-07-26 20:29:41.374	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-26 20:29:41.372	\N
 cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.37Whxp97s8kSiR7D.jXmok.DPmVC8uu	 				COMERCIO	\N	\N	0	0	f	cmqz5vsvy006oxhd85im89bep	\N	2026-06-29 11:55:48.862	2026-07-11 03:01:00.38	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-07 14:53:34.731	\N
 cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-07-26 21:49:51.903	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:32:32.921	\N
-cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-07-26 19:34:36.94	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-25 16:25:30.227	\N
+cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-07-27 00:38:55.366	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-25 16:25:30.227	\N
 \.
 
 
@@ -4271,6 +4287,7 @@ cms24paw10017e1t8r2ytxgd5	cmrzdt1m80001wkbfyotyrlg7	POINTS_ADJUSTED_BY_ADMIN	Use
 cms275u09000127ez4s1kc8j5	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-26 19:34:37.351
 cms290fr200015p8sb81vqc2u	cmqz5vwws00gbxhd8xdblt14z	LOGIN	User	cmqz5vwws00gbxhd8xdblt14z	{"method":"credentials"}	\N	\N	2026-07-26 20:26:24.813
 cms2bzr9p001r5p8skgjm0yye	cmqz5vwo300g5xhd8ok66ryk2	LOGIN	User	cmqz5vwo300g5xhd8ok66ryk2	{"method":"credentials"}	\N	\N	2026-07-26 21:49:51.947
+cms2i161p001ggb7e32eqjxsq	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-07-27 00:38:55.449
 \.
 
 
@@ -5454,10 +5471,10 @@ CREATE INDEX "FeatureFlag_scope_idx" ON public."FeatureFlag" USING btree (scope)
 
 
 --
--- Name: HomeCategorySlot_categoryId_key; Type: INDEX; Schema: public; Owner: postgres
+-- Name: HomeCategorySlot_isActive_order_idx; Type: INDEX; Schema: public; Owner: postgres
 --
 
-CREATE UNIQUE INDEX "HomeCategorySlot_categoryId_key" ON public."HomeCategorySlot" USING btree ("categoryId");
+CREATE INDEX "HomeCategorySlot_isActive_order_idx" ON public."HomeCategorySlot" USING btree ("isActive", "order");
 
 
 --
@@ -6567,7 +6584,7 @@ ALTER TABLE ONLY public."Favorite"
 --
 
 ALTER TABLE ONLY public."HomeCategorySlot"
-    ADD CONSTRAINT "HomeCategorySlot_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES public."Category"(id) ON UPDATE CASCADE ON DELETE CASCADE;
+    ADD CONSTRAINT "HomeCategorySlot_categoryId_fkey" FOREIGN KEY ("categoryId") REFERENCES public."Category"(id) ON UPDATE CASCADE ON DELETE SET NULL;
 
 
 --

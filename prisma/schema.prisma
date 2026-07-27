@@ -2003,24 +2003,37 @@ model ConfigAuditLog {
 }
 
 // ─── HomeCategorySlot ─────────────────────────────────────────────────────
-// Slots curados por el admin de OPS para mostrar en el home.
-// Independiente de isActive/isPackageAvailable de Category.
-// El admin elige qué categorías mostrar, en qué orden, y con qué imagen.
+// Las "Categorías del Home": vitrina LIBRE, curada por el admin de OPS.
+//
+// feat/home-categorias-independientes (2026-07-26, decisión founder): antes cada
+// slot ERA una Category del sistema (la misma tabla que clasifica productos y
+// arma los paquetes B2B), así que el listado de lo que se podía mostrar en el
+// home estaba condicionado por decisiones de OTRO dominio. Ahora el slot es
+// autónomo: nombre e imagen propios, y el admin elige EL DESTINO:
+//
+//   · linkType "CATEGORY" → filtra comercios/productos de esa Category real
+//     (categoryId apunta a ella; si la borran queda null y caemos a búsqueda).
+//   · linkType "SEARCH"   → ejecuta una búsqueda con linkValue como término.
+//
+// categoryId dejó de ser obligatorio y de ser único: dos vitrinas distintas
+// ("Farmacia 24hs", "Perfumería") pueden apuntar a la misma Category.
 model HomeCategorySlot {
   id         String   @id @default(cuid())
-  categoryId String
+  categoryId String?  // solo cuando linkType = CATEGORY
+  linkType   String   @default("CATEGORY") // CATEGORY | SEARCH
+  linkValue  String?  // término de búsqueda cuando linkType = SEARCH
   order      Int      @default(0)
-  image      String?  // Imagen custom para el home (si null, usa la de Category)
-  icon       String?  // Ícono custom para el home (si null, usa el de Category)
-  label      String?  // Label custom (si null, usa category.name)
+  image      String?  // Imagen de la vitrina (si null y hay category, usa la de Category)
+  icon       String?  // Ícono (si null y hay category, usa el de Category)
+  label      String?  // Nombre visible (si null y hay category, usa category.name)
   isActive   Boolean  @default(true)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
-  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
 
-  @@unique([categoryId]) // Una categoría solo puede tener un slot
   @@index([order])
+  @@index([isActive, order])
 }
 
 // ─── HomeSection ──────────────────────────────────────────────────────────

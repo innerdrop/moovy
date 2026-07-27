@@ -10,6 +10,131 @@
 
 ---
 
+## 2026-07-26 (rama `feat/home-categorias-independientes`)
+
+feat: las vitrinas del home se independizan de las categorias del sistema
+
+El founder reporto que el listado de lo que podia mostrar en el home
+estaba condicionado por los paquetes B2B. Causa: un HomeCategorySlot ERA
+una Category (la tabla que clasifica productos y arma los paquetes), con
+unique por categoria — solo se podia mostrar lo que existiera ahi, una
+sola vez. Decision founder (opcion A de 3): vitrina LIBRE.
+
+SCHEMA: categoryId pasa a opcional y pierde el unique (dos vitrinas
+pueden apuntar a la misma categoria); nuevos linkType (CATEGORY |
+SEARCH) y linkValue; onDelete SetNull en vez de Cascade — si borran la
+categoria la vitrina no desaparece del home, cae a busqueda por su
+nombre. MIGRACION CERO: las vitrinas existentes toman el default
+CATEGORY y siguen apuntando a lo mismo. Requiere npx prisma db push.
+
+API: POST/PATCH aceptan nombre (obligatorio, max 40), imagen y el
+destino como unidad (resolveLink valida categoria existente o termino
+de >=2 letras; nunca queda un estado hibrido). Auditoria en crear,
+editar y borrar.
+
+OPS: gestor rehecho — editor con nombre, imagen (crop 1:1) y dos
+botones de destino (Categoria / Busqueda). El selector muestra TODAS
+las categorias activas (ya no esconde las usadas) y se fueron las
+etiquetas STORE/BOTH. Cada fila dice en humano que hace ("Lleva a
+Farmacia" / "Busca gaseosas"), se edita, y quitar pide confirmacion
+aclarando que la categoria del sistema no se toca.
+
+HOME: el destino se resuelve server-side (una sola vez) y la grilla
+navega ahi, con fallback al comportamiento viejo.
+
+4) RECORTE CON ZOOM OUT: el slider arrancaba en "llenar el marco", asi
+que la foto siempre tocaba los bordes. Ahora se puede alejar (minimo
+0.55) y el lienzo sobrante se rellena de BLANCO tanto en el preview como
+en el archivo exportado — sin eso el JPEG salia con marco negro.
+
+5) TARJETAS DE CATEGORIA DEL HOME: nombre mas grande (15px destacadas,
+13px grilla), menos espacio blanco muerto, y la foto pasa a verse entera
+con un respiro en vez de llenar el recuadro de borde a borde.
+
+6) BUG: no llegaba el mail de bienvenida al registrarse con Google.
+upsertGoogleUser creaba la cuenta con todo (bono, referralCode,
+consentimientos) pero nunca llamaba a sendWelcomeEmail — el envio vivia
+solo en /api/auth/register y Google no pasa por ahi. Se manda desde el
+helper, sin bloquear el login ni caerse si falla el SMTP. Solo altas
+nuevas.
+
+Verificacion: tsc limpio. Manual: (a) npx prisma db push; (b) el home
+sigue mostrando las 5 vitrinas actuales y cada una lleva a donde antes;
+(c) crear una vitrina de BUSQUEDA (ej "Gaseosas" -> gaseosas) y tocarla
+en el home; (d) crear dos vitrinas apuntando a la MISMA categoria con
+nombres distintos; (e) editar nombre e imagen de una existente;
+(f) reordenar arrastrando; (g) ocultar una y ver que desaparece del
+home; (h) al subir una imagen, alejarla con el slider y confirmar que
+queda con aire BLANCO alrededor (no negro); (i) registrarse con una
+cuenta Google nueva y verificar que llega el mail de bienvenida.
+
+**Archivos:** ISSUES.md, prisma/schema.prisma, src/app/(store)/page.tsx, src/app/api/admin/home-categories/route.ts, src/components/home/CategoryGrid.tsx, src/components/ops/HomeCategorySlotsManager.tsx, src/components/ui/ImageCropModal.tsx, src/lib/google-signin.ts
+
+## 2026-07-26 (rama `feat/home-categorias-independientes`)
+
+feat: las vitrinas del home se independizan de las categorías del sistema
+
+Reporte del founder: "quiero que las categorías del home no tengan que ver con las
+categorías de los paquetes B2B ni nada, porque ahora está condicionado el listado que
+puedo mostrar". Diagnóstico: un HomeCategorySlot ERA una Category (la misma tabla que
+clasifica productos y arma los paquetes B2B), con `@@unique([categoryId])` — o sea: solo
+se podía mostrar en el home lo que existiera como categoría del sistema, una sola vez, y
+el selector de OPS escondía las ya usadas. Decisión founder (opción A de 3): vitrina
+LIBRE con destino elegible.
+
+SCHEMA: `categoryId` pasa a opcional y pierde el unique (dos vitrinas pueden apuntar a la
+misma categoría: "Farmacia 24hs" y "Perfumería"); nuevos `linkType` (CATEGORY | SEARCH,
+default CATEGORY) y `linkValue` (término de búsqueda); relación con `onDelete: SetNull`
+en vez de Cascade — si borran la Category, la vitrina NO desaparece del home: cae a una
+búsqueda por su propio nombre. MIGRACIÓN CERO: las vitrinas existentes toman el default
+CATEGORY y siguen apuntando a lo mismo (aplicar con `npx prisma db push`).
+
+API `/api/admin/home-categories`: POST/PATCH aceptan label (obligatorio ≥2, máx 40),
+image, icon y el destino como unidad — `resolveLink()` valida que la categoría exista o
+que el término tenga ≥2 letras, y el destino se escribe entero (tipo + valor) para no
+dejar estados híbridos. Auditoría en las tres operaciones
+(HOME_CATEGORY_SLOT_CREATED/UPDATED/DELETED).
+
+OPS: `HomeCategorySlotsManager` rehecho — editor con nombre, imagen (crop 1:1) y dos
+botones de destino (Categoría / Búsqueda); el selector muestra TODAS las categorías
+activas (ya no descarta las usadas) y desaparecieron las etiquetas STORE/BOTH que no le
+decían nada al operador; cada fila muestra en humano qué hace ("Lleva a Farmacia" /
+"Busca gaseosas"), se puede editar, y quitar pide confirmación aclarando que la categoría
+del sistema no se toca.
+
+HOME: `getHomeCategories` resuelve el `href` server-side (una sola vez) —
+`/productos?categoria=<slug>` o `/buscar?q=<término>` — y CategoryGrid navega ahí con
+fallback al comportamiento viejo.
+
+RECORTE DE IMAGEN CON ZOOM OUT: el slider arrancaba en 1 = "llenar el marco", así que
+la foto SIEMPRE quedaba tocando los bordes y no había forma de alejarla (founder: "en la
+tienda se ve muy grande, casi tocando el borde"). Mínimo ahora 0.55. Detalle que hubiera
+sido un bug silencioso: el canvas de exportación NO pintaba fondo — a zoom < 1 el JPEG
+habría salido con marco NEGRO; se pinta blanco en el export y también en el preview
+(antes #1a1a1a) para que lo que ves sea lo que se guarda.
+
+TARJETAS DE CATEGORÍA DEL HOME: nombre 13→15px en las destacadas y 11.5→13px en la
+grilla de íconos, menos padding vertical muerto, y la foto pasa de object-cover
+(llenaba el recuadro de borde a borde, recortando) a object-contain con un respiro
+mínimo (p-0.5) sobre fondo blanco: se ve entera y no toca los bordes. Se iteró el
+tamaño con el founder (p-3.5 → p-1.5 → p-0.5).
+DESCARTADO: micro-interacción de crecimiento en las tarjetas. Se probó primero en hover
+(invisible en mobile — un teléfono no tiene hover, y el active la ACHICABA) y después
+corregida a crecer al tocar; el founder la rechazó igual. Las tarjetas quedan quietas.
+No reproponer.
+
+🔴 BUG — MAIL DE BIENVENIDA AUSENTE EN ALTAS POR GOOGLE: `upsertGoogleUser` replicaba
+TODO lo del registro por email (bono pendiente, referralCode MOV-XXXX, consentimientos,
+atribución de referido) menos el envío del correo, porque `sendWelcomeEmail` se llamaba
+en `/api/auth/register` y el alta por Google no pasa por esa ruta. Se agrega al helper
+(fire-and-forget con catch: si el SMTP falla, el usuario ya quedó creado y el login no se
+cae). Solo en altas NUEVAS — quien vincula Google a una cuenta existente no recibe nada.
+
+Archivos: `prisma/schema.prisma`, `src/app/api/admin/home-categories/route.ts`,
+`src/components/ops/HomeCategorySlotsManager.tsx`, `src/app/(store)/page.tsx`,
+`src/components/home/CategoryGrid.tsx`, `src/components/ui/ImageCropModal.tsx`,
+`src/lib/google-signin.ts`.
+
 ## 2026-07-26 (rama `fix/safe-area-pausa-rapida-y-card`)
 
 fix: safe-area PWA + pausa rapida con consecuencias + tablero KDS en Pedidos + aire lateral

@@ -27,6 +27,15 @@ export default function ImageCropModal({
     const imageRef = useRef<HTMLImageElement | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
+    // feat/home-categorias-independientes (founder 07-26): antes el zoom empezaba
+    // en 1 = "llenar el marco", así que la foto SIEMPRE quedaba tocando los bordes
+    // y no se podía alejar. Ahora el mínimo es 0.55: la imagen entra completa con
+    // aire alrededor, y ese aire se rellena de BLANCO (no negro) tanto en la
+    // vista previa como en el archivo exportado.
+    const MIN_ZOOM = 0.55;
+    const MAX_ZOOM = 3;
+    const CANVAS_BG = "#ffffff";
+
     const [zoom, setZoom] = useState(1);
     const [offset, setOffset] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
@@ -68,7 +77,7 @@ export default function ImageCropModal({
         const h = aspectRatio === 1 ? size : size / aspectRatio;
 
         // Clear
-        ctx.fillStyle = "#1a1a1a";
+        ctx.fillStyle = CANVAS_BG;
         ctx.fillRect(0, 0, size, h);
 
         // Calculate scaled dimensions to fit image
@@ -116,7 +125,7 @@ export default function ImageCropModal({
 
     const handleWheel = (e: React.WheelEvent) => {
         e.preventDefault();
-        setZoom((prev) => Math.min(3, Math.max(1, prev - e.deltaY * 0.002)));
+        setZoom((prev) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, prev - e.deltaY * 0.002)));
     };
 
     const handleCrop = () => {
@@ -134,6 +143,10 @@ export default function ImageCropModal({
         // Downscale de alta calidad (evita bordes dentados / pixelado).
         outCtx.imageSmoothingEnabled = true;
         outCtx.imageSmoothingQuality = "high";
+        // Fondo blanco: al alejar (zoom < 1) sobra lienzo alrededor de la foto y
+        // un JPEG sin pintar lo entrega NEGRO. Blanco = mismo look que el preview.
+        outCtx.fillStyle = CANVAS_BG;
+        outCtx.fillRect(0, 0, outputSize, outH);
 
         // CLAVE de calidad: renderizamos el recorte desde la imagen ORIGINAL (imageRef),
         // NO desde el canvas de preview (que está a resolución de pantalla). Reproducimos
@@ -228,8 +241,8 @@ export default function ImageCropModal({
                         <ZoomOut className="w-4 h-4 text-gray-400 flex-shrink-0" />
                         <input
                             type="range"
-                            min="1"
-                            max="3"
+                            min={MIN_ZOOM}
+                            max={MAX_ZOOM}
                             step="0.01"
                             value={zoom}
                             onChange={(e) => setZoom(parseFloat(e.target.value))}
@@ -246,7 +259,7 @@ export default function ImageCropModal({
                         </button>
                     </div>
                     <p className="text-[10px] text-gray-400 text-center mt-1.5">
-                        Arrastrá para mover · Deslizá para zoom
+                        Arrastrá para mover · Deslizá para acercar o alejar
                     </p>
                 </div>
 

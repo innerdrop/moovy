@@ -13,6 +13,9 @@ interface Category {
     slug: string;
     icon?: string | null;
     image?: string | null;
+    /** feat/home-categorias-independientes: destino ya resuelto en el server
+     *  (categoría real o búsqueda). El fallback cubre llamadas viejas. */
+    href?: string;
 }
 
 interface CategoryGridProps {
@@ -33,15 +36,19 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                         {featured.map((cat) => (
                             <Link
                                 key={cat.id}
-                                href={`/productos?categoria=${cat.slug}`}
+                                href={cat.href || `/productos?categoria=${cat.slug}`}
                                 className="group rounded-[20px] overflow-hidden bg-white border border-gray-100 shadow-[0_8px_24px_rgba(80,5,10,0.10)]"
                             >
-                                <div className="relative h-[118px] sm:h-[130px] bg-gray-100 overflow-hidden flex items-center justify-center">
+                                {/* founder 07-26: la foto llenaba el recuadro de borde a
+                                    borde. Ahora respira dentro de la tarjeta (contain +
+                                    padding sobre fondo blanco): la tarjeta mantiene su
+                                    tamaño, la imagen se ve más chica y prolija. */}
+                                <div className="relative h-[118px] sm:h-[130px] bg-white overflow-hidden flex items-center justify-center">
                                     {cat.image ? (
                                         <SmartImage
                                             src={cat.image}
                                             alt={cat.name}
-                                            className="object-cover group-hover:scale-105 transition-transform duration-200"
+                                            className="object-contain p-0.5"
                                             sizes="(max-width: 640px) 50vw, 260px"
                                         />
                                     ) : (
@@ -50,8 +57,10 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                                         </div>
                                     )}
                                 </div>
-                                <div className="px-2.5 py-2.5 text-center">
-                                    <span className="text-[13px] font-black text-gray-900 leading-tight">{cat.name}</span>
+                                {/* founder 07-26: la letra se veía chica y sobraba blanco.
+                                    15px y menos padding vertical. */}
+                                <div className="px-2 py-2 text-center">
+                                    <span className="text-[15px] font-black text-gray-900 leading-tight">{cat.name}</span>
                                 </div>
                             </Link>
                         ))}
@@ -66,10 +75,10 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                         {more.map((cat) => (
                             <Link
                                 key={cat.id}
-                                href={`/productos?categoria=${cat.slug}`}
+                                href={cat.href || `/productos?categoria=${cat.slug}`}
                                 className="group flex flex-col items-center gap-1.5"
                             >
-                                <div className="w-full aspect-square max-w-[86px] rounded-[22px] bg-white border border-gray-100 shadow-[0_2px_10px_rgba(30,10,5,0.06)] flex items-center justify-center group-hover:scale-105 transition-transform duration-200">
+                                <div className="w-full aspect-square max-w-[86px] rounded-[22px] bg-white border border-gray-100 shadow-[0_2px_10px_rgba(30,10,5,0.06)] flex items-center justify-center">
                                     <div className="relative w-[62%] h-[62%] rounded-xl overflow-hidden flex items-center justify-center">
                                         {cat.image ? (
                                             <SmartImage src={cat.image} alt={cat.name} sizes="64px" />
@@ -80,7 +89,7 @@ export default function CategoryGrid({ categories }: CategoryGridProps) {
                                         )}
                                     </div>
                                 </div>
-                                <span className="text-[11.5px] font-extrabold text-gray-700 text-center leading-tight w-full">{cat.name}</span>
+                                <span className="text-[13px] font-extrabold text-gray-700 text-center leading-tight w-full">{cat.name}</span>
                             </Link>
                         ))}
                     </div>
