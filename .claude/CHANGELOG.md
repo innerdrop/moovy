@@ -10,6 +10,53 @@
 
 ---
 
+## 2026-07-28 (rama `feat/vitrina-productos-y-buscador`)
+
+feat: una sola tarjeta de producto + buscador agrupado por comercio
+
+1) TARJETA UNICA. /productos usaba una tarjeta propia (foto cuadrada
+gigante, relleno de 16px, boton ancho): entraban 4 productos en un
+iPhone 14 Pro Max. Ahora usa la misma del perfil del comercio: ~8 por
+pantalla, con puntos MOOVER calculados en el server y el estado
+"Agotado" (precio tachado). El mismo producto se veia distinto segun
+desde donde llegaba el cliente; ahora hay UNA sola tarjeta en toda la
+app (la usan /productos, el perfil del comercio y favoritos).
+
+src/components/products/ProductCard.tsx quedo sin usar. No lo pude
+borrar desde el entorno remoto: quedo vaciado con una nota. Borralo con
+   git rm src/components/products/ProductCard.tsx
+
+2) BUSCADOR AGRUPADO POR COMERCIO (escuela PedidosYa, con lo nuestro).
+Antes eran dos listas sueltas: los comercios arriba y los productos
+abajo, sin dueño. Buscar "cerveza" y ver 12 fotos de cerveza no ayuda —
+el vecino necesita saber DE QUIEN es cada una, si esta abierto y cuanto
+tarda, porque el pedido se arma por comercio (no se puede mezclar un
+producto de la farmacia con uno del kiosco en el mismo envio).
+
+Ahora cada comercio es una tarjeta: cabecera con logo, abierto/cerrado,
+calificacion y demora, y debajo un riel horizontal con SUS productos que
+coinciden (misma tarjeta y mismo gesto que el perfil del comercio).
+Orden: primero los comercios que tienen productos que matchean (el
+vecino busca la cosa, no el negocio), despues los abiertos. Un comercio
+que matcheo solo por nombre aparece igual, sin riel. El contador de la
+pestana pasa a contar comercios.
+
+Ademas, regla #45: durante la rama hay que verificar con
+`npx tsc -p tsconfig.strict.json --noEmit`, no con el tsc pelado — el
+pelado dio limpio y el finish abortaba con 4 errores de tipos (el config
+estricto incluye los tipos generados de las rutas en .next/types).
+
+Verificacion: tsc-strict + npm run check:parse limpios. Manual: (a) /productos
+en el iPhone: entran ~8 productos, con puntos y con "Agotado" tachado en
+los que estan en cero; (b) buscar algo que tengan DOS comercios (ej
+"agua") y ver dos tarjetas, cada una con sus productos al costado;
+(c) buscar el nombre de un comercio y verificar que aparece aunque no
+tenga productos que coincidan; (d) tocar un (+) desde el buscador y ver
+que el producto entra al carrito; (e) buscar algo inexistente y ver el
+estado "sin resultados" con el atajo a Marketplace.
+
+**Archivos:** .claude/CLAUDE.md, ISSUES.md, src/app/(store)/buscar/page.tsx, src/app/(store)/productos/page.tsx, src/components/products/ProductCard.tsx
+
 ## 2026-07-28 (rama `fix/comercio-pausa-stock-y-ajustes`)
 
 fix: el comercio aprobado ya puede reanudar su tienda + sin stock visible + ajustes de mobile
@@ -105,6 +152,37 @@ comercios abiertos ahora"; abrir la tienda y verificar que desaparece;
 cuando hay pedidos sin responder.
 
 **Archivos:** .claude/CLAUDE.md, ISSUES.md, package.json, scripts/parse-check.mjs, src/app/(store)/store/[slug]/page.tsx, src/app/api/merchant/me/route.ts, src/app/api/merchant/orders/pendientes/route.ts, src/app/comercios/(protected)/layout.tsx (+9 mas)
+
+## 2026-07-28 (rama `feat/vitrina-productos-y-buscador`)
+
+feat: una sola tarjeta de producto en toda la app + el buscador agrupa por comercio
+
+(1) TARJETA ÚNICA. `/productos` tenía su propia tarjeta (foto cuadrada gigante, `p-4`, botón
+"Agregar" de ancho completo): en un iPhone 14 Pro Max entraban 4 productos. El mismo producto se
+veía distinto según si el cliente llegaba desde el listado general o desde el perfil del comercio.
+Ahora usa `src/components/store/ProductCard.tsx` — la que se iteró con el founder en
+`feat/rediseno-perfil-comercio` (foto 3:2 en object-contain, (+) montado, precio ⟷ puntos MOOVER,
+"Agotado" con precio tachado): ~8 productos por pantalla. La página calcula los puntos server-side
+(`getPointsConfig` + `calculatePointsEarned`, nunca estimados en el cliente) y pasa `stock`.
+`src/components/products/ProductCard.tsx` quedó sin importadores; el entorno remoto no puede borrar
+archivos, así que se vació con la nota y el comando `git rm`.
+
+(2) BUSCADOR AGRUPADO POR COMERCIO. La pestaña "Comercios" mostraba dos listas independientes:
+comercios arriba y productos abajo, cada producto con el nombre de su comercio en gris chiquito.
+El problema de fondo: en Moovy el pedido se arma POR COMERCIO (no se puede mezclar un producto de
+la farmacia con uno del kiosco en el mismo envío), así que una grilla de 12 fotos de cerveza sin
+dueño obliga al vecino a resolver a mano de quién es cada una y si está abierto.
+Ahora `agruparPorComercio(products, merchants)` construye una tarjeta por comercio: cabecera
+(logo en escala de grises si está cerrado, estado, rating, demora, chevron a la tienda) + riel
+horizontal con SUS productos coincidentes, usando la tarjeta unificada. Reglas del armado
+documentadas en el código: un comercio entra si matcheó su nombre O si tiene productos que
+matchean; los que tienen productos van primero (el vecino busca la cosa, no el negocio) y entre
+esos primero los abiertos. El contador de la pestaña pasa a contar comercios; `productTotal` queda
+en el estado (el endpoint lo devuelve, sirve para paginar) marcado con `void` para que se entienda
+que ya no se muestra.
+
+Archivos: `src/app/(store)/productos/page.tsx`, `src/app/(store)/buscar/page.tsx`,
+`src/components/products/ProductCard.tsx` (vaciado, pendiente `git rm`).
 
 ## 2026-07-27 (rama `fix/comercio-pausa-stock-y-ajustes`)
 

@@ -3,11 +3,32 @@ import { getAllCategories, type Product, type Category } from "@/lib/db";
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 import { Package, Filter, ShoppingBag } from "lucide-react";
-import ProductCard from "@/components/products/ProductCard";
+// feat/vitrina-productos-y-buscador (2026-07-28): esta página usaba una
+// tarjeta PROPIA (foto cuadrada gigante + relleno de 16px + botón ancho) que
+// dejaba entrar 4 productos en un iPhone 14 Pro Max. Ahora usa la MISMA del
+// perfil del comercio: ~8 por pantalla y una sola tarjeta de producto en toda
+// la app — el mismo producto se veía distinto según de dónde vinieras.
+import ProductCard from "@/components/store/ProductCard";
 import ProductSearchBar from "@/components/products/ProductSearchBar";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
 import { getMerchantOpenViewModel } from "@/lib/merchant-schedule";
+import { getPointsConfig, calculatePointsEarned } from "@/lib/points";
 import type { Metadata } from "next";
+
+/**
+ * Lo que getProducts() devuelve DE VERDAD: el `Product` de @/lib/db más los
+ * campos que arma esta página (comercio con su estado real, puntos MOOVER,
+ * imagen principal). El tipo compartido quedó corto hace tiempo; tiparlo acá
+ * evita tocarlo y romper a los otros cinco lugares que lo usan.
+ */
+type ProductoDelListado = Product & {
+    points?: number | null;
+    merchant?: {
+        isOpen: boolean;
+        isCurrentlyOpen?: boolean;
+        nextOpenLabel?: string | null;
+    } | null;
+};
 
 export const dynamic = "force-dynamic";
 
@@ -57,8 +78,13 @@ async function getProducts(categoria?: string, buscar?: string): Promise<Product
         orderBy: { name: "asc" },
     });
 
+    // Puntos MOOVER: SIEMPRE con el cálculo canónico del server
+    // (calculatePointsEarned + config real). Nunca estimar en el cliente.
+    const pointsConfig = await getPointsConfig();
+
     return products.map(p => {
         const merchant = p.merchant || p.acquiredBy?.[0]?.merchant || null;
+        const points = calculatePointsEarned(p.price, pointsConfig);
         // Rama feat/bloqueo-comercio-cerrado: enriquecer con estado real
         // (pausa + horario) para que el ProductCard sepa si bloquear el botón.
         const vm = getMerchantOpenViewModel(merchant);
@@ -69,6 +95,7 @@ async function getProducts(categoria?: string, buscar?: string): Promise<Product
                 : null,
             merchantId: p.merchantId || p.acquiredBy?.[0]?.merchantId || undefined,
             image: p.images[0]?.url || null,
+            points: points > 0 ? points : null,
         };
     });
 }
@@ -191,8 +218,24 @@ export default async function ProductosPage({ searchParams }: ProductsPageProps)
                     <div className="flex-1">
                         {products.length > 0 ? (
                             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-3 lg:gap-4 xl:gap-5">
-                                {products.map((product) => (
-                                    <ProductCard key={product.id} product={product} />
+                                {(products as ProductoDelListado[]).map((product) => (
+                                    <ProductCard
+                                        key={product.id}
+                                        product={{
+                                            id: product.id,
+                                            slug: product.slug,
+                                            name: product.name,
+                                            price: product.price,
+                                            description: null,
+                                            image: product.image ?? null,
+                                            isFeatured: product.isFeatured,
+                                            merchantId: product.merchantId,
+                                            merchant: product.merchant ?? undefined,
+                                            points: product.points ?? null,
+                                            stock: product.stock,
+                                        }}
+                                        showAddButton
+                                    />
                                 ))}
                             </div>
                         ) : (

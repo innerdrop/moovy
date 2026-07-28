@@ -6,6 +6,11 @@
 ---
 
 
+## Resueltos sesión 2026-07-28
+
+- ✅ **UNA sola tarjeta de producto en toda la app** (rama `feat/vitrina-productos-y-buscador`): `/productos` usaba una tarjeta propia (foto cuadrada + relleno 16px + botón ancho) que dejaba entrar **4 productos** en un iPhone 14 Pro Max; ahora usa la del perfil del comercio (~8 por pantalla, con puntos MOOVER calculados server-side y el estado "Agotado"). El mismo producto se veía distinto según de dónde llegara el cliente. `src/components/products/ProductCard.tsx` quedó sin usar — **falta `git rm`** (el entorno no puede borrar archivos; el archivo quedó vaciado con la nota).
+- ✅ **Buscador: resultados AGRUPADOS POR COMERCIO** (escuela PedidosYa con toque propio): antes eran dos listas sueltas (comercios arriba, productos abajo sin dueño). Buscar "cerveza" y ver 12 fotos no ayuda: el pedido se arma **por comercio** (no se puede mezclar un producto de la farmacia con uno del kiosco en el mismo envío), así que cada comercio es ahora una tarjeta con su cabecera (logo, abierto/cerrado, rating, demora) y un riel horizontal de los productos suyos que coinciden. Orden: primero los que tienen productos que matchean (el vecino busca la cosa, no el negocio), después los abiertos. El contador de la pestaña cuenta comercios.
+
 ## Resueltos sesión 2026-07-27
 
 - ✅ **Cabecera del perfil de comercio alineada** (consejo de 4 especialistas en paralelo + síntesis): el logo pasa de quedar TANGENTE al borde de la portada a montarse ~36px sobre ella (máscara `-mt-7 h-7`, identidad `-mt-16`, `leading-6` en el nombre — los tres van juntos o el nombre se escribe sobre la foto); UNA sola guía izquierda en toda la pantalla (`px-4`: el catálogo estaba corrido 4px en mobile por un `px-5`, causa principal del "se ve desalineado"); escala de 16px (`gap-4`, `mt-4`, sin `pb-1` huérfano); el logo y la tarjeta de datos comparten redondeo (`rounded-3xl`) y familia de sombra + `ring-1` (el logo no se funde si la portada es clara).

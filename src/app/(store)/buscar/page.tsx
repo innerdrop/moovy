@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
 import {
     Search,
@@ -12,10 +13,11 @@ import {
     Loader2,
     Star,
     Clock,
-    MapPin,
     ShoppingBag,
-    TrendingUp
+    TrendingUp,
+    ChevronRight
 } from "lucide-react";
+import ProductCard from "@/components/store/ProductCard";
 import ListingCard from "@/components/store/ListingCard";
 
 // ============================================
@@ -73,6 +75,86 @@ interface ListingResult {
 
 type Tab = "comercios" | "marketplace";
 
+/**
+ * feat/vitrina-productos-y-buscador (2026-07-28): los resultados se agrupan POR
+ * COMERCIO en vez de mostrarse en dos listas sueltas (comercios arriba,
+ * productos abajo sin dueño).
+ *
+ * Por qué: buscar "cerveza" y ver 12 fotos de cerveza no ayuda — el vecino
+ * necesita saber DE QUIÉN es cada una, si está abierto y cuánto tarda, porque
+ * el pedido se arma por comercio (no se puede mezclar un producto de la
+ * farmacia con uno del kiosco en el mismo envío). Es lo que hace PedidosYa.
+ *
+ * Reglas del armado:
+ *  · Un comercio entra al listado si coincide su NOMBRE o si tiene productos
+ *    que coinciden. Los que tienen productos van primero (son más relevantes:
+ *    el vecino busca la cosa, no el negocio).
+ *  · Entre esos, primero los ABIERTOS: mostrar arriba lo que se puede pedir ya.
+ */
+type GrupoComercio = {
+    merchant: {
+        id: string;
+        name: string;
+        slug: string;
+        image: string | null;
+        isOpen: boolean;
+        rating: number | null;
+        deliveryTimeMin?: number;
+        deliveryTimeMax?: number;
+        address?: string | null;
+    };
+    productos: ProductResult[];
+};
+
+function agruparPorComercio(
+    productos: ProductResult[],
+    comercios: MerchantResult[]
+): GrupoComercio[] {
+    const mapa = new Map<string, GrupoComercio>();
+
+    // 1) Los comercios que matchearon por nombre entran siempre (aunque no
+    //    tengan productos que coincidan: el vecino los buscaba a ellos).
+    for (const m of comercios) {
+        mapa.set(m.id, {
+            merchant: {
+                id: m.id,
+                name: m.name,
+                slug: m.slug,
+                image: m.image,
+                isOpen: m.isOpen,
+                rating: m.rating,
+                deliveryTimeMin: m.deliveryTimeMin,
+                deliveryTimeMax: m.deliveryTimeMax,
+                address: m.address,
+            },
+            productos: [],
+        });
+    }
+
+    // 2) Cada producto se cuelga de su comercio; si el comercio no estaba en la
+    //    lista (matcheó el producto, no el nombre), se crea el grupo.
+    for (const prod of productos) {
+        if (!prod.merchant) continue;
+        const existente = mapa.get(prod.merchant.id);
+        if (existente) {
+            existente.productos.push(prod);
+        } else {
+            mapa.set(prod.merchant.id, {
+                merchant: { ...prod.merchant },
+                productos: [prod],
+            });
+        }
+    }
+
+    return Array.from(mapa.values()).sort((a, b) => {
+        const conProductos = Number(b.productos.length > 0) - Number(a.productos.length > 0);
+        if (conProductos !== 0) return conProductos;
+        const abiertos = Number(b.merchant.isOpen) - Number(a.merchant.isOpen);
+        if (abiertos !== 0) return abiertos;
+        return b.productos.length - a.productos.length;
+    });
+}
+
 const POPULAR_SEARCHES = [
     "Pizza", "Hamburguesa", "Farmacia", "Ropa", "Electrónica",
     "Bebidas", "Panadería", "Sushi", "Celulares", "Zapatillas"
@@ -107,8 +189,15 @@ function BuscarContent() {
 
     // Results
     const [products, setProducts] = useState<ProductResult[]>([]);
+    // El total de productos ya no se muestra suelto: el contador de la pestaña
+    // cuenta COMERCIOS (que es lo que ahora se lista). Se conserva porque el
+    // endpoint lo devuelve y sirve para paginar más adelante.
     const [productTotal, setProductTotal] = useState(0);
+    void productTotal;
     const [merchants, setMerchants] = useState<MerchantResult[]>([]);
+
+    // Resultados agrupados por comercio (ver agruparPorComercio arriba).
+    const grupos = useMemo(() => agruparPorComercio(products, merchants), [products, merchants]);
     const [listings, setListings] = useState<ListingResult[]>([]);
     const [listingTotal, setListingTotal] = useState(0);
 
@@ -272,11 +361,11 @@ function BuscarContent() {
                     >
                         <Store className="w-4 h-4" />
                         Comercios
-                        {hasSearched && (productTotal + merchants.length) > 0 && (
+                        {hasSearched && grupos.length > 0 && (
                             <span className={`text-xs px-1.5 py-0.5 rounded-full ${
                                 activeTab === "comercios" ? "bg-red-50 text-[#e60012]" : "bg-gray-100 text-gray-500"
                             }`}>
-                                {productTotal + merchants.length}
+                                {grupos.length}
                             </span>
                         )}
                     </button>
@@ -348,7 +437,7 @@ function BuscarContent() {
                 )}
 
                 {/* No Results */}
-                {!loading && hasSearched && activeTab === "comercios" && products.length === 0 && merchants.length === 0 && (
+                {!loading && hasSearched && activeTab === "comercios" && grupos.length === 0 && (
                     <div className="text-center py-16">
                         <ShoppingBag className="w-12 h-12 text-gray-200 mx-auto mb-4" />
                         <h3 className="font-bold text-gray-900 mb-1">Sin resultados</h3>
@@ -380,116 +469,94 @@ function BuscarContent() {
                     </div>
                 )}
 
-                {/* COMERCIOS TAB RESULTS */}
-                {!loading && hasSearched && activeTab === "comercios" && (
-                    <div className="space-y-6">
-                        {/* Merchants */}
-                        {merchants.length > 0 && (
-                            <div>
-                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
-                                    Comercios ({merchants.length})
-                                </h3>
-                                <div className="space-y-2 lg:space-y-3">
-                                    {merchants.map((m) => (
-                                        <Link
-                                            key={m.id}
-                                            href={`/tienda/${m.slug}`}
-                                            className="flex items-center gap-3 bg-white rounded-xl p-3 border border-gray-100 hover:shadow-md transition"
-                                        >
-                                            <div className="w-14 h-14 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0">
-                                                {m.image ? (
-                                                    <img src={m.image} alt={m.name} className="w-full h-full object-cover" />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center">
-                                                        <Store className="w-6 h-6 text-gray-300" />
-                                                    </div>
-                                                )}
+                {/* COMERCIOS TAB — resultados AGRUPADOS POR COMERCIO */}
+                {!loading && hasSearched && activeTab === "comercios" && grupos.length > 0 && (
+                    <div className="space-y-4">
+                        {grupos.map((grupo) => (
+                            <div
+                                key={grupo.merchant.id}
+                                className="bg-white rounded-2xl border border-gray-100 shadow-[0_2px_12px_rgba(23,24,28,0.05)] overflow-hidden"
+                            >
+                                {/* Cabecera del comercio: quién vende, si está abierto y cuánto tarda */}
+                                <Link
+                                    href={`/tienda/${grupo.merchant.slug}`}
+                                    className="flex items-center gap-3 p-3 hover:bg-gray-50/60 transition"
+                                >
+                                    <div className="w-12 h-12 rounded-xl bg-gray-100 overflow-hidden flex-shrink-0 relative">
+                                        {grupo.merchant.image ? (
+                                            <Image
+                                                src={grupo.merchant.image}
+                                                alt={grupo.merchant.name}
+                                                fill
+                                                sizes="48px"
+                                                className={`object-cover ${grupo.merchant.isOpen ? "" : "grayscale"}`}
+                                            />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center">
+                                                <Store className="w-5 h-5 text-gray-300" />
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-1.5">
-                                                    <p className="font-bold text-gray-900 truncate">{m.name}</p>
-                                                    {m.isOpen ? (
-                                                        <span className="text-[10px] font-bold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                                                            ABIERTO
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-[10px] font-bold text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded-full flex-shrink-0">
-                                                            CERRADO
-                                                        </span>
-                                                    )}
-                                                </div>
-                                                <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500">
-                                                    <span className="flex items-center gap-0.5">
-                                                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                                                        {m.rating ? m.rating.toFixed(1) : "Nuevo"}
-                                                    </span>
-                                                    <span className="flex items-center gap-0.5">
-                                                        <Clock className="w-3 h-3" />
-                                                        {m.deliveryTimeMin}-{m.deliveryTimeMax}min
-                                                    </span>
-                                                    {m.address && (
-                                                        <span className="flex items-center gap-0.5 truncate">
-                                                            <MapPin className="w-3 h-3" />
-                                                            {m.address}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-                        )}
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="font-bold text-[15px] text-gray-900 truncate">
+                                            {grupo.merchant.name}
+                                        </p>
+                                        <div className="flex items-center gap-2.5 mt-0.5 text-xs text-gray-500">
+                                            {grupo.merchant.isOpen ? (
+                                                <span className="inline-flex items-center gap-1 font-bold text-green-700">
+                                                    <span className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                                                    Abierto
+                                                </span>
+                                            ) : (
+                                                <span className="font-bold text-gray-400">Cerrado</span>
+                                            )}
+                                            <span className="inline-flex items-center gap-1">
+                                                <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                                                {grupo.merchant.rating ? grupo.merchant.rating.toFixed(1) : "Nuevo"}
+                                            </span>
+                                            {grupo.merchant.deliveryTimeMin !== undefined && (
+                                                <span className="inline-flex items-center gap-1">
+                                                    <Clock className="w-3 h-3" />
+                                                    {grupo.merchant.deliveryTimeMin}–{grupo.merchant.deliveryTimeMax} min
+                                                </span>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <ChevronRight className="w-4 h-4 text-gray-300 flex-shrink-0" />
+                                </Link>
 
-                        {/* Products */}
-                        {products.length > 0 && (
-                            <div>
-                                <h3 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3">
-                                    Productos ({productTotal})
-                                </h3>
-                                <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 lg:gap-4">
-                                    {products.map((p) => (
-                                        <Link
-                                            key={p.id}
-                                            href={`/productos/${p.slug}`}
-                                            className="bg-white rounded-xl border border-gray-100 overflow-hidden group hover:shadow-md transition"
-                                        >
-                                            <div className="aspect-square bg-gray-100 relative overflow-hidden">
-                                                {p.images?.[0]?.url ? (
-                                                    <img
-                                                        src={p.images[0].url}
-                                                        alt={p.name}
-                                                        className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                                                    />
-                                                ) : (
-                                                    <div className="w-full h-full flex items-center justify-center">
-                                                        <ShoppingBag className="w-8 h-8 text-gray-300" />
-                                                    </div>
-                                                )}
-                                                {p.stock <= 0 && (
-                                                    <span className="absolute top-2 right-2 text-xs font-bold text-white bg-gray-900/70 px-2 py-0.5 rounded-full">
-                                                        Agotado
-                                                    </span>
-                                                )}
+                                {/* Sus productos que coinciden: riel horizontal, mismo
+                                    lenguaje que el perfil del comercio. */}
+                                {grupo.productos.length > 0 && (
+                                    <div className="flex gap-3 overflow-x-auto scrollbar-hide px-3 pb-3">
+                                        {grupo.productos.map((prod) => (
+                                            <div
+                                                key={prod.id}
+                                                className="w-[42%] min-w-[132px] max-w-[168px] sm:w-44 flex-shrink-0"
+                                            >
+                                                <ProductCard
+                                                    product={{
+                                                        id: prod.id,
+                                                        slug: prod.slug,
+                                                        name: prod.name,
+                                                        price: prod.price,
+                                                        description: null,
+                                                        image: prod.images?.[0]?.url ?? null,
+                                                        merchantId: prod.merchant?.id,
+                                                        merchant: prod.merchant
+                                                            ? { isOpen: prod.merchant.isOpen }
+                                                            : undefined,
+                                                        points: null,
+                                                        stock: prod.stock,
+                                                    }}
+                                                    showAddButton
+                                                />
                                             </div>
-                                            <div className="p-3">
-                                                <p className="font-semibold text-sm text-gray-800 line-clamp-2 group-hover:text-[#e60012] transition">
-                                                    {p.name}
-                                                </p>
-                                                {p.merchant && (
-                                                    <p className="text-xs text-gray-400 mt-0.5 truncate">
-                                                        {p.merchant.name}
-                                                    </p>
-                                                )}
-                                                <p className="text-base font-bold text-[#e60012] mt-1">
-                                                    ${p.price.toLocaleString("es-AR")}
-                                                </p>
-                                            </div>
-                                        </Link>
-                                    ))}
-                                </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
-                        )}
+                        ))}
                     </div>
                 )}
 
