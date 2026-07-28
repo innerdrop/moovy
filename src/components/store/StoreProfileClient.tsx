@@ -24,7 +24,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { ChevronLeft, Clock, MapPin, Search, ShoppingBag, Star, X } from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, Clock, MapPin, Search, ShoppingBag, Star, X } from "lucide-react";
 import ProductCard from "@/components/store/ProductCard";
 import HeartButton from "@/components/ui/HeartButton";
 import { useCartStore } from "@/store/cart";
@@ -40,6 +40,8 @@ export interface StoreProfileProduct {
     merchant: { isOpen: boolean; isCurrentlyOpen: boolean };
     /** puntos MOOVER calculados server-side (calculatePointsEarned) */
     points: number | null;
+    /** unidades disponibles — la card apaga el producto cuando llega a 0 */
+    stock: number;
 }
 
 export interface ScheduleRow {
@@ -62,6 +64,12 @@ interface StoreProfileClientProps {
         address: string | null;
     };
     isCurrentlyOpen: boolean;
+    /** Datos del cierre para la barra roja de la cabecera. null = está abierto. */
+    closedInfo: {
+        isPaused: boolean;
+        nextOpenDay: string | null;
+        nextOpenTime: string | null;
+    } | null;
     freeDeliveryMinimum: number | null;
     /** [{ name, products }] — un solo grupo sin header cuando useFlatList */
     groups: { name: string; products: StoreProfileProduct[] }[];
@@ -79,6 +87,7 @@ const SCROLL_THRESHOLD = 150;
 export default function StoreProfileClient({
     merchant,
     isCurrentlyOpen,
+    closedInfo,
     freeDeliveryMinimum,
     groups,
     useFlatList,
@@ -90,6 +99,23 @@ export default function StoreProfileClient({
     const [scheduleOpen, setScheduleOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [topbarVisible, setTopbarVisible] = useState(false);
+    // Barra de "cerrado": arranca colapsada — el titular ya dice todo.
+    const [closedOpen, setClosedOpen] = useState(false);
+
+    // "mañana a las 09:00" — el día viene con mayúscula del helper del server.
+    const reopenLabel =
+        closedInfo?.nextOpenTime && closedInfo?.nextOpenDay
+            ? `${closedInfo.nextOpenDay.toLowerCase()} a las ${closedInfo.nextOpenTime}`
+            : null;
+
+    // Categorías desplegadas con "Ver todos" (riel → grilla, sin salir de la tienda).
+    const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+    const toggleGroup = (name: string) =>
+        setExpandedGroups((prev) => {
+            const next = new Set(prev);
+            if (next.has(name)) next.delete(name); else next.add(name);
+            return next;
+        });
 
     // Carrito: el AppHeader global (con su badge) no se monta en el perfil
     // inmersivo, así que la salida al carrito vive acá — barra "Ver mi pedido"
@@ -185,7 +211,10 @@ export default function StoreProfileClient({
             </div>
 
             {/* ── Portada full-bleed con corte curvo ── */}
-            <div className="relative h-44 sm:h-52 overflow-hidden bg-gradient-to-r from-gray-800 to-gray-900">
+            {/* fix/comercio-pausa-stock-y-ajustes (founder 07-27): la portada ocupaba
+                demasiado en celular y empujaba el catálogo fuera de la primera
+                pantalla. h-44 (176px) → h-36 (144px); en desktop queda igual. */}
+            <div className="relative h-36 sm:h-52 overflow-hidden bg-gradient-to-r from-gray-800 to-gray-900">
                 {merchant.banner ? (
                     <Image
                         src={merchant.banner}
@@ -206,7 +235,11 @@ export default function StoreProfileClient({
                 <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/40 to-transparent" />
 
                 {/* Controles flotantes: volver · buscador · favorito */}
-                <div className="absolute inset-x-0 top-[calc(0.75rem+env(safe-area-inset-top))] z-10">
+                {/* El notch se compensa a MEDIAS: sumar el inset completo (59px en el
+                    iPhone 14 Pro Max) tiraba el buscador al medio de la portada. La
+                    barra de estado ya vive sobre la foto, así que alcanza con la
+                    mitad para que nada quede tapado. */}
+                <div className="absolute inset-x-0 top-[calc(0.75rem+env(safe-area-inset-top)/2)] z-10">
                     <div className="container mx-auto px-4 flex items-center gap-3">
                         <Link
                             href="/"
@@ -224,94 +257,185 @@ export default function StoreProfileClient({
                     </div>
                 </div>
 
-                {/* Onda austral: corte curvo inferior (fill = bg de la página) */}
-                <svg
-                    viewBox="0 0 390 44"
-                    preserveAspectRatio="none"
-                    className="absolute -bottom-px inset-x-0 w-full h-11 pointer-events-none"
-                    aria-hidden="true"
-                >
-                    <path
-                        d="M0,44 L0,24 C80,42 160,6 250,18 C320,27 360,11 390,21 L390,44 Z"
-                        fill="#f9fafb"
-                    />
-                </svg>
             </div>
 
+            {/* fix/comercio-pausa-stock-y-ajustes (founder 07-27): "la línea que se
+                ve arriba, eliminala". Era la ONDA AUSTRAL: un SVG con el color de
+                la página montado sobre la portada. Su curva sube distinto en cada
+                ancho, así que al bajar la portada de 176 a 144px quedaba una franja
+                oscura de la foto asomando como una línea recta. Reemplazada por un
+                borde limpio: el contenido sube con esquinas redondeadas sobre la
+                portada — mismo efecto de "capa que se monta", sin artefactos
+                posibles en ningún ancho ni con zoom fraccionario. */}
+            <div className="relative z-[1] -mt-7 h-7 bg-gray-50 rounded-t-[28px] sm:-mt-8 sm:h-8 sm:rounded-t-[32px]" />
+
             {/* ── Identidad: logo + nombre lado a lado ── */}
-            <div className="container mx-auto px-4 -mt-9 relative z-10">
+            {/* Consejo de diseño (07-27): el logo se monta ~36px sobre la portada
+                (casi medio logo). Antes quedaba TANGENTE al borde de la foto y se
+                leía como choque, no como capa. Los tres valores de este bloque
+                —máscara -mt-7/h-7, este -mt-16 y el interlineado del nombre— van
+                juntos: cambiar uno solo desalinea el resto. */}
+            <div className="container mx-auto px-4 -mt-[60px] relative z-10">
+                {/* Logo + datos LADO A LADO (founder 07-27). Geometría resuelta:
+                    el texto se alinea al pie del logo, así que crece hacia ARRIBA —
+                    con un logo de 80px la tercera línea (la dirección) se metía en
+                    la portada. La solución no es bajar el texto (despegaría el logo
+                    de la foto) sino AGRANDAR el logo a 104px: su pie baja a 184px,
+                    el texto (~60px) arranca en 124 y la foto termina en 116 ⇒ 8px de
+                    aire garantizado, con el logo montado 36px sobre la portada. Si
+                    algún día se suma una cuarta línea, hay que rehacer esta cuenta. */}
                 <div className="flex items-end gap-3.5">
-                    <div className="w-20 h-20 rounded-3xl bg-white p-1 shadow-lg flex-shrink-0">
+                    <div className="w-[104px] h-[104px] rounded-[26px] bg-white p-1 shadow-[0_10px_24px_rgba(23,24,28,0.20)] ring-1 ring-black/5 flex-shrink-0">
                         {merchant.image ? (
-                            <div className="relative w-full h-full rounded-[1.25rem] overflow-hidden bg-gray-50">
+                            <div className="relative w-full h-full rounded-[22px] overflow-hidden bg-gray-50">
                                 <Image
                                     src={merchant.image}
                                     alt={`Logo de ${merchant.name}`}
                                     fill
-                                    sizes="80px"
+                                    sizes="104px"
                                     className="object-cover"
                                 />
                             </div>
                         ) : (
-                            <div className="w-full h-full bg-gray-100 rounded-[1.25rem] flex items-center justify-center text-2xl font-bold text-gray-400">
+                            <div className="w-full h-full bg-gray-100 rounded-[22px] flex items-center justify-center text-3xl font-bold text-gray-400">
                                 {merchant.name.charAt(0)}
                             </div>
                         )}
                     </div>
-                    <div className="flex-1 min-w-0 pb-1">
-                        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 truncate">
+                    <div className="flex-1 min-w-0 pb-0.5">
+                        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 leading-tight truncate">
                             {merchant.name}
                         </h1>
-                        <p className="text-sm text-gray-500 truncate">
+                        <p className="text-[13px] leading-[1.3] text-gray-500 truncate mt-0.5">
                             {[merchant.category, merchant.description].filter(Boolean).join(" · ")}
                         </p>
+                        {/* La dirección vive acá, con el nombre: es identidad del
+                            comercio, no un dato operativo (founder 07-27). */}
+                        {merchant.address && (
+                            <p className="flex items-center gap-1 text-[12.5px] leading-[1.3] text-gray-500 mt-1 min-w-0">
+                                <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
+                                <span className="truncate">{merchant.address}</span>
+                            </p>
+                        )}
                     </div>
                 </div>
 
-                {/* ── Tarjeta de datos operativos ── */}
-                <div className="mt-3.5 bg-white rounded-2xl shadow-[0_8px_30px_rgba(23,24,28,0.08)] p-4">
-                    <div className="flex flex-wrap items-center gap-2">
+                {/* Barra de comercio cerrado (founder 07-27: reemplaza al banner rojo
+                    ancho de abajo). Vive en el flujo normal — sin z-index, sin sticky:
+                    un sticky acá chocaría con las categorías y con la topbar. Se
+                    despliega con grid-template-rows (no keyframes ni scale: en este
+                    proyecto las animaciones compositadas dieron texto borroso). */}
+                {closedInfo && (
+                    <div className="mt-4 rounded-t-3xl bg-[#e60012] text-white shadow-[0_8px_30px_rgba(230,0,18,0.20)] overflow-hidden">
+                        <button
+                            type="button"
+                            onClick={() => setClosedOpen((v) => !v)}
+                            className="w-full flex items-center gap-3 px-4 py-3.5 text-left"
+                            aria-expanded={closedOpen}
+                        >
+                            <span className="w-9 h-9 rounded-2xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                                <Clock className="w-[18px] h-[18px]" />
+                            </span>
+                            <span className="flex-1 min-w-0">
+                                <span className="block font-extrabold text-[15px] leading-tight">
+                                    Cerrado por ahora
+                                </span>
+                                <span className="block text-[12.5px] text-white/85 leading-tight mt-0.5 truncate">
+                                    {reopenLabel
+                                        ? `Abre de nuevo ${reopenLabel}`
+                                        : "Podés ver el catálogo, pero todavía no toma pedidos"}
+                                </span>
+                            </span>
+                            <ChevronDown
+                                className={`w-5 h-5 flex-shrink-0 transition-transform ${closedOpen ? "rotate-180" : ""}`}
+                            />
+                        </button>
+
+                        <div
+                            className={`grid transition-[grid-template-rows] duration-200 motion-reduce:transition-none ${
+                                closedOpen ? "grid-rows-[1fr]" : "grid-rows-[0fr]"
+                            }`}
+                        >
+                            <div className="overflow-hidden">
+                                <div className="px-4 pb-4 pt-0 text-[13px] text-white/90 leading-relaxed">
+                                    <p>
+                                        {reopenLabel
+                                            ? `${merchant.name} no está tomando pedidos en este momento. Abre de nuevo ${reopenLabel}.`
+                                            : `${merchant.name} no está tomando pedidos en este momento. Podés ver el catálogo igual.`}
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 mt-3">
+                                        <Link
+                                            href="/tiendas?filter=abiertos"
+                                            className="inline-flex items-center gap-1.5 bg-white text-[#e60012] font-bold text-[12.5px] rounded-full px-3.5 py-2"
+                                        >
+                                            Ver comercios abiertos ahora
+                                        </Link>
+                                        <button
+                                            type="button"
+                                            onClick={() => setScheduleOpen(true)}
+                                            className="inline-flex items-center gap-1.5 bg-white/15 text-white font-bold text-[12.5px] rounded-full px-3.5 py-2"
+                                        >
+                                            Ver horarios
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* ── Datos operativos: DOS FILAS FIJAS (opción C, founder 07-27) ──
+                    Se descartó el carrusel de pills: para leer el último dato había
+                    que deslizar, y los datos de un comercio no se "exploran", se
+                    consultan de un vistazo. Fila 1 = estado + demora. Fila 2 = envío
+                    + horarios. Nada se corta, nada se desliza.
+                    La pill "Nuevo" también se fue: la palabra ya estaba en el
+                    subtítulo ("Kiosco · Nuevo comercio Moovy") — decirlo dos veces
+                    en 40px era el ruido que molestaba. */}
+                <div
+                    className={`bg-white shadow-[0_8px_30px_rgba(23,24,28,0.08)] divide-y divide-gray-50 ${
+                        closedInfo ? "rounded-b-3xl" : "mt-4 rounded-3xl"
+                    }`}
+                >
+                    <div className="flex items-center justify-between gap-3 px-4 py-3">
                         {isCurrentlyOpen ? (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-green-700 bg-green-50 rounded-full px-3 py-1.5">
-                                <span className="relative flex w-2 h-2">
+                            <span className="inline-flex items-center gap-2 text-[14px] font-bold text-green-700 min-w-0">
+                                <span className="relative flex w-2 h-2 flex-shrink-0">
                                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-500 opacity-60" />
                                     <span className="relative inline-flex rounded-full w-2 h-2 bg-green-500" />
                                 </span>
-                                Abierto{schedule.openUntil ? ` hasta las ${schedule.openUntil}` : ""}
+                                <span className="truncate">
+                                    Abierto{schedule.openUntil ? ` hasta las ${schedule.openUntil}` : ""}
+                                </span>
                             </span>
                         ) : (
-                            <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-red-600 bg-red-50 rounded-full px-3 py-1.5">
-                                <span className="w-2 h-2 rounded-full bg-red-400" />
-                                Cerrado
+                            // Con la cabecera roja arriba no hace falta repetir "cerrado":
+                            // esta fila muestra el rating para no quedar vacía.
+                            <span className="inline-flex items-center gap-1.5 text-[14px] font-bold text-gray-600 min-w-0">
+                                <Star className="w-4 h-4 fill-amber-400 text-amber-400 flex-shrink-0" />
+                                <span className="truncate">
+                                    {merchant.rating ? merchant.rating.toFixed(1) : "Comercio nuevo en Moovy"}
+                                </span>
                             </span>
                         )}
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-amber-700 bg-amber-50 rounded-full px-3 py-1.5">
-                            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                            {merchant.rating ? merchant.rating.toFixed(1) : "Nuevo"}
-                        </span>
-                        <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-gray-600 bg-gray-100 rounded-full px-3 py-1.5">
-                            <Clock className="w-3.5 h-3.5 text-gray-400" />
+                        <span className="inline-flex items-center gap-1.5 text-[14px] text-gray-500 flex-shrink-0">
+                            <Clock className="w-4 h-4 text-gray-400" />
                             {merchant.deliveryTimeMin}–{merchant.deliveryTimeMax} min
                         </span>
-                        {freeDeliveryMinimum !== null && (
-                            <span className="inline-flex items-center text-xs font-semibold text-[#e60012] bg-red-50 rounded-full px-3 py-1.5">
-                                Envío gratis desde ${freeDeliveryMinimum.toLocaleString("es-AR")}
-                            </span>
-                        )}
                     </div>
-                    {/* Dirección ⟷ Horarios en UNA fila: sin aire muerto. El popup
-                        reemplaza al acordeón que empujaba el catálogo. */}
-                    <div className="mt-3 pt-3 border-t border-dashed border-gray-100 flex items-center justify-between gap-3">
-                        {merchant.address ? (
-                            <span className="flex items-center gap-1.5 text-xs text-gray-500 min-w-0">
-                                <MapPin className="w-3.5 h-3.5 text-gray-400 flex-shrink-0" />
-                                <span className="truncate">{merchant.address}</span>
-                            </span>
-                        ) : <span />}
+
+                    <div className="flex items-center justify-between gap-3 px-4 py-3">
+                        <span className="text-[14px] text-gray-500 truncate min-w-0">
+                            {freeDeliveryMinimum !== null
+                                ? `Envío gratis desde $${freeDeliveryMinimum.toLocaleString("es-AR")}`
+                                : isCurrentlyOpen && merchant.rating
+                                    ? `${merchant.rating.toFixed(1)} de calificación`
+                                    : "Envío a domicilio"}
+                        </span>
                         <button
                             type="button"
                             onClick={() => setScheduleOpen(true)}
-                            className="flex items-center gap-1 text-xs font-bold text-gray-600 hover:text-[#e60012] transition flex-shrink-0"
+                            className="flex items-center gap-1 text-[14px] font-bold text-gray-600 hover:text-[#e60012] transition flex-shrink-0"
                         >
                             <Clock className="w-3.5 h-3.5" />
                             Horarios
@@ -326,7 +450,7 @@ export default function StoreProfileClient({
                 <div className="sticky top-[calc(56px+env(safe-area-inset-top))] z-40 mt-5">
                     <div className="bg-gradient-to-b from-gray-50 via-gray-50/95 to-transparent pb-2 pt-1">
                         <div className="container mx-auto px-4">
-                            <div className="flex overflow-x-auto gap-2 no-scrollbar">
+                            <div className="flex overflow-x-auto gap-2 scrollbar-hide">
                                 {groups.map((g) => (
                                     <a
                                         key={g.name}
@@ -343,9 +467,11 @@ export default function StoreProfileClient({
             )}
 
             {/* ── Catálogo ── */}
-            {/* px-5 en mobile (founder 07-26): las cards quedaban pegadas al borde
-                de la pantalla — un toque más de aire lateral sin achicar la foto. */}
-            <div className="container mx-auto px-5 sm:px-4 mt-5 space-y-8">
+            {/* Consejo de diseño (07-27): TODA la pantalla se alinea a la misma
+                guía izquierda (px-4, la del logo). El px-5 de mobile corría el
+                catálogo 4px respecto de la cabecera — era la causa principal del
+                "se ve desalineado" que reportó el founder. */}
+            <div className="container mx-auto px-4 mt-6 space-y-8">
                 {results ? (
                     // Modo búsqueda: grilla plana con lo que matchea el query
                     <div>
@@ -368,21 +494,74 @@ export default function StoreProfileClient({
                         ))}
                     </div>
                 ) : (
-                    groups.map((group) => (
-                        <div key={group.name} id={`cat-${group.name}`} className="scroll-mt-28">
-                            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center gap-2">
-                                {group.name}
-                                <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
-                                    {group.products.length}
-                                </span>
-                            </h2>
-                            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
-                                {group.products.map((product) => (
-                                    <ProductCard key={product.id} product={product} showAddButton />
-                                ))}
+                    groups.map((group) => {
+                        // Riel horizontal (opción A, decisión founder 07-27): cada
+                        // categoría muestra ~3 productos y se desliza al costado.
+                        // Así entran 4 categorías en una pantalla y el cliente ve
+                        // TODO lo que vende el comercio sin scrollear eterno.
+                        // "Ver todos" despliega esa categoría en grilla, acá mismo:
+                        // no lo saca de la tienda ni pierde el lugar donde estaba.
+                        const expanded = expandedGroups.has(group.name);
+                        const RAIL_LIMIT = 8;
+                        const railProducts = group.products.slice(0, RAIL_LIMIT);
+                        const hasMore = group.products.length > railProducts.length;
+
+                        return (
+                            <div key={group.name} id={`cat-${group.name}`} className="scroll-mt-28">
+                                <div className="flex items-baseline justify-between gap-3 mb-3">
+                                    <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                        {group.name}
+                                        <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+                                            {group.products.length}
+                                        </span>
+                                    </h2>
+                                    {group.products.length > 3 && (
+                                        <button
+                                            type="button"
+                                            onClick={() => toggleGroup(group.name)}
+                                            className="text-[13px] font-bold text-[#e60012] whitespace-nowrap"
+                                        >
+                                            {expanded ? "Ver menos" : "Ver todos ›"}
+                                        </button>
+                                    )}
+                                </div>
+
+                                {expanded ? (
+                                    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+                                        {group.products.map((product) => (
+                                            <ProductCard key={product.id} product={product} showAddButton />
+                                        ))}
+                                    </div>
+                                ) : (
+                                    // -mx-5 + px-5: el riel sangra hasta el borde de la
+                                    // pantalla (se ve que "hay más" a la derecha) pero el
+                                    // primer producto queda alineado con el resto.
+                                    <div className="-mx-4 px-4 flex gap-3 overflow-x-auto scrollbar-hide snap-x snap-mandatory pb-1">
+                                        {railProducts.map((product) => (
+                                            <div
+                                                key={product.id}
+                                                className="w-[42%] min-w-[132px] max-w-[168px] sm:w-48 flex-shrink-0 snap-start"
+                                            >
+                                                <ProductCard product={product} showAddButton />
+                                            </div>
+                                        ))}
+                                        {hasMore && (
+                                            <button
+                                                type="button"
+                                                onClick={() => toggleGroup(group.name)}
+                                                className="w-[30%] min-w-[96px] flex-shrink-0 snap-start rounded-2xl border-[1.5px] border-dashed border-gray-200 bg-white flex flex-col items-center justify-center gap-2 text-[#e60012] font-bold text-[13px] px-2 text-center"
+                                            >
+                                                <span className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center">
+                                                    <ChevronRight className="w-4 h-4" />
+                                                </span>
+                                                Ver los {group.products.length}
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
                             </div>
-                        </div>
-                    ))
+                        );
+                    })
                 )}
             </div>
 
@@ -434,9 +613,17 @@ export default function StoreProfileClient({
                 </div>
             )}
 
-            {/* ── Barra "Ver mi pedido": acceso al carrito dentro de la tienda ── */}
+            {/* ── Barra "Ver mi pedido": acceso al carrito dentro de la tienda ──
+                fix/comercio-pausa-stock-y-ajustes (founder 07-27): "la barra del
+                carrito queda pegada a la barra de navegación". bottom-24 (96px)
+                coincidía EXACTO con el techo de la nav en iPhone (34 de gesto + 62
+                de alto). Ahora se apoya en la misma fórmula que la nav + 10px de
+                respiro, así nunca se tocan en ningún teléfono. */}
             {cartCount > 0 && (
-                <div className="fixed inset-x-0 bottom-24 lg:bottom-6 z-40 px-4 pointer-events-none">
+                <div
+                    className="fixed inset-x-0 z-40 px-4 pointer-events-none lg:bottom-6"
+                    style={{ bottom: "calc(max(12px, env(safe-area-inset-bottom)) + 72px)" }}
+                >
                     <button
                         type="button"
                         onClick={() => openCart()}

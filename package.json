@@ -12,7 +12,8 @@
     "socket": "npx tsx scripts/socket-server.ts",
     "dev:full": "concurrently \"npm run dev\" \"npm run socket\"",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "check:parse": "node scripts/parse-check.mjs"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

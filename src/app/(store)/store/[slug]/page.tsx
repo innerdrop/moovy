@@ -10,7 +10,7 @@ import {
     type WeekSchedule,
 } from "@/lib/merchant-schedule";
 import { getPointsConfig, calculatePointsEarned } from "@/lib/points";
-import { Info, Star, ShoppingBag } from "lucide-react";
+import { Star, ShoppingBag } from "lucide-react";
 
 // feat/rediseno-perfil-comercio (2026-07-25): cabecera y catálogo viven en
 // StoreProfileClient (portada full-bleed con curva, buscador scoped, chips).
@@ -154,6 +154,11 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
             merchantId: merchant.id,
             merchant: { isOpen: isCurrentlyOpen, isCurrentlyOpen },
             points: points > 0 ? points : null,
+            // fix/comercio-pausa-stock-y-ajustes: el catálogo no mandaba el
+            // stock, así que un producto agotado se ofrecía como disponible y
+            // el cliente se enteraba recién en el checkout (el guard server-side
+            // de /api/orders sí lo frena — era fricción, no sobreventa).
+            stock: product.stock,
         };
     });
 
@@ -164,8 +169,15 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
 
     // Agrupar por categoría preservando el orden de aparición.
     let groups: { name: string; products: StoreProfileProduct[] }[];
+    // Agotados AL FINAL de su grupo (decisión founder 07-27): la primera
+    // pantalla tiene que mostrar lo que SÍ se puede comprar. `sort` de JS es
+    // estable, así que entre disponibles se respeta el orden original del
+    // catálogo — solo se hunden los que están en cero.
+    const conDisponiblesPrimero = (lista: StoreProfileProduct[]) =>
+        [...lista].sort((a, b) => Number(a.stock <= 0) - Number(b.stock <= 0));
+
     if (useFlatList) {
-        groups = [{ name: "Todo", products: normalizedProducts }];
+        groups = [{ name: "Todo", products: conDisponiblesPrimero(normalizedProducts) }];
     } else {
         const byCategory = new Map<string, StoreProfileProduct[]>();
         merchant.products.forEach((product, i) => {
@@ -173,7 +185,10 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
             if (!byCategory.has(catName)) byCategory.set(catName, []);
             byCategory.get(catName)!.push(normalizedProducts[i]);
         });
-        groups = Array.from(byCategory, ([name, products]) => ({ name, products }));
+        groups = Array.from(byCategory, ([name, products]) => ({
+            name,
+            products: conDisponiblesPrimero(products),
+        }));
     }
 
     return (
@@ -192,29 +207,20 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
                     address: merchant.address,
                 }}
                 isCurrentlyOpen={isCurrentlyOpen}
+                closedInfo={
+                    isCurrentlyOpen
+                        ? null
+                        : {
+                              isPaused: scheduleResult.isPaused,
+                              nextOpenDay: scheduleResult.nextOpenDay,
+                              nextOpenTime: scheduleResult.nextOpenTime,
+                          }
+                }
                 freeDeliveryMinimum={freeDeliveryMinimum}
                 groups={groups}
                 useFlatList={useFlatList}
                 schedule={scheduleView}
             />
-
-            {/* Banner de cierre — usa el estado REAL (pausa + horario), no solo isOpen.
-                Mensajes diferenciados para que el buyer sepa si es pausa temporal o
-                fuera de horario + cuándo vuelve a abrir. */}
-            {!isCurrentlyOpen && (
-                <div className="bg-red-50 border-y border-red-100 py-3 mt-5">
-                    <div className="container mx-auto px-4 flex items-center justify-center gap-2 text-red-600 font-bold text-center">
-                        <Info className="w-5 h-5 flex-shrink-0" />
-                        <p className="text-sm md:text-base">
-                            {scheduleResult.isPaused
-                                ? "Este comercio está cerrado temporalmente y no recibe pedidos"
-                                : scheduleResult.nextOpenTime && scheduleResult.nextOpenDay
-                                    ? `Cerrado · Abre ${scheduleResult.nextOpenDay === "Hoy" ? "hoy" : scheduleResult.nextOpenDay} a las ${scheduleResult.nextOpenTime}`
-                                    : "Este comercio está cerrado en este momento"}
-                        </p>
-                    </div>
-                </div>
-            )}
 
             <div className="container mx-auto px-4">
                 {totalProducts === 0 && (

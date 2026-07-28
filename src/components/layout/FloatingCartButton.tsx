@@ -24,7 +24,13 @@ export default function FloatingCartButton() {
     if (totalItems === 0 || isAuthPage || isCheckoutPage || dismissed) return null;
 
     return (
-        <div className="fixed bottom-24 left-4 right-4 max-w-lg mx-auto z-[55]" style={{ marginBottom: 'env(safe-area-inset-bottom)' }}>
+        <div
+            className="fixed left-4 right-4 max-w-lg mx-auto z-[55]"
+            /* Misma fórmula que la barra de navegación (max(12px, safe) + 62 de
+               alto) + 10px de aire — antes el margin-bottom apilaba el inset dos
+               veces y el resultado bailaba según el teléfono. */
+            style={{ bottom: 'calc(max(12px, env(safe-area-inset-bottom)) + 72px)' }}
+        >
             <div className="relative">
                 {/* Dismiss button */}
                 <button

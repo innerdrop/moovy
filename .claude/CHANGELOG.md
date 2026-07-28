@@ -10,6 +10,180 @@
 
 ---
 
+## 2026-07-28 (rama `fix/comercio-pausa-stock-y-ajustes`)
+
+fix: el comercio aprobado ya puede reanudar su tienda + sin stock visible + ajustes de mobile
+
+1) COMERCIO ENCERRADO AFUERA (critico): toggleMerchantOpen tenia su
+propia lista de requisitos escrita a mano — la cuarta copia divergente
+de "que necesita un comercio para abrir" — que ignoraba que el comercio
+ya esta APROBADO y que los documentos exigidos dependen del rubro y de
+los flags merchant.doc.*. Un comercio aprobado que pausaba su tienda no
+podia volver a abrir (reportado en produccion). Ahora usa
+computeMerchantSetup, la misma fuente que el dashboard: si el panel dice
+"listo para abrir", abrir funciona. Regla #43 en CLAUDE.md.
+
+2) SIN STOCK EN EL PERFIL DEL COMERCIO (critico): la card del catalogo
+nunca recibia stock — un producto agotado se ofrecia normal con el (+)
+activo y el cliente se enteraba recien en el checkout (el server si
+valida stock: era friccion, no sobreventa). Ahora la card se apaga (foto
+en gris), el precio se tacha, "Agotado" ocupa el lugar de los puntos y el
+boton desaparece. La foto queda LIMPIA: se probaron y descartaron banda
+maciza, pildora esmerilada y sello inclinado (4 mockups, opcion C).
+Sin stock prevalece sobre "cerrado". Ademas los agotados se ordenan al
+FINAL de su categoria: la primera pantalla muestra siempre lo comprable.
+
+3) PAUSAR FUERA DE HORARIO: si el horario dice que ahora esta cerrada,
+no hay nada que pausar — boton deshabilitado y la tarjeta lo explica
+("Cerrada por horario - abris Manana 09:00"). /api/merchant/me devuelve
+withinSchedule + nextOpenLabel.
+
+4) MOBILE: portada del perfil mas baja (176 -> 144px), los controles
+flotantes compensan medio notch en vez del completo (sumar 59px enteros
+tiraba el buscador al medio de la portada), y la barra del carrito deja
+de quedar pegada a la barra de navegacion (misma formula que la nav +
+10px de aire, en las dos barras flotantes).
+
+5) GOOGLE EN EL PORTAL DE COMERCIOS: boton para ENTRAR (el alta necesita
+CUIT/direccion/papeles que Google no da, sigue por formulario). Si la
+cuenta no tiene comercio, el guard ya la manda a /comercios/registro.
+
+6) PERFIL DEL COMERCIO (segunda vuelta con el founder): riel horizontal
+por categoria (3 productos + scroll lateral + "Ver los N", que despliega
+la categoria en grilla en la misma pagina); el badge CERRADO deja de
+repetirse en cada producto (se apaga el catalogo entero, el aviso lo da
+la cabecera una vez); y se elimina la linea oscura
+que dejaba la onda austral bajo la portada. Ademas: la clase CSS
+no-scrollbar no existia (la real es scrollbar-hide) — los carruseles
+mostraban la barra igual.
+
+7) CABECERA DEL PERFIL (consejo de 4 especialistas en paralelo): el logo
+se monta ~36px sobre la portada en vez de quedar tangente; UNA sola guia
+izquierda en toda la pantalla (el catalogo estaba corrido 4px en mobile);
+escala de 16px; logo y tarjeta comparten redondeo y familia de sombra.
+
+8) ESTADO CERRADO: fuera el banner rojo ancho. En su lugar, tarjeta roja
+desplegable en la cabecera con la hora de reapertura y salida ("Ver
+comercios abiertos ahora"). Sin sticky ni keyframes. Desaparece sola
+cuando el comercio abre.
+
+9) PEDIDOS AL CENTRO de la barra del comercio + contador rojo de pedidos
+sin responder (endpoint minimo que devuelve solo el numero). Se apaga
+cuando el comercio acepta o rechaza, nunca por abrir la pestana.
+
+10) CABECERA DEL COMERCIO, SEGUNDA ITERACION (4 mockups, el founder
+eligio la opcion C): la direccion sube junto al nombre (es identidad del
+comercio, no un dato operativo); el carrusel de pills se reemplaza por
+DOS FILAS FIJAS (estado + demora / envio + horarios) porque los datos de
+un comercio se consultan de un vistazo, no se exploran deslizando; y se
+elimina la pill "Nuevo" (la palabra ya estaba en el subtitulo: decirlo
+dos veces en 40px era el ruido). Geometria del logo resuelta con
+numeros: el texto se apoya en el PIE del logo y crece hacia arriba, asi
+que con 80px la tercera linea se metia en la foto — el logo pasa a
+104px para que el texto arranque 8px por debajo del borde de la portada
+manteniendo el solape de ~35%. La cuenta queda anotada en el codigo.
+
+11) VERIFICACION: durante la rama, tsc dio LIMPIO con un archivo que el
+build rechazaba (comentario JSX como primer hijo de `{cond && ( ... )}`).
+Se agrega `npm run check:parse` (esbuild, parser real) y la regla #44.
+
+Verificacion: tsc + npm run check:parse limpios. Manual: (a) pausar y REANUDAR la tienda de un
+comercio aprobado sin que pida papeles; (b) poner un producto en stock 0 y
+verlo en gris con el precio tachado y "Agotado"; (c) entrar al
+panel fuera del horario configurado y ver el boton deshabilitado con la
+explicacion; (d) en el iPhone: portada mas baja sin la linea
+oscura, buscador tocable, y agregar un producto para ver la barra del
+carrito despegada de la nav; (d2) el catalogo en riel: deslizar al
+costado y tocar "Ver los N"; (d3) con la tienda cerrada, todos los
+productos en gris sin poder agregarlos;
+(e) entrar al portal de comercios con Google;
+(f) en el iPhone: el logo montado sobre la portada (unos 36px, casi medio
+logo) y todo alineado a la misma linea vertical; (g) con la tienda
+cerrada, la tarjeta roja arriba: tocarla para desplegar y probar "Ver
+comercios abiertos ahora"; abrir la tienda y verificar que desaparece;
+(h) en el panel del comercio, Pedidos al centro con el contador rojo
+cuando hay pedidos sin responder.
+
+**Archivos:** .claude/CLAUDE.md, ISSUES.md, package.json, scripts/parse-check.mjs, src/app/(store)/store/[slug]/page.tsx, src/app/api/merchant/me/route.ts, src/app/api/merchant/orders/pendientes/route.ts, src/app/comercios/(protected)/layout.tsx (+9 mas)
+
+## 2026-07-27 (rama `fix/comercio-pausa-stock-y-ajustes`)
+
+fix: el comercio aprobado ya puede reanudar su tienda + sin stock visible + ajustes de mobile
+
+Sesión de correcciones tras el deploy a producción. Dos hallazgos que NO estaban en el
+reporte del founder y eran los más graves:
+
+(1) 🔴 COMERCIO ENCERRADO AFUERA. Reporte: "pauso la tienda y al reanudar me pide un
+documento que no cargué". Causa: `toggleMerchantOpen` tenía su PROPIA lista de requisitos
+escrita a mano — la CUARTA copia divergente de "qué necesita un comercio para abrir" —
+que ignoraba (a) que el comercio ya está APPROVED (la aprobación es donde se validan los
+papeles, reglas #38-#42) y (b) que los docs exigidos dependen del rubro y de los flags
+`merchant.doc.*`. Un comercio aprobado que pausaba el domingo NO podía volver a abrir.
+Ahora usa `computeMerchantSetup` — cuya propia docstring ya afirmaba (falsamente) que
+`toggleMerchantOpen` la consumía. Regla #43 agregada a CLAUDE.md, con el corolario:
+cuando un helper canónico dice "lo consumen A, B y C", verificar que C lo consuma.
+
+(2) 🔴 SIN STOCK NO EXISTÍA EN EL PERFIL DEL COMERCIO. La card del catálogo nunca recibió
+`stock`: un producto en 0 se mostraba normal, con el (+) activo. El guard de `/api/orders`
+sí valida stock, así que no hubo sobreventa — pero el cliente armaba el carrito, iba al
+checkout y recién ahí se enteraba. Ahora `StoreProfileProduct` lleva `stock`, la card se
+apaga (opacidad 60% + foto en escala de grises), cruza una cinta SIN STOCK sobre la foto y
+bloquea el (+). Sin stock PREVALECE sobre "cerrado": aunque el comercio abra, ese producto
+no se compra.
+
+(3) PAUSAR FUERA DE HORARIO (founder): si el comercio abre 9:00 y son las 8:30, no hay
+nada que pausar. `/api/merchant/me` ahora devuelve `withinSchedule` + `nextOpenLabel`
+(vía `checkMerchantSchedule`); `StorePauseCard` deshabilita el botón y explica ("Cerrada
+por horario · abrís Mañana 09:00"). El panel principal pasa los valores directo porque ya
+calculaba el horario para su chip. Si la tienda SÍ está pausada manualmente, "Reanudar"
+sigue disponible aunque esté fuera de horario (deja la tienda lista para cuando abra sola).
+
+(4) MOBILE: portada del perfil 176px → 144px (en desktop igual); los controles flotantes
+compensan MEDIO safe-area-inset-top en vez del inset completo — sumar 59px enteros en el
+iPhone 14 Pro Max tiraba el buscador al medio de la portada. Y la barra "Ver mi pedido"
+quedaba EXACTAMENTE sobre la barra de navegación (bottom-24 = 96px vs 34 de gesto + 62 de
+alto = 96px): ahora tanto `StoreProfileClient` como `FloatingCartButton` usan la misma
+fórmula que la nav — `max(12px, env(safe-area-inset-bottom)) + 72px` — así nunca se tocan.
+
+(5) GOOGLE EN EL PORTAL DE COMERCIOS: botón para ENTRAR, no para darse de alta (el alta
+necesita CUIT, dirección y papeles que Google no entrega; el registro sigue siendo el
+formulario). Seguro por construcción: si la cuenta de Google no tiene comercio,
+`requireMerchantAccess` ya redirige a `/comercios/registro`.
+
+(6) PERFIL DEL COMERCIO — SEGUNDA VUELTA (founder viendo la rama en local):
+· RIEL HORIZONTAL por categoría (opción A de 2 mockups): ~3 productos visibles + scroll
+  lateral + tarjeta "Ver los N" al final. "Ver todos" despliega esa categoría en grilla
+  EN LA MISMA página (estado `expandedGroups`) — no saca al cliente de la tienda ni le
+  hace perder el lugar. Entran 4 categorías por pantalla contra 1½ de la grilla.
+· COMERCIO CERRADO: se eliminó el badge "CERRADO" repetido en cada tarjeta ("es
+  demasiado"). El catálogo entero se apaga y el (+) desaparece; el aviso lo da una sola
+  vez la cabecera de la tienda (escuela PedidosYa). `closedLabel` queda en el title para
+  lectores de pantalla.
+· SIN STOCK — opción C de 4 mockups: la FOTO queda limpia (se descartaron banda maciza,
+  píldora esmerilada y sello inclinado). Precio tachado en gris + "Agotado" en el lugar
+  de los puntos MOOVER: donde el ojo ya está mirando para decidir.
+· LÍNEA OSCURA BAJO LA PORTADA: era la "onda austral" (SVG del color de la página montado
+  sobre la foto). Su curva alcanza distinta altura según el ancho, y con la portada a
+  144px dejaba una franja de foto asomando como una línea recta. Reemplazada por un borde
+  con esquinas redondeadas — mismo efecto de capa montada, sin artefactos posibles.
+· BUG SILENCIOSO: la clase `no-scrollbar` NO existe en globals.css (la real es
+  `.scrollbar-hide`): los carruseles mostraban la barra de scroll igual. Corregido en
+  StoreProfileClient y en HistoryView del repartidor.
+
+(7) VERIFICACIÓN: durante esta misma rama, `tsc --noEmit` dio LIMPIO con
+`StoreProfileClient.tsx` roto — un comentario JSX como primer hijo de
+`{cartCount > 0 && ( ... )}` (donde cabe un solo elemento). El error salió recién en el
+navegador. Se agrega `npm run check:parse` (esbuild con loader tsx sobre los .tsx
+cambiados vs develop) y la regla #44: después de cirugía sobre JSX, parse-check además
+de tsc; los comentarios de contexto van ARRIBA de la condición.
+
+Archivos: `src/app/comercios/actions.ts`, `src/components/store/ProductCard.tsx`,
+`src/components/store/StoreProfileClient.tsx`, `src/app/(store)/store/[slug]/page.tsx`,
+`src/app/api/merchant/me/route.ts`, `src/components/comercios/StorePauseCard.tsx`,
+`src/app/comercios/(protected)/page.tsx`, `src/components/layout/FloatingCartButton.tsx`,
+`src/components/auth/PortalLoginForm.tsx`, `scripts/parse-check.mjs` (nuevo), `package.json`,
+`.claude/CLAUDE.md` (reglas #43 y #44).
+
 ## 2026-07-26 (rama `feat/home-categorias-independientes`)
 
 feat: las vitrinas del home se independizan de las categorias del sistema

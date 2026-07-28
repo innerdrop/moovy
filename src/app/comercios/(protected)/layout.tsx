@@ -20,6 +20,7 @@ import {
 
 import Image from "next/image";
 import SupportNavBadge from "@/components/comercios/SupportNavBadge";
+import PedidosNavBadge from "@/components/comercios/PedidosNavBadge";
 import MobileMoreMenu from "@/components/comercios/MobileMoreMenu";
 import PortalSwitcher from "@/components/ui/PortalSwitcher";
 import PWAInstallPrompt from "@/components/onboarding/PWAInstallPrompt";
@@ -68,10 +69,17 @@ export default async function ComerciosLayout({ children }: { children: React.Re
     };
 
     // Primeros 4 = bottom bar mobile. El resto va en menú "Más"
+    // fix/comercio-pausa-stock-y-ajustes (founder 07-27): "el botón más importante
+    // para el comercio debe ser el de los pedidos". La barra mobile toma los
+    // primeros 4 + "Más", así que Pedidos TERCERO cae en el centro exacto de los 5
+    // slots — el punto donde el pulgar llega sin estirarse en un teléfono grande.
+    // El consejo advirtió que el orden solo no alcanza: el comerciante mira esta
+    // barra mientras cocina o atiende, así que Pedidos además lleva contador rojo
+    // (PedidosNavBadge) que solo se apaga cuando acepta o rechaza.
     const navItems: Array<{ href: string; icon: React.ElementType; label: string; requiresFlag?: string }> = [
         { href: "/comercios", icon: LayoutDashboard, label: "Inicio" },
-        { href: "/comercios/pedidos", icon: ShoppingCart, label: "Pedidos" },
         { href: "/comercios/productos", icon: Package, label: "Productos" },
+        { href: "/comercios/pedidos", icon: ShoppingCart, label: "Pedidos" },
         { href: "/comercios/pagos", icon: DollarSign, label: "Pagos" },
         // --- Los siguientes van en sidebar desktop + menú "Más" mobile ---
         { href: "/comercios/mi-comercio", icon: Building2, label: "Mi Comercio" },
@@ -194,12 +202,13 @@ export default async function ComerciosLayout({ children }: { children: React.Re
                         <Link
                             key={item.href}
                             href={item.href}
-                            className="flex flex-col items-center justify-center flex-1 h-full py-1 text-gray-500 hover:text-[#e60012] active:text-[#c4000f] transition-colors"
+                            className="relative flex flex-col items-center justify-center flex-1 h-full py-1 text-gray-500 hover:text-[#e60012] active:text-[#c4000f] transition-colors"
                         >
                             <item.icon className="w-6 h-6 mb-0.5" />
                             <span className="text-[10px] font-medium leading-tight">
                                 {item.label}
                             </span>
+                            {item.href === "/comercios/pedidos" && <PedidosNavBadge />}
                         </Link>
                     ))}
                     <MobileMoreMenu />

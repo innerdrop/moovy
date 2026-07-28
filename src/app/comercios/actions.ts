@@ -15,6 +15,7 @@ import { z } from "zod";
 import { SIZE_METADATA, type ProductSize } from "@/lib/product-weight";
 // feat/recargo-moovy-y-tamano-toggle: derivación autoritativa del precio final.
 import { derivePricing } from "@/lib/finance/product-pricing";
+import { computeMerchantSetup } from "@/lib/merchant-setup";
 
 /**
  * Rama fix/asignacion-match-vehiculo.
@@ -910,25 +911,30 @@ export async function toggleMerchantOpen(isOpen: boolean) {
             return { error: "No se encontró un comercio asociado a tu cuenta." };
         }
 
-        // Si quiere ABRIR la tienda, verificar requisitos obligatorios
+        // Si quiere ABRIR la tienda, verificar requisitos con la lógica CANÓNICA.
+        //
+        // fix/comercio-pausa-stock-y-ajustes (2026-07-27) — BUG reportado por el
+        // founder: "cuando pauso la tienda y la quiero reanudar me pide un
+        // documento que no cargué". Esta función tenía su PROPIA lista de
+        // requisitos escrita a mano (la CUARTA lista divergente del mismo
+        // problema), que ignoraba dos cosas:
+        //   1. Que el comercio ya está APROBADO. La aprobación de Moovy es el
+        //      momento en que se validan los papeles; volver a exigirlos para
+        //      reanudar es pedir permiso dos veces (reglas #38-#42).
+        //   2. Que los documentos requeridos dependen del rubro y de los feature
+        //      flags `merchant.doc.*` (el founder decide cuáles se piden). La
+        //      lista a mano reclamaba Habilitación Municipal aunque estuviera
+        //      apagada al momento del registro.
+        // Consecuencia real: un comercio aprobado que pausaba quedaba ENCERRADO
+        // AFUERA, sin poder volver a abrir. Ahora usa computeMerchantSetup, la
+        // misma fuente que el dashboard y la barra de progreso — si el panel
+        // dice "listo para abrir", abrir funciona. Sin divergencias.
         if (isOpen) {
-            const missing: string[] = [];
-
-            // Documentación fiscal obligatoria
-            if (!merchant.cuit) missing.push("CUIT");
-            if (!merchant.bankAccount) missing.push("CBU o Alias bancario");
-            if (!merchant.constanciaAfipUrl) missing.push("Constancia AFIP");
-            if (!merchant.habilitacionMunicipalUrl) missing.push("Habilitación Municipal");
-
-            // Configuración operativa obligatoria
-            if (!merchant.scheduleJson) missing.push("Horarios de atención");
-            if (merchant.products.length < 1) missing.push("Al menos 1 producto publicado");
-            if (!merchant.address || !merchant.latitude) missing.push("Dirección del comercio");
-
-            if (missing.length > 0) {
+            const setup = await computeMerchantSetup(merchant);
+            if (!setup.canOpenStore) {
                 return {
-                    error: `No podés abrir tu tienda todavía. Te falta completar: ${missing.join(", ")}. Revisá la guía paso a paso en tu panel.`,
-                    missingRequirements: missing,
+                    error: `No podés abrir tu tienda todavía. Te falta completar: ${setup.missingLabels.join(", ")}. Revisá la guía paso a paso en tu panel.`,
+                    missingRequirements: setup.missingLabels,
                 };
             }
         }

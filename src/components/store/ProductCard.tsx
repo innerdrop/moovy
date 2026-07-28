@@ -32,6 +32,12 @@ interface ProductCardProps {
             con calculatePointsEarned + getPointsConfig (nunca estimar en el
             cliente — el checkout ya tuvo ese bug). Si no viene, no se muestra. */
         points?: number | null;
+        /** fix/comercio-pausa-stock-y-ajustes (2026-07-27): unidades disponibles.
+            Antes esta card NO sabía de stock — un producto agotado se mostraba
+            normal con el (+) activo, el cliente lo sumaba al carrito y recién en
+            el checkout le decían que no había (el server SÍ valida stock, así
+            que no hubo sobreventa: era fricción pura en el peor momento). */
+        stock?: number;
     };
     showAddButton?: boolean;
 }
@@ -71,11 +77,16 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
         : product.merchant?.isOpen === false;
     const closedLabel = product.merchant?.nextOpenLabel || "CERRADO";
 
+    // Sin stock manda sobre "cerrado": aunque el comercio abra, este producto no
+    // se puede comprar. Si `stock` no viene (callers viejos) no se asume nada.
+    const isOutOfStock = typeof product.stock === "number" && product.stock <= 0;
+    const isUnavailable = isOutOfStock || isClosed;
+
     const handleAddToCart = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
 
-        if (isClosed) return;
+        if (isUnavailable) return;
 
         addItem({
             productId: product.id,
@@ -94,7 +105,10 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
     return (
         <Link
             href={`/productos/${product.slug}`}
-            className="group h-full flex flex-col bg-white rounded-2xl border border-gray-50 shadow-[0_3px_16px_rgba(23,24,28,0.07)] hover:shadow-[0_6px_22px_rgba(23,24,28,0.11)] transition-shadow overflow-hidden"
+            title={isClosed && !isOutOfStock ? closedLabel : undefined}
+            className={`group h-full flex flex-col bg-white rounded-2xl border border-gray-50 shadow-[0_3px_16px_rgba(23,24,28,0.07)] hover:shadow-[0_6px_22px_rgba(23,24,28,0.11)] transition-shadow overflow-hidden ${
+                isUnavailable ? "opacity-60" : ""
+            }`}
         >
             {/* Foto: producto ENTERO, con corazón y (+) montados */}
             <div className="relative aspect-[3/2]">
@@ -102,7 +116,7 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
                     <SmartImage
                         src={product.image}
                         alt={product.name}
-                        className="object-contain p-2"
+                        className={`object-contain p-2 ${isUnavailable ? "grayscale" : ""}`}
                         sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 300px"
                     />
                 ) : (
@@ -119,7 +133,7 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
 
                 <HeartButton type="product" itemId={product.id} className="absolute top-2 right-2" />
 
-                {showAddButton && !isClosed && (
+                {showAddButton && !isUnavailable && (
                     <button
                         onClick={handleAddToCart}
                         aria-label={`Agregar ${product.name} al carrito`}
@@ -132,14 +146,11 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
                         {added ? <Check className="w-4 h-4" /> : <Plus className="w-5 h-5" />}
                     </button>
                 )}
-                {showAddButton && isClosed && (
-                    <span
-                        className="absolute bottom-2 right-2 text-[10px] font-bold text-red-500 bg-red-50 px-2 py-1 rounded-full leading-tight max-w-[110px] text-right shadow-sm"
-                        title={closedLabel}
-                    >
-                        {closedLabel}
-                    </span>
-                )}
+                {/* Comercio cerrado: NO se repite "CERRADO" en cada tarjeta
+                    (founder 07-27: "es demasiado"). El catálogo se apaga entero y
+                    el (+) desaparece — el aviso lo da la cabecera de la tienda una
+                    sola vez, como hace PedidosYa. `closedLabel` sigue en el título
+                    accesible para quien navegue con lector de pantalla. */}
             </div>
 
             {/* Nombre + fila de decisión: precio ⟷ puntos, enfrentados */}
@@ -147,15 +158,29 @@ export default function ProductCard({ product, showAddButton = false }: ProductC
                 <h3 className="font-semibold text-gray-900 text-base leading-[1.25] line-clamp-2 group-hover:text-[#e60012] transition">
                     {cleanEncoding(product.name)}
                 </h3>
+                {/* Fila de decisión. Agotado (opción C, founder 07-27): la FOTO
+                    queda limpia — nada de sellos ni bandas encima. El precio se
+                    tacha y "Agotado" ocupa el lugar de los puntos, que es donde el
+                    ojo ya está mirando para decidir. Escuela Uber Eats. */}
                 <div className="mt-auto pt-1.5 flex items-center justify-between gap-2">
-                    <span className="text-lg font-extrabold text-[#17181c] tracking-tight leading-none">
+                    <span
+                        className={`text-lg font-extrabold tracking-tight leading-none ${
+                            isOutOfStock ? "text-gray-400 line-through decoration-[1.5px]" : "text-[#17181c]"
+                        }`}
+                    >
                         ${product.price.toLocaleString("es-AR")}
                     </span>
-                    {typeof product.points === "number" && product.points > 0 && (
-                        <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-gray-600">
-                            <MooverStar />
-                            +{product.points.toLocaleString("es-AR")}
+                    {isOutOfStock ? (
+                        <span className="text-[11.5px] font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded-full leading-none">
+                            Agotado
                         </span>
+                    ) : (
+                        typeof product.points === "number" && product.points > 0 && (
+                            <span className="inline-flex items-center gap-1.5 text-[12.5px] font-bold text-gray-600">
+                                <MooverStar />
+                                +{product.points.toLocaleString("es-AR")}
+                            </span>
+                        )
                     )}
                 </div>
             </div>

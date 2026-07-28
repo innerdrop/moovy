@@ -284,8 +284,14 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
                         </div>
                     )}
 
-                    {/* feat/login-google: solo para el portal de clientes (compradores) */}
-                    {portal === "client" && (
+                    {/* feat/login-google: portal de clientes.
+                        fix/comercio-pausa-stock-y-ajustes (founder 07-27): también el
+                        portal de COMERCIOS, pero solo para ENTRAR (decisión: el alta de
+                        un comercio necesita CUIT, dirección y papeles que Google no da,
+                        así que el registro sigue siendo el formulario). Si la cuenta de
+                        Google todavía no tiene comercio, `requireMerchantAccess` la manda
+                        sola a /comercios/registro — nunca a un panel roto. */}
+                    {(portal === "client" || portal === "comercio") && (
                         <>
                             <button
                                 type="button"
@@ -294,8 +300,15 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
                                 className="w-full h-12 flex items-center justify-center gap-2.5 bg-white border-[1.5px] border-gray-300 rounded-xl font-semibold text-gray-700 hover:bg-gray-50 transition disabled:opacity-50"
                             >
                                 <GoogleIcon />
-                                Continuá con Google
+                                {portal === "comercio" ? "Entrá con Google" : "Continuá con Google"}
                             </button>
+                            {portal === "comercio" ? (
+                                <p className="text-[11px] text-gray-400 text-center mt-2">
+                                    Entrá con la misma cuenta de Google que usaste para registrar tu comercio.
+                                    ¿Todavía no lo registraste?{" "}
+                                    <Link href="/comercios/registro" className="underline hover:text-gray-600">Empezá acá</Link>.
+                                </p>
+                            ) : (
                             <p className="text-[11px] text-gray-400 text-center mt-2">
                                 Al continuar aceptás los{" "}
                                 <Link href="/terminos" className="underline hover:text-gray-600" target="_blank">Términos</Link>,{" "}
@@ -303,6 +316,7 @@ function LoginFormContent({ portal }: { portal: PortalType }) {
                                 <Link href="/privacidad" className="underline hover:text-gray-600" target="_blank">Política de Privacidad</Link>{" "}
                                 y confirmás ser mayor de 18 años.
                             </p>
+                            )}
                             <div className="flex items-center gap-3 my-4">
                                 <div className="h-px flex-1 bg-gray-200" />
                                 <span className="text-xs text-gray-400">o con tu email</span>

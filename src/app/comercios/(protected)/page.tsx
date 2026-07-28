@@ -275,7 +275,15 @@ export default async function ComerciosDashboardPage() {
 
             {/* Pausa rápida (founder 07-26): acción de emergencia a mano, no
                 escondida en Horarios. Solo modo operación (acá ya está APPROVED). */}
-            <StorePauseCard initialIsOpen={merchant.isOpen} />
+            <StorePauseCard
+                initialIsOpen={merchant.isOpen}
+                initialWithinSchedule={scheduleResult.isWithinSchedule}
+                initialNextOpenLabel={
+                    scheduleResult.nextOpenTime
+                        ? `${scheduleResult.nextOpenDay ?? ""} ${scheduleResult.nextOpenTime}`.trim()
+                        : null
+                }
+            />
 
             {/* Pedidos pendientes: LA alerta accionable (única con derecho a gritar) */}
             {pendingOrdersCount > 0 && (
