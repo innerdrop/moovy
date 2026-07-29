@@ -13,7 +13,8 @@
     "dev:full": "concurrently \"npm run dev\" \"npm run socket\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "check:parse": "node scripts/parse-check.mjs"
+    "check:parse": "node scripts/parse-check.mjs",
+    "db:extensiones": "node scripts/db-extensiones.mjs"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"

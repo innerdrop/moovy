@@ -10,6 +10,61 @@
 
 ---
 
+## 2026-07-29 (rama `feat/busqueda-inteligente`)
+
+feat: motor de busqueda unico — acentos, palabras sueltas, rubro y errores de tipeo
+
+Habia DOS busquedas escritas por separado: /api/search (la pagina de
+resultados) y /api/search/autocomplete (el desplegable del header y del
+hero). La misma consulta daba resultados distintos segun donde se
+escribiera, y arreglar una no arreglaba la otra. Ahora las dos usan
+src/lib/search.ts (regla #43: una pregunta se responde en un solo lugar).
+
+Los 4 arreglos:
+
+1) ACENTOS. "cafe" no encontraba "Cafe La Nube" ni "ferreteria" a
+"Ferreteria del Sur" — nadie escribe tildes en un buscador. Se normaliza
+en los dos lados (JS con NFD, SQL con unaccent) y la n con virgulilla
+pasa a n A PROPOSITO: si los dos lados normalizaran distinto, las
+palabras con enie no se encontrarian nunca.
+
+2) PALABRAS SUELTAS. Buscaba la frase exacta en ese orden: "beagle
+cerveza" no traia "Cerveza Beagle" y "tornillo 3 pulgadas" no traia
+"Tornillo autoperforante de 3". Ahora exige TODAS las palabras en
+cualquier orden y descarta las vacias (de, la, para).
+
+3) RUBRO. Critico por la regla #46 (Moovy vende TODOS los rubros, no
+solo comida): el rubro del comercio y las categorias del producto entran
+en el texto buscado. "farmacia" ya trae la farmacia llamada "Del Pueblo",
+y "ferreteria" trae sus productos aunque no digan ferreteria.
+
+4) ERRORES DE TIPEO. "cocacola" daba cero. Con pg_trgm, si la busqueda
+exacta trae menos de 3 resultados se completan PARECIDOS, marcados
+aparte y avisando en pantalla — mostrar aproximados como si fueran
+exactos es peor que no mostrar nada.
+
+Orden de resultados: el nombre pesa mas que la descripcion, y lo abierto
+pesa DENTRO de la relevancia y no por encima (regla #46: una ferreteria
+cerrada que tiene el tornillo exacto sigue siendo un buen resultado; en
+gastronomia mandaria lo abierto, pero Moovy no es solo gastronomia).
+
+RED DE SEGURIDAD: si la base no tiene las extensiones, la busqueda NO se
+rompe — cae al comportamiento viejo (sin acentos ni parecidos) y avisa
+en el log UNA sola vez, nunca en silencio.
+
+ANTES DE PROBAR, correr una vez por base:
+   npm run db:extensiones
+(en el VPS, el comando docker esta documentado dentro del script)
+
+Verificacion: tsc-strict limpio + npm run check:parse. Tests nuevos en
+src/lib/__tests__/search.test.ts (npm test). Manual: (a) buscar "cafe"
+sin tilde y encontrar los que llevan tilde; (b) "beagle cerveza" al
+reves; (c) "ferreteria" y ver comercios del rubro; (d) "cocacola" y ver
+el aviso de resultados parecidos; (e) buscar lo mismo en el desplegable
+del header y en la pagina: mismos resultados.
+
+**Archivos:** .claude/CLAUDE.md, ISSUES.md, package.json, scripts/db-extensiones.mjs, src/app/(store)/buscar/page.tsx, src/app/api/search/autocomplete/route.ts, src/app/api/search/route.ts, src/lib/__tests__/search.test.ts (+1 mas)
+
 ## 2026-07-28 (rama `feat/vitrina-productos-y-buscador`)
 
 feat: una sola tarjeta de producto + buscador agrupado por comercio

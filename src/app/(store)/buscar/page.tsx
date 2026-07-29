@@ -195,6 +195,10 @@ function BuscarContent() {
     const [productTotal, setProductTotal] = useState(0);
     void productTotal;
     const [merchants, setMerchants] = useState<MerchantResult[]>([]);
+    // true = parte de los resultados son PARECIDOS, no coincidencias exactas
+    // (ej: alguien escribió "cocacola"). Se avisa: mostrar aproximados como si
+    // fueran exactos es peor que no mostrar nada.
+    const [hayAproximados, setHayAproximados] = useState(false);
 
     // Resultados agrupados por comercio (ver agruparPorComercio arriba).
     const grupos = useMemo(() => agruparPorComercio(products, merchants), [products, merchants]);
@@ -229,6 +233,7 @@ function BuscarContent() {
             setMerchants([]);
             setListings([]);
             setProductTotal(0);
+            setHayAproximados(false);
             setListingTotal(0);
             setHasSearched(false);
             return;
@@ -250,6 +255,7 @@ function BuscarContent() {
                 marketplaceRes.json(),
             ]);
 
+            setHayAproximados(!!comerciosData.hayAproximados);
             setProducts(comerciosData.results || []);
             setProductTotal(comerciosData.total || 0);
             setMerchants(comerciosData.merchants || []);
@@ -472,6 +478,11 @@ function BuscarContent() {
                 {/* COMERCIOS TAB — resultados AGRUPADOS POR COMERCIO */}
                 {!loading && hasSearched && activeTab === "comercios" && grupos.length > 0 && (
                     <div className="space-y-4">
+                        {hayAproximados && (
+                            <p className="text-[13px] text-gray-500 bg-amber-50 border border-amber-100 rounded-xl px-3.5 py-2.5">
+                                No encontramos exactamente <b>«{query.trim()}»</b>. Te mostramos lo más parecido.
+                            </p>
+                        )}
                         {grupos.map((grupo) => (
                             <div
                                 key={grupo.merchant.id}

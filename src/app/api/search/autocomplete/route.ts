@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { buscarProductos, buscarComercios } from "@/lib/search";
 
 export async function GET(request: Request) {
     const limited = await applyRateLimit(request, "autocomplete", 60, 60_000);
@@ -15,27 +16,15 @@ export async function GET(request: Request) {
             return NextResponse.json({ suggestions: [] });
         }
 
-        // Parallel: products (tienda) + listings (marketplace) + merchants
-        const [products, listings, merchants] = await Promise.all([
-            prisma.product.findMany({
-                where: {
-                    isActive: true,
-                    OR: [
-                        { name: { contains: q, mode: "insensitive" } },
-                        { description: { contains: q, mode: "insensitive" } },
-                    ],
-                },
-                select: {
-                    id: true,
-                    name: true,
-                    slug: true,
-                    price: true,
-                    images: { take: 1, select: { url: true } },
-                    merchant: { select: { name: true, slug: true } },
-                },
-                orderBy: { name: "asc" },
-                take: 4,
-            }),
+        // feat/busqueda-inteligente (2026-07-28): productos y comercios salen del
+        // motor único (src/lib/search.ts) — acentos, palabras sueltas y rubro.
+        // Antes esta ruta tenía su propia consulta y daba resultados DISTINTOS a
+        // los de la página de resultados para la misma búsqueda.
+        // Las publicaciones del marketplace siguen acá: son otro dominio y el
+        // founder pidió que tengan su propio buscador (anotado en ISSUES).
+        const [productosMotor, comerciosMotor, listings] = await Promise.all([
+            buscarProductos(q, 4),
+            buscarComercios(q, 3),
             prisma.listing.findMany({
                 where: {
                     isActive: true,
@@ -54,25 +43,10 @@ export async function GET(request: Request) {
                 orderBy: { createdAt: "desc" },
                 take: 4,
             }),
-            prisma.merchant.findMany({
-                where: {
-                    isActive: true,
-                    OR: [
-                        { name: { contains: q, mode: "insensitive" } },
-                        { description: { contains: q, mode: "insensitive" } },
-                    ],
-                },
-                select: {
-                    id: true,
-                    name: true,
-                    slug: true,
-                    image: true,
-                    isOpen: true,
-                },
-                orderBy: [{ isOpen: "desc" }, { name: "asc" }],
-                take: 3,
-            }),
         ]);
+
+        const merchants = comerciosMotor;
+        const products = productosMotor;
 
         const suggestions = [
             ...merchants.map((m) => ({
@@ -87,9 +61,12 @@ export async function GET(request: Request) {
                 type: "tienda" as const,
                 id: p.id,
                 label: p.name,
-                image: p.images[0]?.url || null,
+                image: p.imagen,
                 href: `/productos/${encodeURIComponent(p.slug)}`,
-                extra: p.merchant?.name || null,
+                // El desplegable ahora dice DE QUIÉN es cada producto y si ese
+                // comercio está abierto: un producto suelto no le sirve a nadie.
+                extra: p.merchantName,
+                merchantIsOpen: p.merchantIsOpen,
                 price: Number(p.price),
             })),
             ...listings.map((l) => ({

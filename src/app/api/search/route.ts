@@ -2,6 +2,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { applyRateLimit } from "@/lib/rate-limit";
+import { buscarTodo } from "@/lib/search";
 
 export async function GET(request: Request) {
     // Rate limit: max 30 searches per minute per IP
@@ -54,73 +55,60 @@ export async function GET(request: Request) {
             return NextResponse.json({ results: listings, total });
         }
 
-        // Default: search store products + merchants
-        const productWhere: any = {
-            isActive: true,
-            OR: [
-                { name: { contains: q, mode: "insensitive" } },
-                { description: { contains: q, mode: "insensitive" } },
-            ],
-        };
+        // feat/busqueda-inteligente (2026-07-28): la búsqueda de la tienda pasa
+        // por el motor único (src/lib/search.ts). Antes esta ruta tenía su propia
+        // consulta: acentos, palabras sueltas y rubro se arreglaban acá y NO en
+        // el desplegable del header, así que la misma búsqueda daba resultados
+        // distintos según dónde la escribieras.
+        const { productos, comercios, hayAproximados } = await buscarTodo(q, {
+            limiteProductos: limit,
+            limiteComercios: 10,
+        });
 
-        const merchantWhere: any = {
-            isActive: true,
-            OR: [
-                { name: { contains: q, mode: "insensitive" } },
-                { description: { contains: q, mode: "insensitive" } },
-            ],
-        };
+        // La página de resultados espera el shape de Prisma (images[], merchant{}).
+        // Se traduce acá para no tocar el cliente en esta rama.
+        const products = productos.map((p) => ({
+            id: p.id,
+            name: p.name,
+            slug: p.slug,
+            price: p.price,
+            stock: p.stock,
+            images: p.imagen ? [{ url: p.imagen }] : [],
+            merchant: p.merchantId
+                ? {
+                      id: p.merchantId,
+                      name: p.merchantName,
+                      slug: p.merchantSlug,
+                      isOpen: p.merchantIsOpen ?? false,
+                      image: p.merchantImage,
+                      rating: null,
+                  }
+                : null,
+            aproximado: p.aproximado ?? false,
+        }));
 
-        const [products, productTotal, merchants, merchantTotal] = await Promise.all([
-            prisma.product.findMany({
-                where: productWhere,
-                include: {
-                    images: { take: 1 },
-                    merchant: {
-                        select: {
-                            id: true,
-                            name: true,
-                            slug: true,
-                            isOpen: true,
-                            image: true,
-                            rating: true,
-                        },
-                    },
-                },
-                orderBy: { name: "asc" },
-                take: limit,
-                skip: offset,
-            }),
-            prisma.product.count({ where: productWhere }),
-            prisma.merchant.findMany({
-                where: merchantWhere,
-                select: {
-                    id: true,
-                    name: true,
-                    slug: true,
-                    description: true,
-                    image: true,
-                    isOpen: true,
-                    isVerified: true,
-                    isPremium: true,
-                    premiumTier: true,
-                    rating: true,
-                    deliveryTimeMin: true,
-                    deliveryTimeMax: true,
-                    deliveryFee: true,
-                    address: true,
-                },
-                orderBy: [{ isOpen: "desc" }, { isPremium: "desc" }, { name: "asc" }],
-                take: 6,
-            }),
-            prisma.merchant.count({ where: merchantWhere }),
-        ]);
+        const merchants = comercios.map((m) => ({
+            ...m,
+            description: null,
+            isVerified: false,
+            isPremium: false,
+            premiumTier: null,
+            deliveryFee: 0,
+            aproximado: m.aproximado ?? false,
+        }));
+
+        const productTotal = products.length;
+        const merchantTotal = merchants.length;
 
         return NextResponse.json({
             results: products,
             total: productTotal,
             merchants,
             merchantTotal,
+            // true = parte de lo que se devuelve son coincidencias APROXIMADAS
+            // (la búsqueda exacta trajo poco). El cliente lo avisa; nunca se
+            // mezclan con las exactas sin decirlo.
+            hayAproximados,
         });
     } catch (error) {
         console.error("Error in unified search:", error);
