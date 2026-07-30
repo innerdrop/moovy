@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, Store, ShoppingBag, Tag, X } from "lucide-react";
 import UploadImage from "@/components/ui/UploadImage";
+import { usePlaceholderBuscador } from "@/lib/usePlaceholderBuscador";
 
 interface Suggestion {
   type: "comercio" | "tienda" | "marketplace";
@@ -34,6 +35,10 @@ const TYPE_CONFIG = {
 } as const;
 
 export default function SearchBarHero() {
+  // regla #46: el placeholder rota entre rubros ("pizza", "tornillos",
+  // "pañales", "ibuprofeno"...). Antes decía "¿Qué querés pedir?", y "pedir"
+  // suena a delivery de comida.
+  const ejemplo = usePlaceholderBuscador();
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -157,7 +162,7 @@ export default function SearchBarHero() {
                   suggestions.length > 0 && setShowDropdown(true)
                 }
                 onKeyDown={handleKeyDown}
-                placeholder="¿Qué querés pedir?"
+                placeholder={`Buscá "${ejemplo}"`}
                 className="flex-1 min-w-0 px-3 py-4 text-base text-gray-900 placeholder:text-gray-400 outline-none bg-transparent font-medium"
                 autoComplete="off"
               />

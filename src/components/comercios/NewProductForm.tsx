@@ -738,7 +738,11 @@ export default function NewProductForm({ categories, catalogProducts, allCategor
 
                 {/* Banner flotante: aparece cuando el comercio empezó a cargar contenido. */}
                 {isDirty && (
-                    <div className="fixed left-0 right-0 bottom-16 z-30 px-3 sm:px-4 pb-2 pointer-events-none animate-in slide-in-from-bottom-2 duration-200">
+                    <div
+                        data-moovy-bar
+                        className="fixed left-0 right-0 z-40 px-3 sm:px-4 pointer-events-none animate-in fade-in duration-200"
+                        style={{ bottom: "var(--moovy-bar-bottom)" }}
+                    >
                         <div className="max-w-2xl mx-auto pointer-events-auto bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
                             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${isSubmittable ? "bg-emerald-400 animate-pulse" : "bg-amber-400 animate-pulse"}`} />
                             <p className="text-xs sm:text-sm font-semibold text-gray-700 flex-1 min-w-0 truncate">

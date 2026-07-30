@@ -104,6 +104,147 @@
   }
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   BARRAS INFERIORES — una sola fuente de verdad por zona
+   rama feat/barras-flotantes-y-copy · regla #47
+   ═══════════════════════════════════════════════════════════════════════════
+
+   NINGUNA barra fija escribe su propio número. Todas usan --moovy-bar-bottom.
+
+   ── Por qué está escrito así (y no de la forma "obvia") ────────────────────
+   La forma obvia sería declarar el calc() UNA vez en :root y después
+   sobreescribir solo la pieza que cambia (--moovy-nav-peak) en cada zona.
+   ESO NO FUNCIONA. Según css-variables-1, el valor computado de una custom
+   property es "el valor especificado CON LAS VARIABLES YA SUSTITUIDAS", y esa
+   sustitución ocurre ANTES de heredar. O sea: el calc() de :root se congela
+   con el peak de :root y las zonas heredan ese número congelado.
+   Por eso cada zona RE-DECLARA --moovy-bar-bottom completa. Es redundante a
+   propósito: es la única forma de que el calc se vuelva a resolver ahí.
+
+   ── Las piezas ────────────────────────────────────────────────────────────
+   --moovy-sab        el colchón del sistema. OJO: vale 0 en la mayoría de los
+                      Android y en TODA PWA instalada en Android. Los 34px son
+                      el caso iPhone, no el caso normal.
+   --moovy-nav-offset del piso de la pantalla al borde INFERIOR de la nav.
+   --moovy-nav-peak   de ese borde inferior al pixel MÁS ALTO de la nav.
+                      No es el alto de la caja: el botón MOOVER del comprador
+                      sobresale por encima de la píldora con -top-3. Los
+                      valores de acá son el punto de partida; useNavPeak los
+                      mide en el dispositivo y los pisa. Si no corre el JS,
+                      estos alcanzan.
+   --moovy-nav-gap    16px, el número de Material 3 para "FAB superpuesto a
+                      una barra". No 10.
+
+   La nav Y las barras usan el mismo --moovy-sab a propósito: así se mueven
+   juntas o se quedan quietas juntas. Nunca se desincronizan.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --moovy-sab: env(safe-area-inset-bottom, 0px);
+  --moovy-sal: env(safe-area-inset-left, 0px);
+  --moovy-sar: env(safe-area-inset-right, 0px);
+  --moovy-nav-gap: 16px;
+
+  /* alto típico de una barra de acción; cada pantalla puede pisarlo */
+  --moovy-bar-h: 72px;
+
+  /* Sin zona (páginas sueltas, landing, /proximamente): no hay nav abajo. */
+  --moovy-nav-offset: 0px;
+  --moovy-nav-peak: 0px;
+  --moovy-bar-bottom: max(12px, var(--moovy-sab));
+  --moovy-content-pad: calc(max(12px, var(--moovy-sab)) + var(--moovy-bar-h) + 12px);
+}
+
+/* Comprador — píldora flotante con el botón MOOVER sobresaliendo. */
+[data-moovy-zone="comprador"] {
+  --moovy-nav-offset: max(12px, var(--moovy-sab));
+  --moovy-nav-peak: 84px;
+  --moovy-bar-bottom: calc(var(--moovy-nav-offset) + var(--moovy-nav-peak) + var(--moovy-nav-gap));
+  --moovy-content-pad: calc(var(--moovy-nav-offset) + var(--moovy-nav-peak) + var(--moovy-nav-gap) + var(--moovy-bar-h) + 12px);
+}
+
+/* Panel del comercio — píldora flotante, sin botón sobresaliente. */
+[data-moovy-zone="comercio"] {
+  --moovy-nav-offset: max(12px, var(--moovy-sab));
+  --moovy-nav-peak: 64px;
+  --moovy-bar-bottom: calc(var(--moovy-nav-offset) + var(--moovy-nav-peak) + var(--moovy-nav-gap));
+  --moovy-content-pad: calc(var(--moovy-nav-offset) + var(--moovy-nav-peak) + var(--moovy-nav-gap) + var(--moovy-bar-h) + 12px);
+}
+
+/* Panel del vendedor — barra apoyada en el piso, ancho completo. */
+[data-moovy-zone="vendedor"] {
+  --moovy-nav-offset: 0px;
+  --moovy-nav-peak: calc(64px + max(12px, var(--moovy-sab)));
+  --moovy-bar-bottom: calc(var(--moovy-nav-peak) + var(--moovy-nav-gap));
+  --moovy-content-pad: calc(var(--moovy-nav-peak) + var(--moovy-nav-gap) + var(--moovy-bar-h) + 12px);
+}
+
+/* Repartidor — barra apoyada en el piso. El 96px que había dando vueltas
+   salía de un padding elegido a ojo, no de medir. useNavPeak lo corrige. */
+[data-moovy-zone="repartidor"] {
+  --moovy-nav-offset: 0px;
+  --moovy-nav-peak: calc(64px + max(12px, var(--moovy-sab)));
+  --moovy-bar-bottom: calc(var(--moovy-nav-peak) + var(--moovy-nav-gap));
+  --moovy-content-pad: calc(var(--moovy-nav-peak) + var(--moovy-nav-gap) + var(--moovy-bar-h) + 12px);
+}
+
+/* OPS — no tenía NINGÚN colchón: la fila de botones caía justo donde Android
+   dibuja la barra de gestos y el sistema se comía el toque. */
+[data-moovy-zone="ops"] {
+  --moovy-nav-offset: 0px;
+  --moovy-nav-peak: calc(56px + max(12px, var(--moovy-sab)));
+  --moovy-bar-bottom: calc(var(--moovy-nav-peak) + var(--moovy-nav-gap));
+  --moovy-content-pad: calc(var(--moovy-nav-peak) + var(--moovy-nav-gap) + var(--moovy-bar-h) + 12px);
+}
+
+/* Escritorio: las 5 navegaciones son lg:hidden, así que no hay nada que
+   esquivar. Este bloque va DESPUÉS de los de zona a propósito: todos los
+   selectores de atributo pesan lo mismo (0,1,0), así que gana el último.
+   La consulta se escribe igual que la que emite Tailwind 4 para lg:
+   (width >= 64rem), no (min-width: 1024px). */
+@media (width >= 64rem) {
+  [data-moovy-zone] {
+    --moovy-nav-offset: 0px;
+    --moovy-nav-peak: 0px;
+    --moovy-bar-bottom: 12px;
+    --moovy-content-pad: calc(12px + var(--moovy-bar-h) + 12px);
+  }
+}
+
+/* Colchón del contenido. Es la MITAD del bug: si la barra sube y el contenido
+   no reserva el espacio, el último producto queda inalcanzable.
+   scroll-padding-bottom hace que el navegador también lo respete cuando hace
+   scroll solo hacia un campo enfocado (lo que pasa al abrir el teclado). */
+.moovy-pad-bar {
+  padding-bottom: var(--moovy-content-pad);
+  scroll-padding-bottom: var(--moovy-content-pad);
+}
+
+/* Pantallas con navegación pero SIN barra de acción. */
+.moovy-pad-nav {
+  padding-bottom: calc(var(--moovy-nav-offset) + var(--moovy-nav-peak) + 12px);
+  scroll-padding-bottom: calc(var(--moovy-nav-offset) + var(--moovy-nav-peak) + 12px);
+}
+
+/* Las barras de acción NUNCA llevan desenfoque: la navegación ya tiene una
+   capa de backdrop-filter y dos capas apiladas sobre una lista que scrollea
+   son una causa medible de caída de FPS en Moto G / Redmi. MercadoLibre y X
+   usan fondo sólido en Android por exactamente este motivo. */
+[data-moovy-bar] {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+
+/* Quien pidió menos transparencia, o cuya pantalla es lenta, tampoco paga el
+   blur de la navegación. */
+@media (prefers-reduced-transparency: reduce), (update: slow) {
+  [data-moovy-nav] {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background-color: #ffffff !important;
+  }
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);

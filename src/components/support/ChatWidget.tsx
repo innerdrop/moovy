@@ -2,9 +2,11 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import { useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 import { ChatBubbleIcon } from "./ChatBubbleIcon";
 import { SupportChat } from "@/types/support";
 import { useSupportSocket } from "@/hooks/useSupportSocket";
+import { medirEspacioInferior } from "@/lib/useNavPeak";
 
 function OnlineIndicator() {
     return (
@@ -64,6 +66,9 @@ function StarRating({ onRate }: { onRate: (rating: number) => void }) {
 
 export function ChatWidget() {
     const { data: session } = useSession();
+    // Este componente vive en el layout y NO se desmonta al navegar: necesita la
+    // ruta para volver a medir la zona prohibida de abajo en cada pantalla.
+    const pathname = usePathname();
     const [isOpen, setIsOpen] = useState(false);
     const [isOnline, setIsOnline] = useState(false);
     const [chats, setChats] = useState<SupportChat[]>([]);
@@ -268,22 +273,47 @@ export function ChatWidget() {
     const hasMoved = useRef(false);
 
     // Zona prohibida de abajo (founder 07-26: "la burbuja toca la barra de
-    // abajo"): barra de navegación (~72px) + su safe-area + un respiro. La
-    // burbuja arranca ARRIBA de eso y el arrastre tampoco la deja bajar ahí.
-    const BOTTOM_NAV_SPACE = 116;
+    // abajo"; y otra vez 07-29: la burbuja encima de la barra de acción).
+    //
+    // ANTES: const BOTTOM_NAV_SPACE = 116 — otro número escrito a mano, la
+    // TERCERA vez que este mismo bug volvió. El 116 salía de estimar "~72px de
+    // navegación + safe-area + respiro", y se quedaba corto en cuanto la
+    // pantalla tenía además una barra de acción (agregar al carrito, ir a pagar,
+    // "tenés cambios sin guardar"): la burbuja se le sentaba encima.
+    //
+    // AHORA se mide (regla #47). medirEspacioInferior() devuelve la barra de
+    // acción real si hay una en pantalla, y si no resuelve --moovy-bar-bottom.
+    // Se vuelve a medir al cambiar de pantalla y al rotar/redimensionar, porque
+    // este componente vive en el layout y no se desmonta al navegar.
+    const [espacioAbajo, setEspacioAbajo] = useState(116);
+
+    useEffect(() => {
+        const remedir = () => setEspacioAbajo(medirEspacioInferior());
+        // dos pasadas: una ya y otra en el frame siguiente, para cuando la barra
+        // de acción de la pantalla todavía no se pintó.
+        remedir();
+        const raf = requestAnimationFrame(remedir);
+        window.addEventListener("resize", remedir);
+        window.addEventListener("orientationchange", remedir);
+        return () => {
+            cancelAnimationFrame(raf);
+            window.removeEventListener("resize", remedir);
+            window.removeEventListener("orientationchange", remedir);
+        };
+    }, [pathname]);
 
     const getDefaultPos = useCallback(() => {
         if (typeof window === "undefined") return { x: 358, y: 700 };
-        return { x: window.innerWidth - 76, y: window.innerHeight - BOTTOM_NAV_SPACE - 56 };
-    }, []);
+        return { x: window.innerWidth - 76, y: window.innerHeight - espacioAbajo - 56 };
+    }, [espacioAbajo]);
 
     const clampPos = useCallback((x: number, y: number) => {
         const vw = typeof window !== "undefined" ? window.innerWidth : 430;
         const vh = typeof window !== "undefined" ? window.innerHeight : 900;
         const maxX = vw - 72;
-        const maxY = vh - BOTTOM_NAV_SPACE - 56;
+        const maxY = vh - espacioAbajo - 56;
         return { x: Math.max(16, Math.min(x, maxX)), y: Math.max(72, Math.min(y, maxY)) };
-    }, []);
+    }, [espacioAbajo]);
 
     const handleDragStart = useCallback((clientX: number, clientY: number) => {
         const pos = bubblePos || getDefaultPos();

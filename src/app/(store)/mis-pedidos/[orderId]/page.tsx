@@ -482,7 +482,7 @@ export default function OrderDetailPage() {
     const deliveredDate = order.deliveredAt ? new Date(order.deliveredAt) : null;
 
     return (
-        <div className="min-h-screen bg-gray-50 pb-32">
+        <div className="min-h-screen bg-gray-50 moovy-pad-bar">
             {/* ── Header ── */}
             <div className="bg-white sticky top-0 z-30 border-b border-gray-100">
                 <div className="container mx-auto px-4 lg:px-6 xl:px-8 py-3 lg:py-4 flex items-center gap-3">
@@ -1003,8 +1003,18 @@ export default function OrderDetailPage() {
                 </Link>
             </div>
 
-            {/* ── Bottom Bar ── */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 z-20" style={{ paddingBottom: "max(0.75rem, env(safe-area-inset-bottom))" }}>
+            {/* ── Barra de acción ── rama feat/barras-flotantes-y-copy.
+                ANTES: bottom-0, o sea COMPLETAMENTE tapada por la píldora de
+                navegación (que llega hasta ~96px del piso en la app instalada).
+                Acá la navegación SÍ se muestra —el usuario sigue paseando por sus
+                pedidos— así que la barra tiene que esquivarla con el token.
+                También se le sacó el backdrop-blur: era la segunda capa de
+                desenfoque apilada sobre la de la píldora. */}
+            <div
+                data-moovy-bar
+                className="fixed left-0 right-0 bg-white border-t border-gray-100 z-40 pb-3"
+                style={{ bottom: "var(--moovy-bar-bottom)" }}
+            >
                 <div className="container mx-auto px-4 pt-3">
                     {isActive && !isCancelled && (
                         <div className="flex gap-2">

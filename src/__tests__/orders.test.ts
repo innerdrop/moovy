@@ -510,13 +510,19 @@ describe("Order Creation - Schema Validation", () => {
     });
 
     it("should accept scheduled delivery during valid business hours (9 AM - 9:59 PM)", () => {
-      // Create a date at 15:00 (3 PM) - definitely within business hours
+      // MAÑANA a las 15:00. Siempre mañana, nunca hoy.
+      //
+      // feat/barras-flotantes-y-copy (2026-07-29): este test era inestable por
+      // reloj. Programaba HOY a las 15:00 y solo pasaba a mañana si YA habían
+      // pasado las 15:00 — pero el schema exige 1.5 horas de anticipación, así
+      // que entre las 13:30 y las 15:00 el test fallaba aunque el código
+      // estuviera perfecto. El founder se lo encontró corriendo a las 13:38.
+      //
+      // Mañana a las 15:00 está siempre entre 15 y 39 horas por delante: cumple
+      // el mínimo de 1.5 h y el máximo de 48 h a cualquier hora del día.
       const date = new Date();
+      date.setDate(date.getDate() + 1);
       date.setHours(15, 0, 0, 0);
-      // If it's already past 3 PM today, schedule for tomorrow
-      if (date <= new Date()) {
-        date.setDate(date.getDate() + 1);
-      }
 
       const startTime = date;
       const endTime = new Date(startTime.getTime() + 2 * 60 * 60_000);

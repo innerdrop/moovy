@@ -22,7 +22,7 @@ async function OpsLayout({ children }: { children: React.ReactNode }) {
     // Sin fixed/sticky ni compensaciones de margen: el sidebar ocupa su espacio
     // real en el flujo, así que el contenido jamás puede quedar tapado.
     return (
-        <div className="h-screen overflow-hidden bg-gray-100 flex w-full">
+        <div data-moovy-zone="ops" className="h-screen overflow-hidden bg-gray-100 flex w-full">
             {/* Sidebar - handles both desktop and mobile */}
             <OpsSidebar userName={session.user?.name || undefined} />
 
@@ -32,7 +32,7 @@ async function OpsLayout({ children }: { children: React.ReactNode }) {
                 <div className="lg:hidden h-16" />
 
                 {/* Page Content */}
-                <main className="flex-1 p-4 md:p-6 pb-24 lg:pb-6 min-w-0 max-w-full">
+                <main className="flex-1 p-4 md:p-6 min-w-0 max-w-full moovy-pad-nav lg:[padding-bottom:1.5rem]">
                     {children}
                 </main>
             </div>

@@ -30,19 +30,36 @@ export default function StoreLayout({
     // El home es la única página con footer oscuro; ahí la reserva para la barra
     // flotante la da el propio footer (oscuro), no un padding blanco del main.
     const isHome = pathname === "/";
-    // feat/rediseno-perfil-comercio: el perfil del comercio es INMERSIVO — la
-    // portada llega al borde superior y trae su propio volver + buscador scoped.
-    // El AppHeader global (con el buscador general) NO se monta en /store/*:
-    // dos buscadores y dos barras confunden. La nav inferior queda (es la salida
-    // natural), y el carrito se accede con la barra "Ver mi pedido" de la página.
-    const isStoreProfile = pathname?.startsWith("/store/") ?? false;
-    // Burbuja de soporte SOLO en Mi Perfil (decisión founder 2026-07-25):
-    // flotando sobre el resto de la app molestaba (tapaba "Ver mi pedido" en la
-    // tienda, competía con el CTA en checkout y ficha de producto). Mi Perfil es
-    // el lugar natural de "necesito ayuda". Post-piloto: entrada de chat en
-    // /ayuda + badge de respuestas no leídas en Perfil.
-    const showSupportBubble = pathname?.startsWith("/mi-perfil") ?? false;
     const cartCount = useCartStore((state) => state.getTotalItems());
+
+    // rama feat/barras-flotantes-y-copy — patrón Rappi / PedidosYa.
+    //
+    // En las pantallas de conversión la píldora de navegación DESAPARECE. No es
+    // un capricho: es lo que hacen las dos apps de delivery que operan en
+    // Argentina, y borra el problema de raíz en vez de administrarlo. Cuando no
+    // hay nada abajo que esquivar, la barra de acción se apoya en el piso y no
+    // hay ningún offset que calcular.
+    //
+    // Además, en un teléfono de 360×720 (Moto E, Redmi de entrada) recupera
+    // ~100px de pantalla útil justo donde el vecino decide si compra.
+    //
+    // CONDICIÓN que se cumple en las tres: cada una tiene su propia salida
+    // visible (flecha ← o "Seguir comprando"). En la app instalada no hay botón
+    // "atrás" del navegador — si escondemos la navegación sin dejar salida, el
+    // usuario queda encerrado.
+    //
+    // OJO con /productos: el LISTADO conserva la navegación (el usuario sigue
+    // paseando); solo el DETALLE (/productos/<slug>) la esconde.
+    const esPantallaDeConversion =
+        pathname === "/carrito" ||
+        pathname.startsWith("/checkout") ||
+        /^\/productos\/[^/]+$/.test(pathname);
+
+    // Pantallas que traen su PROPIA barra de acción fija. Ahí el colchón lo pone
+    // la página con .moovy-pad-bar (que ya contempla nav + barra); si además lo
+    // pusiera el <main>, se sumarían dos colchones y quedaría un hueco enorme.
+    const tieneBarraPropia =
+        esPantallaDeConversion || /^\/mis-pedidos\/[^/]+$/.test(pathname);
 
     const [mounted, setMounted] = useState(false);
     // fix/ux-post-aprobacion-y-splash (2026-04-27): showSplash eliminado.
@@ -148,8 +165,14 @@ export default function StoreLayout({
                         ))}
                     </div>
                 </main>
-                {/* Bottom nav skeleton — hidden on desktop */}
-                <div className="fixed bottom-0 left-0 right-0 h-16 bg-white border-t border-gray-100 lg:hidden">
+                {/* Bottom nav skeleton — hidden on desktop.
+                    Copia la geometría de la píldora real (flotante, 62px, con su
+                    offset de safe-area): antes era una barra pegada al piso de
+                    64px y la navegación "saltaba" al terminar de cargar. */}
+                <div
+                    className="fixed left-1/2 -translate-x-1/2 w-[calc(100%-24px)] max-w-[388px] h-[62px] rounded-full bg-white border border-[#f0ece9] lg:hidden"
+                    style={{ bottom: "max(12px, env(safe-area-inset-bottom, 0px))" }}
+                >
                     <div className="flex items-center justify-around h-full px-6">
                         {Array.from({ length: 5 }).map((_, i) => (
                             <div key={i} className="w-8 h-8 bg-gray-100 rounded-full shimmer" />
@@ -162,22 +185,31 @@ export default function StoreLayout({
 
     // ========== EXPERIENCIA APP UNIFICADA ==========
     return (
-        <div className={`min-h-screen flex flex-col bg-white overflow-x-clip lg:overflow-x-hidden ${contentReady ? "app-ready" : ""}`} style={{ fontFamily: "var(--font-nunito), 'Nunito', system-ui, sans-serif" }}>
+        <div
+            // data-moovy-zone: acá viven los tokens de la barra inferior del
+            // comprador (globals.css). Tiene que envolver a la navegación Y a las
+            // barras de acción — si no, useNavPeak escribe la medición en un
+            // elemento que no contiene a las barras y la medición no llega.
+            data-moovy-zone="comprador"
+            data-moovy-nav={esPantallaDeConversion ? "oculta" : undefined}
+            className={`min-h-screen flex flex-col bg-white overflow-x-clip lg:overflow-x-hidden ${contentReady ? "app-ready" : ""}`}
+            style={{ fontFamily: "var(--font-nunito), 'Nunito', system-ui, sans-serif" }}
+        >
             {/* Scroll to top on navigation */}
             <ScrollToTop />
 
-            {/* Header compacto tipo app — fijo arriba. Oculto en el perfil del
-                comercio (inmersivo, tiene su propia navegación). */}
-            {!isStoreProfile && (
-                <AppHeader
-                    isLoggedIn={!!isLoggedIn}
-                    cartCount={cartCount}
-                    userName={session?.user?.name || undefined}
-                />
-            )}
+            {/* Header compacto tipo app — fijo arriba */}
+            <AppHeader
+                isLoggedIn={!!isLoggedIn}
+                cartCount={cartCount}
+                userName={session?.user?.name || undefined}
+            />
 
             {/* Contenido scrollable — solo esta zona se mueve */}
-            <main className={`flex-1 ${isStoreProfile ? "pt-0" : "pt-14 lg:pt-[6.75rem]"} ${isHome ? "pb-0" : "pb-28"} lg:pb-0`}>
+            {/* El colchón inferior sale de --moovy-content-pad, no de un pb-28
+                escrito a mano: así sigue siendo correcto si la navegación crece
+                (fuente del sistema grande en Android) o si desaparece. */}
+            <main className={`flex-1 pt-14 lg:pt-[6.75rem] ${isHome || tieneBarraPropia ? "pb-0" : "moovy-pad-nav"} lg:pb-0`}>
                 {/* La dirección de entrega ahora se elige desde el pill "Ushuaia" del
                     header (LocationAddressButton). La vieja barra blanca "Entregar en"
                     se removió — partía la tarjeta roja del home. */}
@@ -190,8 +222,9 @@ export default function StoreLayout({
                 aparece cuando se intenta mezclar comercios en el carrito. */}
             <VendorSwitchModal />
 
-            {/* Bottom Navigation siempre visible — fijo abajo */}
-            <BottomNav isLoggedIn={!!isLoggedIn} />
+            {/* Bottom Navigation — se esconde en las pantallas de conversión
+                (ver esPantallaDeConversion arriba). */}
+            {!esPantallaDeConversion && <BottomNav isLoggedIn={!!isLoggedIn} />}
 
             {/* FloatingCartButton removed — the cart badge in header already indicates items */}
 
@@ -199,7 +232,7 @@ export default function StoreLayout({
             <CartSidebar />
 
             {/* Live Chat Support Widget — toggleable desde OPS > Ajustes */}
-            {supportChatEnabled && showSupportBubble && <ChatWidget />}
+            {supportChatEnabled && <ChatWidget />}
 
             {/* Promo Popup */}
             {promoSettings && <PromoPopup {...promoSettings} />}

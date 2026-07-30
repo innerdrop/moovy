@@ -28,11 +28,14 @@ interface TimeSlot {
 }
 
 const TIME_SLOTS: TimeSlot[] = [
-    { greeting: "Buen día",        subtitle: "¿Qué desayunamos?",    icon: Sunrise },
-    { greeting: "¡Buen provecho!", subtitle: "¿Qué almorzamos hoy?", icon: Sun },
-    { greeting: "Buenas tardes",   subtitle: "¿Se te antoja algo?",  icon: Sun },
-    { greeting: "Buenas noches",   subtitle: "¿Qué cenamos?",        icon: Sunset },
-    { greeting: "Buenas noches",   subtitle: "¿Antojo nocturno?",    icon: Moon },
+    // regla #46: mismas frases que ContextualHero (la fuente principal). Acá no
+    // rotan porque este hero es el de respaldo y se ve poco; lo que importa es
+    // que no den por sentado que el vecino viene a comer.
+    { greeting: "Buen día",        subtitle: "¿Qué necesitás hoy?",              icon: Sunrise },
+    { greeting: "¡Buen provecho!", subtitle: "¿Qué buscás para hoy?",            icon: Sun },
+    { greeting: "Buenas tardes",   subtitle: "¿Te falta algo para hoy?",         icon: Sun },
+    { greeting: "Buenas noches",   subtitle: "¿Qué cenamos?",                    icon: Sunset },
+    { greeting: "Buenas noches",   subtitle: "Lo que esté abierto, te lo llevamos", icon: Moon },
 ];
 
 function getCurrentTimeSlot(): TimeSlot {

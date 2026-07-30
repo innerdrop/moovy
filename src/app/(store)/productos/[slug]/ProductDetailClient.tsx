@@ -313,7 +313,10 @@ export default function ProductDetailClient() {
                 </div>
 
                 {/* Content */}
-                <div className="px-4 pt-4 pb-32">
+                {/* moovy-pad-bar: el colchón sale del mismo token que la barra. Con
+                    un pb-32 fijo, el último bloque quedaba tapado apenas la barra
+                    subía (o apenas el usuario agrandaba la fuente del sistema). */}
+                <div className="px-4 pt-4 moovy-pad-bar">
                     {/* ISSUE-041 + ISSUE-042: chips de categoría + comercio arriba
                         para que el buyer sepa de inmediato de qué tienda es el producto,
                         sin tener que scrollear hasta la merchant card. */}
@@ -486,9 +489,25 @@ export default function ProductDetailClient() {
                     </button>
                 </div>
 
-                {/* ── Fixed bottom bar ── */}
+                {/* ── Barra de acción fija ──
+                    rama feat/barras-flotantes-y-copy · regla #47.
+
+                    ANTES: bottom-16 (64px), escrito a mano. La píldora de navegación
+                    ocupa 74px en el navegador y ~96px en la app instalada, así que
+                    esta barra quedaba PEGADA en el navegador y ESCONDIDA en la app.
+                    Era el bug reportado.
+
+                    AHORA: en esta pantalla la navegación directamente no se muestra
+                    (patrón Rappi/PedidosYa, ver (store)/layout.tsx), así que
+                    --moovy-bar-bottom colapsa al colchón del sistema y la barra se
+                    apoya en el piso. El token sirve igual si algún día volviera a
+                    haber navegación acá. */}
                 {inStock && (
-                    <div className="fixed bottom-16 left-0 right-0 z-30 bg-white border-t border-gray-200 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+                    <div
+                        data-moovy-bar
+                        className="fixed left-0 right-0 z-40 bg-white border-t border-gray-200 px-4 py-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]"
+                        style={{ bottom: "var(--moovy-bar-bottom)" }}
+                    >
                         <div className="flex items-center gap-3">
                             {/* Quantity */}
                             <div className="flex items-center gap-1 bg-gray-100 rounded-xl p-1">

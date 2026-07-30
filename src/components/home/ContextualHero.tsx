@@ -36,71 +36,73 @@ interface ContextualHeroProps {
 interface TimeSlot {
   id: string;
   greeting: string;
-  subtitle: string;
+  /**
+   * Dos frases por franja, que se alternan solas cada 8 segundos.
+   *
+   * feat/barras-flotantes-y-copy · regla #46 (Moovy NO es una app de comida).
+   * Los saludos ("Buen día", "Buenas noches") se quedan: nunca fueron el
+   * problema. Lo que se sacó son las frases que daban por sentado que el vecino
+   * viene a comer. Ahora conviven las dos cosas: una frase abierta a cualquier
+   * rubro y otra más específica del momento.
+   */
+  subtitles: readonly [string, string];
   icon: typeof Sun;
   gradientFrom: string;
   gradientTo: string;
   gradientVia?: string;
   textColor: string;
-  /** Category keywords to prioritize (partial match, case-insensitive) */
-  priorityKeywords: string[];
 }
 
 const TIME_SLOTS: TimeSlot[] = [
   {
     id: "morning",
     greeting: "Buen día",
-    subtitle: "¿Qué desayunamos?",
+    subtitles: ["¿Qué necesitás hoy?", "¿Arrancamos con algo?"],
     icon: Sunrise,
     gradientFrom: "from-amber-100",
     gradientVia: "via-orange-50",
     gradientTo: "to-yellow-50",
     textColor: "text-amber-900",
-    priorityKeywords: ["panadería", "panaderia", "café", "cafe", "cafetería", "cafeteria", "desayuno", "medialunas", "pastelería", "pasteleria"],
   },
   {
     id: "lunch",
     greeting: "¡Buen provecho!",
-    subtitle: "¿Qué almorzamos hoy?",
+    subtitles: ["¿Qué buscás para hoy?", "Pedilo ahora, llega en un rato"],
     icon: Sun,
     gradientFrom: "from-red-50",
     gradientVia: "via-orange-50",
     gradientTo: "to-amber-50",
     textColor: "text-red-900",
-    priorityKeywords: ["restaurante", "comida", "almuerzo", "empanadas", "pizza", "hamburguesa", "sushi", "parrilla", "minutas", "rotisería", "rotiseria"],
   },
   {
     id: "afternoon",
     greeting: "Buenas tardes",
-    subtitle: "¿Se te antoja algo?",
+    subtitles: ["¿Se te antoja algo?", "¿Te falta algo para hoy?"],
     icon: Sun,
     gradientFrom: "from-sky-50",
     gradientVia: "via-blue-50",
     gradientTo: "to-indigo-50",
     textColor: "text-sky-900",
-    priorityKeywords: ["café", "cafe", "cafetería", "cafeteria", "heladería", "heladeria", "panadería", "panaderia", "farmacia", "kiosco"],
   },
   {
     id: "dinner",
     greeting: "Buenas noches",
-    subtitle: "¿Qué cenamos?",
+    subtitles: ["¿Qué cenamos?", "¿Qué te gustaría comer esta noche?"],
     icon: Sunset,
     gradientFrom: "from-violet-100",
     gradientVia: "via-purple-50",
     gradientTo: "to-indigo-50",
     textColor: "text-violet-900",
-    priorityKeywords: ["restaurante", "sushi", "pizza", "hamburguesa", "parrilla", "comida", "empanadas", "minutas", "rotisería", "rotiseria"],
   },
   {
     id: "night",
     greeting: "Buenas noches",
-    subtitle: "¿Antojo nocturno?",
+    subtitles: ["Lo que esté abierto, te lo llevamos", "A esta hora, lo que haya"],
     icon: Moon,
     gradientFrom: "from-slate-800",
     gradientVia: "via-gray-900",
     gradientTo: "to-slate-900",
     textColor: "text-white",
-    priorityKeywords: ["farmacia", "kiosco", "delivery", "24hs", "24 horas"],
   },
 ];
 
@@ -119,6 +121,11 @@ export default function ContextualHero({ merchants, customBackgrounds }: Context
   const [timeSlot, setTimeSlot] = useState<TimeSlot>(getCurrentTimeSlot);
   const [mounted, setMounted] = useState(false);
 
+  // Frase visible dentro de la franja: 0 o 1. Arranca SIEMPRE en 0 para que el
+  // servidor y el cliente pinten lo mismo; la rotación empieza recién acá.
+  const [frase, setFrase] = useState(0);
+  const [fraseVisible, setFraseVisible] = useState(true);
+
   // Update time slot on mount (client-side) and periodically
   useEffect(() => {
     setTimeSlot(getCurrentTimeSlot());
@@ -131,32 +138,57 @@ export default function ContextualHero({ merchants, customBackgrounds }: Context
     return () => clearInterval(interval);
   }, []);
 
-  // Sort merchants: prioritize open ones matching the current time slot keywords
-  const sortedMerchants = useMemo(() => {
-    const keywords = timeSlot.priorityKeywords;
+  // Rotación de la frase: se apaga, cambia, se prende.
+  // Solo opacidad — nada de transform ni de fill:forwards (regla #12: dejaba el
+  // texto borroso en pantallas de DPI fraccional, que son casi todos los Android
+  // de gama media). Con "reducir movimiento" activado la clase
+  // motion-reduce:transition-none hace que el cambio sea instantáneo.
+  useEffect(() => {
+    // Al cambiar de franja horaria, volver a la primera frase.
+    setFrase(0);
+    setFraseVisible(true);
+  }, [timeSlot.id]);
 
+  useEffect(() => {
+    let apagar: ReturnType<typeof setTimeout>;
+
+    const ciclo = setInterval(() => {
+      setFraseVisible(false);
+      apagar = setTimeout(() => {
+        setFrase((f) => (f === 0 ? 1 : 0));
+        setFraseVisible(true);
+      }, 300); // igual que la duración de la transición
+    }, 8_000);
+
+    return () => {
+      clearInterval(ciclo);
+      clearTimeout(apagar);
+    };
+  }, []);
+
+  // Orden de los comercios sugeridos.
+  //
+  // ANTES: cada franja horaria tenía una lista de palabras gastronómicas
+  // ("pizza", "sushi", "parrilla", "rotisería"...) y el que coincidía subía 50
+  // puntos. Una ferretería no tiene ninguna de esas palabras, así que quedaba
+  // última a cualquier hora del día — en una app que vende de todo (regla #46).
+  //
+  // AHORA: abiertos primero, después mejor puntuados, después los que llegan
+  // más rápido. Sin ningún rubro escrito a mano. Es más justo y no hay listas
+  // que mantener.
+  const sortedMerchants = useMemo(() => {
     const scored = merchants.map((m) => {
       let score = 0;
-      // Open merchants get a big boost
       if (m.isOpen) score += 100;
-      // Matching category gets a boost
-      const cat = (m.category || "").toLowerCase();
-      const name = (m.name || "").toLowerCase();
-      for (const kw of keywords) {
-        if (cat.includes(kw) || name.includes(kw)) {
-          score += 50;
-          break;
-        }
-      }
-      // Higher rated merchants get a small boost
-      if (m.rating) score += m.rating * 2;
-
+      if (m.rating) score += m.rating * 4;
+      // menos demora = un poco más arriba (máximo ~10 puntos)
+      score += Math.max(0, 10 - m.deliveryTimeMin / 10);
       return { merchant: m, score };
     });
 
     scored.sort((a, b) => b.score - a.score);
     return scored.map((s) => s.merchant).slice(0, 4);
-  }, [merchants, timeSlot]);
+  }, [merchants]);
 
   const Icon = timeSlot.icon;
   const isNight = timeSlot.id === "night";
@@ -203,8 +235,14 @@ export default function ContextualHero({ merchants, customBackgrounds }: Context
             {timeSlot.greeting}
           </h1>
         </div>
-        <p className={`text-lg lg:text-2xl font-semibold mb-6 lg:mb-8 ${isNight ? "text-gray-300" : "text-gray-600"}`}>
-          {timeSlot.subtitle}
+        {/* min-h fija: sin esto, una frase de dos líneas empuja los comercios
+            hacia abajo cada 8 segundos y la pantalla "salta". */}
+        <p
+          aria-live="polite"
+          className={`text-lg lg:text-2xl font-semibold mb-6 lg:mb-8 min-h-[1.75rem] lg:min-h-[2.25rem] transition-opacity duration-300 motion-reduce:transition-none ${fraseVisible ? "opacity-100" : "opacity-0"
+            } ${isNight ? "text-gray-300" : "text-gray-600"}`}
+        >
+          {timeSlot.subtitles[frase]}
         </p>
 
         {/* Merchant suggestions for this moment */}

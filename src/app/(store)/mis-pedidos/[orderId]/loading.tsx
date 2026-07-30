@@ -66,8 +66,13 @@ export default function OrderDetailLoading() {
                 </div>
             </div>
 
-            {/* Bottom bar */}
-            <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 p-4">
+            {/* Bottom bar — misma posición que la barra real, para que no salte
+                al terminar de cargar. */}
+            <div
+                data-moovy-bar
+                className="fixed left-0 right-0 z-40 bg-white border-t border-gray-100 p-4"
+                style={{ bottom: "var(--moovy-bar-bottom)" }}
+            >
                 <div className="container mx-auto">
                     <div className="h-12 w-full bg-gray-100 rounded-xl animate-pulse" />
                 </div>

@@ -252,7 +252,17 @@ export default function OpsSidebar({ userName }: OpsSidebarProps) {
             </div>
 
             {/* Mobile Bottom Navigation */}
-            <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900 border-t border-slate-800">
+            {/* rama feat/barras-flotantes-y-copy: esta navegación no tenía NINGÚN
+                colchón inferior. Con viewport-fit=cover y Chrome 135+, la fila de
+                botones cae debajo de la barra de gestos de Android y el sistema se
+                come el toque. El padding va DENTRO del <nav> (no como offset) para
+                que el fondo oscuro siga llegando al borde físico de la pantalla y no
+                aparezca una franja clara: es el patrón correcto de edge-to-edge. */}
+            <nav
+                data-moovy-nav
+                className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-slate-900 border-t border-slate-800"
+                style={{ paddingBottom: "max(12px, env(safe-area-inset-bottom, 0px))" }}
+            >
                 <div className="flex items-center justify-around py-2">
                     {mobileNavItems.map((item) => (
                         <Link

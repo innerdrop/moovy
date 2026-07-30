@@ -24,9 +24,14 @@ function RiderBottomNavInner({ activeTab, onTabChange, unreadSupport = 0 }: Ride
     const isDark = useColorScheme() === "dark";
     return (
         <nav
+            data-moovy-nav
             className="fixed bottom-0 left-0 right-0 z-[70]"
             style={{
-                paddingBottom: "env(safe-area-inset-bottom, 0px)",
+                // Piso de 12px: en Android env(safe-area-inset-bottom) vale 0 (y en
+                // TODA PWA instalada en Android también), así que sin el max() la
+                // fila de pestañas queda donde el sistema dibuja la barra de gestos
+                // y se come el toque. El repartidor usa esto ocho horas por día.
+                paddingBottom: "max(12px, env(safe-area-inset-bottom, 0px))",
             }}
         >
             {/* Glassmorphism background */}

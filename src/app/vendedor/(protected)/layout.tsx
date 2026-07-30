@@ -42,7 +42,10 @@ export default async function VendedorLayout({ children }: { children: React.Rea
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
+        // data-moovy-zone: esta navegación NO es una píldora flotante como la del
+        // comprador y la del comercio — está apoyada en el piso y ocupa todo el
+        // ancho. Por eso tiene su propio bloque de tokens en globals.css.
+        <div data-moovy-zone="vendedor" className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
             {/* Desktop Sidebar */}
             <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
                 <div className="p-6 border-b border-gray-100">
@@ -121,12 +124,12 @@ export default async function VendedorLayout({ children }: { children: React.Rea
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 p-4 pb-20 lg:p-8 overflow-y-auto">
+            <main className="flex-1 p-4 lg:p-8 overflow-y-auto moovy-pad-nav lg:[padding-bottom:2rem]">
                 {children}
             </main>
 
             {/* Mobile Bottom Navigation — 4 main items + More menu */}
-            <nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
+            <nav data-moovy-nav className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-100 shadow-[0_-4px_20px_rgba(0,0,0,0.08)]">
                 <div className="flex items-center justify-between h-16 px-2 max-w-md mx-auto relative text-center">
                     {navItems.slice(0, 4).map((item) => (
                         <Link
@@ -143,8 +146,13 @@ export default async function VendedorLayout({ children }: { children: React.Rea
                     {/* More menu for remaining items (Reseñas, Soporte, Configuración) */}
                     <SellerMobileMoreMenu />
                 </div>
-                {/* Safe area padding for iPhones with notch */}
-                <div className="h-[env(safe-area-inset-bottom)] bg-white" />
+                {/* Colchón inferior.
+                    ANTES: h-[env(safe-area-inset-bottom)], que en Android colapsa a
+                    0 — y ahí la fila de botones queda justo donde el sistema dibuja
+                    la barra de gestos: Android se come el toque y el usuario manda
+                    la app al fondo en vez de cambiar de pestaña. Ahora hay un piso
+                    garantizado de 12px, igual que en la píldora del comprador. */}
+                <div className="bg-white" style={{ height: "max(12px, env(safe-area-inset-bottom, 0px))" }} />
             </nav>
 
             {/* PWA install tutorial — crítico en iOS para recibir push notifications. */}

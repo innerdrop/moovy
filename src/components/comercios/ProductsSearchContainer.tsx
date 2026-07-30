@@ -478,9 +478,21 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
                 </div>
             )}
 
-            {/* Barra de acciones en lote — flotante, aparece con ≥1 seleccionado. */}
+            {/* Barra de acciones en lote — flotante, aparece con ≥1 seleccionado.
+
+                feat/barras-flotantes-y-copy: el "md:bottom-6" que había acá era un
+                bug real y silencioso. La navegación del panel es lg:hidden, o sea
+                que SE VE hasta 1024px — pero md arranca en 768px, así que entre 768
+                y 1024 (tablets Android baratas, plegables abiertos) esta barra se
+                metía a 24px del piso, justo debajo de la navegación. El token no usa
+                breakpoints propios: el corte de escritorio ya vive en globals.css,
+                con la misma consulta que emite Tailwind 4 para lg. */}
             {selectedCount > 0 && (
-                <div className="fixed left-0 right-0 bottom-16 md:bottom-6 z-40 px-3 sm:px-4 pointer-events-none">
+                <div
+                    data-moovy-bar
+                    className="fixed left-0 right-0 z-40 px-3 sm:px-4 pointer-events-none"
+                    style={{ bottom: "var(--moovy-bar-bottom)" }}
+                >
                     <div className="max-w-3xl mx-auto pointer-events-auto bg-white border border-gray-200 rounded-2xl shadow-2xl p-2.5 sm:p-3 flex items-center gap-2 overflow-x-auto">
                         <span className="text-sm font-black text-gray-900 whitespace-nowrap px-2">{selectedCount} sel.</span>
                         <div className="h-6 w-px bg-gray-200 flex-shrink-0" />
@@ -591,12 +603,14 @@ export default function ProductsSearchContainer({ initialProducts, categories = 
                 </div>
             )}
 
-            {/* Volver arriba */}
+            {/* Volver arriba — mismo criterio que la barra de lote: el offset sale
+                del token, no de un bottom-24 + md:bottom-8 escritos a mano. */}
             {showTop && (
                 <button
                     onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
                     title="Volver arriba"
-                    className="fixed bottom-24 right-4 md:bottom-8 md:right-8 z-40 w-12 h-12 rounded-full bg-blue-600 text-white shadow-xl flex items-center justify-center hover:bg-blue-700 active:scale-95 transition"
+                    className="fixed right-4 md:right-8 z-40 w-12 h-12 rounded-full bg-blue-600 text-white shadow-xl flex items-center justify-center hover:bg-blue-700 active:scale-95 transition"
+                    style={{ bottom: "var(--moovy-bar-bottom)" }}
                 >
                     <ArrowUp className="w-5 h-5" />
                 </button>

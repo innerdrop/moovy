@@ -432,13 +432,21 @@ export default function EditProductForm({ product, categories, sizeOptions, comm
                 </div>
 
                 {/* feat/comercio-ux-guardar-y-totales (2026-05-13): banner
-                    flotante sticky abajo. Aparece solo cuando isDirty (algun
-                    campo modificado vs estado inicial). Se posiciona arriba
-                    del BottomNav del layout del comercio. pb-safe para iOS
-                    bottom inset. z-30 lo deja arriba del contenido pero abajo
-                    de modales (que son z-50+). */}
+                    flotante abajo. Aparece solo cuando isDirty (algún campo
+                    modificado vs estado inicial).
+                    feat/barras-flotantes-y-copy (regla #47): la altura sale de
+                    --moovy-bar-bottom, NO de un bottom-16 escrito a mano — ese
+                    número dejaba el banner tapado por la navegación del panel en
+                    la app instalada. z-40 lo deja arriba del contenido y abajo de
+                    los modales (z-50+). La animación es solo opacidad: un
+                    slide-in deja un transform residual que vuelve borroso el texto
+                    en pantallas de DPI fraccional (regla #12). */}
                 {isDirty && (
-                    <div className="fixed left-0 right-0 bottom-16 z-30 px-3 sm:px-4 pb-2 pointer-events-none animate-in slide-in-from-bottom-2 duration-200">
+                    <div
+                        data-moovy-bar
+                        className="fixed left-0 right-0 z-40 px-3 sm:px-4 pointer-events-none animate-in fade-in duration-200"
+                        style={{ bottom: "var(--moovy-bar-bottom)" }}
+                    >
                         <div className="max-w-2xl mx-auto pointer-events-auto bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
                             <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
                             <p className="text-xs sm:text-sm font-semibold text-gray-700 flex-1 min-w-0 truncate">

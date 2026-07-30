@@ -1,9 +1,10 @@
 "use client";
 
 // Bottom Navigation Component - Navegación optimizada para venta
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useNavPeak } from "@/lib/useNavPeak";
 import {
     Home,
     Store,
@@ -23,6 +24,12 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
     const closeCart = useCartStore((state) => state.closeCart);
 
     const [showAuthModal, setShowAuthModal] = useState(false);
+
+    // rama feat/barras-flotantes-y-copy: mide el alto visual real de la píldora
+    // (incluyendo el botón MOOVER, que sobresale por arriba) y lo publica para
+    // que las barras de acción sepan a qué altura ponerse. Ver useNavPeak.
+    const navRef = useRef<HTMLElement>(null);
+    useNavPeak(navRef);
 
     // Rama fix/restaurar-moover-y-marketplace-sin-flags (2026-05-17):
     // Marketplace y MOOVER ahora son SIEMPRE visibles. Antes estaban
@@ -73,8 +80,19 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
         <>
             {/* feat/rediseno-home: barra inferior como píldora flotante */}
             <nav
-                className="fixed left-1/2 -translate-x-1/2 z-50 w-[calc(100%-24px)] max-w-[388px] bg-white/90 backdrop-blur-md border border-[#f0ece9] rounded-full shadow-[0_10px_32px_rgba(30,10,5,0.16)] lg:hidden"
-                style={{ bottom: 'max(12px, env(safe-area-inset-bottom))' }}
+                ref={navRef}
+                data-moovy-nav
+                className="fixed left-1/2 -translate-x-1/2 z-50 max-w-[388px] bg-white/90 backdrop-blur-md border border-[#f0ece9] rounded-full shadow-[0_10px_32px_rgba(30,10,5,0.16)] lg:hidden"
+                style={{
+                    // Mismo token que las barras de acción, a propósito: si el
+                    // colchón del sistema se mueve (Chrome 135+ lo hace al
+                    // scrollear), se mueven las dos juntas y nunca se pisan.
+                    bottom: 'var(--moovy-nav-offset)',
+                    // El ancho también respeta los insets laterales: en horizontal
+                    // con notch, izquierdo/derecho pasan a valer 44-47px y la
+                    // píldora se metía debajo del recorte de la cámara.
+                    width: 'calc(100% - 24px - var(--moovy-sal) - var(--moovy-sar))',
+                }}
             >
                 <div className="flex items-center justify-between h-[62px] relative px-2.5">
                     {items.map((item) => {
@@ -89,6 +107,12 @@ export default function BottomNav({ isLoggedIn = false }: BottomNavProps) {
                                     <Link
                                         href={item.href}
                                         onClick={(e) => handleNavClick(e, item)}
+                                        // data-nav-peak: le avisa a useNavPeak que ESTE hijo
+                                        // sobresale por encima de la caja de la píldora
+                                        // (-top-3). Sin esta marca, la medición daría el alto
+                                        // de la píldora y las barras le pasarían por encima al
+                                        // botón rojo — que es exactamente el bug reportado.
+                                        data-nav-peak
                                         className="relative -top-3 flex flex-col items-center group active:scale-95 transition-transform duration-150"
                                     >
                                         <div

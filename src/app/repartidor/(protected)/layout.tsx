@@ -17,7 +17,13 @@ export default async function RepartidorProtectedLayout({ children }: { children
         <MobileOnlyGuard mode="block" portalName="Repartidor">
             {/* Aplica el tema del driver al montarse (fix persistencia 2026-04-24). */}
             <RiderPrefsInitializer />
-            {children}
+            {/* data-moovy-zone: tokens de la barra inferior del repartidor
+                (globals.css). Hoy el repartidor no tiene barras de acción flotantes,
+                pero queda definido para que la próxima nazca bien en vez de
+                heredar el offset del comprador, que es más alto. */}
+            <div data-moovy-zone="repartidor" className="contents">
+                {children}
+            </div>
             {/* PWA install tutorial — crítico en iOS porque sin instalar la app no hay push. */}
             <PWAInstallPrompt />
         </MobileOnlyGuard>

@@ -292,11 +292,18 @@ export default function EditListingForm({ listing, categories }: EditListingForm
                         </button>
                     </div>
 
-                    {/* s4-4c-01: banner flotante "cambios sin guardar". bottom-16
-                        para no chocar con el BottomNav mobile del layout vendedor
-                        (z-50); z-30 queda abajo de modales. */}
+                    {/* s4-4c-01: banner flotante "cambios sin guardar".
+                        feat/barras-flotantes-y-copy (regla #47): usa
+                        --moovy-bar-bottom. OJO: la navegación del panel del
+                        VENDEDOR no es la píldora flotante del comprador — está
+                        apoyada en el piso y mide distinto. El token de la zona
+                        "vendedor" ya lo contempla; el viejo bottom-16 no. */}
                     {isDirty && (
-                        <div className="fixed left-0 right-0 bottom-16 z-30 px-3 sm:px-4 pb-2 pointer-events-none animate-in slide-in-from-bottom-2 duration-200">
+                        <div
+                            data-moovy-bar
+                            className="fixed left-0 right-0 z-40 px-3 sm:px-4 pointer-events-none animate-in fade-in duration-200"
+                            style={{ bottom: "var(--moovy-bar-bottom)" }}
+                        >
                             <div className="max-w-2xl mx-auto pointer-events-auto bg-white border border-gray-200 rounded-2xl shadow-2xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
                                 <div className="w-2 h-2 rounded-full bg-amber-400 flex-shrink-0 animate-pulse" />
                                 <p className="text-xs sm:text-sm font-semibold text-gray-700 flex-1 min-w-0 truncate">

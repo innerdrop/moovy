@@ -615,14 +615,21 @@ export default function StoreProfileClient({
 
             {/* ── Barra "Ver mi pedido": acceso al carrito dentro de la tienda ──
                 fix/comercio-pausa-stock-y-ajustes (founder 07-27): "la barra del
-                carrito queda pegada a la barra de navegación". bottom-24 (96px)
-                coincidía EXACTO con el techo de la nav en iPhone (34 de gesto + 62
-                de alto). Ahora se apoya en la misma fórmula que la nav + 10px de
-                respiro, así nunca se tocan en ningún teléfono. */}
+                carrito queda pegada a la barra de navegación".
+
+                Esa vez se arregló a mano con "+ 72px" y quedó MAL igual: 72 sale de
+                sumar los 62px de la caja de la píldora, pero el botón MOOVER
+                sobresale por encima de la caja (-top-3), así que el hueco real era
+                de un par de píxeles, no de 10. Y el mismo número mal calculado se
+                copió al FloatingCartButton.
+                feat/barras-flotantes-y-copy (regla #47): el número ya no se calcula
+                acá — useNavPeak mide la píldora en el dispositivo y publica el
+                resultado en --moovy-bar-bottom. */}
             {cartCount > 0 && (
                 <div
-                    className="fixed inset-x-0 z-40 px-4 pointer-events-none lg:bottom-6"
-                    style={{ bottom: "calc(max(12px, env(safe-area-inset-bottom)) + 72px)" }}
+                    data-moovy-bar
+                    className="fixed inset-x-0 z-40 px-4 pointer-events-none"
+                    style={{ bottom: "var(--moovy-bar-bottom)" }}
                 >
                     <button
                         type="button"

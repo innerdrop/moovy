@@ -11,6 +11,7 @@ import UploadImage from "@/components/ui/UploadImage";
 import UserAvatarMenu from "@/components/layout/UserAvatarMenu";
 import LocationAddressButton from "@/components/layout/LocationAddressButton";
 import PointsBalanceChip from "@/components/layout/PointsBalanceChip";
+import { usePlaceholderBuscador } from "@/lib/usePlaceholderBuscador";
 
 interface AppHeaderProps {
     isLoggedIn?: boolean;
@@ -31,6 +32,10 @@ export default function AppHeader({
     cartCount = 0,
     userName,
 }: AppHeaderProps) {
+    // regla #46: mismo placeholder rotativo que el buscador del home, para que
+    // el vecino vea "tornillos" o "ibuprofeno" y entienda solo que acá se vende
+    // de todo, no solo comida.
+    const ejemplo = usePlaceholderBuscador();
     const openCart = useCartStore((state) => state.openCart);
     const items = useCartStore((state) => state.items);
     const actualCartCount = cartCount || items.length;
@@ -317,7 +322,7 @@ export default function AppHeader({
                                 value={searchQuery}
                                 onChange={(e) => handleSearchInputChange(e.target.value)}
                                 onFocus={() => { if (suggestions.length > 0) setShowResults(true); }}
-                                placeholder="Buscar productos, comercios..."
+                                placeholder={`Buscá "${ejemplo}"`}
                                 tabIndex={0}
                                 className="w-full pl-10 pr-4 py-2.5 bg-gray-100 border border-gray-200 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 focus:border-[#e60012] transition placeholder:text-gray-400"
                             />
@@ -520,7 +525,7 @@ export default function AppHeader({
                                 autoFocus
                                 value={searchQuery}
                                 onChange={(e) => handleSearchInputChange(e.target.value)}
-                                placeholder="Buscar productos, comercios..."
+                                placeholder={`Buscá "${ejemplo}"`}
                                 className="w-full pl-10 pr-9 py-2.5 bg-gray-100 rounded-full text-base focus:outline-none focus:ring-2 focus:ring-[#e60012]/30 transition placeholder:text-gray-400"
                             />
                             {/* X inside input — clears text only */}

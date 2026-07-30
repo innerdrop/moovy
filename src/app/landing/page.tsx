@@ -456,7 +456,7 @@ export default function LandingPage() {
                                         </div>
 
                                         <p className="text-gray-600 mb-4 max-w-2xl">
-                                            Explorá cientos de comercios locales, restaurantes y farmacias. Cada compra suma puntos que podés canjear por descuentos exclusivos.
+                                            Explorá los comercios de Ushuaia: kioscos, farmacias, ferreterías, ropa, librerías, comida y más. Cada compra suma puntos que podés canjear por descuentos exclusivos.
                                         </p>
 
                                         <div className="flex items-center gap-3 mb-4">

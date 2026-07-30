@@ -25,11 +25,14 @@ export default function FloatingCartButton() {
 
     return (
         <div
-            className="fixed left-4 right-4 max-w-lg mx-auto z-[55]"
-            /* Misma fórmula que la barra de navegación (max(12px, safe) + 62 de
-               alto) + 10px de aire — antes el margin-bottom apilaba el inset dos
-               veces y el resultado bailaba según el teléfono. */
-            style={{ bottom: 'calc(max(12px, env(safe-area-inset-bottom)) + 72px)' }}
+            data-moovy-bar
+            className="fixed left-4 right-4 max-w-lg mx-auto z-40"
+            /* feat/barras-flotantes-y-copy (regla #47): antes tenía el "+ 72px"
+               copiado de StoreProfileClient — y ese 72 estaba mal, porque no
+               contaba el voladizo del botón MOOVER. Ahora sale del token medido.
+               z-[55] bajó a z-40: estaba entre la navegación (z-50) y los modales
+               (z-60), un escalón inventado que no respetaba nadie más. */
+            style={{ bottom: 'var(--moovy-bar-bottom)' }}
         >
             <div className="relative">
                 {/* Dismiss button */}

@@ -91,7 +91,11 @@ export default async function ComerciosLayout({ children }: { children: React.Re
     ];
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
+        // data-moovy-zone: acá viven los tokens de la barra inferior del panel del
+        // comercio (globals.css). Esta navegación NO tiene botón sobresaliente, así
+        // que el valor por defecto del CSS (64px = 62 de contenido + 2 de borde) ya
+        // es exacto y no hace falta medirla en runtime.
+        <div data-moovy-zone="comercio" className="min-h-screen bg-gray-50 flex flex-col lg:flex-row">
             {/* Desktop Sidebar */}
             <aside className="hidden lg:flex flex-col w-64 bg-white border-r border-gray-200 h-screen sticky top-0">
                 <div className="p-6 border-b border-gray-100">
@@ -189,14 +193,23 @@ export default async function ComerciosLayout({ children }: { children: React.Re
             </header>
 
             {/* Main Content */}
-            <main className="flex-1 p-4 pb-28 lg:p-8 overflow-y-auto">
+            <main className="flex-1 p-4 lg:p-8 overflow-y-auto moovy-pad-nav lg:[padding-bottom:2rem]">
                 <SetupProgressBanner />
                 {children}
             </main>
 
             {/* Mobile Bottom Navigation — barra FLOTANTE redondeada (mismo lenguaje
                 que la tienda pública): despegada de los bordes, blur y sombra. */}
-            <nav className="lg:hidden fixed left-3 right-3 z-50 w-auto rounded-[24px] border border-gray-200 bg-white shadow-[0_8px_28px_rgba(17,24,39,0.16)]" style={{ bottom: "max(12px, env(safe-area-inset-bottom))" }}>
+            <nav
+                data-moovy-nav
+                className="lg:hidden fixed z-50 w-auto rounded-[24px] border border-gray-200 bg-white shadow-[0_8px_28px_rgba(17,24,39,0.16)]"
+                style={{
+                    bottom: "var(--moovy-nav-offset)",
+                    // insets laterales: en horizontal con notch valen 44-47px
+                    left: "calc(12px + var(--moovy-sal))",
+                    right: "calc(12px + var(--moovy-sar))",
+                }}
+            >
                 <div className="flex items-center justify-between h-[62px] px-2 max-w-md mx-auto relative text-center">
                     {navItems.slice(0, 4).map((item) => (
                         <Link

@@ -52,7 +52,7 @@ export default function CarritoPage() {
             </header>
 
             {/* Items grouped by vendor */}
-            <div className="p-4 pb-40 space-y-4">
+            <div className="p-4 space-y-4 moovy-pad-bar">
                 {groups.length > 1 && (
                     <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 flex items-center gap-2 text-sm text-blue-800">
                         <Store className="w-4 h-4 flex-shrink-0" />
@@ -112,8 +112,16 @@ export default function CarritoPage() {
                 ))}
             </div>
 
-            {/* Fixed Bottom Checkout Bar */}
-            <div className="fixed bottom-16 left-0 right-0 bg-white border-t shadow-lg p-4 safe-area-bottom">
+            {/* Barra fija de checkout — rama feat/barras-flotantes-y-copy.
+                ANTES: bottom-16 escrito a mano + safe-area-bottom, que sumaba el
+                colchón DOS veces cuando había notch. Ahora la navegación no se
+                muestra en esta pantalla (patrón Rappi/PedidosYa) y el token la
+                apoya en el piso con un solo colchón. */}
+            <div
+                data-moovy-bar
+                className="fixed left-0 right-0 z-40 bg-white border-t shadow-lg p-4"
+                style={{ bottom: "var(--moovy-bar-bottom)" }}
+            >
                 <div className="flex items-center justify-between mb-3">
                     <div>
                         <p className="text-base text-gray-500">Total</p>

@@ -673,7 +673,7 @@ export default function ProfileView({ onBack }: ProfileViewProps) {
                                     <label className="flex items-center justify-between gap-3 cursor-pointer">
                                         <span className="text-sm text-gray-700 dark:text-gray-200">
                                             🔥 Bolsa termica
-                                            <span className="block text-xs text-gray-400">Para recibir pedidos de comida caliente</span>
+                                            <span className="block text-xs text-gray-400">Para poder llevar pedidos que necesitan mantener la temperatura</span>
                                         </span>
                                         <input
                                             type="checkbox"

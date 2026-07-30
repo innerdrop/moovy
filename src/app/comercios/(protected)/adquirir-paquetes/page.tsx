@@ -590,9 +590,20 @@ function PackageCatalogPageInner() {
                     </div>
                 )}
 
-                {/* Sticky cart bar */}
+                {/* Barra de carrito — feat/barras-flotantes-y-copy.
+                    ANTES: bottom-0 + z-50, o sea empatada con la navegación del
+                    panel (también z-50) y tapándola. Ahora esquiva la navegación con
+                    el token y baja a z-40, que es el escalón de las barras de acción
+                    (navegación z-50, modales z-60+).
+                    La animación pasa a ser solo opacidad: el slide-in deja un
+                    transform residual que vuelve borroso el texto en pantallas de
+                    DPI fraccional — Galaxy A (2,625) y Redmi Note (2,75) (regla #12). */}
                 {cart.length > 0 && (
-                    <div className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-slate-200 shadow-2xl p-4 animate-in slide-in-from-bottom duration-300">
+                    <div
+                        data-moovy-bar
+                        className="fixed left-0 right-0 z-40 bg-white border-t border-slate-200 shadow-2xl p-4 animate-in fade-in duration-300"
+                        style={{ bottom: "var(--moovy-bar-bottom)" }}
+                    >
                         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
                                 <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white font-black text-lg">

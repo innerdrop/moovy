@@ -4,17 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev -H 0.0.0.0",
-    "prebuild": "node scripts/generate-sw-version.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "check:parse": "node scripts/parse-check.mjs",
+    "check:barras": "node scripts/check-barras.mjs",
+    "db:extensiones": "node scripts/db-extensiones.mjs",
     "seed": "npx tsx prisma/seed.ts",
     "socket": "npx tsx scripts/socket-server.ts",
     "dev:full": "concurrently \"npm run dev\" \"npm run socket\"",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "check:parse": "node scripts/parse-check.mjs",
-    "db:extensiones": "node scripts/db-extensiones.mjs"
+    "test:watch": "vitest"
   },
   "prisma": {
     "seed": "npx tsx prisma/seed.ts"
@@ -32,7 +32,6 @@
     "@types/nodemailer": "^7.0.5",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.2.4",
-    "heic-to": "^1.5.2",
     "ioredis": "^5.10.1",
     "isomorphic-dompurify": "^2.35.0",
     "lucide-react": "^0.562.0",
