@@ -3988,9 +3988,18 @@ cmrc815za00vz75y6rc7y8yp4	GUMMY FOOTBALLS	gummy-footballs-dezq1o	\N	cmqz5vswb006
 cmrc815za00w075y6m9hlmp3y	QUESO CREMOSO X KG	queso-cremoso-x-kg-6o4wwb	\N	cmqz5vswb006uxhd8c5bcq86n	11200	0	0	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	222	\N	\N
 cmrc815za00w175y66intntie	CREMA DELTAL COLGATE 180G	crema-deltal-colgate-180g-35ukwa	\N	cmqz5vswb006uxhd8c5bcq86n	8960	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	7509546686509	\N	\N
 cmrc815za00w275y610dvv25m	REXONA INVISIBLE	rexona-invisible-ebh65r	\N	cmqz5vswb006uxhd8c5bcq86n	5600	0	2	5	f	f	\N	\N	\N	2026-07-08 15:16:58.617	2026-07-08 15:16:58.617	\N	\N	\N	78944794	\N	\N
+cmsbxcj2x0002id73kxfb08v6	COCA COLA 2.5L	coca-cola-2-5l-kh0lib	\N	cmrzdt1mo0004wkbfvcf93fr6	8400	5880	9	5	f	f	\N	\N	\N	2026-08-02 14:57:35.384	2026-08-02 14:58:27.783	\N	\N	\N	7790895005794	7500	12
+cmsbxcj2x0004id7356bkhgrr	LAYS CLASICAS 85G	lays-clasicas-85g-jbnd9x	\N	cmrzdt1mo0004wkbfvcf93fr6	6720	0	6	5	f	f	\N	\N	\N	2026-08-02 14:57:35.384	2026-08-02 15:22:31.959	\N	\N	\N	7790310985458	6000	12
+cmsbxcj2x0005id73nbfiphhs	CEPITA TETRA 1L	cepita-tetra-1l-9mo7xk	\N	cmrzdt1mo0004wkbfvcf93fr6	5264	0	12	5	f	f	\N	\N	\N	2026-08-02 14:57:35.384	2026-08-02 15:22:31.978	\N	\N	\N	7790895646560	4700	12
 cmqz5vsxo007sxhd8av6s1rmm	Cerveza Artesanal Pinta	pinta-artesanal	Pinta de cerveza artesanal local.	cmqz5vswb006uxhd8c5bcq86n	3990	2793	24	5	f	f	\N	\N	\N	2026-06-29 11:55:48.924	2026-07-09 20:18:15.794	\N	\N	\N	\N	3800	5
 cmrzefd0n000cwkbfw992t2a7	Hepatalgina	hepatalgina-1784925280667	ANalgesico estomacal	cmrzdt1mo0004wkbfvcf93fr6	3000	2100	1	5	t	f	\N	\N	\N	2026-07-24 20:34:40.677	2026-07-28 16:48:20.898	cmqz5vr1f0014xhd83erjqolw	250	300	\N	\N	\N
 cms4warv90009tz6p2q48jgac	Hepatalgina	hepatalgina-1785257630604	Para el dolor de cabeza 	cmqz5vt6v0084xhd80bepwszu	2800	1960	10	5	t	f	\N	\N	\N	2026-07-28 16:53:50.613	2026-07-28 16:53:50.613	cmqz5vr1f0014xhd83erjqolw	250	300	\N	\N	\N
+cmsbxcj2x0003id73vq7ijmkg	COCA LATA	coca-lata-84s1nm	\N	cmrzdt1mo0004wkbfvcf93fr6	2464	0	24	5	f	f	\N	\N	\N	2026-08-02 14:57:35.384	2026-08-02 14:57:35.384	\N	\N	\N	7790895000232	2200	12
+cmsbxcj2x0006id731phx08b6	PALETA BROLA	paleta-brola-6g5xc5	\N	cmrzdt1mo0004wkbfvcf93fr6	5600	0	3	5	f	f	\N	\N	\N	2026-08-02 14:57:35.384	2026-08-02 14:57:35.384	\N	\N	\N	0731299172139	5000	12
+cmsbxcj2x0007id73u0p7szee	PRE PIZZA	pre-pizza-t5cvem	\N	cmrzdt1mo0004wkbfvcf93fr6	3360	0	5	5	f	f	\N	\N	\N	2026-08-02 14:57:35.384	2026-08-02 14:57:35.384	\N	\N	\N	7790000000055	3000	12
+cmsbxcj2x0008id73zcgc2wo2	FERNET 750	fernet-750-0hq6vz	\N	cmrzdt1mo0004wkbfvcf93fr6	8960	0	7	5	f	f	\N	\N	\N	2026-08-02 14:57:35.384	2026-08-02 14:57:35.384	\N	\N	\N	7790000000066	8000	12
+cmsby8lv200007ld8qwlhd381	PRODUCTO NUEVO DE PRUEBA	producto-nuevo-de-prueba-b08sxt	\N	cmrzdt1mo0004wkbfvcf93fr6	1120	0	0	5	f	f	\N	\N	\N	2026-08-02 15:22:31.982	2026-08-02 15:22:31.982	\N	\N	\N	7790000000077	1000	12
+cmsby8lv300017ld8q68zup3f	PRE PIZZA	pre-pizza-1ugtz5	\N	cmrzdt1mo0004wkbfvcf93fr6	3584	0	0	5	f	f	\N	\N	\N	2026-08-02 15:22:31.982	2026-08-02 15:22:31.982	\N	\N	\N	7790000000088	3200	12
 \.
 
 
@@ -4108,6 +4117,7 @@ cmrcpsqjg00037nue72igl8ba	cmrc815yy00m975y6k0lurue0	https://pub-8e9cd8ba192646df
 cmrdy8h4000007adlg3vj1o47	cmqz5vsxo007sxhd8av6s1rmm	https://picsum.photos/seed/moovy-pinta-artesanal/600/600	Cerveza Artesanal Pinta	0
 cms4w3pgw0003tz6psl8xxadu	cmrzefd0n000cwkbfw992t2a7	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785012370172-hepatalgina-en-gotas-x-120-ml-digestivo.webp	Hepatalgina	0
 cms4warv9000atz6p7ycdstgy	cms4warv90009tz6p2q48jgac	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785257593034-IMG_2250.webp	Hepatalgina	0
+cmsbxdnj20009id73fdrsn1ql	cmsbxcj2x0002id73kxfb08v6	https://pub-8e9cd8ba192646df98fa6e7adf48e70d.r2.dev/products/1785682692979-prod_coca250.webp	COCA COLA 2.5L	0
 \.
 
 
@@ -4281,7 +4291,7 @@ cmqz5vsvy006nxhd8cea1yx8k	comercio5@somosmoovy.com	$2b$12$MvXMTxOTp5U2ujTaqygif.
 cmqz5vwo300g5xhd8ok66ryk2	cliente2@somosmoovy.com	$2b$12$9TQLXmAHdwsUyp76bGzOIuvt4C7CsmL.3ESB7Zwi233KqW5.aluKe	Pedro Comprador	\N	\N	\N	USER	\N	\N	0	0	f	cmqz5vwo300g6xhd8fo4i2nby	\N	2026-06-29 11:55:53.763	2026-07-26 21:49:51.903	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-06 23:32:32.921	\N
 cmqz5vqsx0000xhd86fq6wm5d	admin@somosmoovy.com	$2b$12$HFVjzgO.i0.sicgFCjfO..bH.EvNWZ82KtvUPoDfVJXaAyWqN.GF2	Admin MOOVY	Admin	MOOVY	\N	ADMIN	\N	\N	0	0	f	cmqz5vqsy0001xhd8ezz8nqma	\N	2026-06-29 11:55:46.16	2026-07-31 00:08:09.69	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-11 21:53:29.246	\N
 cmqz5vva600f3xhd89zcsytov	repartidor1@somosmoovy.com	$2b$12$wM6iMD5E3RXXdUr5GYnjc.ywxwzoF08aXzL.JKLJSHm0NzMKtQ3RW	Mateo Rider	\N	\N	\N	DRIVER	\N	\N	0	0	f	cmqz5vva600f4xhd8q48id7j2	\N	2026-06-29 11:55:51.966	2026-07-31 00:09:19.949	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	\N	\N
-cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-07-27 23:54:33.722	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-25 16:25:30.227	\N
+cmrzdt1m80001wkbfyotyrlg7	maugrod@gmail.com	$2b$10$XP3L9fjFnDrF/yRiYxk.ZOEtxEIE5uZHdrPJ7Sp9ZMFerRamJpqHu	Fernando Temari	Fernando	Temari	+5492901652974	USER	\N	\N	0	0	f	cmrzdt1m80002wkbf4eny98hh	\N	2026-07-24 20:17:19.47	2026-08-02 13:09:43.661	2026-07-24 20:17:19.468	2026-07-24 20:17:19.468	2.0	1.2	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-25 16:25:30.227	\N
 cmqz5vt6i007xxhd8hsy8f7ox	comercio6@somosmoovy.com	$2b$12$M4.hnnEzjeOiZTOVTMi4E.fiwP.XSwXnfLH/4eEdszeqyN8CD8ZwO	 				COMERCIO	\N	\N	0	0	f	cmqz5vt6i007yxhd8wx7qpv3a	\N	2026-06-29 11:55:49.243	2026-07-28 16:52:38.498	\N	\N	\N	\N	f	f	\N	\N	\N	\N	\N	\N	\N	f	\N	\N	\N	\N	0	\N	2026-07-28 16:51:54.144	\N
 \.
 
@@ -4325,6 +4335,7 @@ cms3vvyzg0001vu5oo61rt1qu	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbf
 cms4w88ev0007tz6pff3u0jag	cmqz5vt6i007xxhd8hsy8f7ox	LOGIN	User	cmqz5vt6i007xxhd8hsy8f7ox	{"method":"credentials"}	\N	\N	2026-07-28 16:51:52.087
 cms86p0ku0001h7thmcvbvejh	cmqz5vqsx0000xhd86fq6wm5d	LOGIN	User	cmqz5vqsx0000xhd86fq6wm5d	{"method":"credentials"}	\N	\N	2026-07-31 00:08:09.773
 cms86qir90003h7thxboaonuj	cmqz5vva600f3xhd89zcsytov	LOGIN	User	cmqz5vva600f3xhd89zcsytov	{"method":"credentials"}	\N	\N	2026-07-31 00:09:19.989
+cmsbthtko0001id73am0mhqzs	cmrzdt1m80001wkbfyotyrlg7	LOGIN	User	cmrzdt1m80001wkbfyotyrlg7	{"method":"credentials"}	\N	\N	2026-08-02 13:09:43.798
 \.
 
 

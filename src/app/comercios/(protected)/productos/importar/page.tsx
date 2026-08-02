@@ -10,6 +10,7 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
+import { parsePrecio } from "@/lib/import/precio";
 import { ArrowLeft, Upload, FileText, Loader2, CheckCircle2, AlertTriangle, X, Check } from "lucide-react";
 
 type Field = "name" | "price" | "description" | "barcode" | "stock";
@@ -20,6 +21,7 @@ type Sugerencia = { id: string; name: string; price: number };
 type Preview = {
     resumen: { filas: number; actualizan: number; sinCambios: number; crean: number;
                omitidas: number; ausentes: number; invalidas: number };
+    sinCambios: { nombre: string; barcode: string | null; precio: number }[];
     actualizar: { barcode: string | null; nombre: string; via: string; estaEliminado: boolean;
                   cambios: string[]; precioAntes: number; precioDespues: number;
                   stockAntes: number; stockDespues: number | null }[];
@@ -83,21 +85,26 @@ function fixMojibake(s: string): string {
     return out;
 }
 
+// Un código que Excel arruinó al guardar: 7790895000129 queda como "7.79089E+12" y
+// los dígitos perdidos NO se pueden recuperar. El servidor omite estas filas, así que
+// acá hay que decirlo en el paso del mapeo — antes se mostraban como "interno" con la
+// leyenda "los guardamos tal cual", que es lo contrario de lo que después pasaba.
+// Mismo criterio que esCodigoRotoPorExcel() en src/lib/import/plan.ts.
+function esCodigoRotoPorExcel(v: string): boolean {
+    return /^\d+(?:[.,]\d+)?E\+?\d+$/i.test(v.trim());
+}
+
 // EAN-8, UPC-12 o EAN-13 numéricos. El resto se considera código interno → vacío.
 function isValidBarcode(v: string): boolean {
     const s = v.trim();
     return /^\d{8}$/.test(s) || /^\d{12}$/.test(s) || /^\d{13}$/.test(s);
 }
 
-function parsePrice(v: string): number | null {
-    if (!v) return null;
-    // admite "3978", "3978,50", "3.978,50", "3978.5"
-    let s = v.trim().replace(/[^\d.,-]/g, "");
-    if (s.includes(",") && s.includes(".")) s = s.replace(/\./g, "").replace(",", ".");
-    else if (s.includes(",")) s = s.replace(",", ".");
-    const n = parseFloat(s);
-    return isFinite(n) ? n : null;
-}
+// La lectura del precio vive en src/lib/import/precio.ts porque decide plata y
+// necesita test propio: la versión que estaba acá leía "8.400" como 8,40 y le entraba
+// el catálogo entero a la milésima parte al primer comercio que exportara con
+// separador de miles.
+const parsePrice = (v: string): number | null => parsePrecio(v);
 
 function autodetect(headers: string[], rows: string[][]): Mapping {
     const m: Mapping = { name: null, price: null, description: null, barcode: null, stock: null };
@@ -171,6 +178,7 @@ export default function ImportarProductosPage() {
     // si el comercio decidió que en realidad es un producto que ya tiene.
     const [plan, setPlan] = useState<Preview | null>(null);
     const [emparejar, setEmparejar] = useState<Record<string, string>>({});
+    const [verIguales, setVerIguales] = useState(false);
     const [error, setError] = useState("");
     // feat/import-revision: códigos editados por el comercio en el paso de revisión.
     // Key = índice de fila en `rows`. Valor = código nuevo (o "" si lo borró).
@@ -227,6 +235,15 @@ export default function ImportarProductosPage() {
         return list;
     }, [mapping, rows]);
 
+    // Cuántos de esos códigos irregulares están rotos por Excel y no son internos.
+    // Va después de irregularRows a propósito: el array de dependencias se evalúa
+    // en el momento, y arriba todavía está en la zona muerta temporal.
+    const rotosPorExcel = useMemo(
+        () => irregularRows.filter((ir) => esCodigoRotoPorExcel(codeForRow(ir.rowIdx))).length,
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        [irregularRows, codeOverrides],
+    );
+
     // Preview + validación (aplica overrides). Los códigos irregulares se CONSERVAN
     // como código interno (no se descartan).
     const preview = useMemo(() => {
@@ -250,6 +267,22 @@ export default function ImportarProductosPage() {
         });
         return { valid, invalidName, invalidPrice, validEan, internal, noCode, excluded, payload };
     }, [mapping, rows, codeOverrides, excludedRows]);
+
+    // Las tres formas de arruinar un catálogo entero —el recargo mal puesto, subir un
+    // archivo anterior al que ya se aplicó, y mapear la columna de costo como si fuera
+    // la de venta— se ven todas igual desde afuera: muchísimos precios moviéndose
+    // juntos para el mismo lado. Por eso alcanza un solo aviso para las tres.
+    const movimientoMasivo = useMemo(() => {
+        if (!plan || plan.actualizar.length < 10) return null;
+        const conPrecio = plan.actualizar.filter((a) => a.cambios.includes("precio") && a.precioAntes > 0);
+        if (conPrecio.length < 10) return null;
+        const suben = conPrecio.filter((a) => a.precioDespues > a.precioAntes).length;
+        const bajan = conPrecio.length - suben;
+        const dominante = Math.max(suben, bajan);
+        if (dominante / conPrecio.length < 0.8) return null;
+        const prom = conPrecio.reduce((t, a) => t + (a.precioDespues / a.precioAntes - 1), 0) / conPrecio.length;
+        return { cuantos: conPrecio.length, hacia: suben >= bajan ? "arriba" : "abajo", prom: prom * 100 };
+    }, [plan]);
 
     // El cuerpo que va a las dos rutas (previsualizar y aplicar). `emparejar` lleva
     // las altas que el comercio decidió que en realidad son un producto que ya tiene.
@@ -478,11 +511,17 @@ export default function ImportarProductosPage() {
                                         <p className="text-sm font-bold text-gray-900">Revisar {irregularRows.length} códigos internos{excludedRows.size > 0 && <span className="text-gray-400 font-normal"> · {excludedRows.size} quitados</span>}</p>
                                     </div>
                                     <p className="text-xs text-gray-500 mb-4">No son códigos de barras estándar (suelen ser códigos internos de productos sueltos o por peso). Los guardamos <b>tal cual</b>. Podés editarlos, o <b>quitar</b> los que no sean productos (ej: recargas, ajustes) para que no se importen.</p>
+                                    {rotosPorExcel > 0 && (
+                                        <div className="mb-4 bg-red-50 border border-red-100 rounded-xl p-3 text-xs text-red-800 leading-relaxed">
+                                            <b>{rotosPorExcel === 1 ? "Un código lo rompió Excel" : `${rotosPorExcel} códigos los rompió Excel`}</b> (quedaron como “7.79E+12”). Los dígitos que faltan no se pueden recuperar, así que <b>esas filas no se van a importar</b>. Corregilos acá a mano, o volvé a exportar el archivo formateando la columna del código como texto.
+                                        </div>
+                                    )}
                                     <div className="max-h-72 overflow-y-auto divide-y divide-gray-100 border border-gray-200 rounded-xl">
                                         {irregularRows.map((ir) => {
                                             const current = codeForRow(ir.rowIdx);
-                                            const stateLabel = !current ? "vacío" : isValidBarcode(current) ? "✓ de barras" : "interno";
-                                            const stateColor = !current ? "text-gray-400" : isValidBarcode(current) ? "text-green-600" : "text-amber-600";
+                                            const roto = !!current && esCodigoRotoPorExcel(current);
+                                            const stateLabel = !current ? "vacío" : isValidBarcode(current) ? "✓ de barras" : roto ? "roto" : "interno";
+                                            const stateColor = !current ? "text-gray-400" : isValidBarcode(current) ? "text-green-600" : roto ? "text-red-600" : "text-amber-600";
                                             const isExcluded = excludedRows.has(ir.rowIdx);
                                             return (
                                                 <div key={ir.rowIdx} className={`flex items-center gap-3 px-3 py-2 ${isExcluded ? "bg-gray-50" : ""}`}>
@@ -572,16 +611,19 @@ export default function ImportarProductosPage() {
                         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
                             <div className="bg-amber-50 rounded-xl p-3">
                                 <p className="text-2xl font-bold text-amber-700">{plan.resumen.actualizan}</p>
-                                <p className="text-[11px] font-semibold text-amber-800">cambian de precio</p>
+                                <p className="text-[11px] font-semibold text-amber-800">cambian</p>
                             </div>
                             <div className="bg-green-50 rounded-xl p-3">
                                 <p className="text-2xl font-bold text-green-700">{plan.resumen.crean}</p>
                                 <p className="text-[11px] font-semibold text-green-800">se crean nuevos</p>
                             </div>
-                            <div className="bg-gray-50 rounded-xl p-3">
+                            <button type="button" onClick={() => setVerIguales((v) => !v)} disabled={plan.resumen.sinCambios === 0}
+                                className="bg-gray-50 rounded-xl p-3 text-left hover:bg-gray-100 transition disabled:hover:bg-gray-50">
                                 <p className="text-2xl font-bold text-gray-700">{plan.resumen.sinCambios}</p>
-                                <p className="text-[11px] font-semibold text-gray-600">quedan igual</p>
-                            </div>
+                                <p className="text-[11px] font-semibold text-gray-600">
+                                    quedan igual{plan.resumen.sinCambios > 0 && <span className="text-blue-600"> · {verIguales ? "ocultar" : "ver cuáles"}</span>}
+                                </p>
+                            </button>
                             <div className="bg-red-50 rounded-xl p-3">
                                 <p className="text-2xl font-bold text-red-700">{plan.resumen.omitidas}</p>
                                 <p className="text-[11px] font-semibold text-red-800">se omiten</p>
@@ -592,20 +634,74 @@ export default function ImportarProductosPage() {
                         </div>
                     </div>
 
+                    {/* Encontrado probando: el contador solo no alcanzaba para confirmar
+                        que un producto había emparejado bien (el caso del cero que Excel
+                        se come). Ahora se pueden ver, con el código con el que emparejaron. */}
+                    {movimientoMasivo && (
+                        <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-5">
+                            <p className="text-sm font-bold text-amber-900">
+                                Se mueven {movimientoMasivo.cuantos} precios, casi todos hacia {movimientoMasivo.hacia} ({movimientoMasivo.prom >= 0 ? "+" : ""}{movimientoMasivo.prom.toFixed(1)}% en promedio)
+                            </p>
+                            <p className="text-xs text-amber-800 mt-1.5 leading-relaxed">
+                                Cuando se mueve casi todo el catálogo para el mismo lado suele haber un motivo, y no siempre es el que uno quiere:
+                                el <b>recargo quedó mal puesto</b> en el paso anterior, o estás subiendo un <b>archivo anterior</b> al que ya aplicaste,
+                                o se mapeó la <b>columna equivocada</b> (el costo en lugar del precio de venta). Si es a propósito, seguí tranquilo.
+                            </p>
+                        </div>
+                    )}
+
+                    {verIguales && plan.sinCambios.length > 0 && (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                            <p className="text-sm font-bold text-gray-900">Emparejaron y quedan igual ({plan.sinCambios.length})</p>
+                            <p className="text-xs text-gray-500 mt-0.5 mb-3">El archivo trae el mismo precio que ya tenían. No se les toca nada.</p>
+                            <div className="max-h-72 overflow-auto rounded-xl border border-gray-100">
+                                <table className="w-full text-sm">
+                                    <tbody>
+                                        {plan.sinCambios.map((p, i) => (
+                                            <tr key={i} className="border-b border-gray-50 last:border-0">
+                                                <td className="px-3 py-2 text-gray-800">{p.nombre}</td>
+                                                <td className="px-3 py-2 text-gray-400 text-xs font-mono">{p.barcode || "sin código"}</td>
+                                                <td className="px-3 py-2 text-right font-semibold text-gray-700 whitespace-nowrap">${p.precio.toLocaleString("es-AR")}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
                     {plan.actualizar.length > 0 && (
                         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                            <p className="text-sm font-bold text-gray-900 mb-3">Cambian de precio ({plan.actualizar.length})</p>
+                            <p className="text-sm font-bold text-gray-900">Qué cambia ({plan.actualizar.length})</p>
+                            <p className="text-xs text-gray-500 mt-0.5 mb-3">Solo se escribe lo que aparece acá. Todo lo demás del producto queda como está.</p>
                             <div className="max-h-80 overflow-auto rounded-xl border border-gray-100">
                                 <table className="w-full text-sm">
                                     <tbody>
                                         {plan.actualizar.map((a, i) => (
                                             <tr key={i} className="border-b border-gray-50 last:border-0">
-                                                <td className="px-3 py-2 text-gray-800">{a.nombre}</td>
-                                                <td className="px-3 py-2 text-right text-gray-400 line-through whitespace-nowrap">${a.precioAntes.toLocaleString("es-AR")}</td>
-                                                <td className="px-3 py-2 text-right font-bold text-gray-900 whitespace-nowrap">${a.precioDespues.toLocaleString("es-AR")}</td>
+                                                <td className="px-3 py-2 text-gray-800">
+                                                    {a.nombre}
+                                                    {/* El archivo puede cambiar el stock sin tocar el precio: si no
+                                                        lo mostráramos, la fila aparecería con el mismo precio dos
+                                                        veces y sin decir qué está cambiando. */}
+                                                    {a.cambios.includes("stock") && a.stockDespues !== null && (
+                                                        <span className="block text-[11px] font-semibold text-amber-700 mt-0.5">
+                                                            stock {a.stockAntes} → {a.stockDespues}
+                                                        </span>
+                                                    )}
+                                                    {a.cambios.includes("descripcion") && (
+                                                        <span className="block text-[11px] font-semibold text-gray-500 mt-0.5">se reemplaza la descripción</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-3 py-2 text-right text-gray-400 whitespace-nowrap">
+                                                    {a.cambios.includes("precio") ? <span className="line-through">${a.precioAntes.toLocaleString("es-AR")}</span> : null}
+                                                </td>
+                                                <td className="px-3 py-2 text-right font-bold text-gray-900 whitespace-nowrap">
+                                                    {a.cambios.includes("precio") ? `$${a.precioDespues.toLocaleString("es-AR")}` : <span className="text-gray-400 font-normal text-xs">precio sin cambio</span>}
+                                                </td>
                                                 <td className="px-3 py-2 text-right text-xs font-semibold whitespace-nowrap">
                                                     <span className={a.precioDespues >= a.precioAntes ? "text-amber-600" : "text-blue-600"}>
-                                                        {a.precioAntes > 0 ? `${a.precioDespues >= a.precioAntes ? "+" : ""}${Math.round((a.precioDespues / a.precioAntes - 1) * 1000) / 10}%` : ""}
+                                                        {a.cambios.includes("precio") && a.precioAntes > 0 ? `${a.precioDespues >= a.precioAntes ? "+" : ""}${Math.round((a.precioDespues / a.precioAntes - 1) * 1000) / 10}%` : ""}
                                                     </span>
                                                 </td>
                                             </tr>

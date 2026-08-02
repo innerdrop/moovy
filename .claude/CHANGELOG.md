@@ -11,6 +11,77 @@
 ---
 
 
+## 2026-08-02 (rama `feat/import-mostrar-los-que-quedan-igual`)
+
+feat: la revisión de la importación muestra los que quedan igual
+
+Todo lo de esta rama salió de probar la anterior con el archivo real de Pixel
+Point. Ninguno de estos huecos se ve leyendo el código: aparecen usando la
+pantalla con datos de verdad.
+
+Los precios con punto de miles entraban a la milésima parte
+Este es el más grave y estaba vivo en producción. El parseo de precios del
+importador hacía Number(v.replace(",", ".")) sobre el texto de la celda. Con el
+formato argentino —"8.400" para ocho mil cuatrocientos— eso devuelve 8,4. Un
+comercio que exportara su lista con separador de miles cargaba el catálogo entero
+a la milésima parte del precio, sin ningún error visible: la importación
+terminaba bien, los números se veían "raros" y nada avisaba.
+
+Ahora hay src/lib/import/precio.ts con parsePrecio(), que decide si el separador
+es de miles o decimal en vez de asumirlo: si hay punto y coma, manda el último;
+si hay uno solo, es de miles cuando se repite o cuando deja exactamente tres
+dígitos atrás. "8.400" da 8400, "8,40" da 8,4, "1.234.567" da 1234567. Está
+aparte y con sus propios tests (src/__tests__/import-precio.test.ts) porque es
+la única función de todo el importador donde equivocarse no se nota.
+
+Aviso cuando todos los precios se mueven para el mismo lado
+Las tres formas más caras de arruinar un catálogo —importar con el recargo mal
+puesto, importar un archivo viejo, mapear la columna de costo como si fuera la
+de venta— desde afuera se ven iguales: un montón de precios moviéndose todos en
+la misma dirección. Un control las agarra a las tres.
+
+Si hay diez o más productos con cambio de precio y el 80% o más va para el mismo
+lado, la revisión avisa antes de confirmar: cuántos son, hacia dónde y cuánto en
+promedio. No bloquea nada. Solo obliga a mirar el número una vez. En el archivo
+real de Pixel Point ese aviso hubiera dicho "1.122 productos bajan 10,7% en
+promedio", que es exactamente lo que pasaba y nadie iba a ver.
+
+Se pueden ver los que emparejaron sin cambios
+El contador decía "3 quedan igual" y nada más. Probando el caso del código al que
+Excel le come el cero de la izquierda, la única forma de confirmar que el producto
+había emparejado bien era por descarte: que NO apareciera en "se crean". O sea que
+la pantalla pedía deducir en vez de mostrar. Ahora el contador se despliega y lista
+los productos con el código con el que emparejaron. Ese código es el dato que
+importa: es la prueba de que la normalización funcionó.
+
+El paso del mapeo se contradecía con el siguiente
+Un código roto por Excel ("7.79133E+13") se mostraba en el panel de códigos
+irregulares como "interno", bajo la leyenda "los guardamos tal cual". Pero el
+servidor los omite, porque los dígitos perdidos no se pueden recuperar. Dos
+pantallas seguidas decían cosas opuestas sobre la misma fila.
+
+Ahora el asistente los marca en rojo como "roto", los cuenta aparte de los códigos
+internos legítimos, y avisa antes de importar que esas filas no van a entrar y cómo
+arreglar el archivo. El criterio es el mismo que el del servidor
+(esCodigoRotoPorExcel en src/lib/import/plan.ts), duplicado a propósito en el
+cliente: son dos capas distintas y el servidor sigue siendo el que decide.
+
+El bloque de cambios dejó de hablar solo de precio
+Se llamaba "Cambian de precio" y solo tenía columnas de precio. Pero una
+importación puede cambiar el stock sin tocar el precio —pasa apenas el archivo trae
+columna de stock y el anterior no la traía— y esa fila aparecía igual en la lista,
+con el mismo precio dos veces y sin decir qué estaba cambiando.
+
+Ahora el bloque se llama "Qué cambia": muestra el stock de antes y el de después
+cuando cambia, avisa si se va a reemplazar la descripción, y cuando el precio no se
+mueve lo dice en lugar de repetir el número. Salió de preguntarse qué pasa si se
+reimporta un archivo anterior al que ya se aplicó.
+
+Salvo el parseo de precios, nada de esto cambia qué se escribe en la base. Es la
+misma importación, contada mejor.
+
+**Archivos:** src/__tests__/import-precio.test.ts, src/app/api/comercios/products/import/preview/route.ts, src/app/comercios/(protected)/productos/importar/page.tsx, src/lib/import/precio.ts
+
 ## 2026-08-02 (rama `fix/import-no-pisa-el-trabajo`)
 
 fix: reimportar una lista de precios deja de romper el catálogo

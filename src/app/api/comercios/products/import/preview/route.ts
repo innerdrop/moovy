@@ -40,6 +40,14 @@ export async function POST(request: Request) {
 
     const plan = planificarImport(entrada.filas, existentes);
 
+    // Los que emparejaron y NO cambian. Antes iban solo como número, y el comercio
+    // no tenía forma de verificar que un producto hubiera emparejado bien: el único
+    // indicio era que NO apareciera en "se crean". Encontrado probando el caso del
+    // código al que Excel le come el cero de la izquierda.
+    const sinCambios = plan.aActualizar
+        .filter((a) => a.cambios.length === 0)
+        .map((a) => ({ nombre: a.antes.name, barcode: a.fila.barcode, precio: a.antes.price }));
+
     const actualizar = plan.aActualizar
         .filter((a) => a.cambios.length > 0)
         .map((a) => ({
@@ -58,13 +66,14 @@ export async function POST(request: Request) {
         resumen: {
             filas: entrada.filas.length,
             actualizan: actualizar.length,
-            sinCambios: plan.aActualizar.length - actualizar.length,
+            sinCambios: sinCambios.length,
             crean: plan.aCrear.length,
             omitidas: plan.omitidas.length,
             ausentes: plan.ausentes.length,
             invalidas: entrada.errores.length,
         },
         actualizar,
+        sinCambios,
         crear: plan.aCrear.map((a) => ({
             nombre: a.fila.name,
             barcode: a.fila.barcode,
