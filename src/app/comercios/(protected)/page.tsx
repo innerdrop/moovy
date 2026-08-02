@@ -24,6 +24,7 @@ import {
 import KPIDashboard from "./KPIDashboard";
 import StorePauseCard from "@/components/comercios/StorePauseCard";
 import { computeMerchantSetup } from "@/lib/merchant-setup";
+import { enumerarFaltantes } from "@/lib/product-completeness";
 
 const RED = "#e60012";
 
@@ -81,6 +82,17 @@ export default async function ComerciosDashboardPage() {
     const setup = await computeMerchantSetup(merchant);
     const { steps: setupSteps, doneCount, nextStep, setupMode, waitingApproval, canOpenStore, activeProducts } = setup;
     const progressPct = Math.round((doneCount / setup.total) * 100);
+
+    // El copy fijo de antes ("tu tienda es privada: nadie la ve hasta que completes
+    // estos pasos") le mentía al comercio: la home pública solo exige el comercio
+    // APPROVED con productos activos, así que un comercio aprobado con un producto
+    // publicado YA está a la vista aunque le falten pasos de la guía.
+    const documentacionAprobada = merchant.approvalStatus === "APPROVED";
+    const textoVisibilidad = !documentacionAprobada
+        ? "Tu tienda todavía no aparece en Moovy. Estamos revisando tu documentación."
+        : activeProducts === 0
+            ? "Tu tienda todavía no aparece en Moovy: falta que publiques tu primer producto."
+            : "Tu tienda ya aparece en Moovy. Completá lo que falta para poder abrirla y recibir pedidos.";
 
     // Chip de estado (ISSUE-038): Pendiente / Cerrada / Abierta
     const scheduleResult = checkMerchantSchedule({
@@ -187,7 +199,7 @@ export default async function ComerciosDashboardPage() {
                         <p className="mt-3 text-[13.5px] leading-relaxed text-gray-500">
                             {waitingApproval
                                 ? "El equipo de Moovy está revisando tus documentos: en las próximas 24-48 hs hábiles tu tienda queda habilitada. Te avisamos por email."
-                                : "Tu tienda es privada mientras la armás: nadie la ve hasta que completes estos pasos y aprobemos tu documentación."}
+                                : textoVisibilidad}
                         </p>
                     </div>
 
@@ -195,32 +207,66 @@ export default async function ComerciosDashboardPage() {
                         <div className="border-t border-gray-50">
                             {setupSteps.map((step) => {
                                 const isNext = nextStep?.id === step.id;
+                                // El paso del producto puede traer el borrador que quedó
+                                // a medias: decirle QUÉ le falta evita el "ya lo cargué,
+                                // ¿por qué me lo sigue pidiendo?".
+                                const detalle = step.detalle;
+                                const faltanTexto = detalle && detalle.faltan.length > 0
+                                    ? enumerarFaltantes(detalle.faltan)
+                                    : null;
                                 return (
-                                    <Link
-                                        key={step.id}
-                                        href={step.href}
-                                        className={`flex items-center gap-3.5 px-5 py-3.5 transition sm:px-6 ${isNext ? "bg-red-50/50 hover:bg-red-50" : "hover:bg-gray-50"} ${step.done ? "opacity-60" : ""}`}
-                                    >
-                                        <span
-                                            className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[13px] font-black ${step.done ? "bg-emerald-500 text-white" : isNext ? "text-white" : "bg-gray-100 text-gray-400"}`}
-                                            style={isNext ? { backgroundColor: RED } : undefined}
+                                    <div key={step.id}>
+                                        <Link
+                                            href={step.href}
+                                            className={`flex items-center gap-3.5 px-5 py-3.5 transition sm:px-6 ${isNext ? "bg-red-50/50 hover:bg-red-50" : "hover:bg-gray-50"} ${step.done ? "opacity-60" : ""}`}
                                         >
-                                            {step.done ? <Check className="h-4 w-4" strokeWidth={3} /> : setupSteps.indexOf(step) + 1}
-                                        </span>
-                                        <span className="min-w-0 flex-1">
-                                            <span className={`block text-[15px] leading-tight ${step.done ? "font-semibold text-gray-500 line-through decoration-gray-300" : isNext ? "font-black text-gray-900" : "font-semibold text-gray-700"}`}>
-                                                {step.label}
+                                            <span
+                                                className={`flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[13px] font-black ${step.done ? "bg-emerald-500 text-white" : isNext ? "text-white" : "bg-gray-100 text-gray-400"}`}
+                                                style={isNext ? { backgroundColor: RED } : undefined}
+                                            >
+                                                {step.done ? <Check className="h-4 w-4" strokeWidth={3} /> : setupSteps.indexOf(step) + 1}
                                             </span>
-                                            {!step.done && <span className="mt-0.5 block text-[12.5px] text-gray-400">{step.hint}</span>}
-                                        </span>
-                                        {isNext ? (
-                                            <span className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-black text-white" style={{ backgroundColor: RED }}>
-                                                Empezar
+                                            <span className="min-w-0 flex-1">
+                                                <span className={`block text-[15px] leading-tight ${step.done ? "font-semibold text-gray-500 line-through decoration-gray-300" : isNext ? "font-black text-gray-900" : "font-semibold text-gray-700"}`}>
+                                                    {step.label}
+                                                </span>
+                                                {!step.done && <span className="mt-0.5 block text-[12.5px] text-gray-400">{step.hint}</span>}
                                             </span>
-                                        ) : (
-                                            !step.done && <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-300" />
+                                            {isNext ? (
+                                                <span className="flex-shrink-0 rounded-full px-3 py-1.5 text-[12px] font-black text-white" style={{ backgroundColor: RED }}>
+                                                    Empezar
+                                                </span>
+                                            ) : (
+                                                !step.done && <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-300" />
+                                            )}
+                                        </Link>
+                                        {/* Regla #44: el comentario va ARRIBA de la condición.
+                                            Y el detalle va FUERA del <Link> de la fila: adentro
+                                            quedaría un <a> anidado dentro de otro <a>. */}
+                                        {detalle && (
+                                            <div className={`pb-3.5 pl-[62px] pr-5 sm:pl-[66px] sm:pr-6 ${isNext ? "bg-red-50/50" : ""}`}>
+                                                <div className="rounded-xl border border-amber-100 bg-amber-50/70 px-3 py-2.5">
+                                                    <p className="text-[12.5px] leading-snug text-amber-900">
+                                                        <b className="font-black">{detalle.nombre}</b>{" "}
+                                                        {faltanTexto
+                                                            ? <>está guardado pero le falta <b className="font-bold">{faltanTexto}</b>.</>
+                                                            : <>está guardado y completo: solo falta que lo muestres en la tienda.</>}
+                                                    </p>
+                                                    <Link
+                                                        href={`/comercios/productos/${detalle.productoId}`}
+                                                        className="mt-1.5 inline-block text-[12.5px] font-black text-amber-800 underline decoration-amber-300 underline-offset-2 hover:text-amber-900"
+                                                    >
+                                                        Completar este producto &rarr;
+                                                    </Link>
+                                                    {detalle.otrosPendientes > 0 && (
+                                                        <p className="mt-1 text-[11.5px] text-amber-700/80">
+                                                            Tenés {detalle.otrosPendientes} producto{detalle.otrosPendientes === 1 ? "" : "s"} más sin completar.
+                                                        </p>
+                                                    )}
+                                                </div>
+                                            </div>
                                         )}
-                                    </Link>
+                                    </div>
                                 );
                             })}
                         </div>

@@ -27,6 +27,10 @@ export async function GET() {
         doneCount: setup.doneCount,
         total: setup.total,
         nextLabel: setup.nextStep?.label ?? null,
+        // Ya viene corregido desde el helper: si hay un borrador a medio cargar,
+        // apunta a ESE producto y no al alta de uno nuevo.
         nextHref: setup.nextStep?.href ?? null,
+        // Para que la barra pueda decir QUÉ le falta y no solo "cargá un producto".
+        nextDetalle: setup.nextStep?.detalle ?? null,
     });
 }

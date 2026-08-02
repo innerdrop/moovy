@@ -12,6 +12,14 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight } from "lucide-react";
+import { enumerarFaltantes } from "@/lib/product-completeness";
+
+interface SetupDetalle {
+    productoId: string;
+    nombre: string;
+    faltan: string[];
+    otrosPendientes: number;
+}
 
 interface SetupState {
     setupMode: boolean;
@@ -20,6 +28,8 @@ interface SetupState {
     total: number;
     nextLabel: string | null;
     nextHref: string | null;
+    /** Solo lo trae el paso del producto: el borrador más cerca de publicarse. */
+    nextDetalle: SetupDetalle | null;
 }
 
 export default function SetupProgressBanner() {
@@ -51,6 +61,12 @@ export default function SetupProgressBanner() {
 
     if (!state.nextLabel || !state.nextHref) return null;
 
+    // Segunda línea (solo el paso del producto): el borrador que quedó a medias y
+    // qué le falta. Si el borrador ya está completo y solo está oculto no hay nada
+    // que enumerar, y la barra se queda en una línea — es una barra, no una tarjeta.
+    const detalle = state.nextDetalle;
+    const faltanTexto = detalle && detalle.faltan.length > 0 ? enumerarFaltantes(detalle.faltan) : null;
+
     return (
         <Link
             href={state.nextHref}
@@ -59,9 +75,16 @@ export default function SetupProgressBanner() {
             <span className="flex h-6 min-w-6 flex-shrink-0 items-center justify-center rounded-full px-1.5 text-[11px] font-black text-white" style={{ backgroundColor: "#e60012" }}>
                 {state.doneCount}/{state.total}
             </span>
-            <p className="min-w-0 flex-1 truncate text-[13.5px] text-gray-600">
-                Seguí armando tu tienda · <b className="font-bold text-gray-900">Siguiente: {state.nextLabel}</b>
-            </p>
+            <span className="min-w-0 flex-1">
+                <span className="block truncate text-[13.5px] text-gray-600">
+                    Seguí armando tu tienda · <b className="font-bold text-gray-900">Siguiente: {state.nextLabel}</b>
+                </span>
+                {detalle && faltanTexto && (
+                    <span className="block truncate text-[12px] leading-snug text-gray-400">
+                        <b className="font-semibold text-gray-500">{detalle.nombre}</b> · le falta {faltanTexto}
+                    </span>
+                )}
+            </span>
             <ChevronRight className="h-4 w-4 flex-shrink-0 text-gray-300" />
         </Link>
     );

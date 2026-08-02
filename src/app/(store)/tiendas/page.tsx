@@ -22,7 +22,14 @@ async function getAllMerchants() {
             // fix/aprobacion-sin-logo (2026-04-27): además exigimos image (logo) no null.
             // La aprobación ya no requiere logo — pero la visibilidad pública sí, para
             // que la tienda no se vea rota en el listado.
-            where: { isActive: true, approvalStatus: "APPROVED", image: { not: null } },
+// feat/el-panel-dice-la-verdad (2026-08-02): y al menos un producto publicado,
+            // igual que la home. Un listado con tiendas vacias no le sirve a nadie.
+            where: {
+                isActive: true,
+                approvalStatus: "APPROVED",
+                image: { not: null },
+                products: { some: { isActive: true, deletedAt: null } },
+            },
             orderBy: [
                 { isOpen: "desc" },
                 { isPremium: "desc" },

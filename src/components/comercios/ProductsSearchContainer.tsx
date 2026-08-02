@@ -11,6 +11,9 @@ import {
 import ProductStatusToggle from "./ProductStatusToggle";
 import DeleteProductButton from "./DeleteProductButton";
 import { cleanEncoding } from "@/lib/utils/stringUtils";
+// El helper es puro (no toca prisma) justamente para poder usarlo acá, en un
+// componente cliente, sin que la regla vuelva a duplicarse.
+import { estaCompleto } from "@/lib/product-completeness";
 import {
     bulkSetProductsActive, bulkDeleteProducts, bulkSetProductsCategory, bulkAdjustProductsPrice,
 } from "@/app/comercios/bulk-actions";
@@ -33,9 +36,15 @@ interface Product {
 type ProductStatus = "published" | "ready" | "incomplete";
 type SortKey = "relevance" | "price-asc" | "price-desc" | "name" | "stock-asc" | "newest";
 
-// ¿El producto cumple los requisitos para publicarse? (foto + descripción ≥10 + precio)
+// Adaptador al helper canónico: acá los campos opcionales pueden venir undefined
+// (el listado no siempre los selecciona) y el helper trabaja con null.
 function isComplete(p: Product): boolean {
-    return (p.images?.length ?? 0) > 0 && ((p.description?.trim().length ?? 0) >= 10) && p.price > 0 && (p.weightGrams ?? 0) > 0;
+    return estaCompleto({
+        description: p.description ?? null,
+        price: p.price,
+        weightGrams: p.weightGrams ?? null,
+        images: p.images,
+    });
 }
 // Estado: en tienda (publicado) | listo (oculto pero completo) | incompleto (falta algo).
 function statusOf(p: Product): ProductStatus {

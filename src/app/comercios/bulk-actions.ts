@@ -14,6 +14,8 @@ import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+// Misma regla de completitud que toggleProductActive y el listado del panel.
+import { estaCompleto } from "@/lib/product-completeness";
 
 const MAX_IDS = 5000;
 const idsSchema = z.array(z.string().min(1)).min(1).max(MAX_IDS);
@@ -67,9 +69,7 @@ export async function bulkSetProductsActive(rawIds: string[], isActive: boolean)
         where: { id: { in: owned }, merchantId: merchant.id },
         select: { id: true, description: true, price: true, weightGrams: true, _count: { select: { images: true } } },
     });
-    const completeIds = products
-        .filter((p) => (p._count?.images ?? 0) > 0 && (p.description?.trim().length ?? 0) >= 10 && p.price > 0 && ((p as any).weightGrams ?? 0) > 0)
-        .map((p) => p.id);
+    const completeIds = products.filter(estaCompleto).map((p) => p.id);
     const skipped = owned.length - completeIds.length;
     if (completeIds.length === 0) {
         return { ok: true, updated: 0, skipped };

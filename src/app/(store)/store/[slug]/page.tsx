@@ -112,6 +112,14 @@ export default async function MerchantPage({ params }: { params: Promise<{ slug:
         notFound();
     }
 
+    // feat/el-panel-dice-la-verdad (2026-08-02): la pagina solo hacia notFound()
+    // cuando el slug no existia. Un comercio PENDING, RECHAZADO o desactivado
+    // tenia su vidriera publica accesible con el link directo, mientras el panel
+    // le decia "tu tienda es privada". Ahora la URL respeta lo mismo que la home.
+    if (!merchant.isActive || merchant.approvalStatus !== "APPROVED") {
+        notFound();
+    }
+
     // fix/envio-gratis-badge: el badge de envío gratis sale de la ÚNICA promo real
     // (StoreSettings.freeDeliveryMinimum, global, controlada por Moovy desde la
     // Biblia). El viejo `merchant.deliveryFee === 0` era un campo legacy que el

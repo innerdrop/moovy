@@ -146,7 +146,16 @@ async function getAllActiveMerchants() {
       // para que un merchant pendiente/rechazado nunca aparezca en la home.
       // fix/aprobacion-sin-logo (2026-04-27): además image (logo) no null para
       // que un merchant aprobado pero sin logo no se vea roto en la home.
-      where: { isActive: true, approvalStatus: "APPROVED", image: { not: null } },
+// feat/el-panel-dice-la-verdad (2026-08-02): además, al menos un producto
+      // publicado. Una tienda vacía en la home le ensena al comprador que en
+      // Moovy no hay nada, y el panel del comercio le prometia que hasta no
+      // publicar un producto nadie lo veia. Ahora las dos cosas coinciden.
+      where: {
+        isActive: true,
+        approvalStatus: "APPROVED",
+        image: { not: null },
+        products: { some: { isActive: true, deletedAt: null } },
+      },
       select: MERCHANT_DISCOVERY_SELECT,
       orderBy: [
         { isOpen: "desc" },

@@ -140,7 +140,31 @@ export default auth(async (request) => {
         //    la auto-registracion de comercios/repartidores y sus paneles NO se exponen
         //    todavia. El socio piloto (Pixel Point) entra con ?preview=TOKEN, que ya saltea
         //    el candado. La auto-registracion publica se prende en la etapa de lanzamiento.
-        if (!hasPreview && pathname !== '/proximamente') {
+        // feat/candado-solo-panel-comercio (2026-08-02):
+        //
+        // El portal de comercios queda del lado de AFUERA de la cortina. No es
+        // una excepcion caprichosa: ese portal ya esta protegido por login, asi
+        // que lo unico que queda expuesto es un formulario de email y password.
+        //
+        // Lo hacemos para dejar de repartir el token de preview. Ese token pone
+        // una cookie en `.somosmoovy.com` que abre TODO — tienda, conductores y
+        // ops — por 30 dias, y viaja en la URL: alcanza con que el socio piloto
+        // reenvie el link sin querer para que un tercero quede adentro de OPS.
+        // Aca no hay link magico que filtrar: el acceso es la contrasena.
+        //
+        // De regalo resuelve la contencion. Cualquier link que saque al comercio
+        // de /comercios (el logo, "ver mi tienda", el menu del avatar) cae en la
+        // cortina y no en la tienda publica. El borde lo pone el candado, no una
+        // lista de links que haya que mantener a mano.
+        //
+        // El REGISTRO sigue cerrado: todavia no abrimos altas por si solas, y la
+        // regex cubre las tres formas (/registro en el subdominio,
+        // /comercios/registro y /comercio/registro en el dominio principal).
+        const esPortalComercio = portal === 'comercio' || pathname.startsWith('/comercios');
+        const esRegistro = /(^|\/)registro(\/|$)/.test(pathname);
+        const panelDeComercio = esPortalComercio && !esRegistro;
+
+        if (!hasPreview && !panelDeComercio && pathname !== '/proximamente') {
             return NextResponse.rewrite(new URL('/proximamente', request.url));
         }
     }

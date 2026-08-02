@@ -16,6 +16,10 @@ import { SIZE_METADATA, type ProductSize } from "@/lib/product-weight";
 // feat/recargo-moovy-y-tamano-toggle: derivación autoritativa del precio final.
 import { derivePricing } from "@/lib/finance/product-pricing";
 import { computeMerchantSetup } from "@/lib/merchant-setup";
+// feat/el-panel-dice-la-verdad: única fuente de verdad de "está listo para
+// publicarse". La regla estaba duplicada acá adentro (dos veces), en
+// bulk-actions y en el listado del panel, y ya había empezado a divergir.
+import { estaCompleto, faltantesDeProducto } from "@/lib/product-completeness";
 
 /**
  * Rama fix/asignacion-match-vehiculo.
@@ -492,9 +496,14 @@ export async function updateProduct(productId: string, formData: FormData) {
             markupPercent: data.markupPercent,
         });
 
-        const descLen = data.description ? data.description.trim().length : 0;
-        const hasSize = (sizeSnapshot.weightGrams ?? 0) > 0;
-        const isComplete = data.imageUrls.length > 0 && descLen >= 10 && pricing.price > 0 && hasSize;
+        // Se evalúa sobre lo que ESTÁ POR GUARDARSE (no sobre la fila actual):
+        // el auto-ocultado tiene que reaccionar a la edición de este submit.
+        const isComplete = estaCompleto({
+            description: data.description ?? null,
+            price: pricing.price,
+            weightGrams: sizeSnapshot.weightGrams,
+            images: data.imageUrls,
+        });
         const autoHide = !!current?.isActive && !isComplete;
 
         // Update the product
@@ -630,13 +639,7 @@ export async function toggleProductActive(productId: string, isActive: boolean) 
             if (!product) {
                 return { error: "Producto no encontrado." };
             }
-            const missing: string[] = [];
-            if ((product._count?.images ?? 0) === 0) missing.push("una foto");
-            if (!product.description || product.description.trim().length < 10) {
-                missing.push("una descripción (mín. 10 caracteres)");
-            }
-            if (!product.price || product.price <= 0) missing.push("un precio");
-            if (!product.weightGrams || product.weightGrams <= 0) missing.push("el tamaño");
+            const missing = faltantesDeProducto(product);
             if (missing.length > 0) {
                 return { error: `Para mostrarlo en la tienda falta: ${missing.join(", ")}. Completalo primero.` };
             }

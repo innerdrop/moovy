@@ -11,6 +11,91 @@
 ---
 
 
+## 2026-08-02 (rama `feat/el-panel-dice-la-verdad`)
+
+feat: el panel le dice la verdad al comercio (y el candado deja de repartir llaves)
+
+Tres cosas que salieron de la misma pregunta: qué le estamos diciendo al comercio
+que no es cierto.
+
+El aviso ahora dice QUÉ le falta al producto
+La guía de armado contaba productos: prisma.product.count({ isActive: true }).
+Si daba cero, mostraba en rojo "Cargá tu primer producto" y nada más. El comercio
+que importa por planilla —que entra todo como borrador oculto, a propósito— leía
+eso después de haber cargado mil productos y no tenía forma de saber por qué.
+
+Lo peor es que la respuesta ya existía calculada: toggleProductActive arma la
+lista de faltantes ("una foto", "una descripción de al menos 10 caracteres", "un
+precio", "el tamaño") y la muestra... solo si el comercio entra al producto y
+aprieta "Mostrar". Si nunca lo intenta, nunca se entera. La respuesta estaba
+escrita y guardada en un cajón.
+
+Ahora, cuando no hay ningún producto publicado, la guía busca los borradores,
+elige el que menos cosas necesita y lo dice con nombre y apellido: «Coca Cola
+2.5L está guardado pero le falta una foto y el tamaño», con link directo a ese
+producto en vez de al alta de uno nuevo. Si el borrador está completo y solo
+oculto, el texto cambia: «solo falta que lo muestres en la tienda». Lo mismo, más
+corto, en la barra de progreso que acompaña todo el panel.
+
+Esa regla vivía copiada a mano en cuatro lugares y ya había divergido —el chequeo
+del tamaño llegó a unas copias sí y a otras no—, así que se fue a
+src/lib/product-completeness.ts. Es pura a propósito: la importa un componente
+cliente. Los cuatro llamadores usan la misma función y los textos no cambian.
+
+De paso, el conteo pasó a excluir deletedAt. Un producto dado de baja por
+moderación de OPS seguía contando como "ya cargaste tu primer producto": la
+tienda se podía habilitar con cero productos visibles.
+
+Lo que el panel promete y lo que el sitio hacía
+El cartel decía "tu tienda es privada mientras la armás: nadie la ve hasta que
+completes estos pasos". No era cierto. La home solo exigía isActive +
+approvalStatus APPROVED + logo. Un comercio aprobado, sin un solo producto,
+aparecía en la página principal con la tienda vacía mientras su panel le
+aseguraba que nadie lo veía.
+
+Se arreglaron los dos lados. La home y /tiendas ahora exigen además al menos un
+producto publicado. Y el texto pasó a decir la verdad en cada etapa: "estamos
+revisando tu documentación" mientras no está aprobado, "falta que publiques tu
+primer producto" cuando lo está pero no tiene ninguno, y "tu tienda ya aparece en
+Moovy, completá lo que falta para poder abrirla" cuando ya está a la vista.
+
+Quien paga el error no es el comercio: es el comprador que entra a una tienda
+vacía y aprende que en Moovy no hay nada.
+
+Al lado había un agujero más chico y más viejo: /store/[slug] solo hacía
+notFound() cuando el slug no existía. Un comercio pendiente, rechazado o
+desactivado tenía su vidriera pública accesible con el link directo. Ahora la URL
+respeta lo mismo que la home.
+
+El candado deja de repartir llaves
+Para que el socio piloto entrara al panel había que mandarle una URL con
+?preview=TOKEN. Ese token deja una cookie en `.somosmoovy.com` que no abre el
+panel: abre TODO —tienda, conductores y ops— durante 30 días. Y viaja en la URL,
+así que alcanza con que alguien reenvíe el link sin fijarse para que un tercero
+quede parado adentro de OPS.
+
+Ahora el portal de comercios queda del lado de afuera de la cortina. No es una
+excepción caprichosa: ese portal ya está protegido por login, así que lo único
+expuesto es un formulario de email y contraseña. No hay link mágico que filtrar
+porque no hay link: el acceso es la contraseña.
+
+De regalo resuelve la contención. Cualquier link que saque al comercio de
+/comercios —el logo, "ver mi tienda", el menú del avatar— cae en la cortina y no
+en la tienda pública. El borde lo pone el candado y no una lista de links que
+haya que mantener a mano.
+
+El registro sigue cerrado: todavía no abrimos altas por sí solas.
+
+IMPORTANTE, fuera del código: hay que rotar PREVIEW_TOKEN en el VPS. El chequeo
+compara la cookie contra el valor actual de la variable, así que cambiarlo
+invalida al instante todas las cookies que ya andan dando vueltas — incluidas las
+que no sabemos que existen.
+
+También queda scripts/check-comercios-sin-productos.ts, de solo lectura, para
+saber antes del deploy a cuántos comercios les cambia la visibilidad.
+
+**Archivos:** scripts/check-comercios-sin-productos.ts, src/app/(store)/page.tsx, src/app/(store)/store/[slug]/page.tsx, src/app/(store)/tiendas/page.tsx, src/app/api/merchant/setup/route.ts, src/app/comercios/(protected)/page.tsx, src/app/comercios/actions.ts, src/app/comercios/bulk-actions.ts (+5 mas)
+
 ## 2026-08-02 (rama `feat/import-mostrar-los-que-quedan-igual`)
 
 feat: la revisión de la importación muestra los que quedan igual
