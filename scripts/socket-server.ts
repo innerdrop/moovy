@@ -451,6 +451,22 @@ logistica.on("connection", (socket) => {
 // Protected with CRON_SECRET — only the Next.js server should call this
 
 httpServer.on("request", (req, res) => {
+    // Este servidor HTTP lo comparten dos cosas: Socket.IO (que atiende a los
+    // clientes en tiempo real) y este manejador, que existe solo para el
+    // endpoint interno /emit.
+    //
+    // Socket.IO se registra primero, asi que para un pedido a /socket.io/ ya
+    // respondio cuando llegamos aca. Ponerle encabezados a esa respuesta es
+    // ERR_HTTP_HEADERS_SENT, que en Node es fatal y nadie capturaba: el proceso
+    // se moria, pm2 lo revivia, el navegador reintentaba a los pocos segundos y
+    // volvia a pasar. Asi llego a 7476 reinicios, y mientras estaba muerto nginx
+    // devolvia 502 en todo /socket.io/.
+    //
+    // La primera guarda dice "esto no es mio". La segunda es la red de
+    // seguridad, por si manana aparece otro camino que responda antes.
+    if (req.url?.startsWith("/socket.io/")) return;
+    if (res.headersSent || res.writableEnded) return;
+
     // CORS headers — restrict to known origins
     const reqOrigin = req.headers.origin || "";
     const allowedOrigin = ALLOWED_ORIGINS.find(o => reqOrigin.startsWith(o)) || NEXT_URL;

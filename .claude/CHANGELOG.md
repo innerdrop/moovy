@@ -11,6 +11,55 @@
 ---
 
 
+## 2026-08-02 (rama `fix/el-servidor-de-sockets-deja-de-morirse`)
+
+fix: el servidor de sockets deja de morirse en cada conexión
+
+El proceso moovy-socket llevaba 7476 reinicios. No era inestabilidad ni falta de
+memoria: se mataba solo, y lo hacía en cada intento de conexión de un cliente.
+
+Qué pasaba
+El httpServer está compartido. Socket.IO lo usa para atender a los clientes en
+tiempo real, y encima tiene un segundo manejador de "request" para el endpoint
+interno /emit, que es por donde Next le pide que empuje eventos.
+
+Cuando llega un pedido a /socket.io/, Socket.IO lo atiende primero y ya manda la
+respuesta. Después corre el segundo manejador, que arranca poniendo encabezados
+de CORS sobre una respuesta que ya salió. Node considera eso fatal:
+
+  Error [ERR_HTTP_HEADERS_SENT]: Cannot set headers after they are sent
+      at Server.<anonymous> (scripts/socket-server.ts:457:9)
+
+Nadie lo capturaba, así que se llevaba el proceso puesto. pm2 lo revivía, el
+navegador reintentaba la conexión a los pocos segundos, y volvía a pasar. Ese
+era el bucle, y venía de antes: el contador de reinicios no empezó hoy.
+
+El costo real no era el reinicio sino lo que se veía desde afuera. Con el
+proceso muerto, nginx no tenía a quién mandarle /socket.io/ y devolvía 502. En
+el log del servidor eso convivía con otro 502 distinto —el de los buffers de
+nginx, que se arregló aparte— y los dos juntos hacían ver el sitio como si
+fallara al azar.
+
+El arreglo
+Dos guardas al principio del manejador. La primera dice "esto no es mío": los
+pedidos de /socket.io/ son de Socket.IO y no hay que tocarlos. La segunda es la
+red de seguridad, por si mañana aparece otro camino que responda antes.
+
+Son dos líneas y no cambian nada del comportamiento de /emit: ese endpoint sigue
+recibiendo sus encabezados de CORS y su verificación de CRON_SECRET igual que
+antes. Lo único que cambia es que dejamos en paz las respuestas que no son
+nuestras.
+
+Lo que queda pendiente y no es de este arreglo: por qué esas conexiones llegan
+como pedido HTTP común en vez de como upgrade a websocket. Que Socket.IO las
+rechace es correcto; que el proceso muriera por eso, no. Con este cambio el
+servidor sobrevive y el cliente vuelve a caer en polling, que funciona. Si
+queremos websocket de verdad hay que revisar que nginx pase las cabeceras
+Upgrade y Connection en la ubicación /socket.io/ — eso es configuración del
+servidor, no código, y va aparte.
+
+**Archivos:** scripts/socket-server.ts
+
 ## 2026-08-02 (rama `fix/el-correo-y-la-llave-de-fernando`)
 
 fix: el comercio no queda encerrado afuera de su propia cuenta
