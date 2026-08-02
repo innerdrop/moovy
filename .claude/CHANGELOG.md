@@ -11,6 +11,73 @@
 ---
 
 
+## 2026-08-02 (rama `fix/el-correo-y-la-llave-de-fernando`)
+
+fix: el comercio no queda encerrado afuera de su propia cuenta
+
+Dos cosas que salieron de una sola pregunta práctica: cómo le damos acceso al
+socio piloto sin que el dueño de Moovy conozca su contraseña.
+
+El candado dejaba afuera las páginas de contraseña
+La rama anterior sacó el portal de comercios de atrás de la cortina para no
+tener que repartir el token de preview. Pero el mail de "configurá tu
+contraseña" apunta a /restablecer-contrasena, y el link de "olvidaste tu
+contraseña" a /recuperar-contrasena — ninguna de las dos cuelga de /comercios.
+
+El resultado hubiera sido el peor posible: el comercio recibe el mail, toca el
+link y cae en la cortina de "Próximamente", sin ninguna explicación y sin forma
+de entrar a su cuenta. Y no habría manera de que lo reportara, porque no puede
+entrar a ningún lado para decirlo.
+
+Ahora las dos rutas están en la lista blanca del candado. Exponerlas no agrega
+superficie: sin un token válido, una es un formulario que pide un mail y la otra
+dice que el link venció.
+
+Había un segundo tropiezo en el mismo camino. Esas páginas viven en la raíz
+(src/app/recuperar-contrasena), no debajo de ningún portal, así que el rewrite
+por subdominio les anteponía /comercios y pedía una ruta que no existe: tocar
+"olvidaste tu contraseña" desde comercios.somosmoovy.com daba 404. Se sumaron a
+isSystemPath, junto a /api y /mantenimiento.
+
+Cambiar el correo de una cuenta
+No había forma de hacerlo. PATCH /api/admin/users acepta el campo, pero ninguna
+pantalla de OPS lo llama con él — es un endpoint huérfano de los que la regla
+#10 manda cazar. Y aunque se lo invocara a mano, le faltan cuatro cosas.
+
+scripts/cambiar-email-usuario.ts hace la operación completa:
+
+  1. Sincroniza Merchant.email. Es un campo APARTE del User (schema:665) y
+     algunos avisos salen por ahí. Cambiar uno solo deja la cuenta partida.
+  2. Resetea emailVerified. Si no, la cuenta queda marcada como verificada con
+     una dirección que nadie verificó nunca.
+  3. Limpia resetToken y resetTokenExpiry. Un link de recupero emitido para el
+     correo viejo no puede seguir sirviendo después del cambio.
+  4. Escribe en AuditLog. Cambiar el correo es un cambio de identidad: si mañana
+     hay una discusión sobre quién accedió a qué, tiene que haber registro.
+
+Además cubre un agujero del endpoint: su chequeo de duplicados ignora a los
+usuarios borrados lógicamente, pero el @unique de la base no sabe de borrados
+lógicos. Un correo "libre" según la app revienta igual al escribir, con un error
+de Prisma ilegible. El script lo detecta antes y lo dice en castellano.
+
+Muestra el antes y el después —incluidos los comercios que administra— y pide
+que se escriba "cambiar" antes de tocar nada. Todo va en una transacción.
+
+Lo que NO hace, a propósito: cerrar las sesiones ya emitidas. NextAuth v5 usa
+JWT y el token viejo vive hasta que expira. Para el caso que lo motivó no
+importa (la cuenta todavía no la usó nadie), pero si algún día se cambia el
+correo de una cuenta activa, el titular tiene que cerrar sesión y volver a
+entrar.
+
+Lo que queda pendiente y no es urgente: que el usuario pueda cambiar su propio
+correo, con confirmación por mail al nuevo y aviso al viejo. Sin ese aviso,
+quien te agarre la sesión te cambia el correo y te roba la cuenta — el "olvidé
+mi contraseña" pasa a llegarle a él. Necesita tabla nueva, así que va en su
+propia rama con deploy de schema. Conviene tenerlo antes de abrir el registro
+público: la Ley 25.326 le da al titular el derecho de rectificar sus datos.
+
+**Archivos:** scripts/cambiar-email-usuario.ts, src/proxy.ts
+
 ## 2026-08-02 (rama `feat/el-panel-dice-la-verdad`)
 
 feat: el panel le dice la verdad al comercio (y el candado deja de repartir llaves)

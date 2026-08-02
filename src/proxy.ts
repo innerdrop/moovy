@@ -164,7 +164,16 @@ export default auth(async (request) => {
         const esRegistro = /(^|\/)registro(\/|$)/.test(pathname);
         const panelDeComercio = esPortalComercio && !esRegistro;
 
-        if (!hasPreview && !panelDeComercio && pathname !== '/proximamente') {
+        // Sin esto el comercio queda encerrado afuera de su propia cuenta: el mail
+        // de "configura tu contrasena" apunta a /restablecer-contrasena, que NO
+        // cuelga de /comercios — el link llegaba a la cortina y la cuenta quedaba
+        // inaccesible sin ninguna explicacion. Exponerlas no agrega superficie:
+        // sin token valido una pide un mail y la otra dice que el link vencio.
+        const rutaDeContrasena =
+            pathname.startsWith('/recuperar-contrasena') ||
+            pathname.startsWith('/restablecer-contrasena');
+
+        if (!hasPreview && !panelDeComercio && !rutaDeContrasena && pathname !== '/proximamente') {
             return NextResponse.rewrite(new URL('/proximamente', request.url));
         }
     }
@@ -186,10 +195,16 @@ export default auth(async (request) => {
 
     // For subdomains: rewrite to correct portal path
     // CRITICAL: Exempt system paths from portal rewrites
+    // Las rutas de contrasena viven en la raiz (src/app/recuperar-contrasena),
+    // no debajo de ningun portal. Sin esta excepcion, tocar "olvidaste tu
+    // contrasena" desde comercios.somosmoovy.com pedia
+    // /comercios/recuperar-contrasena, que no existe: 404.
     const isSystemPath = pathname.startsWith('/api') ||
         pathname.startsWith('/_next') ||
         pathname.includes('.') ||
-        pathname === '/mantenimiento';
+        pathname === '/mantenimiento' ||
+        pathname.startsWith('/recuperar-contrasena') ||
+        pathname.startsWith('/restablecer-contrasena');
 
     if (!isSystemPath) {
         if (portal === 'comercio') {
