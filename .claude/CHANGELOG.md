@@ -11,6 +11,93 @@
 ---
 
 
+## 2026-08-02 (rama `fix/import-no-pisa-el-trabajo`)
+
+fix: reimportar una lista de precios deja de romper el catálogo
+
+El comercio importa su lista, después le carga fotos, y al mes siguiente vuelve a
+importar con los precios nuevos. Hoy esa segunda importación tiene tres formas de
+arruinarle el trabajo, y ninguna avisa. Las fotos NO se pierden (viven en
+ProductImage y el importador no la toca), pero lo que sí pasa es peor.
+
+El stock quedaba en cero
+Si el archivo no trae columna de stock, el cliente manda el campo vacío, el server
+lo resolvía como 0 y lo escribía. Catálogo entero sin stock, con la tienda abierta
+y sin ningún error a la vista. Es el bug más caro de los tres.
+
+El código repetido creaba un fantasma
+Cuando un código aparecía dos veces en el mismo archivo, la segunda fila se
+guardaba con el código en blanco. Ese producto ya no empareja nunca más, así que
+se vuelve a duplicar en cada importación siguiente.
+
+Excel rompía el emparejamiento en silencio
+7790895000129 se convierte en "7.79089E+12" al guardar desde Excel. Se guardaba
+tal cual, no emparejaba con nada, y creaba un duplicado sin foto. Y al revés: se
+come el cero de la izquierda, y un EAN-13 pasa a ser el UPC-12 equivalente — que
+es la MISMA mercadería pero no emparejaba.
+
+La regla
+Un campo vacío nunca pisa un campo lleno. Si el archivo no trae stock, el stock no
+se toca. Si no trae descripción, la descripción no se toca. El precio sí se
+actualiza siempre, porque es el motivo por el que alguien reimporta. Y la foto, la
+categoría y el tamaño no se tocan nunca desde una importación.
+
+src/lib/import/plan.ts (nuevo, puro, 23 tests)
+Decide qué se crea, qué se actualiza, qué se omite y qué quedó afuera del archivo.
+Separado de las rutas a propósito: la pantalla de "qué va a cambiar" usa
+EXACTAMENTE el mismo plan que después se aplica. Si el preview y la escritura
+calcularan por separado, el preview mentiría — y un preview que miente es peor que
+no tener preview.
+- claveDeCodigo(): ignora espacios y guiones, y descarta ceros a la izquierda solo
+  en códigos numéricos, porque EAN-13 = "0" + UPC-12 es la misma mercadería. Los
+  códigos internos con letras se comparan tal cual, en mayúsculas.
+- esCodigoRotoPorExcel(): la notación científica NO se puede revertir (los dígitos
+  se perdieron), así que la fila se omite con un mensaje que explica cómo arreglar
+  el archivo, en vez de guardar basura.
+- claveDeNombre(): sugiere emparejar un alta con un producto que ya existe y se
+  llama igual. SUGIERE: nunca empareja solo. Un nombre repetido en el catálogo
+  queda descartado, porque "GALLETITAS COFLER BLOCK" son tres productos distintos
+  y sugerir el equivocado es peor que no sugerir nada.
+- Un producto que empareja pero está dado de baja por moderación se actualiza y se
+  avisa que sigue oculto.
+
+La pantalla de revisión
+Nueva ruta /api/comercios/products/import/preview: no escribe nada y devuelve el
+plan. El asistente ahora tiene un paso más entre mapear y guardar, con cuatro
+grupos: los que cambian de precio con el antes y el después, los que se crean, los
+que se omiten con el motivo, y los que están en la tienda y no vinieron en el
+archivo. Las altas cuyo nombre coincide con un producto existente traen la elección
+"es otro producto" / "es el mismo, actualizale el precio".
+
+src/lib/import/entrada.ts
+El parseo del cuerpo lo comparten las dos rutas, para que preview y escritura
+partan de las mismas filas.
+
+De paso: idempotencia
+Los productos cuyo precio no cambia ya no se escriben. Reimportar el mismo archivo
+dos veces no hace nada la segunda vez.
+
+Verificado contra los archivos reales de Pixel Point
+1.155 productos cargados hoy contra la lista nueva de 1.311: emparejan los 1.155,
+cero duplicados, 156 altas. 1.122 de esos precios son el mismo número expresado
+sin el 12% que traía el archivo anterior, así que esa importación va con recargo
+12% o baja todo el catálogo un 10,7%.
+
+De paso: los tests de turnos programados dejan de depender del reloj y del huso
+Tres fallaban según la hora a la que se corrieran —el founder los corrió 23:55 y
+"dentro de 2 horas" cayó a la 1:55, fuera del horario de atención— y otros tres
+solo pasaban en una máquina argentina, porque armaban el turno con setHours sobre
+la hora LOCAL mientras el schema valida en hora de Ushuaia (el VPS corre en UTC).
+Ahora el bloque congela el reloj en un mediodía de Ushuaia y los turnos se arman
+como instantes UTC explícitos. Verificado en siete husos, de Los Ángeles a
+Auckland: 53 de 53.
+
+Queda para la rama siguiente: deshacer una importación. Necesita una tabla nueva
+para guardar el valor anterior de cada campo, o sea cambio de schema y db push en
+producción, y con la pantalla de revisión andando ya no es urgente.
+
+**Archivos:** _to_delete/_tmp_CHANGELOG.md, _to_delete/_tmp_CLAUDE.md, src/__tests__/import-plan.test.ts, src/__tests__/orders.test.ts, src/app/api/comercios/products/import/preview/route.ts, src/app/api/comercios/products/import/route.ts, src/app/comercios/(protected)/productos/importar/page.tsx, src/lib/import/entrada.ts (+1 mas)
+
 ## 2026-07-30 (rama `feat/barras-flotantes-y-copy`)
 
 fix: las barras inferiores dejan de esconderse detrás de la navegación (regla #47)

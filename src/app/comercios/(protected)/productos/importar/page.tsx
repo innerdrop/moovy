@@ -10,9 +10,24 @@
 
 import { useState, useMemo } from "react";
 import Link from "next/link";
-import { ArrowLeft, Upload, FileText, Loader2, CheckCircle2, AlertTriangle, X } from "lucide-react";
+import { ArrowLeft, Upload, FileText, Loader2, CheckCircle2, AlertTriangle, X, Check } from "lucide-react";
 
 type Field = "name" | "price" | "description" | "barcode" | "stock";
+
+// fix/import-no-pisa-el-trabajo: lo que devuelve /import/preview. Es el MISMO plan
+// que después aplica /import, calculado con el mismo módulo puro.
+type Sugerencia = { id: string; name: string; price: number };
+type Preview = {
+    resumen: { filas: number; actualizan: number; sinCambios: number; crean: number;
+               omitidas: number; ausentes: number; invalidas: number };
+    actualizar: { barcode: string | null; nombre: string; via: string; estaEliminado: boolean;
+                  cambios: string[]; precioAntes: number; precioDespues: number;
+                  stockAntes: number; stockDespues: number | null }[];
+    crear: { nombre: string; barcode: string | null; precio: number; sugerencia: Sugerencia | null }[];
+    omitidas: { nombre: string; motivo: string; detalle: string }[];
+    ausentes: { nombre: string; barcode: string | null; precio: number }[];
+    invalidas: { row: number; reason: string }[];
+};
 type Mapping = Record<Field, number | null>;
 
 const FIELDS: { key: Field; label: string; required: boolean; hint: string }[] = [
@@ -149,9 +164,13 @@ export default function ImportarProductosPage() {
     const [headers, setHeaders] = useState<string[]>([]);
     const [rows, setRows] = useState<string[][]>([]);
     const [mapping, setMapping] = useState<Mapping>({ name: null, price: null, description: null, barcode: null, stock: null });
-    const [step, setStep] = useState<"upload" | "map" | "result">("upload");
+    const [step, setStep] = useState<"upload" | "map" | "revisar" | "result">("upload");
     const [importing, setImporting] = useState(false);
-    const [result, setResult] = useState<{ created: number; updated: number; skipped: number; total: number; errors: { row: number; reason: string }[] } | null>(null);
+    const [result, setResult] = useState<{ created: number; updated: number; unchanged?: number; skipped: number; total: number; errors: { row: number; reason: string }[] } | null>(null);
+    // Paso de revisión: el plan que devolvió el server y, por cada alta con sugerencia,
+    // si el comercio decidió que en realidad es un producto que ya tiene.
+    const [plan, setPlan] = useState<Preview | null>(null);
+    const [emparejar, setEmparejar] = useState<Record<string, string>>({});
     const [error, setError] = useState("");
     // feat/import-revision: códigos editados por el comercio en el paso de revisión.
     // Key = índice de fila en `rows`. Valor = código nuevo (o "" si lo borró).
@@ -232,6 +251,41 @@ export default function ImportarProductosPage() {
         return { valid, invalidName, invalidPrice, validEan, internal, noCode, excluded, payload };
     }, [mapping, rows, codeOverrides, excludedRows]);
 
+    // El cuerpo que va a las dos rutas (previsualizar y aplicar). `emparejar` lleva
+    // las altas que el comercio decidió que en realidad son un producto que ya tiene.
+    function cuerpo() {
+        return {
+            rows: preview!.payload.map((r: any) => {
+                const id = emparejar[`${r.barcode || ""}|${r.name}`];
+                return id ? { ...r, matchId: id } : r;
+            }),
+            markupPercent: treatAsFinal ? 0 : (Number(markupPercent) || 0),
+            treatAsFinal,
+        };
+    }
+
+    // fix/import-no-pisa-el-trabajo: nada se escribe hasta ver qué va a cambiar.
+    async function doPreview() {
+        if (!preview || preview.payload.length === 0) return;
+        setImporting(true);
+        setError("");
+        try {
+            const res = await fetch("/api/comercios/products/import/preview", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(cuerpo()),
+            });
+            const data = await res.json();
+            if (!res.ok) { setError(data.error || "No se pudo previsualizar."); return; }
+            setPlan(data);
+            setStep("revisar");
+        } catch {
+            setError("Error de conexión al previsualizar.");
+        } finally {
+            setImporting(false);
+        }
+    }
+
     async function doImport() {
         if (!preview || preview.payload.length === 0) return;
         setImporting(true);
@@ -242,11 +296,7 @@ export default function ImportarProductosPage() {
                 headers: { "Content-Type": "application/json" },
                 // El precio de payload es el del LOCAL; el server deriva el final con
                 // el recargo del lote (o lo respeta si son precios finales).
-                body: JSON.stringify({
-                    rows: preview.payload,
-                    markupPercent: treatAsFinal ? 0 : (Number(markupPercent) || 0),
-                    treatAsFinal,
-                }),
+                body: JSON.stringify(cuerpo()),
             });
             const data = await res.json();
             if (!res.ok) { setError(data.error || "No se pudo importar."); return; }
@@ -338,6 +388,20 @@ export default function ImportarProductosPage() {
                             })}
                         </div>
                     </div>
+
+                    {/* fix/import-no-pisa-el-trabajo: si no mapeó stock, el servidor NO lo
+                        pisa (antes lo dejaba en cero). Lo decimos acá para que no sorprenda. */}
+                    {mapping.stock === null && (
+                        <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 flex gap-3">
+                            <svg className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <p className="text-sm text-blue-900 leading-relaxed">
+                                <span className="font-bold">No mapeaste la columna de stock.</span>{" "}
+                                El stock que ya tenés cargado en cada producto se mantiene tal cual. Los productos nuevos entran con stock cero.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Precio en Moovy — feat/recargo-moovy-y-tamano-toggle: el precio
                         del archivo es el del LOCAL. Recargo del lote o escotilla. */}
@@ -483,12 +547,12 @@ export default function ImportarProductosPage() {
                             </div>
 
                             <div className="flex gap-3">
-                                <button onClick={() => { setStep("upload"); setRows([]); setHeaders([]); }} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition flex items-center gap-1.5">
+                                <button onClick={() => { setStep("upload"); setRows([]); setHeaders([]); setPlan(null); setEmparejar({}); }} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition flex items-center gap-1.5">
                                     <X className="w-4 h-4" /> Cambiar archivo
                                 </button>
-                                <button onClick={doImport} disabled={importing || preview.valid === 0} className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                                <button onClick={doPreview} disabled={importing || preview.valid === 0} className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
                                     {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                                    Importar {preview.valid} productos
+                                    Ver qué va a cambiar
                                 </button>
                             </div>
                         </>
@@ -497,6 +561,134 @@ export default function ImportarProductosPage() {
             )}
 
             {/* Paso 3: resultado */}
+            {/* Paso 3: revisar — fix/import-no-pisa-el-trabajo. Nada se escribió
+                todavía. Este es el MISMO plan que se va a aplicar, calculado por el
+                mismo módulo puro que usa la ruta de importación. */}
+            {step === "revisar" && plan && (
+                <div className="space-y-5">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                        <p className="text-sm font-bold text-gray-900">Qué va a cambiar</p>
+                        <p className="text-xs text-gray-500 mt-0.5">Todavía no se guardó nada. Revisá y confirmá abajo.</p>
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                            <div className="bg-amber-50 rounded-xl p-3">
+                                <p className="text-2xl font-bold text-amber-700">{plan.resumen.actualizan}</p>
+                                <p className="text-[11px] font-semibold text-amber-800">cambian de precio</p>
+                            </div>
+                            <div className="bg-green-50 rounded-xl p-3">
+                                <p className="text-2xl font-bold text-green-700">{plan.resumen.crean}</p>
+                                <p className="text-[11px] font-semibold text-green-800">se crean nuevos</p>
+                            </div>
+                            <div className="bg-gray-50 rounded-xl p-3">
+                                <p className="text-2xl font-bold text-gray-700">{plan.resumen.sinCambios}</p>
+                                <p className="text-[11px] font-semibold text-gray-600">quedan igual</p>
+                            </div>
+                            <div className="bg-red-50 rounded-xl p-3">
+                                <p className="text-2xl font-bold text-red-700">{plan.resumen.omitidas}</p>
+                                <p className="text-[11px] font-semibold text-red-800">se omiten</p>
+                            </div>
+                        </div>
+                        <div className="mt-3 text-xs text-gray-500">
+                            Ni la foto, ni la categoría, ni el tamaño de tus productos se tocan nunca desde una importación.
+                        </div>
+                    </div>
+
+                    {plan.actualizar.length > 0 && (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                            <p className="text-sm font-bold text-gray-900 mb-3">Cambian de precio ({plan.actualizar.length})</p>
+                            <div className="max-h-80 overflow-auto rounded-xl border border-gray-100">
+                                <table className="w-full text-sm">
+                                    <tbody>
+                                        {plan.actualizar.map((a, i) => (
+                                            <tr key={i} className="border-b border-gray-50 last:border-0">
+                                                <td className="px-3 py-2 text-gray-800">{a.nombre}</td>
+                                                <td className="px-3 py-2 text-right text-gray-400 line-through whitespace-nowrap">${a.precioAntes.toLocaleString("es-AR")}</td>
+                                                <td className="px-3 py-2 text-right font-bold text-gray-900 whitespace-nowrap">${a.precioDespues.toLocaleString("es-AR")}</td>
+                                                <td className="px-3 py-2 text-right text-xs font-semibold whitespace-nowrap">
+                                                    <span className={a.precioDespues >= a.precioAntes ? "text-amber-600" : "text-blue-600"}>
+                                                        {a.precioAntes > 0 ? `${a.precioDespues >= a.precioAntes ? "+" : ""}${Math.round((a.precioDespues / a.precioAntes - 1) * 1000) / 10}%` : ""}
+                                                    </span>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {plan.crear.length > 0 && (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                            <p className="text-sm font-bold text-gray-900">Se crean como borradores ({plan.crear.length})</p>
+                            <p className="text-xs text-gray-500 mt-0.5 mb-3">Entran ocultos hasta que les cargues foto y tamaño.</p>
+                            <div className="max-h-80 overflow-auto space-y-2">
+                                {plan.crear.map((c, i) => {
+                                    const k = `${c.barcode || ""}|${c.nombre}`;
+                                    return (
+                                        <div key={i} className="rounded-xl border border-gray-100 px-3 py-2">
+                                            <div className="flex items-center justify-between gap-3 text-sm">
+                                                <span className="text-gray-800">{c.nombre}</span>
+                                                <span className="font-bold text-gray-900 whitespace-nowrap">${c.precio.toLocaleString("es-AR")}</span>
+                                            </div>
+                                            {c.sugerencia && (
+                                                <div className="mt-2 bg-amber-50 border border-amber-100 rounded-lg p-2.5 text-xs">
+                                                    <p className="font-semibold text-amber-900">Ya tenés un producto que se llama igual: “{c.sugerencia.name}” (${c.sugerencia.price.toLocaleString("es-AR")}).</p>
+                                                    <div className="flex gap-3 mt-2">
+                                                        <label className="flex items-center gap-1.5 cursor-pointer">
+                                                            <input type="radio" name={`s-${i}`} checked={!emparejar[k]} onChange={() => setEmparejar((p) => { const n = { ...p }; delete n[k]; return n; })} />
+                                                            <span className="text-amber-900">Es otro producto, crealo</span>
+                                                        </label>
+                                                        <label className="flex items-center gap-1.5 cursor-pointer">
+                                                            <input type="radio" name={`s-${i}`} checked={emparejar[k] === c.sugerencia.id} onChange={() => setEmparejar((p) => ({ ...p, [k]: c.sugerencia!.id }))} />
+                                                            <span className="font-semibold text-amber-900">Es el mismo, actualizale el precio</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+
+                    {plan.omitidas.length > 0 && (
+                        <div className="bg-red-50 border border-red-100 rounded-2xl p-5">
+                            <p className="text-sm font-bold text-red-900 mb-2">Se omiten ({plan.omitidas.length})</p>
+                            <ul className="space-y-1.5 max-h-48 overflow-auto">
+                                {plan.omitidas.map((o, i) => (
+                                    <li key={i} className="text-xs text-red-800 leading-relaxed">{o.detalle}</li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    {plan.ausentes.length > 0 && (
+                        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+                            <p className="text-sm font-bold text-gray-900">Están en tu tienda y no vinieron en el archivo ({plan.resumen.ausentes})</p>
+                            <p className="text-xs text-gray-500 mt-0.5 mb-3">No se tocan: quedan como están, con su precio actual.</p>
+                            <div className="max-h-40 overflow-auto text-sm text-gray-600 space-y-1">
+                                {plan.ausentes.map((a, i) => (
+                                    <div key={i} className="flex justify-between gap-3">
+                                        <span>{a.nombre}</span>
+                                        <span className="whitespace-nowrap">${a.precio.toLocaleString("es-AR")}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex gap-3">
+                        <button onClick={() => setStep("map")} className="px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-600 hover:bg-gray-100 transition flex items-center gap-1.5">
+                            <ArrowLeft className="w-4 h-4" /> Volver
+                        </button>
+                        <button onClick={doImport} disabled={importing} className="flex-1 px-4 py-2.5 rounded-xl text-sm font-bold bg-blue-600 text-white hover:bg-blue-700 transition disabled:opacity-50 flex items-center justify-center gap-2">
+                            {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                            Aplicar los cambios
+                        </button>
+                    </div>
+                </div>
+            )}
+
             {step === "result" && result && (
                 <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-8 text-center space-y-4">
                     <CheckCircle2 className="w-14 h-14 mx-auto text-green-500" />
@@ -504,6 +696,7 @@ export default function ImportarProductosPage() {
                     <p className="text-gray-600">
                         Se crearon <b>{result.created}</b> productos nuevos
                         {result.updated > 0 && <> y se actualizaron <b>{result.updated}</b></>}.
+                        {result.unchanged ? <> <b>{result.unchanged}</b> ya estaban igual y no se tocaron.</> : null}
                         {result.skipped > 0 && <> Se saltearon <b>{result.skipped}</b> filas con problemas.</>}
                     </p>
                     <p className="text-sm text-gray-500">Están como borradores. Cargales una foto para publicarlos.</p>

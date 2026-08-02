@@ -1,12 +1,16 @@
 // API: Importación masiva de productos por el COMERCIO (desde CSV).
-// Rama: feat/import-productos-comercio
+// Rama: feat/import-productos-comercio · fix/import-no-pisa-el-trabajo
 //
 // A diferencia del import de OPS (catálogo maestro, merchantId null, formato rico),
 // este crea productos DEL comercio como BORRADORES (isActive:false, sin foto), a
 // partir de lo poco que trae un export real: nombre, descripción (si viene),
 // precio y barcode. Todo lo demás (foto, tamaño, categoría) lo completa el
-// comercio después. Deduplica por barcode: si el comercio ya tiene ese barcode,
-// actualiza precio/descr/stock en vez de duplicar.
+// comercio después.
+//
+// El QUÉ se crea, QUÉ se actualiza y QUÉ se omite lo decide src/lib/import/plan.ts,
+// que es puro y está testeado, y es el MISMO que usa la ruta /preview. Acá solo se
+// escribe el plan. Regla que lo gobierna: un campo vacío NUNCA pisa un campo lleno —
+// una importación sin columna de stock deja el stock como está, no en cero.
 //
 // NOTA: usamos (prisma as any) en las ops que tocan `barcode` porque el campo es
 // nuevo en el schema; el client tipado lo conoce recién tras `prisma generate`
@@ -15,20 +19,10 @@
 import { NextResponse } from "next/server";
 import { requireMerchantApi } from "@/lib/merchant-auth";
 import { prisma } from "@/lib/prisma";
-import { z } from "zod";
-// feat/recargo-moovy-y-tamano-toggle: precio del local + recargo del lote → final.
-import { deriveImportPricing } from "@/lib/finance/product-pricing";
+import { leerEntrada, SELECT_EXISTENTES } from "@/lib/import/entrada";
+import { planificarImport, type ProductoExistente } from "@/lib/import/plan";
 
-const MAX_ROWS = 2000;
 const CREATE_CHUNK = 400;
-
-const RowSchema = z.object({
-    name: z.string().trim().min(1).max(200),
-    description: z.string().trim().max(2000).optional().nullable(),
-    price: z.coerce.number().min(0).max(100_000_000),
-    barcode: z.string().trim().max(64).optional().nullable(),
-    stock: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
-});
 
 function generateSlug(name: string): string {
     const base = name
@@ -57,96 +51,58 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: "Body inválido" }, { status: 400 });
     }
 
-    const rows = (body as any)?.rows;
-    if (!Array.isArray(rows) || rows.length === 0) {
-        return NextResponse.json({ error: "No se recibieron filas para importar" }, { status: 400 });
-    }
-    if (rows.length > MAX_ROWS) {
-        return NextResponse.json({ error: `Máximo ${MAX_ROWS} productos por importación` }, { status: 400 });
-    }
+    const entrada = leerEntrada(body);
+    if ("error" in entrada) return NextResponse.json({ error: entrada.error }, { status: 400 });
 
-    // feat/recargo-moovy-y-tamano-toggle: recargo del lote (0..1000%) + escotilla
-    // "estos ya son precios finales". Clampeamos server-side (no confiar en el cliente).
-    const rawMarkup = Number((body as any)?.markupPercent);
-    const markupPercent = Number.isFinite(rawMarkup) ? Math.min(1000, Math.max(0, rawMarkup)) : 0;
-    const treatAsFinal = (body as any)?.treatAsFinal === true;
-
-    // 1. Validar fila por fila (server-side, no confiar en el cliente).
-    const errors: { row: number; reason: string }[] = [];
-    type Clean = { name: string; description: string | null; price: number; basePrice: number | null; markupPercent: number | null; barcode: string | null; stock: number };
-    const clean: Clean[] = [];
-    const seenBarcodes = new Set<string>();
-
-    rows.forEach((raw: any, i: number) => {
-        const parsed = RowSchema.safeParse(raw);
-        if (!parsed.success) {
-            errors.push({ row: i + 1, reason: parsed.error.issues[0]?.message || "Fila inválida" });
-            return;
-        }
-        const d = parsed.data;
-        let barcode = d.barcode && d.barcode.length > 0 ? d.barcode : null;
-        // Dedup dentro del mismo archivo: si el barcode ya vino, lo dejamos sin
-        // barcode para no chocar con el índice único (mejor duplicar sin código
-        // que perder la fila).
-        if (barcode && seenBarcodes.has(barcode)) barcode = null;
-        if (barcode) seenBarcodes.add(barcode);
-        // El precio mapeado es el del LOCAL; derivamos el final con el recargo del lote.
-        const mapped = Math.round(d.price * 100) / 100;
-        const pricing = deriveImportPricing(mapped, markupPercent, treatAsFinal);
-        clean.push({
-            name: d.name,
-            description: d.description && d.description.length > 0 ? d.description : null,
-            price: pricing.price,
-            basePrice: pricing.basePrice,
-            markupPercent: pricing.markupPercent,
-            barcode,
-            stock: d.stock ?? 0,
-        });
-    });
-
-    if (clean.length === 0) {
+    const errors = [...entrada.errores];
+    if (entrada.filas.length === 0) {
         return NextResponse.json({ created: 0, updated: 0, skipped: 0, errors }, { status: 200 });
     }
 
-    // 2. Deduplicar contra lo que el comercio YA tiene (por barcode).
-    const barcodes = clean.map((c) => c.barcode).filter((b): b is string => !!b);
-    const existing = barcodes.length
-        ? await (prisma as any).product.findMany({
-              where: { merchantId: merchant.id, barcode: { in: barcodes } },
-              select: { id: true, barcode: true },
-          })
-        : [];
-    const existingByBarcode = new Map<string, string>(existing.map((p: any) => [p.barcode, p.id]));
+    // Traemos TODOS los productos del comercio. No se puede filtrar por
+    // `barcode: { in: [...] }` porque el emparejamiento es sobre el código normalizado
+    // (sin espacios, sin el cero que Excel se come) y sobre el nombre, y eso no se
+    // puede expresar en SQL sobre el valor crudo. Son seis columnas de ~1.000 filas.
+    const existentes: ProductoExistente[] = await (prisma as any).product.findMany({
+        where: { merchantId: merchant.id },
+        select: SELECT_EXISTENTES,
+    });
 
-    const toCreate = clean.filter((c) => !(c.barcode && existingByBarcode.has(c.barcode)));
-    const toUpdate = clean.filter((c) => c.barcode && existingByBarcode.has(c.barcode));
+    const plan = planificarImport(entrada.filas, existentes);
+    for (const o of plan.omitidas) errors.push({ row: 0, reason: o.detalle });
 
     let created = 0;
     let updated = 0;
+    let sinCambios = 0;
+    let actualizadosOcultos = 0;
 
-    // 3. Updates (los que ya existen por barcode): precio/descr/stock.
-    for (const c of toUpdate) {
+    // 1. Updates: solo los campos que el archivo realmente trae (ver plan.ts). Los que
+    // no cambian nada no se escriben — así reimportar el mismo archivo dos veces no
+    // hace nada la segunda vez.
+    for (const a of plan.aActualizar) {
+        if (a.cambios.length === 0) {
+            sinCambios++;
+            continue;
+        }
         try {
-            await (prisma as any).product.update({
-                where: { id: existingByBarcode.get(c.barcode!) },
-                data: {
-                    price: c.price,
-                    basePrice: c.basePrice,
-                    markupPercent: c.markupPercent,
-                    stock: c.stock,
-                    ...(c.description ? { description: c.description } : {}),
-                },
-            });
+            await (prisma as any).product.update({ where: { id: a.id }, data: a.datos });
             updated++;
-        } catch (err) {
-            errors.push({ row: 0, reason: `No se pudo actualizar "${c.name}"` });
+            if (a.estaEliminado) actualizadosOcultos++;
+        } catch {
+            errors.push({ row: 0, reason: `No se pudo actualizar "${a.fila.name}"` });
         }
     }
+    if (actualizadosOcultos > 0) {
+        errors.push({
+            row: 0,
+            reason: `${actualizadosOcultos} producto(s) se actualizaron pero siguen ocultos porque fueron dados de baja por moderación.`,
+        });
+    }
 
-    // 4. Creates: como BORRADORES (isActive:false, sin foto), en lotes.
-    for (let i = 0; i < toCreate.length; i += CREATE_CHUNK) {
-        const chunk = toCreate.slice(i, i + CREATE_CHUNK);
-        const data = chunk.map((c) => ({
+    // 2. Creates: como BORRADORES (isActive:false, sin foto), en lotes.
+    for (let i = 0; i < plan.aCrear.length; i += CREATE_CHUNK) {
+        const chunk = plan.aCrear.slice(i, i + CREATE_CHUNK);
+        const data = chunk.map(({ fila: c }) => ({
             name: c.name,
             slug: generateSlug(c.name),
             description: c.description,
@@ -154,7 +110,7 @@ export async function POST(request: Request) {
             basePrice: c.basePrice,
             markupPercent: c.markupPercent,
             costPrice: 0,
-            stock: c.stock,
+            stock: c.stock ?? 0, // producto nuevo: sin dato, arranca en cero
             isActive: false, // borrador: oculto hasta que el comercio le ponga foto
             merchantId: merchant.id,
             barcode: c.barcode,
@@ -172,8 +128,9 @@ export async function POST(request: Request) {
         {
             created,
             updated,
-            skipped: errors.length,
-            total: rows.length,
+            unchanged: sinCambios,
+            skipped: plan.omitidas.length,
+            total: entrada.filas.length,
             errors: errors.slice(0, 50), // no inundar la respuesta
         },
         { status: 200 },

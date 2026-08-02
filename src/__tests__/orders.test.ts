@@ -255,6 +255,21 @@ describe("Order Creation - Schema Validation", () => {
   });
 
   describe("CreateOrderSchema - Scheduled delivery validation", () => {
+    // fix/import-no-pisa-el-trabajo (de paso): estos tests arman el turno como
+    // "ahora + N horas", así que pasaban o fallaban según la hora a la que se
+    // corrieran. A las 23:55, "dentro de 2 horas" cae a la 1:55 y se lo come la
+    // regla de horario de atención, y "exactamente 48 horas" cae a las 23:55 del
+    // otro día. Congelamos el reloj en un mediodía de Ushuaia para que cada test
+    // pruebe la regla que dice probar y no la hora de la máquina.
+    // Solo Date: los timers reales quedan como están.
+    beforeAll(() => {
+      vi.useFakeTimers({ toFake: ["Date"] });
+      vi.setSystemTime(new Date("2026-08-05T15:00:00Z")); // 12:00 en Ushuaia (UTC-3)
+    });
+    afterAll(() => {
+      vi.useRealTimers();
+    });
+
     it("should reject scheduled delivery without slot times", () => {
       const invalidOrder = {
         items: [
@@ -446,15 +461,11 @@ describe("Order Creation - Schema Validation", () => {
     });
 
     it("should reject scheduled delivery outside business hours (before 9 AM)", () => {
-      // Create a date at 8 AM (outside business hours)
-      const date = new Date();
-      date.setHours(8, 0, 0, 0);
-      // If it's already past 8 AM today, schedule for tomorrow
-      if (date <= new Date()) {
-        date.setDate(date.getDate() + 1);
-      }
-
-      const startTime = date;
+      // El schema valida el horario en hora de USHUAIA (el VPS corre en UTC), así que
+      // el turno se arma como instante UTC explícito y no con setHours sobre la hora
+      // local: con setHours este test pasaba solo en máquinas argentinas.
+      // 11:00 UTC = 08:00 en Ushuaia, al día siguiente del reloj congelado.
+      const startTime = new Date("2026-08-06T11:00:00Z");
       const endTime = new Date(startTime.getTime() + 2 * 60 * 60_000);
 
       const invalidOrder = {
@@ -478,15 +489,9 @@ describe("Order Creation - Schema Validation", () => {
     });
 
     it("should reject scheduled delivery outside business hours (at 22 or later)", () => {
-      // Create a date at 22:00 (10 PM) or later (outside business hours)
-      const date = new Date();
-      date.setHours(22, 0, 0, 0);
-      // If it's already past this time today, schedule for tomorrow
-      if (date <= new Date()) {
-        date.setDate(date.getDate() + 1);
-      }
-
-      const startTime = date;
+      // Mismo motivo que el test anterior: instante UTC explícito, no hora local.
+      // 01:00 UTC del 6 = 22:00 en Ushuaia del 5, diez horas después del reloj congelado.
+      const startTime = new Date("2026-08-06T01:00:00Z");
       const endTime = new Date(startTime.getTime() + 2 * 60 * 60_000);
 
       const invalidOrder = {
@@ -518,13 +523,12 @@ describe("Order Creation - Schema Validation", () => {
       // que entre las 13:30 y las 15:00 el test fallaba aunque el código
       // estuviera perfecto. El founder se lo encontró corriendo a las 13:38.
       //
-      // Mañana a las 15:00 está siempre entre 15 y 39 horas por delante: cumple
-      // el mínimo de 1.5 h y el máximo de 48 h a cualquier hora del día.
-      const date = new Date();
-      date.setDate(date.getDate() + 1);
-      date.setHours(15, 0, 0, 0);
-
-      const startTime = date;
+      // fix/import-no-pisa-el-trabajo: quedaba una segunda dependencia, la del
+      // huso de la máquina. setHours(15) es 15:00 LOCAL, y el schema valida en
+      // hora de Ushuaia, así que en un huso lejano el turno caía de madrugada.
+      // 18:00 UTC = 15:00 en Ushuaia, al día siguiente del reloj congelado: 27
+      // horas por delante, entre el mínimo de 1.5 h y el máximo de 48 h.
+      const startTime = new Date("2026-08-06T18:00:00Z");
       const endTime = new Date(startTime.getTime() + 2 * 60 * 60_000);
 
       const validOrder = {
