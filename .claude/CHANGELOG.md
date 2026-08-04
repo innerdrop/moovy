@@ -11,6 +11,93 @@
 ---
 
 
+## 2026-08-04 (rama `chore/los-respaldos-salen-del-servidor`)
+
+chore: los respaldos salen del servidor
+
+Hasta hoy Moovy tenía copias, y todas vivían en el mismo disco que la base que
+estaban respaldando. Es sacarle fotocopia a los papeles importantes y guardarlas
+en el mismo cajón que los originales.
+
+Qué había, en realidad
+La revisión encontró más de lo esperado, en las dos direcciones.
+
+A favor: las fotos de productos NO estaban en riesgo. Desde el 28 de marzo de
+2026 las subidas van a Cloudflare R2 (`src/lib/r2-storage.ts`, con caída a disco
+local si faltan las variables). En el disco del VPS quedan 79 archivos, todos
+anteriores a esa fecha. La sesión anterior había afirmado lo contrario mirando
+solo una rama del `if`.
+
+En contra: la base de datos estaba en un solo lugar. Y es lo único
+irreemplazable — el código está en GitHub, la infraestructura se rearma en una
+tarde, las fotos están en R2, pero el catálogo cargado, los pedidos, los
+usuarios y las direcciones no existen en ningún otro lado.
+
+También: R2 es almacenamiento, no respaldo. Las fotos están fuera del servidor
+pero hay UNA sola copia. Si un error borra objetos, no hay a dónde volver.
+
+Las tres reglas del diseño
+El servidor escribe, nunca borra. El token de R2 que vive en el VPS puede crear
+objetos y no puede eliminarlos, y el script no tiene un solo `delete` contra la
+nube. Si alguien entra al servidor, puede cifrar la base pero no puede vaciar las
+copias — que es exactamente el modo en que el ransomware gana. La limpieza de lo
+viejo la hace una regla de ciclo de vida en Cloudflare, que el servidor no puede
+tocar. Esto corrige el diseño de la noche anterior, que tenía el `find -delete`
+adentro del script y por lo tanto le daba al VPS la llave para vaciarlo todo.
+
+Hay una copia que el servidor no puede alcanzar. `traer-respaldo.ps1` la trae a
+la máquina del titular con un token distinto, de solo lectura, que el VPS nunca
+vio. Es "tirar en vez de empujar": aunque el servidor caiga entero y sus llaves
+con él, esa copia sigue existiendo.
+
+Nada se sube sin cifrar. El dump lleva nombres, teléfonos, direcciones y correos
+de vecinos de Ushuaia — datos personales bajo la Ley 25.326. Se cifra con AES-256
+en el mismo caño en que se genera: el dump en claro nunca toca el disco. El
+bucket quedó con jurisdicción europea, que Argentina reconoce como adecuada.
+
+Qué se agrega
+scripts/backup/moovy-backup.sh — vuelca, cifra, sube, verifica que del otro lado
+pese lo mismo, y el día 1 de cada mes deja además una copia de retención larga
+(la corrupción de datos se descubre meses después, y para entonces las diarias ya
+tienen el error adentro). Rechaza el respaldo si pesa menos de 1 MB: pg_dump
+puede terminar con éxito y escribir un archivo casi vacío si se le corta la
+conexión al contenedor.
+
+scripts/backup/moovy-uploads-snapshot.sh — copia semanal de moovy-uploads a
+moovy-backups. Usa `copy` y no `sync` a propósito: `sync` replicaría también los
+borrados, que es justo de lo que queremos protegernos.
+
+scripts/backup/verificar-respaldos.sh — contesta "¿tengo respaldo?" en diez
+segundos: si existe, de cuándo es, cuánto pesa, cuántos hay y si el espejo de
+fotos está al día.
+
+scripts/backup/traer-respaldo.ps1 — la copia que va en sentido contrario.
+
+docs/RESPALDOS.md — arquitectura, instalación, y sobre todo el procedimiento de
+restauración, escrito para leerse a las tres de la mañana. Incluye la prueba
+mensual, que es lo que convierte todo esto en verdad: un respaldo que nunca
+restauraste no es un respaldo, es un archivo con buenas intenciones.
+
+Los scripts viven en el repo y llegan con el deploy, en vez de ser archivos
+sueltos en /usr/local/bin que se pierden si se reinstala el servidor.
+
+El aviso, al revés
+No alertamos cuando el respaldo falla: confirmamos cuando funciona. Si el
+servidor está muerto no puede avisar nada — pero el servicio externo nota que el
+latido no llegó y grita solo. Es la lección de moovy-socket, que estuvo caído
+días sin que nadie se enterara.
+
+Y de paso, nginx
+CLAUDE.md sección 10 documenta `/etc/nginx/conf.d/proxy-buffers.conf`, que se
+creó ayer para frenar el 502 intermitente y hasta ahora vivía solo en el
+servidor. Si se reinstalaba el VPS, el 502 volvía y nadie iba a saber por qué.
+
+Lo que queda para cuando haya volumen: archivado continuo de WAL, que baja el RPO
+de 24 horas a segundos. Hoy sería sobre-ingeniería. Disparador: cien pedidos por
+día.
+
+**Archivos:** .claude/CLAUDE.md, docs/RESPALDOS.md, scripts/backup/moovy-backup.sh, scripts/backup/moovy-uploads-snapshot.sh, scripts/backup/traer-respaldo.ps1, scripts/backup/verificar-respaldos.sh
+
 ## 2026-08-02 (rama `fix/el-servidor-de-sockets-deja-de-morirse`)
 
 fix: el servidor de sockets deja de morirse en cada conexión

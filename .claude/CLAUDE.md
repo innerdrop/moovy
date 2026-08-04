@@ -561,3 +561,59 @@ efectivo quedó guardado para más adelante.
   electrónico. El flag fantasma `buyer.cash-payment` se removió; el código de efectivo
   queda dormido para Fase 2.
 ```
+
+## 10. Configuración de nginx que NO está en el repo
+
+Vive solo en el VPS. Si se reinstala el servidor y esto no se rehace, el sitio
+vuelve a fallar y nadie va a saber por qué.
+
+**`/etc/nginx/conf.d/proxy-buffers.conf`** (creado 2026-08-02, incidente de 502
+intermitente):
+
+```nginx
+proxy_buffer_size       16k;
+proxy_buffers           8 16k;
+proxy_busy_buffers_size 32k;
+```
+
+Sin esto, Next manda encabezados (payload RSC + cookies de sesión partidas) más
+grandes que los 4k por defecto. nginx los rechaza con `upstream sent too big
+header`, **marca el upstream como caído**, y TODO el sitio da 502 por unos
+segundos hasta que vence el `fail_timeout`. Después reintenta, vuelve a reventar
+y cicla. El síntoma es "falla cada tanto, al azar" — el más difícil de
+diagnosticar y el más fácil de arreglar.
+
+Se destapó al sacar el portal de comercios de atrás del candado: las prefetch de
+Next hacia rutas que ahora se reescriben a `/proximamente` fueron las que
+empezaron a devolver encabezados grandes.
+
+Segundo detalle del mismo incidente: el `proxy_pass` apunta a `localhost`, que
+resuelve a `127.0.0.1` y `::1`. nginx arma con eso un grupo implícito de dos
+servidores; cuando marca los dos como caídos, el mensaje pasa de "too big
+header" a `no live upstreams`. Las dos líneas hablan del mismo problema.
+
+## 11. Respaldos
+
+Documentación completa —arquitectura, instalación, restauración y la prueba
+mensual— en **`docs/RESPALDOS.md`**. Scripts en `scripts/backup/`.
+
+Las tres reglas que no se negocian:
+
+1. **El servidor escribe, nunca borra.** El token de R2 del VPS no puede
+   eliminar objetos. La limpieza la hace una regla de ciclo de vida en
+   Cloudflare. Motivo: si alguien entra al servidor, no puede vaciar las copias.
+2. **Hay una copia que el servidor no puede alcanzar.** La semanal que se trae a
+   la máquina del titular, con un token distinto de solo lectura.
+3. **Nada se sube sin cifrar.** El dump lleva datos personales (Ley 25.326) y se
+   cifra en el mismo caño en que se genera: el dump en claro nunca toca el disco.
+   La frase de cifrado vive en el gestor de contraseñas del titular, NO solo en
+   el servidor.
+
+**Dónde vive cada cosa**: la base solo en el VPS (por eso es lo único
+irreemplazable); las fotos en R2 `moovy-uploads` desde el 28/03/2026 (los 79
+archivos anteriores a esa fecha siguen en `public/uploads` del VPS); el código en
+GitHub.
+
+**Aviso al revés**: no alertamos cuando el respaldo falla, confirmamos cuando
+funciona (healthchecks.io). Si el servidor está muerto no puede avisar nada. Esta
+es la lección de `moovy-socket`, que estuvo caído días sin que nadie se enterara.
