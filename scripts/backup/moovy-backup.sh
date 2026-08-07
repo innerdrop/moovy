@@ -54,7 +54,20 @@ LOG="/var/log/moovy-backup.log"
 # se le corta la conexión al contenedor. Este piso es la red que lo caza.
 MINIMO_BYTES=1000000
 
-[ -f /etc/moovy-backup.env ] && . /etc/moovy-backup.env
+# El archivo de configuracion es OPCIONAL y se lee con pinzas: solo las lineas
+# con forma de CLAVE=valor. Antes se hacia `. archivo`, que ejecuta su contenido
+# como comandos — un renglon mal escrito (una URL suelta, sin el nombre de la
+# variable adelante) mataba el respaldo entero. Un respaldo no puede fallar por
+# un error de tipeo en un archivo que ni siquiera es obligatorio.
+if [ -f /etc/moovy-backup.env ]; then
+    while IFS= read -r linea; do
+        case "$linea" in
+            \#*|"") continue ;;
+            [A-Za-z_]*=*) export "${linea?}" 2>/dev/null || true ;;
+            *) echo "[aviso] /etc/moovy-backup.env: renglon ignorado por no tener forma CLAVE=valor" ;;
+        esac
+    done < /etc/moovy-backup.env
+fi
 HEALTHCHECK_URL="${HEALTHCHECK_URL:-}"
 
 decir() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }

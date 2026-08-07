@@ -74,18 +74,65 @@ rclone version
 rclone config
 ```
 
-Respuestas: `n` (nuevo remoto) → nombre **`r2`** → tipo **`s3`** → proveedor
-**`Cloudflare`** → pegás Access Key ID y Secret Access Key → region **`auto`**
-→ endpoint: el que te dio Cloudflare, **con el `.eu` adentro** si el bucket
-tiene jurisdicción europea → el resto, Enter → `y` para guardar.
+**Hacen falta DOS remotos, no uno.** Los buckets están en jurisdicciones
+distintas —`moovy-backups` en la europea, `moovy-uploads` en la por defecto— y
+Cloudflare da un endpoint diferente para cada una. Pedir un bucket por la puerta
+equivocada devuelve `AccessDenied`, que parece un problema de permisos y es de
+ruteo. Se pierde media hora buscando en el lugar equivocado.
 
-Probar:
+En vez de pasar por el asistente interactivo, escribir el archivo directo:
 
 ```bash
-rclone lsd r2:
+nano /root/.config/rclone/rclone.conf
 ```
 
-Tienen que aparecer `moovy-backups` y `moovy-uploads`.
+```ini
+[r2]
+type = s3
+provider = Cloudflare
+access_key_id = TU_ACCESS_KEY_ID
+secret_access_key = TU_SECRET_ACCESS_KEY
+endpoint = https://TU_ACCOUNT_ID.eu.r2.cloudflarestorage.com
+region = auto
+acl = private
+no_check_bucket = true
+
+[r2global]
+type = s3
+provider = Cloudflare
+access_key_id = TU_ACCESS_KEY_ID
+secret_access_key = TU_SECRET_ACCESS_KEY
+endpoint = https://TU_ACCOUNT_ID.r2.cloudflarestorage.com
+region = auto
+acl = private
+no_check_bucket = true
+```
+
+```bash
+chmod 600 /root/.config/rclone/rclone.conf
+```
+
+Las credenciales son **las mismas en los dos bloques** (es un solo token que
+alcanza los dos buckets). Lo único que cambia es el endpoint: uno con `.eu.` y
+el otro sin.
+
+`no_check_bucket = true` es obligatorio: nuestro token no puede crear buckets
+—y está bien que no pueda—, pero rclone por defecto intenta verificar que el
+bucket exista de una forma que requiere ese permiso.
+
+**Probar así, no con `rclone lsd r2:`:**
+
+```bash
+rclone ls r2:moovy-backups
+rclone size r2global:moovy-uploads
+```
+
+`rclone lsd r2:` pide listar TODOS los buckets de la cuenta y siempre va a dar
+403: el token está acotado a dos buckets a propósito. Ese 403 es la prueba de
+que la restricción funciona, no un error.
+
+El primero no devuelve nada si el bucket está vacío. El segundo tiene que
+mostrar el conteo de fotos.
 
 ### 4.3 · La clave de cifrado
 
@@ -291,3 +338,59 @@ Te dice en diez segundos si hay respaldo, de cuándo es, cuánto pesa y si el
 espejo de fotos está al día.
 
 Lo que **no** te dice es si sirve. Eso solo lo sabés restaurando (sección 8).
+
+
+---
+
+## 11 · Diagnóstico: probar cada pieza sin generar un respaldo
+
+Cuando algo no anda, o después de reinstalar el servidor, este bloque prueba las
+siete piezas por separado y no deja nada atrás.
+
+```bash
+echo "=== 1. El contenedor de la base responde ==="
+docker exec moovy-db psql -U postgres -d moovy_db -c 'SELECT COUNT(*) FROM "Product";' || echo FALLO
+
+echo "=== 2. pg_dump funciona ==="
+docker exec moovy-db pg_dump -U postgres --schema-only moovy_db | head -3 || echo FALLO
+
+echo "=== 3. La clave de cifrado ==="
+ls -l /root/.moovy-backup-key
+
+echo "=== 4. Cifrar y descifrar de ida y vuelta ==="
+echo "prueba-$(date +%s)" > /tmp/pru.txt
+openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt -pass file:/root/.moovy-backup-key -in /tmp/pru.txt -out /tmp/pru.enc
+openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 -pass file:/root/.moovy-backup-key -in /tmp/pru.enc -out /tmp/pru2.txt
+diff /tmp/pru.txt /tmp/pru2.txt && echo "OK: lo que se cifra se puede volver a abrir"
+
+echo "=== 5. Escribir en el bucket ==="
+rclone copyto /tmp/pru.enc r2:moovy-backups/prueba-conexion.enc && echo "OK escritura"
+rclone deletefile r2:moovy-backups/prueba-conexion.enc && echo "OK limpieza"
+
+echo "=== 6. El aviso automático ==="
+. /etc/moovy-backup.env 2>/dev/null
+curl -fsS -m 10 "$HEALTHCHECK_URL" && echo " <- OK" || echo "FALLO o no configurado"
+
+echo "=== 7. Los scripts ==="
+ls -l /var/www/moovy/scripts/backup/
+
+rm -f /tmp/pru.txt /tmp/pru.enc /tmp/pru2.txt
+```
+
+**El paso 4 es el más importante de los siete.** Demuestra que lo que se cifre
+hoy se va a poder abrir mañana con la frase guardada. Todo lo demás son cañerías;
+ese es el que decide si los respaldos sirven.
+
+El paso 5 escribe fuera de los prefijos con candado (`db/`, `uploads-espejo/`)
+justamente para poder borrar lo que dejó. Si escribiera adentro, el archivo de
+prueba quedaría ahí hasta que venciera la retención.
+
+### Errores conocidos y qué significan
+
+| Mensaje | Qué es en realidad |
+|---|---|
+| `ListBuckets ... AccessDenied` con `rclone lsd r2:` | Correcto: el token está acotado a dos buckets |
+| `ListObjectsV2 ... AccessDenied` sobre `moovy-uploads` | Remoto equivocado: va con `r2global:` |
+| `Credential access key has length 16, should be 32` | Quedó el texto de ejemplo sin reemplazar en `rclone.conf` |
+| `/etc/moovy-backup.env: line 1: https://... No such file` | Falta `HEALTHCHECK_URL=` adelante de la URL |
+| `rclone ls` sin salida ni error | El bucket está vacío, o `--max-depth 1` y los archivos están en carpetas |

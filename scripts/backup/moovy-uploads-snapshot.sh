@@ -19,12 +19,23 @@
 #
 set -euo pipefail
 
-ORIGEN="r2:moovy-uploads"
+# OJO con el remoto: moovy-uploads vive en la jurisdiccion por defecto y
+# moovy-backups en la europea. Cloudflare da un endpoint distinto para cada una,
+# y pedirle un bucket por la puerta equivocada devuelve AccessDenied — un error
+# que parece de permisos y es de ruteo. Por eso hay dos remotos en rclone.conf.
+ORIGEN="r2global:moovy-uploads"
 DESTINO="r2:moovy-backups/uploads-espejo"
 
 decir() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
 
 command -v rclone >/dev/null || { decir "FALTA rclone"; exit 1; }
+
+# Comprobar los dos remotos ANTES de copiar: si uno no responde, es mejor
+# enterarse ahora que a mitad de la transferencia.
+rclone lsjson "$ORIGEN" --max-depth 1 >/dev/null 2>&1 || {
+    decir "ERROR: no se puede leer $ORIGEN. Revisa el remoto en rclone.conf."
+    exit 1
+}
 
 decir "Copiando fotos de $ORIGEN a $DESTINO ..."
 rclone copy "$ORIGEN" "$DESTINO" --s3-no-check-bucket --transfers 4 --stats-one-line

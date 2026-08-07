@@ -11,6 +11,60 @@
 ---
 
 
+## 2026-08-07 (rama `fix/el-espejo-de-fotos-y-los-permisos`)
+
+fix: el espejo de fotos apuntaba al remoto equivocado
+
+Tres cosas que aparecieron poniendo el respaldo a andar de verdad, ninguna
+visible leyendo el código.
+
+El espejo de fotos nunca hubiera funcionado
+Los dos buckets están en jurisdicciones distintas: moovy-backups en la europea
+—se creó así a propósito, porque los respaldos llevan datos personales de vecinos
+de Ushuaia y Argentina reconoce a la UE como jurisdicción adecuada— y
+moovy-uploads en la por defecto, porque existe desde marzo.
+
+Cloudflare da un endpoint diferente para cada jurisdicción, y pedir un bucket por
+la puerta equivocada devuelve AccessDenied. Ese mensaje manda a buscar el
+problema a los permisos del token cuando en realidad es de ruteo; se pierde media
+hora antes de sospechar del endpoint.
+
+Ahora rclone tiene dos remotos —r2 y r2global, mismas credenciales, endpoints
+distintos— y el script del espejo usa el que corresponde. Además comprueba que el
+origen responda antes de empezar a copiar: mejor fallar en la primera línea con
+un mensaje claro que a mitad de la transferencia.
+
+El respaldo se moría por un renglón torcido
+/etc/moovy-backup.env es opcional y se leía con `.`, que ejecuta su contenido
+como comandos. Al cargar la URL del healthcheck sin el `HEALTHCHECK_URL=`
+adelante, bash intentó ejecutar la URL como si fuera un programa y, con `set -e`,
+se llevó puesto el respaldo entero.
+
+Un respaldo no puede fallar por un error de tipeo en un archivo que ni siquiera
+es obligatorio. Ahora se lee línea por línea y solo se toman las que tienen forma
+de CLAVE=valor; el resto se ignora con un aviso.
+
+Los scripts perdían el permiso de ejecución en cada deploy
+Se subieron con modo 644 y el bit vive en git, así que un chmod en el servidor
+dura hasta el próximo deploy. Se marcan como ejecutables en el índice y las
+líneas del cron llevan `bash` adelante como cinturón y tiradores.
+
+Documentación
+docs/RESPALDOS.md incorpora lo que se aprendió instalándolo: la configuración de
+los dos remotos, por qué hace falta no_check_bucket, por qué `rclone lsd r2:`
+siempre va a dar 403 (es la prueba de que el token está acotado, no un error), el
+bloque de diagnóstico que prueba las siete piezas sin generar un respaldo, y una
+tabla de errores conocidos con lo que significan de verdad.
+
+Estado al cerrar esta rama: el respaldo diario corre cifrado a Cloudflare R2 en
+jurisdicción europea, con candado de inmutabilidad de 14 días, limpieza por regla
+de ciclo de vida que el servidor no puede tocar, copia mensual de retención larga
+y aviso por ausencia de latido. La restauración se probó de punta a punta —bajar
+de la nube, descifrar, restaurar en una base de prueba— y los conteos de
+productos, pedidos y usuarios coincidieron con producción.
+
+**Archivos:** docs/RESPALDOS.md, scripts/backup/moovy-backup.sh, scripts/backup/moovy-uploads-snapshot.sh, scripts/backup/verificar-respaldos.sh
+
 ## 2026-08-04 (rama `chore/los-respaldos-salen-del-servidor`)
 
 chore: los respaldos salen del servidor
