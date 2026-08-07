@@ -32,7 +32,11 @@ interface SettingsFormProps {
         minOrderAmount: number;
         deliveryRadiusKm: number;
         allowPickup: boolean;
+        /** % con el que se liquida hoy. Sale de getCommissionForDisplay, no de la columna. */
         commissionRate: number;
+        commissionFirstMonthFree?: boolean;
+        commissionFirstMonthEndsAt?: string | null;
+        commissionRateAfterFirstMonth?: number | null;
         mpEmail?: string | null;
         mpLinkedAt?: string | null;
         mpUserId?: string | null;
@@ -70,6 +74,14 @@ interface SettingsFormProps {
 
 export default function SettingsForm({ merchant, requiredDocFields, section }: SettingsFormProps) {
     const show = (s: "estado" | "entregas" | "mercadopago" | "documentacion") => !section || section === s;
+    // Fecha de fin del mes sin comisión, para la tarjeta de comisión (sección entregas).
+    const commissionFirstMonthEndLabel = merchant.commissionFirstMonthEndsAt
+        ? new Date(merchant.commissionFirstMonthEndsAt).toLocaleDateString("es-AR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        })
+        : null;
     const [isLoading, setIsLoading] = useState(false);
     const [isTogglingStore, setIsTogglingStore] = useState(false);
     const [isOpen, setIsOpen] = useState(merchant.isOpen);
@@ -268,7 +280,23 @@ export default function SettingsForm({ merchant, requiredDocFields, section }: S
                             </div>
                             <div>
                                 <p className="font-semibold text-gray-900">Tu comisión actual</p>
-                                <p className="text-sm text-gray-500">Porcentaje que MOOVY cobra por cada venta</p>
+                                {/* fix/la-comision-que-ve-el-comercio: durante el mes gratis la
+                                    bajada dice hasta cuándo corre el 0% y qué porcentaje sigue.
+                                    Antes esta tarjeta mostraba Merchant.commissionRate (8% legacy)
+                                    mientras el tablero decía 0%: dos cifras del mismo dato. */}
+                                <p className="text-sm text-gray-500">
+                                    {merchant.commissionFirstMonthFree ? (
+                                        <>
+                                            Tu primer mes sin comisión
+                                            {commissionFirstMonthEndLabel && <> va hasta el {commissionFirstMonthEndLabel}</>}
+                                            {typeof merchant.commissionRateAfterFirstMonth === "number" && (
+                                                <>; después pasa a {merchant.commissionRateAfterFirstMonth}%</>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>Porcentaje que MOOVY cobra por cada venta</>
+                                    )}
+                                </p>
                             </div>
                         </div>
                         <span className="text-2xl font-bold text-blue-600">{merchant.commissionRate}%</span>

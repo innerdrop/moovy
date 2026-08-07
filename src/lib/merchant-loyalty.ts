@@ -281,6 +281,67 @@ export async function getDefaultMerchantCommission(): Promise<number> {
 }
 
 /**
+ * Todo lo que el panel necesita para hablarle de comisión al comercio, en un
+ * solo objeto: qué paga hoy, hasta cuándo, y qué paga después.
+ *
+ * Rama fix/la-comision-que-ve-el-comercio. Existe porque el panel le mostraba
+ * al comercio tres números distintos al mismo tiempo: 0% en el tablero (mes
+ * gratis) y Merchant.commissionRate crudo — una columna legacy con @default(8)
+ * que NO se cobra en ningún lado — en Pagos y en Configuración. La liquidación
+ * real siempre salió de getEffectiveCommissionWithSource.
+ *
+ * Regla: ninguna pantalla del panel lee Merchant.commissionRate. Se muestra lo
+ * que se cobra, y nada más.
+ */
+export interface CommissionForDisplay {
+  /** Lo que paga HOY. Es el mismo número con el que se liquida cada pedido. */
+  rate: number;
+  source: CommissionSource;
+  /** true mientras corre la ventana sin comisión. */
+  firstMonthFree: boolean;
+  /** Fin del mes gratis en ISO. null si no aplica. */
+  firstMonthEndsAt: string | null;
+  /** Lo que va a pagar cuando termine el mes gratis. null si no está en esa ventana. */
+  rateAfterFirstMonth: number | null;
+}
+
+export async function getCommissionForDisplay(merchantId: string): Promise<CommissionForDisplay> {
+  const effective = await getEffectiveCommissionWithSource(merchantId);
+
+  // Fuera del mes gratis no hay nada que anticipar: el número de hoy es el
+  // número. (Incluye OVERRIDE: si hay convenio, manda el convenio.)
+  if (effective.source !== "FIRST_MONTH") {
+    return {
+      rate: effective.rate,
+      source: effective.source,
+      firstMonthFree: false,
+      firstMonthEndsAt: null,
+      rateAfterFirstMonth: null,
+    };
+  }
+
+  // En mes gratis decir "0%" a secas es peor que no decir nada: el comercio
+  // arma sus precios sobre un número que se le vence sin aviso. Va con fecha
+  // de vencimiento y con el porcentaje que viene después.
+  const merchant = await prisma.merchant.findUnique({
+    where: { id: merchantId },
+    select: { loyaltyTier: true, createdAt: true, approvedAt: true, approvalStatus: true },
+  });
+
+  const base = merchant ? firstMonthFreeBaseDate(merchant) : null;
+  const tierConfig = merchant ? await getTierConfig(merchant.loyaltyTier as MerchantTierType) : null;
+  const rateAfterFirstMonth = tierConfig ? tierConfig.commissionRate : await getDefaultMerchantCommission();
+
+  return {
+    rate: effective.rate,
+    source: effective.source,
+    firstMonthFree: true,
+    firstMonthEndsAt: base ? getFirstMonthFreeEndDate(base).toISOString() : null,
+    rateAfterFirstMonth,
+  };
+}
+
+/**
  * Recalculate merchant tier and update if changed.
  * Returns { changed: boolean, oldTier?: string, newTier: string }
  */
@@ -368,87 +429,8 @@ export async function updateAllMerchantTiers(): Promise<number> {
   }
 }
 
-/**
- * Get loyalty widget data for a merchant dashboard.
- */
-export async function getMerchantLoyaltyWidget(merchantId: string) {
-  try {
-    const merchant = await prisma.merchant.findUnique({
-      where: { id: merchantId },
-      select: {
-        id: true,
-        loyaltyTier: true,
-        loyaltyOrderCount: true,
-        loyaltyUpdatedAt: true,
-        createdAt: true,
-        approvedAt: true,
-        approvalStatus: true,
-        commissionOverride: true,
-      },
-    });
-
-    if (!merchant) {
-      return null;
-    }
-
-    // Info del mes gratis para que el dashboard muestre el banner y la fecha de vencimiento.
-    // Si hay commissionOverride, el mes gratis NO aplica (el override gana).
-    const hasOverride = merchant.commissionOverride !== null && merchant.commissionOverride !== undefined;
-    const widgetBase = firstMonthFreeBaseDate(merchant);
-    const firstMonthActive = !hasOverride && !!widgetBase && isInFirstMonthFree(widgetBase);
-    const firstMonthFree = {
-      active: firstMonthActive,
-      // Sin aprobar aún: el trial no empezó — endDate null (la UI no muestra fecha)
-      endDate: widgetBase ? getFirstMonthFreeEndDate(widgetBase) : null,
-      daysRemaining: firstMonthActive && widgetBase ? getFirstMonthFreeDaysRemaining(widgetBase) : 0,
-    };
-
-    // Get current tier config
-    const currentTierConfig = await getTierConfig(merchant.loyaltyTier as MerchantTierType);
-
-    // Get all tiers sorted by min orders
-    const allTiers = await prisma.merchantLoyaltyConfig.findMany({
-      orderBy: { minOrdersPerMonth: "asc" },
-    });
-
-    if (!allTiers || allTiers.length === 0) {
-      return null;
-    }
-
-    // Get next tier info
-    const currentMinOrders = currentTierConfig?.minOrdersPerMonth || 0;
-    const nextTierConfig = allTiers.find((t: any) => t.minOrdersPerMonth > currentMinOrders);
-
-    // Count orders in last 30 days for progress
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const recentOrderCount = await prisma.order.count({
-      where: {
-        merchantId,
-        status: "DELIVERED",
-        deliveredAt: { gte: thirtyDaysAgo },
-        deletedAt: null,
-      },
-    });
-
-    return {
-      currentTier: merchant.loyaltyTier,
-      currentTierInfo: currentTierConfig,
-      recentOrderCount,
-      nextTier: nextTierConfig
-        ? {
-            tier: nextTierConfig.tier,
-            minOrders: nextTierConfig.minOrdersPerMonth,
-            ordersNeeded: Math.max(0, nextTierConfig.minOrdersPerMonth - recentOrderCount),
-            commission: nextTierConfig.commissionRate,
-            badgeText: nextTierConfig.badgeText,
-            benefits: nextTierConfig.benefitsJson ? JSON.parse(nextTierConfig.benefitsJson) : [],
-          }
-        : null,
-      lastUpdatedAt: merchant.loyaltyUpdatedAt,
-      firstMonthFree,
-    };
-  } catch (error) {
-    loyaltyLogger.error({ error, merchantId }, "Error getting loyalty widget data");
-    return null;
-  }
-}
+// getMerchantLoyaltyWidget vivia aca. Se fue con MerchantLoyaltyWidget.tsx y
+// con /api/merchant/loyalty en fix/la-comision-que-ve-el-comercio: el widget no
+// estaba montado en ninguna pantalla (regla #10, endpoints huerfanos) y ademas
+// mostraba el rate del tier al lado del cartel de 0% del mes gratis. Si algun
+// dia hace falta un widget de niveles, esta en el historial de git.

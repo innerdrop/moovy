@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { requireMerchantApi } from "@/lib/merchant-auth";
+import { getCommissionForDisplay } from "@/lib/merchant-loyalty";
 
 export async function GET(request: NextRequest) {
     try {
@@ -16,13 +17,21 @@ export async function GET(request: NextRequest) {
         const merchant = (merchantId && isAdmin)
             ? await prisma.merchant.findUnique({
                 where: { id: merchantId },
-                select: { id: true, commissionRate: true },
+                // Ya no pedimos commissionRate: esa columna no se muestra mas
+                // (ver getCommissionForDisplay). El % sale del motor de comisiones.
+                select: { id: true },
             })
             : ownMerchant;
 
         if (!merchant) {
             return NextResponse.json({ error: "Comercio no encontrado" }, { status: 404 });
         }
+
+        // fix/la-comision-que-ve-el-comercio: el % que ve el comercio es el mismo
+        // con el que se le liquida cada pedido — override > mes gratis > tier >
+        // default de la Biblia. Antes esto devolvia Merchant.commissionRate, una
+        // columna legacy con @default(8) que no se cobra en ningun lado.
+        const commission = await getCommissionForDisplay(merchant.id);
 
         // Get all delivered orders with payment data
         const orders = await prisma.order.findMany({
@@ -77,7 +86,13 @@ export async function GET(request: NextRequest) {
             merchantId: merchant.id,
             // % ACTUAL del comercio (para el banner "tu comisión hoy"); cada pedido
             // trae además su merchantCommissionRate del snapshot.
-            commissionRate: merchant.commissionRate,
+            commissionRate: commission.rate,
+            commissionSource: commission.source,
+            // Mes gratis: hasta cuándo corre y qué porcentaje viene después. Sin
+            // esto el comercio arma sus precios sobre un 0% que se le vence.
+            firstMonthFree: commission.firstMonthFree,
+            firstMonthEndsAt: commission.firstMonthEndsAt,
+            rateAfterFirstMonth: commission.rateAfterFirstMonth,
             thisMonth: {
                 totalSales: sumField(thisMonth, "subtotal"),
                 payout: sumField(thisMonth, "merchantPayout"),

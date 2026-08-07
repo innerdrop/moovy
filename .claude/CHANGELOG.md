@@ -11,6 +11,12 @@
 ---
 
 
+## 2026-08-07 (rama `fix/la-comision-que-ve-el-comercio`)
+
+fix(comercio): el panel muestra la comision real con la que se liquida, no la columna legacy
+
+**Archivos:** .claude/CLAUDE.md, src/app/api/merchant/earnings/route.ts, src/app/api/merchant/loyalty/route.ts, src/app/comercios/(protected)/mi-comercio/_data.ts, src/app/comercios/(protected)/pagos/page.tsx, src/components/comercios/MerchantLoyaltyWidget.tsx, src/components/comercios/SettingsForm.tsx, src/lib/merchant-loyalty.ts
+
 ## 2026-08-07 (rama `fix/el-espejo-de-fotos-y-los-permisos`)
 
 fix: el espejo de fotos apuntaba al remoto equivocado

@@ -8,6 +8,7 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { decryptMerchantData } from "@/lib/fiscal-crypto";
 import { getRequiredDocumentFields } from "@/lib/merchant-document-approval";
+import { getCommissionForDisplay } from "@/lib/merchant-loyalty";
 
 /** Datos para MiComercioForm (perfil + horarios). Null si no hay comercio asociado. */
 export async function loadProfileMerchant() {
@@ -49,6 +50,10 @@ export async function loadSettingsMerchant() {
     const merchant = decryptMerchantData(merchantRaw as any) as typeof merchantRaw;
     const m = merchant as any;
     const requiredDocFields = await getRequiredDocumentFields(merchant.category);
+    // fix/la-comision-que-ve-el-comercio: el % de la tarjeta "Tu comisión actual"
+    // sale del motor de comisiones, no de Merchant.commissionRate (columna legacy
+    // con @default(8) que no se cobra en ningún lado y contradecía al tablero).
+    const commission = await getCommissionForDisplay(merchant.id);
     return {
         requiredDocFields,
         merchant: {
@@ -62,7 +67,10 @@ export async function loadSettingsMerchant() {
             minOrderAmount: merchant.minOrderAmount,
             deliveryRadiusKm: merchant.deliveryRadiusKm,
             allowPickup: merchant.allowPickup,
-            commissionRate: merchant.commissionRate,
+            commissionRate: commission.rate,
+            commissionFirstMonthFree: commission.firstMonthFree,
+            commissionFirstMonthEndsAt: commission.firstMonthEndsAt,
+            commissionRateAfterFirstMonth: commission.rateAfterFirstMonth,
             mpEmail: merchant.mpEmail,
             mpLinkedAt: merchant.mpLinkedAt?.toISOString() || null,
             mpUserId: merchant.mpUserId,

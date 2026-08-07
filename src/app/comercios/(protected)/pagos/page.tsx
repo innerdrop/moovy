@@ -28,7 +28,14 @@ interface OrderRow {
 }
 
 interface Summary {
+    /** El % con el que se liquida hoy. Ver getCommissionForDisplay. */
     commissionRate: number;
+    /** true mientras corre el mes sin comisión. */
+    firstMonthFree?: boolean;
+    /** Fin del mes gratis en ISO. null fuera de esa ventana. */
+    firstMonthEndsAt?: string | null;
+    /** % que aplica cuando termina el mes gratis. null fuera de esa ventana. */
+    rateAfterFirstMonth?: number | null;
     thisMonth: { totalSales: number; payout: number; commission: number; orderCount: number };
     lastMonth: { totalSales: number; payout: number; commission: number; orderCount: number };
     allTime: { totalSales: number; payout: number; commission: number; orderCount: number };
@@ -92,6 +99,18 @@ export default function MerchantPagosPage() {
     }
 
     const current = summary[period];
+
+    // fix/la-comision-que-ve-el-comercio: durante el mes gratis el banner tiene
+    // que decir las tres cosas juntas — cuánto paga hoy, hasta cuándo, y cuánto
+    // después. Decir solo "0%" lo deja armando precios sobre un número que vence.
+    const firstMonthEndLabel = summary.firstMonthEndsAt
+        ? new Date(summary.firstMonthEndsAt).toLocaleDateString("es-AR", {
+            day: "2-digit",
+            month: "2-digit",
+            year: "numeric",
+        })
+        : null;
+
     const periodLabels = {
         thisMonth: "Este mes",
         lastMonth: "Mes anterior",
@@ -113,8 +132,22 @@ export default function MerchantPagosPage() {
             <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex items-center gap-3">
                 <Percent className="w-5 h-5 text-blue-600" />
                 <p className="text-sm text-blue-800">
-                    Tu comisión actual es del <span className="font-bold">{summary.commissionRate}%</span> sobre
-                    cada venta entregada. Cada transacción muestra la comisión con la que se cobró en su momento.
+                    {/* En mes gratis: el 0% con fecha de vencimiento y el % que sigue. */}
+                    {summary.firstMonthFree ? (
+                        <>
+                            Hoy pagás <span className="font-bold">0%</span> de comisión
+                            {firstMonthEndLabel && <> hasta el <span className="font-bold">{firstMonthEndLabel}</span></>}.
+                            {typeof summary.rateAfterFirstMonth === "number" && (
+                                <> Desde ahí pasa a <span className="font-bold">{summary.rateAfterFirstMonth}%</span> sobre cada venta entregada.</>
+                            )}
+                        </>
+                    ) : (
+                        <>
+                            Tu comisión actual es del <span className="font-bold">{summary.commissionRate}%</span> sobre
+                            cada venta entregada.
+                        </>
+                    )}
+                    {" "}Cada transacción muestra la comisión con la que se cobró en su momento.
                 </p>
             </div>
 
