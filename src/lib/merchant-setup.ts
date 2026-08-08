@@ -1,7 +1,10 @@
 // Estado de armado de la tienda (feat/panel-inmediato-comercio).
 // ÚNICA fuente de verdad de los pasos de preparación: la consumen el dashboard
 // (tarjeta-guía), la barra de progreso del layout y toggleMerchantOpen (server).
-// Misma lógica canónica de requisitos que /api/merchant/onboarding.
+// Hasta 2026-08-08 esta lógica estaba duplicada en /api/merchant/onboarding, un
+// endpoint que no consumía nadie. Se borró en fix/deploy-seguro-y-limpieza: dos
+// copias de la regla de "qué le falta al comercio para abrir" es una que tarde o
+// temprano se desincroniza y contradice a la otra en pantalla.
 //
 // fix/aprobacion-docs-pipeline-y-portada (2026-07-25):
 // - Un doc requerido cuenta como cumplido si el comercio CARGÓ el archivo/valor

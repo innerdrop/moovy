@@ -1,7 +1,74 @@
 # Moovy — Issues
-Última actualización: 2026-07-29
+Última actualización: 2026-08-08
 
 > **Fuente única de tareas pendientes.** Para histórico completo de issues resueltos en sprints anteriores → `.claude/CHANGELOG.md`.
+
+---
+
+
+## 🔴 Abierto — para revisar ANTES del lanzamiento (relevado 2026-08-08)
+
+### 🔴 El QR de MOOVER no se puede descargar desde la app instalada
+Reportado por el founder: la descarga anda desde el navegador y **no anda** cuando Moovy
+está agregada a la pantalla de inicio. Causa identificada, no es un misterio:
+`src/app/(store)/puntos/page.tsx:338` descarga con `link.download = ...` +
+`link.href = canvas.toDataURL(...)`. **El atributo `download` de un `<a>` no funciona en
+modo standalone**: iOS lo ignora por completo y Android bloquea la bajada de un `data:` URL
+desde una PWA instalada. Por eso el síntoma es exactamente "en el navegador sí, como app no".
+**Camino correcto:** `canvas.toBlob()` → `new File([blob], 'moover-CODIGO.png', {type:'image/png'})`
+→ `navigator.share({ files: [...] })` (Web Share Level 2, disponible en Android e iOS 15+),
+decidiendo con `navigator.canShare({files})`, y dejando `<a download>` sólo como respaldo de
+escritorio. Bonus: compartir directo es mejor UX que descargar y después buscar el archivo.
+
+### 🔴 La imagen del QR es de baja calidad para compartir
+Se compone sobre `public/qr-template.png`, que mide **500×500**. Para algo que la persona va a
+mandar por WhatsApp o subir a una historia es poco: se ve blanda y no entra bien en ningún
+formato de red social. Debería salir a **1080×1080** como mínimo (y evaluar una segunda pieza
+1080×1920 para historias), con el QR **redibujado a esa escala, no escalado** (escalar un QR
+de 500 a 1080 lo deja con bordes sucios y lo hace más difícil de leer), con corrección de
+errores alta y la zona muda respetada. Y con el branding real, no una plantilla genérica.
+Va en la misma rama que el punto anterior.
+
+### 🔴 Auditar de punta a punta la asignación de puntos de MOOVER
+Pedido del founder. Revisar el programa completo buscando cabos sueltos: cuándo se acreditan
+(la pantalla promete "al recibir el pedido, no al pagar" — verificar que el código haga eso),
+qué pasa con una cancelación o una devolución después de acreditar, el tope del 50% del
+subtotal, el mínimo de 500 para canjear, los 3.500 por referido y los 2.500 del invitado
+(la pantalla de puntos dice 3.500 y el texto para compartir dice 2.500: **confirmar cuál es
+el número real**), y si los puntos se calculan sobre productos sin incluir el envío como
+promete el copy. Es plata en forma de puntos: entra en la regla de testing obligatorio
+(script de verificación contra DB real, no mocks).
+
+### 🟡 Gestión masiva del catálogo — lo que pidió Fernando
+Dos pedidos, con estados muy distintos:
+
+**(a) Ocultar todo con un clic y después elegir qué mostrar.** *Casi hecho.* Ya existen
+`bulkSetProductsActive`, `bulkDeleteProducts`, `bulkSetProductsCategory` y
+`bulkAdjustProductsPrice` en `src/app/comercios/bulk-actions.ts`, con su barra de selección
+múltiple. Lo que falta es un **"seleccionar todo"** que abarque *todo el resultado del filtro*
+y no sólo lo visible en pantalla, más la confirmación correspondiente. Es chico.
+
+**(b) Filtrar por marca y por proveedor.** *No se puede hoy, y no es que falte el filtro: **faltan
+los campos**.* El modelo `Product` no tiene `brand` ni `supplier` — sólo `barcode`. Cualquier
+filtro por marca o proveedor necesita schema nuevo (deploy `-SchemaOnly`), decidir si son texto
+libre o tablas propias (una tabla `Supplier` por comercio permite después "traeme todo lo de
+este proveedor y subile 12%", que es lo que realmente quiere un comerciante), y una migración
+que llene los datos de los productos ya cargados. **No es un fix chico, es una feature.**
+
+### 🟡 Extras y personalización de productos (la hamburguesa con o sin cheddar)
+Estado real: existe el modelo `ProductVariant` en el schema (`prisma/schema.prisma:303`) y
+`CartItem.variantId`, pero **ningún archivo de `src/` los usa**. O sea: la mesa está puesta y
+nadie se sentó. Y ojo con la confusión de conceptos, porque cambia el tamaño del trabajo:
+- **Variante** = una sola opción que *reemplaza* el producto y su precio (talle M / talle L,
+  500ml / 1L). Eso es lo que modela `ProductVariant`.
+- **Extra o agregado** = varias opciones que se *suman* al precio (+cheddar $800, +papas),
+  más las quitas sin costo (sin cebolla). Eso **no está modelado en ninguna parte** y necesita
+  grupos de opciones con mínimo/máximo de selección, precio por opción y su copia en el
+  snapshot del pedido.
+Además impacta en el motor de precios, en el carrito, en el ticket del comercio y en la
+comisión. Es una feature grande. **Decisión pendiente del founder: ¿entra antes del 15 o
+después?** Recordar la regla #46: esto no es sólo gastronomía — una ferretería con "tornillo
+del 6 / del 8" es el mismo problema.
 
 ---
 

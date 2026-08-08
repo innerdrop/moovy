@@ -11,6 +11,12 @@
 ---
 
 
+## 2026-08-08 (rama `fix/deploy-seguro-y-limpieza`)
+
+fix(deploy): el build remoto sobrevive al corte de ssh y se verifica antes de recargar
+
+**Archivos:** ISSUES.md, scripts/devmain.ps1, src/app/api/merchant/onboarding/route.ts, src/lib/merchant-auth.ts, src/lib/merchant-setup.ts
+
 ## 2026-08-07 (rama `fix/la-comision-que-ve-el-comercio`)
 
 fix(comercio): el panel muestra la comision real con la que se liquida, no la columna legacy

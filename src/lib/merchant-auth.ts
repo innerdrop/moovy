@@ -11,7 +11,7 @@
  *   Cuando OPS aprueba un comercio, la DB pasa a APPROVED al instante pero el JWT
  *   del comercio queda con la foto vieja hasta que el socket `roles_updated`
  *   dispara `session.update({refreshRoles:true})`. En esa ventana, el panel
- *   (/api/merchant/stats, /api/merchant/onboarding, etc.) devolvía 403 aunque en
+ *   (/api/merchant/stats, /api/merchant/earnings, etc.) devolvía 403 aunque en
  *   DB el comercio ya estuviera aprobado. El layout protegido pasaba porque usa
  *   DB; los endpoints API fallaban porque usaban el JWT. Mismo patrón que ya
  *   resolvimos para el driver con requireDriverApi.

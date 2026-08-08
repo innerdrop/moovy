@@ -334,13 +334,19 @@ Write-Host ""
 Write-Host "[11/15] Merge develop -> main + push..." -ForegroundColor Yellow
 git checkout main 2>&1 | Out-Null
 git pull origin main --no-edit 2>&1 | Out-Null
-git merge develop --no-edit -m "deploy: $(Get-Date -Format 'yyyy-MM-dd HH:mm') ($commitsCount commits)"
+# fix/deploy-seguro-y-limpieza: el '2>&1 | Out-Host' NO es cosmetico. git escribe
+# a stderr cuando le va BIEN ("Switched to branch", "To github.com..."), y
+# PowerShell convierte cada renglon de stderr de un exe nativo en un ErrorRecord
+# que pinta de rojo. Resultado: un deploy exitoso se veia como si hubiera fallado
+# y habia que leer el texto para descubrir que estaba todo bien. Redirigido, sale
+# como texto comun. El exit code real sigue decidiendo, y lo lee la linea de abajo.
+git merge develop --no-edit -m "deploy: $(Get-Date -Format 'yyyy-MM-dd HH:mm') ($commitsCount commits)" 2>&1 | Out-Host
 if ($LASTEXITCODE -ne 0) {
     'UPDATE "StoreSettings" SET "isMaintenanceMode" = false WHERE id = ''settings'';' | ssh "$VPS_USER@$VPS_HOST" "docker exec -i moovy-db psql -U $VPS_DB_USER -d $VPS_DB_NAME" | Out-Null
     ssh "$VPS_USER@$VPS_HOST" "rm -f $LOCK_FILE" | Out-Null
     Stop-WithError "Conflictos al mergear develop -> main. Resolve manualmente."
 }
-git push origin main
+git push origin main 2>&1 | Out-Host
 if ($LASTEXITCODE -ne 0) { Add-Error "[GIT] Error al hacer push de main" }
 Write-Host "  OK merge + push" -ForegroundColor Green
 
@@ -385,6 +391,10 @@ if ($dbStep) {
     $remoteCommand += " && $dbStep"
 }
 
+# Las tres razones de abajo siguen vigentes; lo que cambio en 2026-08-08 es DONDE
+# se ejecutan: el rm -rf .next, el build y el pm2 reload salieron de este comando
+# unico y ahora son los pasos 12.b a 12.e, con verificacion en el medio.
+#
 # pm2 reload (zero-downtime, mejora 11)
 # pm2 reload all en vez de solo moovy: el socket-server (moovy-socket) es un
 # proceso pm2 separado y si solo recargamos moovy, queda con código viejo.
@@ -400,14 +410,149 @@ if ($dbStep) {
 # y pm2 restart porque el .next/ tenía manifest viejo. Solución profesional:
 # build limpio en cada deploy. Trade-off: +30-60s por build (sin cache
 # incremental) a cambio de determinismo. Vale la pena para deploys de prod.
-$remoteCommand += " && echo '[VPS] rm -rf .next (clean build)...' && rm -rf .next && echo '[VPS] npm run build...' && npm run build && pm2 reload all --update-env"
+# fix/deploy-seguro-y-limpieza (2026-08-08): el build remoto se separo del resto.
+#
+# Que pasaba antes: 'npm run build' viajaba pegado al mismo ssh que todo lo demas.
+# Si la conexion se cortaba a mitad del build (wifi, suspension de la notebook,
+# timeout del router), el proceso remoto se moria con SIGHUP y el .next quedaba a
+# medias. En el deploy del 2026-08-02 el script canto exito con un .next incompleto
+# -- faltaba el manifest de referencias de cliente de /login y la app servia 500s.
+# Un build de produccion NO puede depender de que el ssh del titular sobreviva.
+#
+# Que hace ahora:
+#   12.a  prepara el codigo (git reset, deps, prisma) -- sincrono, rapido
+#   12.b  lanza el build con setsid+nohup: sobrevive a que se caiga el ssh
+#   12.c  espera preguntando cada 10s por el archivo de resultado
+#   12.d  VERIFICA los artefactos en disco antes de declarar exito
+#   12.e  recien ahi, pm2 reload
+#
+# El 12.d es el corazon: el exit code de npm dice "el comando termino bien", no
+# "el .next quedo completo". Se miran tres cosas que un build truncado no puede
+# fingir. Los nombres salen de mirar un .next real de Next 16 + Turbopack, no de
+# suponerlos: NO existe 500.html en este stack (eso es layout de webpack), el
+# archivo de error global se llama _global-error.html.
+$BUILD_LOG = "/tmp/moovy-build.log"
+$BUILD_DONE = "/tmp/moovy-build.done"
 
+# --- 12.a: preparar el codigo (sin build) ---
 ssh "$VPS_USER@$VPS_HOST" "$remoteCommand" 2>&1 | Out-Host
 $deploySuccess = ($LASTEXITCODE -eq 0)
 
 if (-not $deploySuccess) {
-    Add-Error "[VPS] Error en deploy remoto"
+    Add-Error "[VPS] Error preparando el codigo en el VPS (git/deps/prisma)"
+    Write-Host "  ERROR preparacion remota" -ForegroundColor Red
+} else {
+    Write-Host "  OK codigo preparado" -ForegroundColor Green
+
+    # --- 12.b: lanzar el build desprendido del ssh ---
+    # setsid le da sesion propia (no recibe el SIGHUP cuando muere el ssh) y nohup
+    # es el cinturon por si setsid no esta. El '< /dev/null' evita que el build se
+    # quede esperando una entrada que nunca llega.
+    Write-Host "  -> limpiando .next y lanzando build remoto..." -ForegroundColor Gray
+    ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH && rm -f $BUILD_LOG $BUILD_DONE && rm -rf .next" 2>&1 | Out-Host
+    if ($LASTEXITCODE -ne 0) {
+        $deploySuccess = $false
+        Add-Error "[VPS] No pude limpiar .next antes del build"
+    } else {
+        $launchBuild = 'cd ' + $VPS_PATH + ' && setsid nohup bash -c ' +
+            '''npm run build > ' + $BUILD_LOG + ' 2>&1 && echo OK > ' + $BUILD_DONE +
+            ' || echo FAIL > ' + $BUILD_DONE + '''' +
+            ' > /dev/null 2>&1 < /dev/null & echo LANZADO'
+        $launched = (ssh "$VPS_USER@$VPS_HOST" $launchBuild 2>&1) -join " "
+        if ($launched -notmatch "LANZADO") {
+            $deploySuccess = $false
+            Add-Error "[VPS] No pude lanzar el build remoto: $launched"
+        }
+    }
+
+    # --- 12.c: esperar el resultado ---
+    # 20 minutos de techo. Un build sano tarda 1-3 min; si pasa de 20 hay algo roto
+    # y es mejor cortar que dejar el lock tomado para siempre.
+    if ($deploySuccess) {
+        $buildResult = ""
+        $waited = 0
+        $maxWait = 1200
+        Write-Host "  -> build corriendo en el VPS (sobrevive si se corta el ssh)..." -ForegroundColor Gray
+        while ($waited -lt $maxWait) {
+            Start-Sleep -Seconds 10
+            $waited += 10
+            $probe = (ssh "$VPS_USER@$VPS_HOST" "cat $BUILD_DONE 2>/dev/null || echo PENDIENTE" 2>&1) -join " "
+            if ($probe -match "OK") { $buildResult = "OK"; break }
+            if ($probe -match "FAIL") { $buildResult = "FAIL"; break }
+            if (($waited % 60) -eq 0) {
+                Write-Host "     ... $waited s" -ForegroundColor DarkGray
+            }
+        }
+
+        if ($buildResult -eq "") {
+            $deploySuccess = $false
+            Add-Error "[VPS] El build paso los $maxWait segundos sin terminar. Mira $BUILD_LOG en el VPS."
+        } elseif ($buildResult -eq "FAIL") {
+            $deploySuccess = $false
+            Add-Error "[VPS] El build remoto fallo"
+            Write-Host ""
+            Write-Host "  --- ULTIMAS 40 LINEAS DE $BUILD_LOG ---" -ForegroundColor Yellow
+            ssh "$VPS_USER@$VPS_HOST" "tail -n 40 $BUILD_LOG" 2>&1 | ForEach-Object {
+                Write-Host "    $_" -ForegroundColor Gray
+            }
+            Write-Host "  ---------------------------------------" -ForegroundColor Yellow
+        } else {
+            Write-Host "  OK build remoto termino ($waited s)" -ForegroundColor Green
+        }
+    }
+
+    # --- 12.d: verificar los artefactos, no el exit code ---
+    # Solo 'test' y 'wc': nada de comillas anidadas que PowerShell 5.1 pueda romper.
+    # 1) BUILD_ID existe y no esta vacio.
+    # 2) _global-error.html existe (el error global prerenderizado de Next 16).
+    # 3) app-path-routes-manifest.json pesa mas que el piso. Un build real pesa
+    #    ~31 KB con 491 rutas; el piso de 15000 esta a la mitad, asi que un build
+    #    cortado no lo alcanza ni por casualidad.
+    if ($deploySuccess) {
+        $MIN_MANIFEST_BYTES = 15000
+        $verify = 'cd ' + $VPS_PATH + ' && test -s .next/BUILD_ID && ' +
+            'test -f .next/server/app/_global-error.html && ' +
+            'test -f .next/routes-manifest.json && ' +
+            'wc -c < .next/app-path-routes-manifest.json'
+        $manifestBytesRaw = (ssh "$VPS_USER@$VPS_HOST" $verify 2>&1) -join " "
+        $verifyExit = $LASTEXITCODE
+        $manifestBytes = 0
+        if ($manifestBytesRaw -match "(\d+)") { $manifestBytes = [int]$Matches[1] }
+
+        if ($verifyExit -ne 0) {
+            $deploySuccess = $false
+            Add-Error "[VPS] El .next quedo incompleto: falta BUILD_ID, _global-error.html o routes-manifest.json. NO se recargo pm2."
+        } elseif ($manifestBytes -lt $MIN_MANIFEST_BYTES) {
+            $deploySuccess = $false
+            Add-Error "[VPS] app-path-routes-manifest.json pesa $manifestBytes bytes (minimo $MIN_MANIFEST_BYTES). El build quedo truncado. NO se recargo pm2."
+        } else {
+            Write-Host "  OK artefactos verificados (manifest $manifestBytes bytes)" -ForegroundColor Green
+        }
+    }
+
+    # --- 12.e: recien ahora, pm2 ---
+    # Si el build quedo a medias, NO se recarga: es preferible dejar corriendo la
+    # version vieja y sana que promover una rota. La version vieja sigue en memoria.
+    if ($deploySuccess) {
+        ssh "$VPS_USER@$VPS_HOST" "cd $VPS_PATH && pm2 reload all --update-env" 2>&1 | Out-Host
+        if ($LASTEXITCODE -ne 0) {
+            $deploySuccess = $false
+            Add-Error "[VPS] Error en pm2 reload"
+        }
+    } else {
+        # Honestidad: .next se borro antes del build, asi que el proceso viejo sigue
+        # vivo pero se queda sin los chunks que todavia no habia cargado. Puede
+        # aguantar un rato y despues empezar a tirar errores. No es un estado sano,
+        # es un estado menos malo que promover un build roto. La salida es rehacer
+        # el build a mano; por eso el comando va escrito aca y no hay que buscarlo.
+        Write-Host "  pm2 NO se recargo a proposito: promover un build incompleto es peor." -ForegroundColor Yellow
+        Write-Host "  OJO: .next se borro antes de compilar, asi que la version vieja que" -ForegroundColor Yellow
+        Write-Host "  quedo en memoria puede empezar a fallar. Si el sitio no responde:" -ForegroundColor Yellow
+        Write-Host "    ssh $VPS_USER@$VPS_HOST" -ForegroundColor Cyan
+        Write-Host "    cd $VPS_PATH; npm run build; pm2 reload all --update-env" -ForegroundColor Cyan
+    }
 }
+
 Write-Host "  $(if ($deploySuccess) { 'OK' } else { 'ERROR' }) deploy remoto" -ForegroundColor $(if ($deploySuccess) { 'Green' } else { 'Red' })
 
 # === PASO 13: Smoke test post-deploy (mejora 12) ===
